@@ -2,10 +2,14 @@ import SwiftUI
 import UIKit
 
 struct CheatStoreLoginView: View {
-    @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
+    @ObservedObject var licenseManager: CheatStoreLicenseManager
     @State private var inputKey: String = ""
     @State private var copiedDeviceID = false
     @State private var showShopWeb = false
+
+    init(licenseManager: CheatStoreLicenseManager = .shared) {
+        self.licenseManager = licenseManager
+    }
 
     private let brandGreen = Color(red: 0.06, green: 0.73, blue: 0.51) // Emerald Neon #10b981
     private let darkBackground = Color(red: 0.05, green: 0.06, blue: 0.08)

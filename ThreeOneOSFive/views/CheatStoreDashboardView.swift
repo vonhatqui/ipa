@@ -214,7 +214,7 @@ struct CheatStoreDashboardView: View {
     private func handleToggle(item: PatchLibraryItem, enable: Bool) {
         workingPatchID = item.id
 
-        Task.detached(priority: .userInitiated) {
+        DispatchQueue.global(qos: .userInitiated).async {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
@@ -222,7 +222,7 @@ struct CheatStoreDashboardView: View {
                         throw PatchPackageError.unsupportedFormat
                     }
                     _ = try DevicePatchService.apply(project: project)
-                    await MainActor.run {
+                    DispatchQueue.main.async {
                         patchStore.reload()
                         workingPatchID = nil
                         alertMessage = "Đã BẬT thành công chức năng: \(item.summary.title)"
@@ -231,14 +231,14 @@ struct CheatStoreDashboardView: View {
                 } else {
                     // TẮT chức năng (Restore)
                     guard let receipt = DevicePatchService.latestReceipt(projectID: item.id) else {
-                        await MainActor.run {
+                        DispatchQueue.main.async {
                             patchStore.reload()
                             workingPatchID = nil
                         }
                         return
                     }
                     try DevicePatchService.restore(receipt: receipt)
-                    await MainActor.run {
+                    DispatchQueue.main.async {
                         patchStore.reload()
                         workingPatchID = nil
                         alertMessage = "Đã TẮT và khôi phục an toàn: \(item.summary.title)"
@@ -246,7 +246,7 @@ struct CheatStoreDashboardView: View {
                     }
                 }
             } catch {
-                await MainActor.run {
+                DispatchQueue.main.async {
                     patchStore.reload()
                     workingPatchID = nil
                     alertMessage = "Thao tác thất bại: \(error.localizedDescription)"

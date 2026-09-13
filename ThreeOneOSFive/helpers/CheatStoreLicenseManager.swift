@@ -1,7 +1,6 @@
 import Foundation
 import UIKit
 
-@MainActor
 final class CheatStoreLicenseManager: ObservableObject {
     static let shared = CheatStoreLicenseManager()
 
@@ -43,7 +42,6 @@ final class CheatStoreLicenseManager: ObservableObject {
             if savedExpiryTimestamp > 0 {
                 let expiry = Date(timeIntervalSince1970: savedExpiryTimestamp)
                 if expiry < Date() {
-                    // Đã hết hạn
                     deactivate(withReason: "Key bản quyền của bạn đã hết hạn!")
                     return
                 }
@@ -58,18 +56,23 @@ final class CheatStoreLicenseManager: ObservableObject {
     func activateKey(_ keyInput: String) async -> Bool {
         let trimmedKey = keyInput.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard !trimmedKey.isEmpty else {
-            errorMessage = "Vui lòng nhập mã Key của bạn!"
+            await MainActor.run {
+                self.errorMessage = "Vui lòng nhập mã Key của bạn!"
+            }
             return false
         }
 
-        isVerifying = true
-        errorMessage = nil
-
-        defer {
-            isVerifying = false
+        await MainActor.run {
+            self.isVerifying = true
+            self.errorMessage = nil
         }
 
-        // Tạo request gửi lên API CheatStore
+        defer {
+            Task { @MainActor in
+                self.isVerifying = false
+            }
+        }
+
         var request = URLRequest(url: endpointURL)
         request.httpMethod = "POST"
         request.timeoutInterval = 12
@@ -87,16 +90,19 @@ final class CheatStoreLicenseManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                errorMessage = "Không thể kết nối đến máy chủ xác thực!"
+                await MainActor.run {
+                    self.errorMessage = "Không thể kết nối đến máy chủ xác thực!"
+                }
                 return false
             }
 
             if httpResponse.statusCode != 200 {
-                errorMessage = "Máy chủ phản hồi lỗi (Mã: \(httpResponse.statusCode))"
+                await MainActor.run {
+                    self.errorMessage = "Máy chủ phản hồi lỗi (Mã: \(httpResponse.statusCode))"
+                }
                 return false
             }
 
-            // Phân tích kết quả JSON
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 let status = json["status"] as? String ?? ""
                 if status == "success" {
@@ -104,30 +110,36 @@ final class CheatStoreLicenseManager: ObservableObject {
                     let name = json["name"] as? String ?? plan
                     let duration = json["duration"] as? String ?? "1 Ngày"
                     
-                    self.saveActivation(key: trimmedKey, plan: name, durationText: duration)
-                    self.isActivated = true
-                    self.activeKey = trimmedKey
-                    self.planName = name
+                    await MainActor.run {
+                        self.saveActivation(key: trimmedKey, plan: name, durationText: duration)
+                        self.isActivated = true
+                        self.activeKey = trimmedKey
+                        self.planName = name
+                    }
                     return true
                 } else {
                     let msg = json["message"] as? String ?? "Mã Key không chính xác hoặc đã hết hạn!"
-                    errorMessage = msg
+                    await MainActor.run {
+                        self.errorMessage = msg
+                    }
                     return false
                 }
             } else {
-                // Hỗ trợ kiểm tra nếu server trả về cấu trúc khác
-                self.saveActivation(key: trimmedKey, plan: "Gói VIP 30 Ngày", durationText: "30 Ngày")
-                self.isActivated = true
-                self.activeKey = trimmedKey
-                self.planName = "Gói VIP"
+                await MainActor.run {
+                    self.saveActivation(key: trimmedKey, plan: "Gói VIP 30 Ngày", durationText: "30 Ngày")
+                    self.isActivated = true
+                    self.activeKey = trimmedKey
+                    self.planName = "Gói VIP"
+                }
                 return true
             }
         } catch {
-            // Lỗi mạng: Cho phép mở nếu key trùng với key đã lưu trước đó
             if self.isActivated && self.activeKey == trimmedKey {
                 return true
             }
-            errorMessage = "Lỗi kết nối mạng: \(error.localizedDescription)"
+            await MainActor.run {
+                self.errorMessage = "Lỗi kết nối mạng: \(error.localizedDescription)"
+            }
             return false
         }
     }

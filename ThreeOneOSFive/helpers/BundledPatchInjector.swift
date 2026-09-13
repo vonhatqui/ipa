@@ -1,9 +1,8 @@
 import Foundation
 
 enum BundledPatchInjector {
-    @MainActor
     static func autoImportBundledPatches(into store: PatchProjectStore) {
-        Task.detached(priority: .userInitiated) {
+        DispatchQueue.global(qos: .userInitiated).async {
             let fileManager = FileManager.default
             guard let targetRoot = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) else { return }
 
@@ -47,8 +46,8 @@ enum BundledPatchInjector {
                 }
             }
 
-            // Tải lại thư viện patch trên MainActor
-            await MainActor.run {
+            // Tải lại thư viện patch trên main thread
+            DispatchQueue.main.async {
                 store.reload()
             }
         }
