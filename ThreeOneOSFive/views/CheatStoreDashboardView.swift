@@ -222,10 +222,11 @@ struct CheatStoreDashboardView: View {
                         throw PatchPackageError.unsupportedFormat
                     }
                     _ = try DevicePatchService.apply(project: project)
+                    let title = item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
                     DispatchQueue.main.async {
                         patchStore.reload()
                         workingPatchID = nil
-                        alertMessage = "Đã BẬT thành công chức năng: \(item.summary.title)"
+                        alertMessage = "Đã BẬT thành công chức năng: \(title)"
                         showAlert = true
                     }
                 } else {
@@ -238,10 +239,11 @@ struct CheatStoreDashboardView: View {
                         return
                     }
                     try DevicePatchService.restore(receipt: receipt)
+                    let title = item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
                     DispatchQueue.main.async {
                         patchStore.reload()
                         workingPatchID = nil
-                        alertMessage = "Đã TẮT và khôi phục an toàn: \(item.summary.title)"
+                        alertMessage = "Đã TẮT và khôi phục an toàn: \(title)"
                         showAlert = true
                     }
                 }
@@ -270,6 +272,10 @@ private struct CheatItemCard: View {
 
     private let brandGreen = Color(red: 0.06, green: 0.73, blue: 0.51)
 
+    private var displayName: String {
+        item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
+    }
+
     private var isApplied: Bool {
         DevicePatchService.latestReceipt(projectID: item.id) != nil
     }
@@ -289,13 +295,13 @@ private struct CheatItemCard: View {
 
             // Tên và thông tin chức năng
             VStack(alignment: .leading, spacing: 4) {
-                Text(item.summary.title)
+                Text(displayName)
                     .font(.system(size: 15, weight: .bold))
                     .foregroundStyle(.white)
                     .lineLimit(1)
 
-                if let subtitle = item.summary.subtitle, !subtitle.isEmpty {
-                    Text(subtitle)
+                if let author = item.project?.author, !author.isEmpty {
+                    Text("Tác giả: \(author)")
                         .font(.system(size: 12))
                         .foregroundStyle(.gray)
                         .lineLimit(1)
