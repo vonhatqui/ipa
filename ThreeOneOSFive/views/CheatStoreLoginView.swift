@@ -11,8 +11,10 @@ struct CheatStoreLoginView: View {
         self.licenseManager = licenseManager
     }
 
-    private let brandGreen = Color(red: 0.06, green: 0.73, blue: 0.51) // Emerald Neon #10b981
-    private let darkBackground = Color(red: 0.05, green: 0.06, blue: 0.08)
+    // Theme: Xanh Dương Đen (Cyber Blue & AMOLED Dark)
+    private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00) // Electric Cyan #00b8ff
+    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
+    private let darkBackground = Color(red: 0.03, green: 0.05, blue: 0.09)
 
     var body: some View {
         ZStack {
@@ -20,9 +22,9 @@ struct CheatStoreLoginView: View {
             darkBackground
                 .ignoresSafeArea()
 
-            // Vòng tròn phát sáng hiệu ứng Cyberpunk Neon
+            // Vòng tròn phát sáng hiệu ứng Cyberpunk Neon Xanh Dương
             Circle()
-                .fill(brandGreen.opacity(0.15))
+                .fill(brandBlue.opacity(0.15))
                 .blur(radius: 70)
                 .frame(width: 260, height: 260)
                 .offset(y: -180)
@@ -47,13 +49,13 @@ struct CheatStoreLoginView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         Text("KÍCH HOẠT BẢN QUYỀN")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(brandGreen)
+                            .foregroundStyle(brandBlue)
                             .tracking(1.2)
 
                         // Ô Nhập Key
                         HStack {
                             Image(systemName: "key.fill")
-                                .foregroundStyle(brandGreen)
+                                .foregroundStyle(brandBlue)
                                 .frame(width: 24)
 
                             TextField("Nhập mã key của bạn...", text: $inputKey)
@@ -80,8 +82,8 @@ struct CheatStoreLoginView: View {
                                     .font(.system(size: 12, weight: .bold))
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
-                                    .background(brandGreen.opacity(0.2))
-                                    .foregroundStyle(brandGreen)
+                                    .background(brandBlue.opacity(0.2))
+                                    .foregroundStyle(brandBlue)
                                     .cornerRadius(8)
                             }
                         }
@@ -90,7 +92,7 @@ struct CheatStoreLoginView: View {
                         .cornerRadius(12)
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(brandGreen.opacity(0.3), lineWidth: 1)
+                                .stroke(brandBlue.opacity(0.3), lineWidth: 1)
                         )
 
                         // Thông báo lỗi nếu có
@@ -126,20 +128,26 @@ struct CheatStoreLoginView: View {
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 50)
-                            .background(brandGreen)
-                            .foregroundStyle(.black)
+                            .background(
+                                LinearGradient(
+                                    colors: [brandBlue, brandBlueDark],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundStyle(.white)
                             .cornerRadius(14)
-                            .shadow(color: brandGreen.opacity(0.4), radius: 8, y: 4)
+                            .shadow(color: brandBlue.opacity(0.4), radius: 8, y: 4)
                         }
                         .disabled(licenseManager.isVerifying || inputKey.isEmpty)
                         .opacity((licenseManager.isVerifying || inputKey.isEmpty) ? 0.6 : 1.0)
                     }
                     .padding(20)
-                    .background(Color.white.opacity(0.04))
+                    .background(Color(red: 0.06, green: 0.09, blue: 0.16))
                     .cornerRadius(20)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(brandBlue.opacity(0.2), lineWidth: 1)
                     )
                     .padding(.horizontal, 20)
 
@@ -170,7 +178,7 @@ struct CheatStoreLoginView: View {
                                     Text(copiedDeviceID ? "Đã chép" : "Sao chép")
                                 }
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(copiedDeviceID ? brandGreen : .gray)
+                                .foregroundStyle(copiedDeviceID ? brandBlue : .gray)
                             }
                         }
                         .padding(12)
@@ -191,20 +199,20 @@ struct CheatStoreLoginView: View {
                                 Text("Mua Key Tại Web")
                             }
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(brandGreen)
+                            .foregroundStyle(brandBlue)
                             .frame(maxWidth: .infinity)
                             .frame(height: 44)
-                            .background(brandGreen.opacity(0.12))
+                            .background(brandBlue.opacity(0.12))
                             .cornerRadius(12)
                         }
 
                         Button {
-                            if let url = URL(string: "https://t.me/cheatstore") {
+                            if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
                             HStack {
-                                Image(systemName: "questionmark.circle.fill")
+                                Image(systemName: "bubble.left.and.bubble.right.fill")
                                 Text("Hỗ Trợ Admin")
                             }
                             .font(.system(size: 14, weight: .semibold))
@@ -256,24 +264,23 @@ struct CheatStoreLogoView: View {
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.5), lineWidth: 1.5)
+                        .stroke(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.5), lineWidth: 1.5)
                 )
-                .shadow(color: Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.35), radius: 10)
+                .shadow(color: Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.35), radius: 10)
         } else {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.16))
+                    .fill(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.16))
                     .frame(width: size, height: size)
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.5), lineWidth: 1.5)
+                            .stroke(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.5), lineWidth: 1.5)
                     )
 
                 Image(systemName: "bolt.shield.fill")
                     .font(.system(size: size * 0.5, weight: .bold))
-                    .foregroundStyle(Color(red: 0.06, green: 0.73, blue: 0.51))
+                    .foregroundStyle(Color(red: 0.00, green: 0.72, blue: 1.00))
             }
         }
     }
 }
-

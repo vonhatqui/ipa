@@ -6,6 +6,7 @@ enum ThemePreset: String, CaseIterable {
     case royalIndigo    = "Indigo"     // Xanh Indigo sang trọng (iOS Style)
     case emeraldMint    = "Emerald"    // Xanh ngọc lục bảo tươi mát
     case crimsonRuby    = "Crimson"    // Đỏ Ruby cá tính
+    case cyberBlue      = "CyberBlue"  // Xanh dương Cyber AMOLED chuẩn logo CheatStore
 
     var accentColor: Color {
         switch self {
@@ -49,14 +50,21 @@ enum ThemePreset: String, CaseIterable {
                         : UIColor(red: 0.88, green: 0.18, blue: 0.28, alpha: 1.00)
                 }
             )
+        case .cyberBlue:
+            return Color(
+                uiColor: UIColor { traits in
+                    traits.userInterfaceStyle == .dark
+                        ? UIColor(red: 0.00, green: 0.72, blue: 1.00, alpha: 1.00)
+                        : UIColor(red: 0.00, green: 0.55, blue: 0.95, alpha: 1.00)
+                }
+            )
         }
     }
 }
 
 enum AppTheme {
     /// Đổi màu chủ đạo ứng dụng bằng cách thay đổi giá trị dưới đây:
-    /// Các tùy chọn: .originalOrange, .cyberpunkNeon, .royalIndigo, .emeraldMint, .crimsonRuby
-    static let activePreset: ThemePreset = .emeraldMint
+    static let activePreset: ThemePreset = .cyberBlue
 
     static var accent: Color {
         activePreset.accentColor
