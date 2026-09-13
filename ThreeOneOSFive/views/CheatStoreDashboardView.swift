@@ -43,8 +43,23 @@ struct CheatStoreDashboardView: View {
     private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
     private let darkBackground = Color(red: 0.03, green: 0.05, blue: 0.09) // Deep AMOLED Navy
     private let cardBackground = Color(red: 0.06, green: 0.09, blue: 0.16)
-
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
+
+    // Phân loại mod
+    private var aimItems: [PatchLibraryItem] {
+        patchStore.items.filter { !isSkinItem($0) }
+    }
+
+    private var skinItems: [PatchLibraryItem] {
+        patchStore.items.filter { isSkinItem($0) }
+    }
+
+    private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? "").lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("skin") || name.contains("ignis") || name.contains("avatar")
+            || filename.contains("skin") || filename.contains("ignis")
+    }
 
     var body: some View {
         ZStack {
@@ -153,11 +168,11 @@ struct CheatStoreDashboardView: View {
                 .padding(.top, 10)
 
                 // Danh Sách Bản Mod
-                if patchStore.items.isEmpty {
+                if aimItems.isEmpty {
                     emptyStateView
                 } else {
                     VStack(spacing: 14) {
-                        ForEach(patchStore.items) { item in
+                        ForEach(aimItems) { item in
                             CheatItemCard(
                                 item: item,
                                 isWorking: workingPatchID == item.id,
@@ -204,8 +219,103 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    // MARK: - Tab 2: ModSkin (Đang Cập Nhật)
+    // MARK: - Tab 2: ModSkin (Kho Mod Skin VIP)
     private var modSkinView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                // Tiêu đề phần ModSkin
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("KHO MOD SKIN TRANG PHỤC")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+                            .tracking(1.1)
+
+                        Text("Bật / Tắt Skin Trực Tiếp Trước Khi Vào Trận")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+
+                if skinItems.isEmpty {
+                    modSkinEmptyView
+                } else {
+                    VStack(spacing: 14) {
+                        ForEach(skinItems) { item in
+                            ModSkinItemCard(
+                                item: item,
+                                isWorking: workingPatchID == item.id,
+                                brandBlue: brandBlue,
+                                onToggle: { enable in
+                                    handleToggle(item: item, enable: enable)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Hướng dẫn đổi skin
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16))
+                            .foregroundStyle(brandBlue)
+                            .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Quy trình đổi skin:")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+
+                            Text("Thoát hẳn game Free Fire > Bật skin mong muốn trong CheatStore VN > Mở game để thưởng thức hiệu ứng skin. Tắt mod khi muốn trở về mặc định.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+                                .lineSpacing(2)
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(cardBackground)
+                    .cornerRadius(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                    // Yêu cầu skin qua Discord
+                    Button {
+                        if let url = URL(string: discordRenewalURL) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                            Text("Yêu Cầu Thêm Skin Mới (Discord)")
+                        }
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(cardBackground)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(brandBlue.opacity(0.4), lineWidth: 1)
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+                }
+            }
+            .padding(.bottom, 24)
+        }
+    }
+
+    private var modSkinEmptyView: some View {
         VStack(spacing: 20) {
             Spacer()
 
@@ -237,7 +347,7 @@ struct CheatStoreDashboardView: View {
                     Circle()
                         .fill(Color.orange)
                         .frame(width: 6, height: 6)
-                    Text("ĐANG CẬP NHẬT")
+                    Text("ĐANG CẬP NHẬT THÊM")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(Color.orange)
                 }
@@ -246,7 +356,7 @@ struct CheatStoreDashboardView: View {
                 .background(Color.orange.opacity(0.12))
                 .cornerRadius(20)
 
-                Text("Tính năng Mod Skin súng & trang phục tự động đang được hoàn thiện. Vui lòng theo dõi Discord CheatStore để nhận bản update mới nhất!")
+                Text("Đang hoàn thiện thêm các gói Mod Skin súng & trang phục tự động. Vui lòng theo dõi Discord CheatStore để nhận bản update mới nhất!")
                     .font(.system(size: 13))
                     .foregroundStyle(.gray)
                     .multilineTextAlignment(.center)
@@ -601,7 +711,11 @@ private struct CheatItemCard: View {
 
     // Đổi tên chức năng thành "Định Vị & AimNeck 2.0" theo yêu cầu
     private var displayName: String {
-        "Định Vị & AimNeck 2.0"
+        let name = item.project?.name ?? ""
+        if name.lowercased().contains("esp") || name.lowercased().contains("aim") || name.isEmpty {
+            return "Định Vị & AimNeck 2.0"
+        }
+        return name
     }
 
     // Mô tả chữ nhỏ ở dưới: "Antiban - No Backlist"
@@ -674,6 +788,123 @@ private struct CheatItemCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isApplied ? brandBlue.opacity(0.6) : Color.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - ModSkinItemCard (Kho Mod Skin VIP)
+private struct ModSkinItemCard: View {
+    let item: PatchLibraryItem
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    private var displayName: String {
+        let name = item.project?.name ?? ""
+        if name.lowercased().contains("ignis") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
+        }
+        return name.isEmpty ? "MOD SKIN VIP" : name
+    }
+
+    private var subtitle: String {
+        "Skin Trang Phục VIP • Antiban"
+    }
+
+    private var isApplied: Bool {
+        DevicePatchService.latestReceipt(projectID: item.id) != nil
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Icon Skin với hiệu ứng ngọn lửa neon
+            ZStack {
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                (isApplied ? Color.red : brandBlue).opacity(0.2),
+                                Color(red: 0.05, green: 0.07, blue: 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(isApplied ? Color.red : brandBlue.opacity(0.4), lineWidth: 1.5)
+                    )
+
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(isApplied ? Color.red : brandBlue)
+            }
+
+            // Tên và thông tin Skin
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(displayName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("VIP")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.red, Color.orange],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
+                }
+
+                Text(subtitle)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(brandBlue)
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
+            }
+        }
+        .padding(14)
+        .background(Color(red: 0.06, green: 0.09, blue: 0.16))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? brandBlue.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
     }
 }
