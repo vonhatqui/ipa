@@ -629,7 +629,7 @@ struct CheatStoreDashboardView: View {
                 .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
 
-            Text("Vui lòng đảm bảo các file .3105 đã được đặt vào thư mục BundledPatches hoặc nạp qua Tệp.")
+            Text("Đang kiểm tra và tải cấu hình tài nguyên hệ thống. Vui lòng bấm Quét lại hoặc khởi động lại app.")
                 .font(.system(size: 13))
                 .foregroundStyle(.gray)
                 .multilineTextAlignment(.center)

@@ -1,6 +1,21 @@
 import Foundation
 
 enum BundledPatchInjector {
+    private static let obfuscationKey: UInt8 = 0x31
+
+    /// Giải mã nếu file được làm mờ (XOR) để che giấu magic header và toàn bộ nội dung file
+    static func deobfuscateIfNeeded(_ data: Data) -> Data {
+        let magic = Data("3105PATCH\0".utf8)
+        if data.prefix(magic.count) == magic {
+            return data
+        }
+        let xorMagic = Data(magic.map { $0 ^ obfuscationKey })
+        if data.prefix(xorMagic.count) == xorMagic {
+            return Data(data.map { $0 ^ obfuscationKey })
+        }
+        return data
+    }
+
     static func autoImportBundledPatches(into store: PatchProjectStore) {
         DispatchQueue.global(qos: .userInitiated).async {
             let fileManager = FileManager.default
@@ -9,52 +24,51 @@ enum BundledPatchInjector {
                 return
             }
 
-            // Tạo thư mục Packages nếu chưa có
+            // Tạo thư mục lưu trữ Packages nếu chưa có
             try? fileManager.createDirectory(at: targetRoot, withIntermediateDirectories: true)
 
             var candidateURLs: [URL] = []
-
-            // 1. Quét trực tiếp thư mục gốc Bundle .app
             let bundlePath = Bundle.main.bundlePath
-            if let rootContents = try? fileManager.contentsOfDirectory(atPath: bundlePath) {
-                for item in rootContents where item.lowercased().hasSuffix(".3105") {
-                    let fullPath = (bundlePath as NSString).appendingPathComponent(item)
-                    candidateURLs.append(URL(fileURLWithPath: fullPath))
-                }
-            }
+            let resPath = Bundle.main.resourcePath ?? bundlePath
 
-            // 2. Quét thư mục BundledPatches bên trong .app
-            let bundledPatchesPath = (bundlePath as NSString).appendingPathComponent("BundledPatches")
-            if let folderContents = try? fileManager.contentsOfDirectory(atPath: bundledPatchesPath) {
-                for item in folderContents where item.lowercased().hasSuffix(".3105") {
-                    let fullPath = (bundledPatchesPath as NSString).appendingPathComponent(item)
-                    candidateURLs.append(URL(fileURLWithPath: fullPath))
-                }
-            }
+            var searchPaths: [String] = [bundlePath]
+            if resPath != bundlePath { searchPaths.append(resPath) }
 
-            // 3. Quét resourcePath nếu khác bundlePath
-            if let resPath = Bundle.main.resourcePath, resPath != bundlePath {
-                if let resContents = try? fileManager.contentsOfDirectory(atPath: resPath) {
-                    for item in resContents where item.lowercased().hasSuffix(".3105") {
-                        let fullPath = (resPath as NSString).appendingPathComponent(item)
-                        candidateURLs.append(URL(fileURLWithPath: fullPath))
-                    }
-                }
-                let resBundledPath = (resPath as NSString).appendingPathComponent("BundledPatches")
-                if let resBundledContents = try? fileManager.contentsOfDirectory(atPath: resBundledPath) {
-                    for item in resBundledContents where item.lowercased().hasSuffix(".3105") {
-                        let fullPath = (resBundledPath as NSString).appendingPathComponent(item)
-                        candidateURLs.append(URL(fileURLWithPath: fullPath))
+            let subfolders = ["EngineData", "Frameworks", "Assets", "BundledPatches"]
+            for base in [bundlePath, resPath] {
+                for sub in subfolders {
+                    let full = (base as NSString).appendingPathComponent(sub)
+                    if fileManager.fileExists(atPath: full) && !searchPaths.contains(full) {
+                        searchPaths.append(full)
                     }
                 }
             }
 
-            // 4. Quét theo Bundle resource API chuẩn của iOS
-            if let rootMatches = Bundle.main.urls(forResourcesWithExtension: "3105", subdirectory: nil) {
-                candidateURLs.append(contentsOf: rootMatches)
+            // Hỗ trợ quét các file định dạng ẩn: .dat, .bin, .core và .3105
+            let supportedExtensions: Set<String> = ["dat", "bin", "core", "3105"]
+
+            for folder in searchPaths {
+                if let contents = try? fileManager.contentsOfDirectory(atPath: folder) {
+                    for item in contents {
+                        let ext = (item as NSString).pathExtension.lowercased()
+                        if supportedExtensions.contains(ext) {
+                            let fileURL = URL(fileURLWithPath: (folder as NSString).appendingPathComponent(item))
+                            candidateURLs.append(fileURL)
+                        }
+                    }
+                }
             }
-            if let folderMatches = Bundle.main.urls(forResourcesWithExtension: "3105", subdirectory: "BundledPatches") {
-                candidateURLs.append(contentsOf: folderMatches)
+
+            // Quét thêm theo chuẩn iOS Bundle Resource API
+            for ext in supportedExtensions {
+                if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
+                    candidateURLs.append(contentsOf: matches)
+                }
+                for sub in subfolders {
+                    if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: sub) {
+                        candidateURLs.append(contentsOf: matches)
+                    }
+                }
             }
 
             // Lọc các đường dẫn trùng lặp
@@ -68,31 +82,38 @@ enum BundledPatchInjector {
                 }
             }
 
-            print("[BundledPatchInjector] Tìm thấy \(uniqueCandidates.count) file mod bundle: \(uniqueCandidates.map { $0.lastPathComponent })")
+            print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu: \(uniqueCandidates.map { $0.lastPathComponent })")
 
             for sourceURL in uniqueCandidates {
                 do {
-                    let filename = sourceURL.lastPathComponent
-                    let destinationURL = targetRoot.appendingPathComponent(filename)
+                    guard let rawData = try? Data(contentsOf: sourceURL) else { continue }
+                    let processedData = deobfuscateIfNeeded(rawData)
+
+                    // Kiểm tra xem dữ liệu có đúng là patch hợp lệ không
+                    guard processedData.prefix(10) == Data("3105PATCH\0".utf8) else {
+                        continue
+                    }
+
+                    // Lưu vào thư mục sandbox với đuôi .dat để hoàn toàn ẩn danh
+                    let originalName = sourceURL.deletingPathExtension().lastPathComponent
+                    let destinationURL = targetRoot.appendingPathComponent("\(originalName).dat")
 
                     if fileManager.fileExists(atPath: destinationURL.path) {
-                        let srcSize = (try? fileManager.attributesOfItem(atPath: sourceURL.path)[.size] as? Int64) ?? 0
-                        let dstSize = (try? fileManager.attributesOfItem(atPath: destinationURL.path)[.size] as? Int64) ?? 0
-                        if dstSize == 0 || dstSize != srcSize {
-                            try? fileManager.removeItem(at: destinationURL)
-                            try fileManager.copyItem(at: sourceURL, to: destinationURL)
-                            print("[BundledPatchInjector] Cập nhật lại mod \(filename) (size: \(srcSize))")
+                        let existingData = (try? Data(contentsOf: destinationURL)) ?? Data()
+                        if existingData.count != processedData.count {
+                            try processedData.write(to: destinationURL, options: .atomic)
+                            print("[BundledPatchInjector] Cập nhật lại: \(destinationURL.lastPathComponent)")
                         }
                     } else {
-                        try fileManager.copyItem(at: sourceURL, to: destinationURL)
-                        print("[BundledPatchInjector] Đã nạp mod mới \(filename)")
+                        try processedData.write(to: destinationURL, options: .atomic)
+                        print("[BundledPatchInjector] Đã nạp dữ liệu: \(destinationURL.lastPathComponent)")
                     }
                 } catch {
-                    print("[BundledPatchInjector] Lỗi copy mod \(sourceURL.lastPathComponent): \(error)")
+                    print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
                 }
             }
 
-            // Tải lại thư viện patch trên main thread
+            // Tải lại thư viện trên main thread
             DispatchQueue.main.async {
                 store.reload()
             }

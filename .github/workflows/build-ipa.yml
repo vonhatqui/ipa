@@ -43,13 +43,15 @@ jobs:
           cp -v ThreeOneOSFive/CheatLogo.png Payload/cheatstorevip.app/ || true
           cp -v ThreeOneOSFive/CheatStoreLogo.jpg Payload/cheatstorevip.app/ || true
 
-          # Inject toàn bộ file .3105 trong BundledPatches trực tiếp vào .app
-          if [ -d "ThreeOneOSFive/BundledPatches" ]; then
-            echo "Injecting BundledPatches..."
-            mkdir -p Payload/cheatstorevip.app/BundledPatches
-            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/cheatstorevip.app/ || true
-            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/cheatstorevip.app/BundledPatches/ || true
+          # Inject EngineData (.dat) - Hoàn toàn không để lộ file .3105 hay thư mục BundledPatches
+          if [ -d "ThreeOneOSFive/EngineData" ]; then
+            echo "Injecting EngineData (.dat)..."
+            cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ || true
           fi
+          
+          # Dọn dẹp triệt để nếu có file .3105 hoặc thư mục BundledPatches
+          rm -rf Payload/cheatstorevip.app/BundledPatches || true
+          rm -f Payload/cheatstorevip.app/*.3105 || true
           
           IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
           zip -r "$IPA_FILENAME" Payload
