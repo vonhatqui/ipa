@@ -658,33 +658,46 @@ struct CheatStoreDashboardView: View {
         workingPatchID = item.id
 
         DispatchQueue.global(qos: .userInitiated).async {
+            let modName = self.displayName(for: item)
             do {
                 if enable {
                     // BẬT chức năng (Apply)
                     guard let project = item.project else {
                         throw PatchPackageError.unsupportedFormat
                     }
+
+                    // 1. Dọn dẹp sạch receipt cũ bị kẹt nếu có để không bị lỗi projectAlreadyApplied
+                    DevicePatchService.forceCleanupReceipts(projectID: item.id)
+
+                    // 2. Thực hiện Apply bản mod vào game
                     _ = try DevicePatchService.apply(project: project)
+
                     DispatchQueue.main.async {
                         self.patchStore.reload()
                         self.workingPatchID = nil
-                        self.alertMessage = "Đã BẬT thành công chức năng: Định Vị & AimNeck 2.0"
+                        self.alertMessage = "Đã BẬT thành công: \(modName)"
                         self.showAlert = true
                     }
                 } else {
                     // TẮT chức năng (Restore)
-                    guard let receipt = DevicePatchService.latestReceipt(projectID: item.id) else {
-                        DispatchQueue.main.async {
-                            self.patchStore.reload()
-                            self.workingPatchID = nil
+                    let receipt = DevicePatchService.latestReceipt(projectID: item.id)
+                    if let receipt {
+                        do {
+                            try DevicePatchService.restore(receipt: receipt, allowChangedTargets: true)
+                        } catch {
+                            // Fallback phục hồi cưỡng chế: trả lại file gốc hoặc xoá mod file
+                            DevicePatchService.forceRestoreAndCleanup(receipt: receipt, project: item.project)
                         }
-                        return
+                    } else {
+                        // Không tìm thấy receipt nhưng bấm tắt -> dọn dẹp sạch file mod trong game
+                        DevicePatchService.forceCleanup(project: item.project)
+                        DevicePatchService.forceCleanupReceipts(projectID: item.id)
                     }
-                    try DevicePatchService.restore(receipt: receipt)
+
                     DispatchQueue.main.async {
                         self.patchStore.reload()
                         self.workingPatchID = nil
-                        self.alertMessage = "Đã TẮT và khôi phục an toàn: Định Vị & AimNeck 2.0"
+                        self.alertMessage = "Đã TẮT và khôi phục an toàn: \(modName)"
                         self.showAlert = true
                     }
                 }
@@ -692,11 +705,45 @@ struct CheatStoreDashboardView: View {
                 DispatchQueue.main.async {
                     self.patchStore.reload()
                     self.workingPatchID = nil
-                    self.alertMessage = "Thao tác thất bại: \(error.localizedDescription)"
+                    let friendlyError = self.userFriendlyErrorMessage(error)
+                    self.alertMessage = "Thao tác thất bại: \(friendlyError)"
                     self.showAlert = true
                 }
             }
         }
+    }
+
+    private func displayName(for item: PatchLibraryItem) -> String {
+        let name = item.project?.name ?? ""
+        if name.lowercased().contains("esp") || name.lowercased().contains("aim") || name.isEmpty {
+            return "Định Vị & AimNeck 2.0"
+        }
+        if name.lowercased().contains("ignis") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
+        }
+        return name
+    }
+
+    private func userFriendlyErrorMessage(_ error: Error) -> String {
+        if let patchError = error as? PatchPackageError {
+            switch patchError {
+            case .targetAppUnavailable(let bundleID):
+                return "Không tìm thấy dữ liệu game Free Fire (\(bundleID)). Vui lòng kiểm tra đã cài game Free Fire hoặc Free Fire MAX và đã mở game ít nhất một lần!"
+            case .projectAlreadyApplied:
+                return "Chức năng này đã được áp dụng trước đó. Vui lòng tắt đi rồi bật lại."
+            case .applyFailed:
+                return "Không thể ghi dữ liệu mod vào game. Vui lòng mở game Free Fire một lần trước hoặc khởi động lại thiết bị rồi thử lại!"
+            case .restoreFailed:
+                return "Đã xảy ra lỗi khi khôi phục, hệ thống đã tự động dọn dẹp sạch bản mod an toàn."
+            case .restoreTargetsChanged:
+                return "File game đã được cập nhật khi chơi. Hệ thống đã khôi phục bản sạch an toàn."
+            case .unsupportedFormat:
+                return "Dữ liệu cấu hình mod không hợp lệ."
+            default:
+                return patchError.localizedDescription
+            }
+        }
+        return error.localizedDescription
     }
 
     private func formattedDate(_ date: Date) -> String {
@@ -728,7 +775,7 @@ private struct CheatItemCard: View {
     }
 
     private var isApplied: Bool {
-        DevicePatchService.latestReceipt(projectID: item.id) != nil
+        DevicePatchService.isProjectApplied(projectID: item.id)
     }
 
     var body: some View {
@@ -816,7 +863,7 @@ private struct ModSkinItemCard: View {
     }
 
     private var isApplied: Bool {
-        DevicePatchService.latestReceipt(projectID: item.id) != nil
+        DevicePatchService.isProjectApplied(projectID: item.id)
     }
 
     var body: some View {

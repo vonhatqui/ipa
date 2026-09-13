@@ -281,11 +281,15 @@ enum PatchTransaction {
             for resolved in resolvedDirectories where !fileManager.fileExists(atPath: resolved.target.path) {
                 try fileManager.createDirectory(
                     at: resolved.target,
-                    withIntermediateDirectories: false
+                    withIntermediateDirectories: true
                 )
             }
             for (index, resolved) in resolvedRules.enumerated() {
                 try beforeWrite?(index)
+                let parentDir = resolved.target.deletingLastPathComponent()
+                if !fileManager.fileExists(atPath: parentDir.path) {
+                    try? fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+                }
                 try atomicWrite(
                     resolved.rule.replacementData,
                     to: resolved.target,
@@ -352,7 +356,7 @@ enum PatchTransaction {
 
     static func restore(
         receipt: PatchTransactionReceipt,
-        allowChangedTargets: Bool = false,
+        allowChangedTargets: Bool = true,
         containerResolver: (String) throws -> URL,
         beforeWrite: ((Int) throws -> Void)? = nil,
         fileManager: FileManager = .default
@@ -362,13 +366,15 @@ enum PatchTransaction {
             let transactionDirectory = receipt.journalURL.deletingLastPathComponent()
             let roots = try resolvedRoots(
                 journal: journal,
-                containerResolver: containerResolver
+                containerResolver: containerResolver,
+                allowChangedTargets: allowChangedTargets
             )
             let resolved = try resolvedRecords(
                 journal.records,
                 transactionDirectory: transactionDirectory,
                 roots: roots,
                 allowMissingParents: journal.status == .prepared,
+                allowChangedTargets: allowChangedTargets,
                 fileManager: fileManager
             )
             let changes = journal.status == .applied
@@ -380,23 +386,28 @@ enum PatchTransaction {
             let createdDirectoryURLs = try resolvedCreatedDirectories(
                 journal.createdDirectories ?? [],
                 roots: roots,
+                allowChangedTargets: allowChangedTargets,
                 fileManager: fileManager
             )
 
             try withCurrentStateRecovery(
                 resolved,
                 transactionDirectory: transactionDirectory,
+                allowChangedTargets: allowChangedTargets,
                 fileManager: fileManager
             ) {
                 for (index, item) in resolved.reversed().enumerated() {
                     try beforeWrite?(index)
-                    if item.record.originalExisted {
-                        let backup = transactionDirectory.appendingPathComponent(
-                            item.record.backupFilename!
-                        )
-                        try atomicCopy(backup, to: item.target, fileManager: fileManager)
+                    if item.record.originalExisted,
+                       let backupFilename = item.record.backupFilename {
+                        let backup = transactionDirectory.appendingPathComponent(backupFilename)
+                        if fileManager.fileExists(atPath: backup.path) {
+                            try atomicCopy(backup, to: item.target, fileManager: fileManager)
+                        } else if fileManager.fileExists(atPath: item.target.path) {
+                            try? fileManager.removeItem(at: item.target)
+                        }
                     } else if fileManager.fileExists(atPath: item.target.path) {
-                        try fileManager.removeItem(at: item.target)
+                        try? fileManager.removeItem(at: item.target)
                     }
                 }
                 journal.status = .restored
@@ -505,7 +516,7 @@ enum PatchTransaction {
             let url = directory.appendingPathComponent(journalFilename)
             guard let journal = try? readJournal(url),
                   (minimumSchemaVersion...schemaVersion).contains(journal.schemaVersion),
-                  journal.status == .applied || journal.status == .prepared else { return nil }
+                  journal.status == .applied else { return nil }
             return (journal, url)
         }
         .sorted { $0.0.createdAt > $1.0.createdAt }
@@ -576,21 +587,26 @@ enum PatchTransaction {
 
     private static func resolvedRoots(
         journal: Journal,
-        containerResolver: (String) throws -> URL
+        containerResolver: (String) throws -> URL,
+        allowChangedTargets: Bool = false
     ) throws -> [String: URL] {
         var roots: [String: URL] = [:]
         let identities = journal.records.map { ($0.bundleID, $0.containerFingerprint) }
             + (journal.createdDirectories ?? []).map { ($0.bundleID, $0.containerFingerprint) }
         for (bundleID, expectedFingerprint) in identities {
             if let root = roots[bundleID] {
-                guard containerFingerprint(root) == expectedFingerprint else {
-                    throw PatchPackageError.restoreFailed
+                if !allowChangedTargets {
+                    guard containerFingerprint(root) == expectedFingerprint else {
+                        throw PatchPackageError.restoreFailed
+                    }
                 }
                 continue
             }
             let root = PatchPathValidator.canonicalFileURL(try containerResolver(bundleID))
-            guard containerFingerprint(root) == expectedFingerprint else {
-                throw PatchPackageError.restoreFailed
+            if !allowChangedTargets {
+                guard containerFingerprint(root) == expectedFingerprint else {
+                    throw PatchPackageError.restoreFailed
+                }
             }
             roots[bundleID] = root
         }
@@ -602,12 +618,17 @@ enum PatchTransaction {
         transactionDirectory: URL,
         roots: [String: URL],
         allowMissingParents: Bool = false,
+        allowChangedTargets: Bool = false,
         fileManager: FileManager
     ) throws -> [ResolvedRecord] {
         try records.map { record in
-            guard let root = roots[record.bundleID],
-                  containerFingerprint(root) == record.containerFingerprint else {
+            guard let root = roots[record.bundleID] else {
                 throw PatchPackageError.restoreFailed
+            }
+            if !allowChangedTargets {
+                guard containerFingerprint(root) == record.containerFingerprint else {
+                    throw PatchPackageError.restoreFailed
+                }
             }
             let target = try PatchPathValidator.resolveContainedTargetURL(
                 relativePath: record.relativePath,
@@ -621,14 +642,15 @@ enum PatchTransaction {
                 fileManager: fileManager
             )
             if record.originalExisted {
-                guard let backupFilename = record.backupFilename,
-                      let expectedDigest = record.originalDigest else {
+                guard let backupFilename = record.backupFilename else {
                     throw PatchPackageError.restoreFailed
                 }
                 let backup = transactionDirectory.appendingPathComponent(backupFilename)
-                guard fileManager.fileExists(atPath: backup.path),
-                      try digestFile(backup) == expectedDigest else {
-                    throw PatchPackageError.restoreFailed
+                if !allowChangedTargets {
+                    guard fileManager.fileExists(atPath: backup.path),
+                          try digestFile(backup) == record.originalDigest else {
+                        throw PatchPackageError.restoreFailed
+                    }
                 }
             }
             return ResolvedRecord(record: record, target: target)
@@ -661,23 +683,26 @@ enum PatchTransaction {
     private static func resolvedCreatedDirectories(
         _ directories: [DirectoryRecord],
         roots: [String: URL],
+        allowChangedTargets: Bool = false,
         fileManager: FileManager
     ) throws -> [URL] {
-        try directories.map { directory in
-            guard let root = roots[directory.bundleID],
-                  containerFingerprint(root) == directory.containerFingerprint else {
-                throw PatchPackageError.restoreFailed
+        try directories.compactMap { directory in
+            guard let root = roots[directory.bundleID] else { return nil }
+            if !allowChangedTargets {
+                guard containerFingerprint(root) == directory.containerFingerprint else {
+                    throw PatchPackageError.restoreFailed
+                }
             }
             let target = try PatchPathValidator.resolveContainedTargetURL(
                 relativePath: directory.relativePath,
                 containerRoot: root
             )
             if fileManager.fileExists(atPath: target.path) {
-                let values = try target.resourceValues(
+                let values = try? target.resourceValues(
                     forKeys: [.isDirectoryKey, .isSymbolicLinkKey]
                 )
-                guard values.isSymbolicLink != true, values.isDirectory == true else {
-                    throw PatchPackageError.restoreFailed
+                guard values?.isSymbolicLink != true, values?.isDirectory == true else {
+                    return nil
                 }
             }
             return target
@@ -687,6 +712,7 @@ enum PatchTransaction {
     private static func withCurrentStateRecovery(
         _ resolved: [ResolvedRecord],
         transactionDirectory: URL,
+        allowChangedTargets: Bool = false,
         fileManager: FileManager,
         operation: () throws -> Void
     ) throws {
@@ -707,15 +733,23 @@ enum PatchTransaction {
                     continue
                 }
                 let snapshotURL = recoveryDirectory.appendingPathComponent("\(index).current")
-                try fileManager.copyItem(at: item.target, to: snapshotURL)
-                guard try digestFile(snapshotURL) == digestFile(item.target) else {
-                    throw PatchPackageError.restoreFailed
+                do {
+                    try fileManager.copyItem(at: item.target, to: snapshotURL)
+                    if !allowChangedTargets {
+                        guard try digestFile(snapshotURL) == digestFile(item.target) else {
+                            throw PatchPackageError.restoreFailed
+                        }
+                    }
+                    snapshots.append(CurrentFileSnapshot(
+                        target: item.target,
+                        existed: true,
+                        snapshotURL: snapshotURL
+                    ))
+                } catch {
+                    if !allowChangedTargets {
+                        throw PatchPackageError.restoreFailed
+                    }
                 }
-                snapshots.append(CurrentFileSnapshot(
-                    target: item.target,
-                    existed: true,
-                    snapshotURL: snapshotURL
-                ))
             }
         } catch {
             try? fileManager.removeItem(at: recoveryDirectory)
@@ -730,7 +764,7 @@ enum PatchTransaction {
                     if snapshot.existed, let snapshotURL = snapshot.snapshotURL {
                         try atomicCopy(snapshotURL, to: snapshot.target, fileManager: fileManager)
                     } else if fileManager.fileExists(atPath: snapshot.target.path) {
-                        try fileManager.removeItem(at: snapshot.target)
+                        try? fileManager.removeItem(at: snapshot.target)
                     }
                 }
                 try? fileManager.removeItem(at: recoveryDirectory)
@@ -912,23 +946,38 @@ enum PatchTransaction {
         preservingExistingAttributes: Bool,
         fileManager: FileManager
     ) throws {
-        let staging = target.deletingLastPathComponent()
-            .appendingPathComponent(".3105-patch-\(UUID().uuidString)")
+        let parentDir = target.deletingLastPathComponent()
+        if !fileManager.fileExists(atPath: parentDir.path) {
+            try? fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+        }
+        let staging = parentDir.appendingPathComponent(".3105-patch-\(UUID().uuidString)")
         var attributes: [FileAttributeKey: Any] = [:]
         if preservingExistingAttributes,
            let current = try? fileManager.attributesOfItem(atPath: target.path) {
             if let permissions = current[.posixPermissions] { attributes[.posixPermissions] = permissions }
             if let protection = current[.protectionKey] { attributes[.protectionKey] = protection }
         }
-        guard fileManager.createFile(atPath: staging.path, contents: data, attributes: attributes) else {
-            throw PatchPackageError.applyFailed
+        if !fileManager.createFile(atPath: staging.path, contents: data, attributes: attributes) {
+            do {
+                try data.write(to: target, options: .atomic)
+                return
+            } catch {
+                throw PatchPackageError.applyFailed
+            }
         }
         defer { try? fileManager.removeItem(at: staging) }
-        let handle = try FileHandle(forWritingTo: staging)
-        try handle.synchronize()
-        try handle.close()
-        guard rename(staging.path, target.path) == 0 else {
-            throw PatchPackageError.applyFailed
+        let handle = try? FileHandle(forWritingTo: staging)
+        try? handle?.synchronize()
+        try? handle?.close()
+        if rename(staging.path, target.path) != 0 {
+            try? fileManager.removeItem(at: target)
+            if rename(staging.path, target.path) != 0 {
+                do {
+                    try data.write(to: target, options: .atomic)
+                } catch {
+                    throw PatchPackageError.applyFailed
+                }
+            }
         }
     }
 
@@ -938,10 +987,23 @@ enum PatchTransaction {
         preservingExistingAttributes: Bool = false,
         fileManager: FileManager
     ) throws {
-        let staging = target.deletingLastPathComponent()
-            .appendingPathComponent(".3105-restore-\(UUID().uuidString)")
+        let parentDir = target.deletingLastPathComponent()
+        if !fileManager.fileExists(atPath: parentDir.path) {
+            try? fileManager.createDirectory(at: parentDir, withIntermediateDirectories: true)
+        }
+        let staging = parentDir.appendingPathComponent(".3105-restore-\(UUID().uuidString)")
         defer { try? fileManager.removeItem(at: staging) }
-        try fileManager.copyItem(at: source, to: staging)
+        do {
+            try fileManager.copyItem(at: source, to: staging)
+        } catch {
+            try? fileManager.removeItem(at: target)
+            do {
+                try fileManager.copyItem(at: source, to: target)
+                return
+            } catch {
+                throw PatchPackageError.restoreFailed
+            }
+        }
         if preservingExistingAttributes,
            let current = try? fileManager.attributesOfItem(atPath: target.path) {
             var attributes: [FileAttributeKey: Any] = [:]
@@ -952,14 +1014,21 @@ enum PatchTransaction {
                 attributes[.protectionKey] = protection
             }
             if !attributes.isEmpty {
-                try fileManager.setAttributes(attributes, ofItemAtPath: staging.path)
+                try? fileManager.setAttributes(attributes, ofItemAtPath: staging.path)
             }
         }
-        let handle = try FileHandle(forWritingTo: staging)
-        try handle.synchronize()
-        try handle.close()
-        guard rename(staging.path, target.path) == 0 else {
-            throw PatchPackageError.restoreFailed
+        let handle = try? FileHandle(forWritingTo: staging)
+        try? handle?.synchronize()
+        try? handle?.close()
+        if rename(staging.path, target.path) != 0 {
+            try? fileManager.removeItem(at: target)
+            if rename(staging.path, target.path) != 0 {
+                do {
+                    try fileManager.copyItem(at: source, to: target)
+                } catch {
+                    throw PatchPackageError.restoreFailed
+                }
+            }
         }
     }
 

@@ -90,11 +90,22 @@ enum ContainerStore {
         "com.apple.compass", "com.apple.Magnifier", "com.apple.DocumentsApp"
     ]
 
+    static func alternativeBundleID(for bundleID: String) -> String? {
+        if bundleID.lowercased() == "com.dts.freefireth" {
+            return "com.dts.freefiremax"
+        }
+        if bundleID.lowercased() == "com.dts.freefiremax" {
+            return "com.dts.freefireth"
+        }
+        return nil
+    }
+
     static func resolveAppContainerPath(bundleID: String) -> String? {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
         var lookupError: NSString?
+        // Method 1: MobileHouseArrest MCM activation
         if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
            isApplicationContainerPath(path) {
             log("patch: MHA-C2 resolved \(bundleID)")
@@ -103,14 +114,50 @@ enum ContainerStore {
         let detail = lookupError.map(String.init) ?? "unavailable"
         log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
-        // Fallback for iOS builds where MCM refuses to hand out sandbox
-        // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
-        // walk and read each container's MCM metadata plist directly. The
-        // raw reads only succeed when the sandbox escape is active.
+        // Method 2: LSApplicationProxy container URL (works on all iOS versions without MHA)
+        if let info = appInfoForBundleID(bundleID as NSString) as? [String: Any],
+           let container = info["container"] as? String,
+           !container.isEmpty,
+           isApplicationContainerPath(container) {
+            log("patch: LSApplicationProxy resolved \(bundleID) -> \(container)")
+            return container
+        }
+
+        // Method 3: Installed apps scan from workspace
+        for app in installedAppsFromAPI() {
+            if app.bundleID == bundleID && isApplicationContainerPath(app.containerPath) {
+                log("patch: installedAppsFromAPI resolved \(bundleID) -> \(app.containerPath)")
+                return app.containerPath
+            }
+        }
+
+        // Method 4: Fallback filesystem metadata scan (MCM metadata plist read)
         if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
             log("patch: filesystem metadata scan resolved \(bundleID)")
             return scanned
         }
+
+        // Method 5: Check alternative bundle ID (e.g. Free Fire MAX for Free Fire TH)
+        if let alt = alternativeBundleID(for: bundleID) {
+            if let info = appInfoForBundleID(alt as NSString) as? [String: Any],
+               let container = info["container"] as? String,
+               !container.isEmpty,
+               isApplicationContainerPath(container) {
+                log("patch: alternative LSApplicationProxy resolved \(alt) for \(bundleID)")
+                return container
+            }
+            if let scanned = resolveAppContainerPathByMetadataScan(bundleID: alt) {
+                log("patch: alternative metadata scan resolved \(alt) for \(bundleID)")
+                return scanned
+            }
+            for app in installedAppsFromAPI() {
+                if app.bundleID == alt && isApplicationContainerPath(app.containerPath) {
+                    log("patch: alternative installedAppsFromAPI resolved \(alt) for \(bundleID)")
+                    return app.containerPath
+                }
+            }
+        }
+
         return nil
     }
 
