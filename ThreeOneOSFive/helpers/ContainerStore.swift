@@ -115,7 +115,7 @@ enum ContainerStore {
         log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
         // Method 2: LSApplicationProxy container URL (works on all iOS versions without MHA)
-        if let info = appInfoForBundleID(bundleID as NSString) as? [String: Any],
+        if let info = appInfoForBundleID(bundleID) as? [String: Any],
            let container = info["container"] as? String,
            !container.isEmpty,
            isApplicationContainerPath(container) {
@@ -139,7 +139,7 @@ enum ContainerStore {
 
         // Method 5: Check alternative bundle ID (e.g. Free Fire MAX for Free Fire TH)
         if let alt = alternativeBundleID(for: bundleID) {
-            if let info = appInfoForBundleID(alt as NSString) as? [String: Any],
+            if let info = appInfoForBundleID(alt) as? [String: Any],
                let container = info["container"] as? String,
                !container.isEmpty,
                isApplicationContainerPath(container) {
