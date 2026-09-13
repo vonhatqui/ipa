@@ -37,14 +37,18 @@ jobs:
       - name: Đóng gói thành file IPA
         run: |
           mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/3105.app Payload/
+          cp -R build/Build/Products/Release-iphoneos/3105.app Payload/cheatstorevip.app
           
+          # Inject Logo vào Bundle để app hiển thị tức thì
+          cp -v ThreeOneOSFive/CheatLogo.png Payload/cheatstorevip.app/ || true
+          cp -v ThreeOneOSFive/CheatStoreLogo.jpg Payload/cheatstorevip.app/ || true
+
           # Inject toàn bộ file .3105 trong BundledPatches trực tiếp vào .app
           if [ -d "ThreeOneOSFive/BundledPatches" ]; then
             echo "Injecting BundledPatches..."
-            mkdir -p Payload/3105.app/BundledPatches
-            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/3105.app/ || true
-            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/3105.app/BundledPatches/ || true
+            mkdir -p Payload/cheatstorevip.app/BundledPatches
+            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/cheatstorevip.app/ || true
+            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/cheatstorevip.app/BundledPatches/ || true
           fi
           
           IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"

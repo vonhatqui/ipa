@@ -31,21 +31,8 @@ struct CheatStoreLoginView: View {
                 VStack(spacing: 24) {
                     // Header Logo & Tên Shop
                     VStack(spacing: 12) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                .fill(brandGreen.opacity(0.16))
-                                .frame(width: 84, height: 84)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                        .stroke(brandGreen.opacity(0.5), lineWidth: 1.5)
-                                )
-
-                            Image(systemName: "bolt.shield.fill")
-                                .font(.system(size: 44, weight: .bold))
-                                .foregroundStyle(brandGreen)
-                                .shadow(color: brandGreen.opacity(0.8), radius: 12)
-                        }
-                        .padding(.top, 40)
+                        CheatStoreLogoView(size: 84, cornerRadius: 22)
+                            .padding(.top, 40)
 
                         Text("CheatStore VN")
                             .font(.system(size: 28, weight: .black, design: .rounded))
@@ -236,3 +223,57 @@ struct CheatStoreLoginView: View {
         }
     }
 }
+
+struct CheatStoreLogoView: View {
+    var size: CGFloat = 84
+    var cornerRadius: CGFloat = 22
+
+    private var loadedImage: UIImage? {
+        if let img = UIImage(named: "CheatLogo") {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "CheatLogo", ofType: "png"),
+           let img = UIImage(contentsOfFile: path) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "CheatStoreLogo", ofType: "png"),
+           let img = UIImage(contentsOfFile: path) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "CheatStoreLogo", ofType: "jpg"),
+           let img = UIImage(contentsOfFile: path) {
+            return img
+        }
+        return nil
+    }
+
+    var body: some View {
+        if let image = loadedImage {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.5), lineWidth: 1.5)
+                )
+                .shadow(color: Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.35), radius: 10)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.16))
+                    .frame(width: size, height: size)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(Color(red: 0.06, green: 0.73, blue: 0.51).opacity(0.5), lineWidth: 1.5)
+                    )
+
+                Image(systemName: "bolt.shield.fill")
+                    .font(.system(size: size * 0.5, weight: .bold))
+                    .foregroundStyle(Color(red: 0.06, green: 0.73, blue: 0.51))
+            }
+        }
+    }
+}
+

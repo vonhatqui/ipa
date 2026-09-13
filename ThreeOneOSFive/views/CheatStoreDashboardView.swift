@@ -10,7 +10,6 @@ struct CheatStoreDashboardView: View {
     @State private var workingPatchID: UUID?
     @State private var alertMessage: String?
     @State private var showAlert = false
-    @State private var showFullManager = false
 
     private let brandGreen = Color(red: 0.06, green: 0.73, blue: 0.51)
     private let darkBackground = Color(red: 0.05, green: 0.06, blue: 0.08)
@@ -70,26 +69,6 @@ struct CheatStoreDashboardView: View {
                             }
                             .padding(.horizontal, 20)
                         }
-
-                        // Phím tắt mở Trình quản lý nâng cao (File Browser, Cleaner)
-                        VStack(spacing: 12) {
-                            Button {
-                                showFullManager = true
-                            } label: {
-                                HStack {
-                                    Image(systemName: "slider.horizontal.3")
-                                    Text("Mở Công Cụ Nâng Cao (Files / Dọn Dẹp)")
-                                }
-                                .font(.system(size: 14, weight: .semibold))
-                                .foregroundStyle(.white.opacity(0.8))
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 46)
-                                .background(Color.white.opacity(0.06))
-                                .cornerRadius(12)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
                     }
                     .padding(.bottom, 30)
                 }
@@ -106,14 +85,6 @@ struct CheatStoreDashboardView: View {
                             .foregroundStyle(.red.opacity(0.8))
                     }
                 }
-            }
-            .sheet(isPresented: $showFullManager) {
-                ContentView()
-                    .environmentObject(appState)
-                    .environmentObject(patchDraftCoordinator)
-                    .environmentObject(fileOperationCoordinator)
-                    .environmentObject(patchStore)
-                    .environmentObject(repositoryStore)
             }
             .alert(isPresented: $showAlert) {
                 Alert(
@@ -301,15 +272,15 @@ private struct CheatItemCard: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Icon chức năng
+            // Icon chức năng với logo CheatStore
             ZStack {
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(isApplied ? brandGreen.opacity(0.2) : Color.white.opacity(0.06))
-                    .frame(width: 48, height: 48)
+                CheatStoreLogoView(size: 48, cornerRadius: 12)
 
-                Image(systemName: isApplied ? "cross.vial.fill" : "cross.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(isApplied ? brandGreen : .gray)
+                if isApplied {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(brandGreen, lineWidth: 2)
+                        .frame(width: 48, height: 48)
+                }
             }
 
             // Tên và thông tin chức năng
