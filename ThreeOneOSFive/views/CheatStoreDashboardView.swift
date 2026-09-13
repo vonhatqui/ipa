@@ -656,9 +656,9 @@ struct CheatStoreDashboardView: View {
     // MARK: - Toggle Mod Action
     private func handleToggle(item: PatchLibraryItem, enable: Bool) {
         workingPatchID = item.id
+        let modName = displayName(for: item)
 
         DispatchQueue.global(qos: .userInitiated).async {
-            let modName = self.displayName(for: item)
             do {
                 if enable {
                     // BẬT chức năng (Apply)

@@ -619,7 +619,7 @@ enum PatchTransaction {
         roots: [String: URL],
         allowMissingParents: Bool = false,
         allowChangedTargets: Bool = false,
-        fileManager: FileManager
+        fileManager: FileManager = .default
     ) throws -> [ResolvedRecord] {
         try records.map { record in
             guard let root = roots[record.bundleID] else {
@@ -659,7 +659,7 @@ enum PatchTransaction {
 
     private static func changedTargets(
         in resolved: [ResolvedRecord],
-        fileManager: FileManager
+        fileManager: FileManager = .default
     ) throws -> [PatchTargetChange] {
         try resolved.compactMap { item in
             guard fileManager.fileExists(atPath: item.target.path) else {
@@ -684,7 +684,7 @@ enum PatchTransaction {
         _ directories: [DirectoryRecord],
         roots: [String: URL],
         allowChangedTargets: Bool = false,
-        fileManager: FileManager
+        fileManager: FileManager = .default
     ) throws -> [URL] {
         try directories.compactMap { directory in
             guard let root = roots[directory.bundleID] else { return nil }
@@ -713,7 +713,7 @@ enum PatchTransaction {
         _ resolved: [ResolvedRecord],
         transactionDirectory: URL,
         allowChangedTargets: Bool = false,
-        fileManager: FileManager,
+        fileManager: FileManager = .default,
         operation: () throws -> Void
     ) throws {
         let recoveryDirectory = transactionDirectory.appendingPathComponent(
