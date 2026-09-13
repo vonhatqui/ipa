@@ -91,9 +91,9 @@ enum DevicePatchService {
         let fileManager = FileManager.default
         let transactionDir = receipt?.journalURL.deletingLastPathComponent()
 
-        if let project {
+        if let project = project {
             let bundleIDs = project.allBundleIdentifiers
-            let roots = (try? withResolvedContainers(bundleIDs: bundleIDs) { $0 }) ?? [:]
+            let roots: [String: URL] = (try? resolveContainers(bundleIDs: bundleIDs)) ?? [:]
 
             for rule in project.rules {
                 guard let root = roots[rule.bundleID] else { continue }
@@ -104,7 +104,7 @@ enum DevicePatchService {
 
                 // Kiểm tra xem có file backup trong transaction directory không
                 var restoredFromBackup = false
-                if let transactionDir {
+                if let transactionDir = transactionDir {
                     let backupURL = transactionDir.appendingPathComponent("\(rule.id.uuidString).original")
                     if fileManager.fileExists(atPath: backupURL.path) {
                         try? fileManager.removeItem(at: target)
@@ -121,19 +121,19 @@ enum DevicePatchService {
         }
 
         // Xoá sạch receipt kẹt
-        if let project {
+        if let project = project {
             forceCleanupReceipts(projectID: project.id)
-        } else if let receipt {
+        } else if let receipt = receipt {
             forceCleanupReceipts(projectID: receipt.projectID)
         }
     }
 
     /// Dọn dẹp sạch file mod khi không tìm thấy receipt
     static func forceCleanup(project: PatchProject?) {
-        guard let project else { return }
+        guard let project = project else { return }
         let fileManager = FileManager.default
         let bundleIDs = project.allBundleIdentifiers
-        let roots = (try? withResolvedContainers(bundleIDs: bundleIDs) { $0 }) ?? [:]
+        let roots: [String: URL] = (try? resolveContainers(bundleIDs: bundleIDs)) ?? [:]
 
         for rule in project.rules {
             guard let root = roots[rule.bundleID] else { continue }
@@ -152,10 +152,7 @@ enum DevicePatchService {
         project.allBundleIdentifiers
     }
 
-    private static func withResolvedContainers<T>(
-        bundleIDs: [String],
-        operation: ([String: URL]) throws -> T
-    ) throws -> T {
+    static func resolveContainers(bundleIDs: [String]) throws -> [String: URL] {
         var roots: [String: URL] = [:]
 
         for bundleID in bundleIDs {
@@ -171,6 +168,14 @@ enum DevicePatchService {
                 throw PatchPackageError.targetAppUnavailable(bundleID)
             }
         }
+        return roots
+    }
+
+    private static func withResolvedContainers<T>(
+        bundleIDs: [String],
+        operation: ([String: URL]) throws -> T
+    ) throws -> T {
+        let roots = try resolveContainers(bundleIDs: bundleIDs)
         return try operation(roots)
     }
 }

@@ -338,12 +338,15 @@ enum PatchTransaction {
             }
             let roots = try resolvedRoots(
                 journal: journal,
-                containerResolver: containerResolver
+                containerResolver: containerResolver,
+                allowChangedTargets: false
             )
             let resolved = try resolvedRecords(
                 journal.records,
                 transactionDirectory: receipt.journalURL.deletingLastPathComponent(),
                 roots: roots,
+                allowMissingParents: false,
+                allowChangedTargets: false,
                 fileManager: fileManager
             )
             return PatchRestoreInspection(
@@ -438,12 +441,15 @@ enum PatchTransaction {
             let transactionDirectory = receipt.journalURL.deletingLastPathComponent()
             let roots = try resolvedRoots(
                 journal: journal,
-                containerResolver: containerResolver
+                containerResolver: containerResolver,
+                allowChangedTargets: false
             )
             let resolved = try resolvedRecords(
                 journal.records,
                 transactionDirectory: transactionDirectory,
                 roots: roots,
+                allowMissingParents: false,
+                allowChangedTargets: false,
                 fileManager: fileManager
             )
             let fallbackRules = Dictionary(
@@ -470,6 +476,7 @@ enum PatchTransaction {
             try withCurrentStateRecovery(
                 resolved,
                 transactionDirectory: transactionDirectory,
+                allowChangedTargets: false,
                 fileManager: fileManager
             ) {
                 for (index, item) in resolved.enumerated() {

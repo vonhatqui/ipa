@@ -24,6 +24,7 @@ jobs:
 
       - name: Biên dịch ứng dụng (xcodebuild)
         run: |
+          set -o pipefail
           xcodebuild -project ThreeOneOSFive.xcodeproj \
             -scheme 3105 \
             -configuration Release \
@@ -32,7 +33,13 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            build
+            build 2>&1 | tee xcodebuild.log || {
+              echo "::error title=Xcode Compilation Failed::xcodebuild finished with error"
+              echo "==================== COMPILER ERRORS ===================="
+              grep -E "error:" xcodebuild.log || tail -n 80 xcodebuild.log
+              echo "========================================================"
+              exit 1
+            }
 
       - name: Đóng gói thành file IPA
         run: |
