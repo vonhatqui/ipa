@@ -1,0 +1,234 @@
+import SwiftUI
+import UIKit
+
+struct CheatStoreLoginView: View {
+    @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
+    @State private var inputKey: String = ""
+    @State private var copiedDeviceID = false
+    @State private var showShopWeb = false
+
+    private let brandGreen = Color(red: 0.06, green: 0.73, blue: 0.51) // Emerald Neon #10b981
+    private let darkBackground = Color(red: 0.05, green: 0.06, blue: 0.08)
+
+    var body: some View {
+        ZStack {
+            // Nền AMOLED Dark
+            darkBackground
+                .ignoresSafeArea()
+
+            // Vòng tròn phát sáng hiệu ứng Cyberpunk Neon
+            Circle()
+                .fill(brandGreen.opacity(0.15))
+                .blur(radius: 70)
+                .frame(width: 260, height: 260)
+                .offset(y: -180)
+
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // Header Logo & Tên Shop
+                    VStack(spacing: 12) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                .fill(brandGreen.opacity(0.16))
+                                .frame(width: 84, height: 84)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                                        .stroke(brandGreen.opacity(0.5), lineWidth: 1.5)
+                                )
+
+                            Image(systemName: "bolt.shield.fill")
+                                .font(.system(size: 44, weight: .bold))
+                                .foregroundStyle(brandGreen)
+                                .shadow(color: brandGreen.opacity(0.8), radius: 12)
+                        }
+                        .padding(.top, 40)
+
+                        Text("CheatStore VN")
+                            .font(.system(size: 28, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Text("Hệ Thống Phân Phối Tiện Ích & Mod Game iOS")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+
+                    // Card Nhập Key
+                    VStack(alignment: .leading, spacing: 18) {
+                        Text("KÍCH HOẠT BẢN QUYỀN")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandGreen)
+                            .tracking(1.2)
+
+                        // Ô Nhập Key
+                        HStack {
+                            Image(systemName: "key.fill")
+                                .foregroundStyle(brandGreen)
+                                .frame(width: 24)
+
+                            TextField("Nhập mã key của bạn...", text: $inputKey)
+                                .textInputAutocapitalization(.characters)
+                                .autocorrectionDisabled()
+                                .foregroundStyle(.white)
+                                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+
+                            if !inputKey.isEmpty {
+                                Button {
+                                    inputKey = ""
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundStyle(.gray)
+                                }
+                            }
+
+                            Button {
+                                if let text = UIPasteboard.general.string {
+                                    inputKey = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                                }
+                            } label: {
+                                Text("Dán")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 6)
+                                    .background(brandGreen.opacity(0.2))
+                                    .foregroundStyle(brandGreen)
+                                    .cornerRadius(8)
+                            }
+                        }
+                        .padding(14)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(brandGreen.opacity(0.3), lineWidth: 1)
+                        )
+
+                        // Thông báo lỗi nếu có
+                        if let error = licenseManager.errorMessage {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .foregroundStyle(.red)
+                                Text(error)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.red)
+                            }
+                        }
+
+                        // Nút Kích Hoạt
+                        Button {
+                            Task {
+                                _ = await licenseManager.activateKey(inputKey)
+                            }
+                        } label: {
+                            HStack {
+                                if licenseManager.isVerifying {
+                                    ProgressView()
+                                        .tint(.black)
+                                        .padding(.trailing, 4)
+                                    Text("Đang kiểm tra...")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundStyle(.black)
+                                } else {
+                                    Image(systemName: "checkmark.seal.fill")
+                                    Text("Kích Hoạt Ngay")
+                                        .font(.system(size: 16, weight: .bold))
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(brandGreen)
+                            .foregroundStyle(.black)
+                            .cornerRadius(14)
+                            .shadow(color: brandGreen.opacity(0.4), radius: 8, y: 4)
+                        }
+                        .disabled(licenseManager.isVerifying || inputKey.isEmpty)
+                        .opacity((licenseManager.isVerifying || inputKey.isEmpty) ? 0.6 : 1.0)
+                    }
+                    .padding(20)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+
+                    // Thông tin thiết bị (Device ID)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("MÃ THIẾT BỊ (DEVICE ID)")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.gray)
+
+                        HStack {
+                            Text(licenseManager.deviceID)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+
+                            Spacer()
+
+                            Button {
+                                UIPasteboard.general.string = licenseManager.deviceID
+                                copiedDeviceID = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedDeviceID = false
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedDeviceID ? "checkmark" : "doc.on.doc")
+                                    Text(copiedDeviceID ? "Đã chép" : "Sao chép")
+                                }
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(copiedDeviceID ? brandGreen : .gray)
+                            }
+                        }
+                        .padding(12)
+                        .background(Color.white.opacity(0.03))
+                        .cornerRadius(10)
+                    }
+                    .padding(.horizontal, 24)
+
+                    // Nút Hỗ trợ / Mua Key
+                    HStack(spacing: 14) {
+                        Button {
+                            if let url = URL(string: "https://cheatingenginexyz.online") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "cart.fill")
+                                Text("Mua Key Tại Web")
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(brandGreen)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(brandGreen.opacity(0.12))
+                            .cornerRadius(12)
+                        }
+
+                        Button {
+                            if let url = URL(string: "https://t.me/cheatstore") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "questionmark.circle.fill")
+                                Text("Hỗ Trợ Admin")
+                            }
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(12)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                }
+                .padding(.bottom, 40)
+            }
+        }
+    }
+}
