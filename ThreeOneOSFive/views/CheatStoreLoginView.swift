@@ -141,6 +141,26 @@ struct CheatStoreLoginView: View {
                         }
                         .disabled(licenseManager.isVerifying || inputKey.isEmpty)
                         .opacity((licenseManager.isVerifying || inputKey.isEmpty) ? 0.6 : 1.0)
+
+                        // Nút mở Popup Alert Controller nhập Key theo yêu cầu
+                        Button {
+                            presentKeyEntryPopup()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "rectangle.and.pencil.and.ellipsis")
+                                Text("Mở Hộp Thoại Nhập Key (Popup)")
+                            }
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 40)
+                            .background(brandBlue.opacity(0.12))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(brandBlue.opacity(0.3), lineWidth: 1)
+                            )
+                        }
                     }
                     .padding(20)
                     .background(Color(red: 0.06, green: 0.09, blue: 0.16))
@@ -229,6 +249,68 @@ struct CheatStoreLoginView: View {
                 .padding(.bottom, 40)
             }
         }
+        .onAppear {
+            // Tự động bật Popup Alert nhập key nếu chưa kích hoạt và chưa có key
+            if !licenseManager.isActivated && licenseManager.activeKey.isEmpty {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    self.presentKeyEntryPopup()
+                }
+            }
+        }
+    }
+
+    // MARK: - Hộp Thoại Popup (Alert Controller) Nhập Key
+    private func presentKeyEntryPopup(promptMessage: String? = nil) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootVC = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            return
+        }
+
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController {
+            topVC = presented
+        }
+
+        let alert = UIAlertController(
+            title: "KÍCH HOẠT BẢN QUYỀN",
+            message: promptMessage ?? "Vui lòng nhập mã key 16 ký tự của bạn để kích hoạt CheatStore VN:",
+            preferredStyle: .alert
+        )
+
+        alert.addTextField { tf in
+            tf.placeholder = "Nhập mã key (16 ký tự)..."
+            tf.autocapitalizationType = .allCharacters
+            tf.autocorrectionType = .no
+            if !self.inputKey.isEmpty {
+                tf.text = self.inputKey
+            } else if let clip = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines),
+                      !clip.isEmpty, clip.count <= 32 {
+                tf.text = clip
+            }
+        }
+
+        alert.addAction(UIAlertAction(title: "Hủy", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Kích Hoạt", style: .default) { _ in
+            guard let key = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !key.isEmpty else {
+                self.presentKeyEntryPopup(promptMessage: "Mã key không được để trống! Vui lòng nhập lại:")
+                return
+            }
+
+            self.inputKey = key
+            Task {
+                let success = await self.licenseManager.activateKey(key)
+                if !success {
+                    let errMsg = self.licenseManager.errorMessage ?? "Mã key không hợp lệ hoặc đã hết hạn!"
+                    await MainActor.run {
+                        // Hiển thị thông báo lỗi từ server và yêu cầu nhập lại, không cho vào app
+                        self.presentKeyEntryPopup(promptMessage: "\(errMsg)\nVui lòng kiểm tra và nhập lại mã key:")
+                    }
+                }
+            }
+        })
+
+        topVC.present(alert, animated: true)
     }
 }
 

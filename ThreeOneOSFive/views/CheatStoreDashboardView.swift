@@ -434,6 +434,12 @@ struct CheatStoreDashboardView: View {
                                 Text(formattedDate(expiry))
                                     .font(.system(size: 16, weight: .bold, design: .rounded))
                                     .foregroundStyle(.white)
+
+                                if licenseManager.daysLeft > 0 {
+                                    Text("Thời hạn còn lại: \(String(format: "%.1f", licenseManager.daysLeft)) ngày")
+                                        .font(.system(size: 11, weight: .semibold))
+                                        .foregroundStyle(brandBlue)
+                                }
                             } else {
                                 Text("Đã Kích Hoạt")
                                     .font(.system(size: 16, weight: .bold))
@@ -486,19 +492,17 @@ struct CheatStoreDashboardView: View {
                                 .font(.system(size: 11, weight: .bold))
                                 .foregroundStyle(.gray)
 
-                            Text(UIDevice.current.identifierForVendor?.uuidString ?? "Không xác định")
+                            Text(licenseManager.deviceID)
                                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                                 .foregroundStyle(.gray)
                                 .lineLimit(1)
                         }
                         Spacer()
                         Button {
-                            if let id = UIDevice.current.identifierForVendor?.uuidString {
-                                UIPasteboard.general.string = id
-                                copiedDeviceID = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    self.copiedDeviceID = false
-                                }
+                            UIPasteboard.general.string = licenseManager.deviceID
+                            copiedDeviceID = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                self.copiedDeviceID = false
                             }
                         } label: {
                             Text(copiedDeviceID ? "Đã chép" : "Sao chép")
