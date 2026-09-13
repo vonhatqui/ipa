@@ -26,6 +26,9 @@ final class CheatStoreLicenseManager: ObservableObject {
     @Published var activeKey: String = ""
     @Published var planName: String = ""
     @Published var expirationDate: Date?
+    @Published var expiresAtString: String = ""
+    @Published var activatedAtString: String = ""
+    @Published var secondsLeft: Double = 0
     @Published var daysLeft: Double = 0
     @Published var isVerifying: Bool = false
     @Published var isAutoChecking: Bool = false
@@ -42,7 +45,58 @@ final class CheatStoreLicenseManager: ObservableObject {
     private let storageKeyExpiry = "cheatstore_expiry_timestamp"
     private let storageKeyExpiryStr = "cheatstore_expiry_date_str"
     private let storageKeyDaysLeft = "cheatstore_days_left"
+    private let storageKeySecondsLeft = "cheatstore_seconds_left"
     private let storageKeyDeviceID = "cheatstore_device_id"
+
+    /// Chuỗi hiển thị thời hạn còn lại (VD: 1 ngày 0 giờ, hoặc 23 giờ 45 phút)
+    var formattedRemainingTime: String {
+        let remainingSeconds: Double
+        if secondsLeft > 0 {
+            remainingSeconds = secondsLeft
+        } else if let exp = expirationDate {
+            remainingSeconds = max(0, exp.timeIntervalSince(Date()))
+        } else {
+            remainingSeconds = 0
+        }
+
+        if remainingSeconds <= 0 {
+            return "Hết hạn"
+        }
+
+        let totalSec = Int(remainingSeconds)
+        let days = totalSec / 86400
+        let hours = (totalSec % 86400) / 3600
+        let minutes = (totalSec % 3600) / 60
+
+        if days > 0 {
+            if hours > 0 {
+                return "\(days) ngày \(hours) giờ"
+            } else {
+                return "\(days) ngày"
+            }
+        } else if hours > 0 {
+            if minutes > 0 {
+                return "\(hours) giờ \(minutes) phút"
+            } else {
+                return "\(hours) giờ"
+            }
+        } else {
+            return "\(max(1, minutes)) phút"
+        }
+    }
+
+    /// Nội dung tóm tắt hiển thị thông báo sau khi nhập key thành công
+    var successAlertSummary: String {
+        var lines: [String] = []
+        if !planName.isEmpty {
+            lines.append("• Gói bản quyền: \(planName)")
+        }
+        lines.append("• Thời hạn còn lại: \(formattedRemainingTime)")
+        if !expiresAtString.isEmpty {
+            lines.append("• Hạn dùng đến: \(expiresAtString)")
+        }
+        return lines.joined(separator: "\n")
+    }
 
     /// Mã định danh duy nhất của thiết bị iOS (IDFV)
     var deviceID: String {
@@ -63,14 +117,18 @@ final class CheatStoreLicenseManager: ObservableObject {
         let savedKey = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let savedPlan = UserDefaults.standard.string(forKey: storageKeyPlan) ?? "Gói VIP"
         let savedExpiryTimestamp = UserDefaults.standard.double(forKey: storageKeyExpiry)
+        let savedExpiryStr = UserDefaults.standard.string(forKey: storageKeyExpiryStr) ?? ""
         let savedActivated = UserDefaults.standard.bool(forKey: storageKeyActivation)
         let savedDaysLeft = UserDefaults.standard.double(forKey: storageKeyDaysLeft)
+        let savedSecondsLeft = UserDefaults.standard.double(forKey: storageKeySecondsLeft)
 
         // Kiểm tra trong bộ nhớ máy xem có lưu key cũ hay không
         if savedActivated, !savedKey.isEmpty {
             self.activeKey = savedKey
             self.planName = savedPlan
             self.daysLeft = savedDaysLeft
+            self.secondsLeft = savedSecondsLeft
+            self.expiresAtString = savedExpiryStr
             if savedExpiryTimestamp > 0 {
                 self.expirationDate = Date(timeIntervalSince1970: savedExpiryTimestamp)
             }
@@ -81,7 +139,7 @@ final class CheatStoreLicenseManager: ObservableObject {
                 await self.performSilentAutoVerification(key: savedKey)
             }
         } else {
-            // CHƯA CÓ KEY: Chưa kích hoạt, sẵn sàng hiển thị popup nhập key
+            // CHƯA CÓ KEY: Chưa kích hoạt
             self.isActivated = false
         }
     }
@@ -165,11 +223,12 @@ final class CheatStoreLicenseManager: ObservableObject {
                 if status == "success" || code.uppercased() == "KEY_VALID" {
                     // a. Khi KEY HỢP LỆ (Status Code 200)
                     let package = json["package"] as? String ?? "Gói VIP"
-                    let expiresAtStr = json["expires_at"] as? String
+                    let expiresAtStr = json["expires_at"] as? String ?? ""
+                    let activatedAtStr = json["activated_at"] as? String ?? ""
                     let secondsLeft = (json["seconds_left"] as? NSNumber)?.doubleValue
-                        ?? Double(json["seconds_left"] as? String ?? "")
+                        ?? Double("\(json["seconds_left"] ?? "")") ?? 0
                     let daysLeftVal = (json["days_left"] as? NSNumber)?.doubleValue
-                        ?? Double(json["days_left"] as? String ?? "") ?? 0
+                        ?? Double("\(json["days_left"] ?? "")") ?? (secondsLeft > 0 ? (secondsLeft / 86400.0) : 0)
 
                     let expiryDate = parseExpiryDate(expiresAtStr: expiresAtStr, secondsLeft: secondsLeft)
 
@@ -178,8 +237,11 @@ final class CheatStoreLicenseManager: ObservableObject {
                             key: trimmedKey,
                             package: package,
                             expiryDate: expiryDate,
-                            expiresAtStr: expiresAtStr ?? "",
-                            daysLeft: daysLeftVal
+                            expiresAtStr: expiresAtStr,
+                            activatedAtStr: activatedAtStr,
+                            secondsLeft: secondsLeft,
+                            daysLeft: daysLeftVal,
+                            activateImmediately: isSilent
                         )
                     }
                     return true
@@ -228,7 +290,7 @@ final class CheatStoreLicenseManager: ObservableObject {
     }
 
     private func parseExpiryDate(expiresAtStr: String?, secondsLeft: Double?) -> Date {
-        if let expiresAtStr, !expiresAtStr.isEmpty {
+        if let expiresAtStr = expiresAtStr, !expiresAtStr.isEmpty {
             let df = DateFormatter()
             df.dateFormat = "yyyy-MM-dd HH:mm:ss"
             df.locale = Locale(identifier: "en_US_POSIX")
@@ -236,7 +298,7 @@ final class CheatStoreLicenseManager: ObservableObject {
                 return d
             }
         }
-        if let secondsLeft, secondsLeft > 0 {
+        if let secondsLeft = secondsLeft, secondsLeft > 0 {
             return Date().addingTimeInterval(secondsLeft)
         }
         return Date().addingTimeInterval(86400)
@@ -267,12 +329,20 @@ final class CheatStoreLicenseManager: ObservableObject {
         package: String,
         expiryDate: Date,
         expiresAtStr: String,
-        daysLeft: Double
+        activatedAtStr: String,
+        secondsLeft: Double,
+        daysLeft: Double,
+        activateImmediately: Bool
     ) {
-        self.isActivated = true
+        if activateImmediately {
+            self.isActivated = true
+        }
         self.activeKey = key
         self.planName = package
         self.expirationDate = expiryDate
+        self.expiresAtString = expiresAtStr
+        self.activatedAtString = activatedAtStr
+        self.secondsLeft = secondsLeft
         self.daysLeft = daysLeft
         self.errorMessage = nil
 
@@ -282,6 +352,13 @@ final class CheatStoreLicenseManager: ObservableObject {
         UserDefaults.standard.set(expiryDate.timeIntervalSince1970, forKey: storageKeyExpiry)
         UserDefaults.standard.set(expiresAtStr, forKey: storageKeyExpiryStr)
         UserDefaults.standard.set(daysLeft, forKey: storageKeyDaysLeft)
+        UserDefaults.standard.set(secondsLeft, forKey: storageKeySecondsLeft)
+    }
+
+    /// Xác nhận vào ứng dụng sau khi đã xem thông báo bản quyền thành công
+    @MainActor
+    func confirmActivation() {
+        self.isActivated = true
     }
 
     func deactivate(withReason reason: String? = nil) {
@@ -289,6 +366,9 @@ final class CheatStoreLicenseManager: ObservableObject {
         self.activeKey = ""
         self.planName = ""
         self.expirationDate = nil
+        self.expiresAtString = ""
+        self.activatedAtString = ""
+        self.secondsLeft = 0
         self.daysLeft = 0
         self.errorMessage = reason
 
@@ -298,5 +378,6 @@ final class CheatStoreLicenseManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: storageKeyExpiry)
         UserDefaults.standard.removeObject(forKey: storageKeyExpiryStr)
         UserDefaults.standard.removeObject(forKey: storageKeyDaysLeft)
+        UserDefaults.standard.removeObject(forKey: storageKeySecondsLeft)
     }
 }

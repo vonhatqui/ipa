@@ -435,11 +435,9 @@ struct CheatStoreDashboardView: View {
                                     .font(.system(size: 16, weight: .bold, design: .rounded))
                                     .foregroundStyle(.white)
 
-                                if licenseManager.daysLeft > 0 {
-                                    Text("Thời hạn còn lại: \(String(format: "%.1f", licenseManager.daysLeft)) ngày")
-                                        .font(.system(size: 11, weight: .semibold))
-                                        .foregroundStyle(brandBlue)
-                                }
+                                Text("Thời hạn còn lại: \(licenseManager.formattedRemainingTime)")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundStyle(brandBlue)
                             } else {
                                 Text("Đã Kích Hoạt")
                                     .font(.system(size: 16, weight: .bold))
