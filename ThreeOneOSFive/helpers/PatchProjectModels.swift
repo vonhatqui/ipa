@@ -182,6 +182,7 @@ enum PatchPackageError: Error, Equatable {
     case symbolicLinkUnsupported
     case targetOccupied(String)
     case projectAlreadyApplied
+    case projectNotApplied
     case restoreTargetsChanged([String])
     case activePatchCannotBeDeleted
     case privatePatchRequiresPassword
@@ -208,6 +209,7 @@ extension PatchPackageError: LocalizedError {
         case .targetAppUnavailable: return "patch.error.app_unavailable"
         case .targetOccupied: return "patch.error.target_occupied"
         case .projectAlreadyApplied: return "patch.error.already_applied"
+        case .projectNotApplied: return "patch.error.restore"
         case .restoreTargetsChanged: return "patch.error.restore_targets_changed"
         case .activePatchCannotBeDeleted: return "patch.error.active_delete"
         case .symbolicLinkUnsupported: return "patch.error.symlink"

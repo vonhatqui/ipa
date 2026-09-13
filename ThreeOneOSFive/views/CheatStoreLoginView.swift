@@ -170,7 +170,7 @@ struct CheatStoreLoginView: View {
                                 UIPasteboard.general.string = licenseManager.deviceID
                                 copiedDeviceID = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    copiedDeviceID = false
+                                    self.copiedDeviceID = false
                                 }
                             } label: {
                                 HStack(spacing: 4) {

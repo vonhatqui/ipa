@@ -354,7 +354,7 @@ struct CheatStoreDashboardView: View {
                             UIPasteboard.general.string = licenseManager.activeKey
                             copiedKey = true
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                copiedKey = false
+                                self.copiedKey = false
                             }
                         } label: {
                             Text(copiedKey ? "Đã chép" : "Sao chép")
@@ -387,7 +387,7 @@ struct CheatStoreDashboardView: View {
                                 UIPasteboard.general.string = id
                                 copiedDeviceID = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                copiedDeviceID = false
+                                    self.copiedDeviceID = false
                                 }
                             }
                         } label: {
@@ -552,30 +552,34 @@ struct CheatStoreDashboardView: View {
                     }
                     _ = try DevicePatchService.apply(project: project)
                     DispatchQueue.main.async {
-                        patchStore.reload()
-                        workingPatchID = nil
-                        alertMessage = "Đã BẬT thành công chức năng: Định Vị & AimNeck 2.0"
-                        showAlert = true
+                        self.patchStore.reload()
+                        self.workingPatchID = nil
+                        self.alertMessage = "Đã BẬT thành công chức năng: Định Vị & AimNeck 2.0"
+                        self.showAlert = true
                     }
                 } else {
                     // TẮT chức năng (Restore)
                     guard let receipt = DevicePatchService.latestReceipt(projectID: item.id) else {
-                        throw PatchPackageError.projectNotApplied
+                        DispatchQueue.main.async {
+                            self.patchStore.reload()
+                            self.workingPatchID = nil
+                        }
+                        return
                     }
                     try DevicePatchService.restore(receipt: receipt)
                     DispatchQueue.main.async {
-                        patchStore.reload()
-                        workingPatchID = nil
-                        alertMessage = "Đã TẮT và khôi phục an toàn: Định Vị & AimNeck 2.0"
-                        showAlert = true
+                        self.patchStore.reload()
+                        self.workingPatchID = nil
+                        self.alertMessage = "Đã TẮT và khôi phục an toàn: Định Vị & AimNeck 2.0"
+                        self.showAlert = true
                     }
                 }
             } catch {
                 DispatchQueue.main.async {
-                    patchStore.reload()
-                    workingPatchID = nil
-                    alertMessage = "Thao tác thất bại: \(error.localizedDescription)"
-                    showAlert = true
+                    self.patchStore.reload()
+                    self.workingPatchID = nil
+                    self.alertMessage = "Thao tác thất bại: \(error.localizedDescription)"
+                    self.showAlert = true
                 }
             }
         }
