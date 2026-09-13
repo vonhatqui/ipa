@@ -40,7 +40,7 @@ struct CheatStoreDashboardView: View {
                             Spacer()
 
                             Button {
-                                patchStore.reload()
+                                BundledPatchInjector.autoImportBundledPatches(into: patchStore)
                             } label: {
                                 Image(systemName: "arrow.clockwise")
                                     .font(.system(size: 14, weight: .bold))
@@ -124,6 +124,9 @@ struct CheatStoreDashboardView: View {
             }
         }
         .navigationViewStyle(.stack)
+        .onAppear {
+            BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+        }
     }
 
     private var licenseStatusCard: some View {
@@ -208,6 +211,22 @@ struct CheatStoreDashboardView: View {
                 .foregroundStyle(.gray)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
+
+            Button {
+                BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Quét lại bản mod")
+                }
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(brandGreen)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(brandGreen.opacity(0.12))
+                .cornerRadius(20)
+            }
+            .padding(.top, 6)
         }
     }
 
