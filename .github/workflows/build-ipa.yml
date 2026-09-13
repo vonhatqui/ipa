@@ -1,0 +1,61 @@
+name: Build CheatStore VN IPA
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      ipa_name:
+        description: "Tên file IPA xuất ra (không cần đuôi .ipa)"
+        required: false
+        default: "CheatStore-VN"
+
+jobs:
+  build:
+    name: Biên dịch và Đóng gói IPA
+    runs-on: macos-14
+    steps:
+      - name: Kiểm tra mã nguồn (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Kiểm tra phiên bản Xcode
+        run: |
+          xcodebuild -version
+
+      - name: Biên dịch ứng dụng (xcodebuild)
+        run: |
+          xcodebuild -project ThreeOneOSFive.xcodeproj \
+            -scheme 3105 \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Đóng gói thành file IPA
+        run: |
+          mkdir -p Payload
+          cp -R build/Build/Products/Release-iphoneos/3105.app Payload/
+          
+          # Inject toàn bộ file .3105 trong BundledPatches trực tiếp vào .app
+          if [ -d "ThreeOneOSFive/BundledPatches" ]; then
+            echo "Injecting BundledPatches..."
+            mkdir -p Payload/3105.app/BundledPatches
+            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/3105.app/ || true
+            cp -v ThreeOneOSFive/BundledPatches/*.3105 Payload/3105.app/BundledPatches/ || true
+          fi
+          
+          IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
+          zip -r "$IPA_FILENAME" Payload
+          echo "IPA_PATH=$IPA_FILENAME" >> $GITHUB_ENV
+          echo "Đã tạo thành công: $IPA_FILENAME"
+
+      - name: Lưu trữ file IPA lên GitHub Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.IPA_PATH }}
+          path: ${{ env.IPA_PATH }}
+          if-no-files-found: error
+          retention-days: 14
