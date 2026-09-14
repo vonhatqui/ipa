@@ -14,10 +14,10 @@
 "common.back" = "Quay lại";
 "common.finish" = "Hoàn thành";
 
-"update.title" = "Có bản cập nhật";
-"update.message" = "3105 %@ đã có trên GitHub.";
-"update.agree" = "Đồng ý";
-"update.dismiss" = "Không hiển thị lại";
+"update.title" = "Update CheatStore";
+"update.message" = "CheatStore Update in Discord\nPhiên bản %@ đã có mặt trên Discord CheatStore VN.";
+"update.agree" = "Discord";
+"update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Sai mật khẩu.";
 
 "attribution.title" = "Giới thiệu 3105";

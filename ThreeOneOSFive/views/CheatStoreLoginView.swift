@@ -6,7 +6,7 @@ struct CheatStoreLoginView: View {
     @State private var inputKey: String = ""
     @State private var copiedDeviceID = false
     @State private var showShopWeb = false
-    @State private var showSuccessAlert = false
+    @State private var keyNotification: KeyNotificationType? = nil
 
     init(licenseManager: CheatStoreLicenseManager = .shared) {
         self.licenseManager = licenseManager
@@ -96,24 +96,28 @@ struct CheatStoreLoginView: View {
                                 .stroke(brandBlue.opacity(0.3), lineWidth: 1)
                         )
 
-                        // Thông báo lỗi nếu có
-                        if let error = licenseManager.errorMessage {
-                            HStack(spacing: 8) {
-                                Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.red)
-                                Text(error)
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(.red)
-                            }
-                        }
-
                         // Nút Kích Hoạt
                         Button {
                             Task {
                                 let success = await licenseManager.activateKey(inputKey)
-                                if success {
-                                    await MainActor.run {
-                                        showSuccessAlert = true
+                                await MainActor.run {
+                                    if success {
+                                        let generator = UINotificationFeedbackGenerator()
+                                        generator.notificationOccurred(.success)
+                                        withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
+                                            keyNotification = .success(
+                                                plan: licenseManager.planName.isEmpty ? "Gói VIP" : licenseManager.planName,
+                                                remaining: licenseManager.formattedRemainingTime,
+                                                expiry: licenseManager.expiresAtString
+                                            )
+                                        }
+                                    } else {
+                                        let generator = UINotificationFeedbackGenerator()
+                                        generator.notificationOccurred(.error)
+                                        let msg = licenseManager.errorMessage ?? "Kích hoạt không thành công. Vui lòng thử lại!"
+                                        withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
+                                            keyNotification = .error(message: msg)
+                                        }
                                     }
                                 }
                             }
@@ -234,13 +238,26 @@ struct CheatStoreLoginView: View {
                 }
                 .padding(.bottom, 40)
             }
-        }
-        .alert("🎉 KÍCH HOẠT THÀNH CÔNG", isPresented: $showSuccessAlert) {
-            Button("Vào Ứng Dụng") {
-                licenseManager.confirmActivation()
+
+            // POPUP MODAL THÔNG BÁO KẾT QUẢ NHẬP KEY (HIỆU ỨNG CYBERPUNK CÓ NÚT ĐÓNG)
+            if let notif = keyNotification {
+                KeyNotificationModalView(
+                    notification: notif,
+                    onDismiss: {
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            keyNotification = nil
+                        }
+                    },
+                    onConfirmSuccess: {
+                        withAnimation {
+                            keyNotification = nil
+                            licenseManager.confirmActivation()
+                        }
+                    }
+                )
+                .transition(.scale(scale: 0.86).combined(with: .opacity))
+                .zIndex(50)
             }
-        } message: {
-            Text("Xác thực bản quyền thành công!\n\n\(licenseManager.successAlertSummary)")
         }
     }
 }
@@ -294,6 +311,319 @@ struct CheatStoreLogoView: View {
                     .font(.system(size: size * 0.5, weight: .bold))
                     .foregroundStyle(Color(red: 0.00, green: 0.72, blue: 1.00))
             }
+        }
+    }
+}
+
+// MARK: - CÁC TRẠNG THÁI THÔNG BÁO NHẬP KEY
+enum KeyNotificationType {
+    case success(plan: String, remaining: String, expiry: String)
+    case error(message: String)
+}
+
+// MARK: - POPUP MODAL THÔNG BÁO HIỆU ỨNG CYBERPUNK (CÓ NÚT ĐÓNG)
+struct KeyNotificationModalView: View {
+    let notification: KeyNotificationType
+    let onDismiss: () -> Void
+    let onConfirmSuccess: () -> Void
+
+    private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00)
+    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
+    private let brandGreen = Color(red: 0.10, green: 0.85, blue: 0.55)
+    private let brandRed = Color(red: 1.00, green: 0.30, blue: 0.35)
+
+    var body: some View {
+        ZStack {
+            // Nền tối mờ hiệu ứng Blur
+            Color.black.opacity(0.68)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+
+            VStack(spacing: 18) {
+                // Header góc phải có nút Đóng (X)
+                HStack {
+                    Spacer()
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
+                }
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+
+                switch notification {
+                case .success(let plan, let remaining, let expiry):
+                    // Biểu tượng thành công với hiệu ứng Glow
+                    ZStack {
+                        Circle()
+                            .fill(brandGreen.opacity(0.2))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 12)
+
+                        Circle()
+                            .stroke(brandGreen.opacity(0.6), lineWidth: 2)
+                            .frame(width: 72, height: 72)
+
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.system(size: 44, weight: .bold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [brandGreen, brandBlue],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+
+                    VStack(spacing: 8) {
+                        Text("KÍCH HOẠT THÀNH CÔNG")
+                            .font(.system(size: 13, weight: .black))
+                            .foregroundStyle(brandGreen)
+                            .tracking(1.5)
+
+                        Text("Chào mừng bạn!")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text("Bản quyền CheatStore VN đã sẵn sàng sử dụng.")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 8)
+                    }
+
+                    // Card chi tiết gói
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text("Gói bản quyền:")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.gray)
+                            Spacer()
+                            Text(plan)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+
+                        Divider().background(Color.white.opacity(0.1))
+
+                        HStack {
+                            Text("Thời hạn:")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.gray)
+                            Spacer()
+                            Text(remaining)
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(brandBlue)
+                        }
+
+                        if !expiry.isEmpty {
+                            Divider().background(Color.white.opacity(0.1))
+
+                            HStack {
+                                Text("Hạn sử dụng:")
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.gray)
+                                Spacer()
+                                Text(expiry)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.8))
+                            }
+                        }
+                    }
+                    .padding(14)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(brandGreen.opacity(0.25), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+
+                    // Các nút thao tác (Vào Ứng Dụng + Đóng)
+                    VStack(spacing: 10) {
+                        Button {
+                            onConfirmSuccess()
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.right.circle.fill")
+                                Text("Vào Ứng Dụng")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(
+                                LinearGradient(
+                                    colors: [brandBlue, brandBlueDark],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .foregroundStyle(.white)
+                            .cornerRadius(12)
+                            .shadow(color: brandBlue.opacity(0.4), radius: 8, y: 3)
+                        }
+
+                        Button {
+                            onDismiss()
+                        } label: {
+                            Text("Đóng")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.gray)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 38)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+
+                case .error(let message):
+                    // Biểu tượng thất bại với hiệu ứng Glow
+                    ZStack {
+                        Circle()
+                            .fill(brandRed.opacity(0.2))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 12)
+
+                        Circle()
+                            .stroke(brandRed.opacity(0.6), lineWidth: 2)
+                            .frame(width: 72, height: 72)
+
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 40, weight: .bold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [brandRed, Color.orange],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                    }
+
+                    VStack(spacing: 8) {
+                        Text("KÍCH HOẠT THẤT BÀI")
+                            .font(.system(size: 13, weight: .black))
+                            .foregroundStyle(brandRed)
+                            .tracking(1.5)
+
+                        Text("Không Thể Xác Thực Key")
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text(message)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(brandRed.opacity(0.12))
+                            .cornerRadius(10)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(brandRed.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Nút Đóng & Các lựa chọn hỗ trợ
+                    VStack(spacing: 12) {
+                        Button {
+                            onDismiss()
+                        } label: {
+                            HStack {
+                                Image(systemName: "xmark")
+                                Text("Đóng")
+                                    .font(.system(size: 16, weight: .bold))
+                            }
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 48)
+                            .background(Color.white.opacity(0.1))
+                            .foregroundStyle(.white)
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+
+                        HStack(spacing: 12) {
+                            Button {
+                                if let url = URL(string: "https://cheatingenginexyz.online") {
+                                    UIApplication.shared.open(url)
+                                }
+                            } label: {
+                                Text("Mua Key Tại Web")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(brandBlue)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 38)
+                                    .background(brandBlue.opacity(0.12))
+                                    .cornerRadius(10)
+                            }
+
+                            Button {
+                                if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
+                                    UIApplication.shared.open(url)
+                                }
+                            } label: {
+                                Text("Hỗ Trợ Admin")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(.white.opacity(0.8))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 38)
+                                    .background(Color.white.opacity(0.08))
+                                    .cornerRadius(10)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                }
+            }
+            .frame(maxWidth: min(UIScreen.main.bounds.width - 48, 380))
+            .background(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(Color(red: 0.05, green: 0.08, blue: 0.15))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .stroke(
+                        notificationBorderGradient,
+                        lineWidth: 1.5
+                    )
+            )
+            .shadow(color: notificationShadowColor, radius: 24, y: 8)
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private var notificationBorderGradient: LinearGradient {
+        switch notification {
+        case .success:
+            return LinearGradient(
+                colors: [brandGreen.opacity(0.8), brandBlue.opacity(0.5)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .error:
+            return LinearGradient(
+                colors: [brandRed.opacity(0.8), Color.orange.opacity(0.5)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        }
+    }
+
+    private var notificationShadowColor: Color {
+        switch notification {
+        case .success:
+            return brandGreen.opacity(0.3)
+        case .error:
+            return brandRed.opacity(0.3)
         }
     }
 }

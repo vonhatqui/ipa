@@ -14,10 +14,10 @@
 "common.back" = "Back";
 "common.finish" = "Finish";
 
-"update.title" = "Update available";
-"update.message" = "3105 %@ is available on GitHub.";
-"update.agree" = "OK";
-"update.dismiss" = "Don't show again";
+"update.title" = "Update CheatStore";
+"update.message" = "CheatStore Update in Discord\nVersion %@ is available on CheatStore VN Discord.";
+"update.agree" = "Discord";
+"update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Incorrect password.";
 
 "attribution.title" = "About 3105";
