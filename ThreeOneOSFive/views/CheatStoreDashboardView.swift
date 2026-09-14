@@ -159,30 +159,6 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
-            // Nút Khởi Chạy Nhanh Free Fire
-            Button {
-                launchFreeFire()
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 10, weight: .bold))
-                    Text("Vào Game")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 11)
-                .padding(.vertical, 6)
-                .background(
-                    LinearGradient(
-                        colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(Capsule())
-                .shadow(color: brandBlue.opacity(0.4), radius: 6)
-            }
-
             if selectedTab == .home {
                 Button {
                     BundledPatchInjector.autoImportBundledPatches(into: patchStore)
@@ -1016,10 +992,10 @@ struct CheatStoreDashboardView: View {
             HStack(spacing: 14) {
                 // Icon Free Fire với hiệu ứng viền phát sáng
                 ZStack {
-                    FreeFireAppIconView(size: 46, cornerRadius: 11)
+                    FreeFireAppIconView(size: 48, cornerRadius: 12)
 
                     if isAnyModActive {
-                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(
                                 LinearGradient(
                                     colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
@@ -1028,15 +1004,15 @@ struct CheatStoreDashboardView: View {
                                 ),
                                 lineWidth: 2
                             )
-                            .frame(width: 46, height: 46)
+                            .frame(width: 48, height: 48)
                     }
                 }
                 .shadow(color: isAnyModActive ? brandBlue.opacity(0.6) : Color.clear, radius: 8)
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("VÀO GAME FREE FIRE NGAY")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
+                        Text("Free Fire")
+                            .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(.white)
 
                         if isAnyModActive {
@@ -1050,7 +1026,7 @@ struct CheatStoreDashboardView: View {
                         }
                     }
 
-                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Chạm để chiến ngay" : "Khởi chạy trực tiếp Free Fire / Free Fire MAX")
+                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Khởi chạy trực tiếp Free Fire / MAX")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(isAnyModActive ? Color(red: 0.00, green: 0.88, blue: 0.95) : Color.gray)
                         .lineLimit(1)
@@ -1058,23 +1034,25 @@ struct CheatStoreDashboardView: View {
 
                 Spacer()
 
-                // Nút mũi tên chuyển tiếp
-                ZStack {
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                // Nút MỞ thay thế cho mũi tên theo yêu cầu
+                Text("MỞ")
+                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 8)
+                    .background(
+                        LinearGradient(
+                            colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
+                            startPoint: .leading,
+                            endPoint: .trailing
                         )
-                        .frame(width: 32, height: 32)
-                        .shadow(color: brandBlue.opacity(0.5), radius: 6)
-
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(.white)
-                }
+                    )
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    )
+                    .shadow(color: brandBlue.opacity(0.55), radius: 6, x: 0, y: 2)
             }
             .padding(14)
             .background(
