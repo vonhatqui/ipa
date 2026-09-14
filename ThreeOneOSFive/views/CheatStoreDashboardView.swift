@@ -4,12 +4,14 @@ import UIKit
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
     case esp = 1
-    case profile = 2
+    case modSkin = 2
+    case profile = 3
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
         case .esp: return "Định Vị"
+        case .modSkin: return "Mod Skin"
         case .profile: return "Cá Nhân"
         }
     }
@@ -18,6 +20,7 @@ enum CheatStoreTab: Int, CaseIterable {
         switch self {
         case .home: return "house.fill"
         case .esp: return "location.viewfinder"
+        case .modSkin: return "tshirt.fill"
         case .profile: return "person.crop.circle.fill"
         }
     }
@@ -46,15 +49,21 @@ struct CheatStoreDashboardView: View {
     private let cardBackground = Color(red: 0.06, green: 0.09, blue: 0.16)
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
-    // Phân loại mod: Aim ở Trang Chủ, Định Vị (ESP) ở Tab riêng
+    // Phân loại mod: Aim ở Trang Chủ, Định Vị (ESP) ở Tab riêng, Mod Skin ở Tab riêng
     private func isEspItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? "").lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi")
     }
 
+    private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? "").lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("skin") || name.contains("ignis") || filename.contains("skin") || filename.contains("ignis")
+    }
+
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        return !isEspItem(item)
+        return !isEspItem(item) && !isSkinItem(item)
     }
 
     private var aimItems: [PatchLibraryItem] {
@@ -77,6 +86,10 @@ struct CheatStoreDashboardView: View {
 
     private var espItems: [PatchLibraryItem] {
         patchStore.items.filter { isEspItem($0) }
+    }
+
+    private var skinItems: [PatchLibraryItem] {
+        patchStore.items.filter { isSkinItem($0) }
     }
 
     var body: some View {
@@ -102,6 +115,8 @@ struct CheatStoreDashboardView: View {
                         homeView
                     case .esp:
                         espView
+                    case .modSkin:
+                        modSkinView
                     case .profile:
                         profileView
                     }
@@ -109,7 +124,7 @@ struct CheatStoreDashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // Nút Mở Game Free Fire Nằm Ngay Trên Thanh Dashboard Điều Hướng (Đúng Vị Trí Đánh Dấu Đỏ)
-                if selectedTab == .home || selectedTab == .esp {
+                if selectedTab == .home || selectedTab == .esp || selectedTab == .modSkin {
                     quickLaunchCardView
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
@@ -177,7 +192,7 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
-            if selectedTab == .home || selectedTab == .esp {
+            if selectedTab == .home || selectedTab == .esp || selectedTab == .modSkin {
                 Button {
                     BundledPatchInjector.autoImportBundledPatches(into: patchStore)
                 } label: {
@@ -445,7 +460,172 @@ struct CheatStoreDashboardView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Tab 3: Cá Nhân (Thời Hạn Key, Gia Hạn, Đăng Xuất)
+    // MARK: - Tab 3: Mod Skin (Kho Mod Skin VIP)
+    private var modSkinView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                // Tiêu đề phần Mod Skin
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("BẢNG ĐIỀU KHIỂN MOD SKIN")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+                            .tracking(1.1)
+
+                        Text("Bật / Tắt Skin Trang Phục VIP Trực Tiếp")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+
+                if skinItems.isEmpty {
+                    modSkinEmptyView
+                } else {
+                    VStack(spacing: 14) {
+                        ForEach(skinItems) { item in
+                            ModSkinItemCard(
+                                item: item,
+                                isWorking: workingPatchID == item.id,
+                                brandBlue: brandBlue,
+                                onToggle: { enable in
+                                    handleToggle(item: item, enable: enable)
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+
+                    // Thông tin tính năng Skin
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "tshirt.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(brandBlue)
+
+                            Text("Tính năng Mod Skin")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
+                        }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            featureBullet(text: "Skin Ignis Đạo Sĩ Đỏ đầy đủ hiệu ứng ngoại trang VIP")
+                            featureBullet(text: "Tương thích 100% khi bật song song cùng Aim và Định Vị ESP")
+                            featureBullet(text: "Cơ chế nạp đè texture nội bộ, tuyệt đối an toàn Antiban")
+                            featureBullet(text: "Tắt công tắc để trở về skin mặc định của game bất cứ lúc nào")
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(cardBackground)
+                    .cornerRadius(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(brandBlue.opacity(0.25), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 4)
+
+                    // Hướng dẫn quy trình
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "shield.lefthalf.filled")
+                            .font(.system(size: 16))
+                            .foregroundStyle(brandBlue)
+                            .padding(.top, 2)
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Quy trình chuẩn:")
+                                .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+
+                            Text("Thoát hẳn Free Fire khỏi đa nhiệm > Bật [IGNIS ĐẠO SĨ ĐỎ] > Bấm nút [MỞ] Free Fire bên dưới để vào game thưởng thức skin.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(.gray)
+                                .lineSpacing(2)
+                        }
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(cardBackground)
+                    .cornerRadius(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                }
+            }
+            .padding(.bottom, 24)
+        }
+    }
+
+    private var modSkinEmptyView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(brandBlue.opacity(0.15))
+                    .frame(width: 110, height: 110)
+                    .blur(radius: 20)
+
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(cardBackground)
+                    .frame(width: 86, height: 86)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .stroke(brandBlue.opacity(0.4), lineWidth: 1.5)
+                    )
+
+                Image(systemName: "tshirt.fill")
+                    .font(.system(size: 40))
+                    .foregroundStyle(brandBlue)
+            }
+
+            VStack(spacing: 8) {
+                Text("MOD SKIN TRANG PHỤC")
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+
+                Text("Đang kiểm tra và tải cấu hình tài nguyên mod skin. Vui lòng bấm Quét lại hoặc khởi động lại app.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.gray)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 6)
+            }
+
+            Button {
+                BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Quét lại dữ liệu")
+                }
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(height: 46)
+                .padding(.horizontal, 24)
+                .background(
+                    LinearGradient(
+                        colors: [brandBlue, brandBlueDark],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .shadow(color: brandBlue.opacity(0.4), radius: 8)
+            }
+            .padding(.top, 10)
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+    }
+
+    // MARK: - Tab 4: Cá Nhân (Thời Hạn Key, Gia Hạn, Đăng Xuất)
     private var profileView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 20) {
@@ -1395,6 +1575,130 @@ private struct EspItemCard: View {
                 .stroke(isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
         )
         .shadow(color: isApplied ? brandBlue.opacity(0.2) : .clear, radius: 8)
+    }
+}
+
+// MARK: - ModSkinItemCard (Mod Skin VIP)
+private struct ModSkinItemCard: View {
+    let item: PatchLibraryItem
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    private var displayName: String {
+        let name = item.project?.name ?? ""
+        if name.lowercased().contains("ignis") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
+        }
+        return name.isEmpty ? "MOD SKIN VIP" : name
+    }
+
+    private var subtitle: String {
+        "Skin Trang Phục VIP • Antiban"
+    }
+
+    private var isApplied: Bool {
+        DevicePatchService.isProjectApplied(projectID: item.id)
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Icon Áo / Skin với hiệu ứng phát sáng neon
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                (isApplied ? Color.red : brandBlue).opacity(isApplied ? 0.25 : 0.12),
+                                (isApplied ? Color.orange : brandBlueDark).opacity(isApplied ? 0.2 : 0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(
+                                isApplied
+                                    ? Color.red
+                                    : brandBlue.opacity(0.4),
+                                lineWidth: isApplied ? 1.8 : 1
+                            )
+                    )
+
+                Image(systemName: "tshirt.fill")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundStyle(isApplied ? Color.red : brandBlue)
+                    .shadow(color: isApplied ? Color.red.opacity(0.8) : .clear, radius: 6)
+            }
+
+            // Tên và thông tin Skin
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(displayName)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("SKIN VIP")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.red, Color.orange],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
+                }
+
+                Text(subtitle)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(brandBlue)
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
+            }
+        }
+        .padding(14)
+        .background(Color(red: 0.06, green: 0.09, blue: 0.16))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? Color.red.opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: isApplied ? Color.red.opacity(0.2) : .clear, radius: 8)
     }
 }
 
