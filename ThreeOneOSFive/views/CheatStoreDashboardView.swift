@@ -59,6 +59,7 @@ struct CheatStoreDashboardView: View {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
         return filename.contains("aimdrag") || filename.contains("only aim") || name.contains("only drag")
+            || filename.contains("dragantena") || name.contains("drag + antena")
     }
 
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
@@ -943,10 +944,10 @@ struct CheatStoreDashboardView: View {
         if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
-        if name.contains("antena") || name.contains("drag") || filename.contains("antena") || filename.contains("drag") {
-            return "Drag & Antena"
+        if name.contains("aimlock") || filename.contains("aimlock") {
+            return "AIMLOCK NO ESP"
         }
-        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
+        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
         return item.project?.name ?? "Định Vị & AimNeck 2.0"
@@ -1024,10 +1025,18 @@ struct CheatStoreDashboardView: View {
                                 .padding(.vertical, 2)
                                 .background(Color.green)
                                 .cornerRadius(4)
+                        } else {
+                            Text("OFFLINE")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .foregroundStyle(Color.gray)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.white.opacity(0.08))
+                                .cornerRadius(4)
                         }
                     }
 
-                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Khởi chạy trực tiếp Free Fire / MAX")
+                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chưa nạp dữ liệu mod • Vào game thường")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(isAnyModActive ? Color(red: 0.00, green: 0.88, blue: 0.95) : Color.gray)
                         .lineLimit(1)
@@ -1138,18 +1147,18 @@ private struct CheatItemCard: View {
         if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
-        if name.contains("antena") || name.contains("drag") || filename.contains("antena") || filename.contains("drag") {
-            return "Drag & Antena"
+        if name.contains("aimlock") || filename.contains("aimlock") {
+            return "AIMLOCK NO ESP"
         }
-        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
+        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
         return item.project?.name ?? "Định Vị & AimNeck 2.0"
     }
 
     private var subtitle: String {
-        if displayName == "Drag & Antena" {
-            return "Kéo Tâm & Định Vị Antena • Antiban"
+        if displayName == "AIMLOCK NO ESP" {
+            return "Khóa Tâm Chuẩn • Antiban"
         }
         return "Antiban - No Backlist"
     }

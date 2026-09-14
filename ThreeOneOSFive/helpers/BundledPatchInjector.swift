@@ -121,7 +121,7 @@ enum BundledPatchInjector {
             // Dọn dẹp sạch mọi file .3105 cũ và file AIM ONLY DRAG còn sót lại trong targetRoot
             let staleAimNames: Set<String> = [
                 "aimdrag.dat", "only aim.dat", "only_aim.dat", "aimdrag", "only aim",
-                "aimdrag.3105", "only aim.3105"
+                "aimdrag.3105", "only aim.3105", "dragantena.dat", "dragantena"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
