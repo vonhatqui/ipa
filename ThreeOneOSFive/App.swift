@@ -13,6 +13,7 @@ struct ThreeOneOSFiveApp: App {
     @State private var showOnboarding = false
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
+    @State private var isGameLoaded = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -36,7 +37,12 @@ struct ThreeOneOSFiveApp: App {
         WindowGroup {
             ZStack {
                 if licenseManager.isActivated {
-                    CheatStoreDashboardView()
+                    if isGameLoaded {
+                        CheatStoreDashboardView(onBackToGames: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isGameLoaded = false
+                            }
+                        })
                         .environmentObject(appState)
                         .environmentObject(patchDraftCoordinator)
                         .environmentObject(fileOperationCoordinator)
@@ -44,12 +50,24 @@ struct ThreeOneOSFiveApp: App {
                         .environmentObject(repositoryStore)
                         .environment(\.appLanguage, language)
                         .environment(\.locale, language.locale)
-                        .onAppear {
-                            BundledPatchInjector.autoImportBundledPatches(into: patchStore)
-                        }
+                        .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+                    } else {
+                        GameSelectionView(onSelectFreeFire: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isGameLoaded = true
+                            }
+                        })
+                        .environmentObject(patchStore)
+                        .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
+                    }
                 } else {
                     CheatStoreLoginView(licenseManager: licenseManager)
                         .zIndex(2)
+                }
+            }
+            .onChange(of: licenseManager.isActivated) { activated in
+                if !activated {
+                    isGameLoaded = false
                 }
             }
             .tint(AppTheme.accent)

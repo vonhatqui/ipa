@@ -30,6 +30,7 @@ struct CheatStoreDashboardView: View {
     @EnvironmentObject private var repositoryStore: PackageRepositoryStore
     @EnvironmentObject private var appState: AppState
     @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
+    var onBackToGames: (() -> Void)? = nil
 
     @State private var selectedTab: CheatStoreTab = .home
     @State private var workingPatchID: UUID?
@@ -104,6 +105,9 @@ struct CheatStoreDashboardView: View {
                 dismissButton: .default(Text("Đã hiểu"))
             )
         }
+        .sheet(item: $patchStore.passwordRequest, onDismiss: patchStore.cancelUnlock) { request in
+            PatchUnlockView(store: patchStore, request: request)
+        }
         .onAppear {
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
         }
@@ -112,7 +116,25 @@ struct CheatStoreDashboardView: View {
     // MARK: - Top Header
     private var topHeaderView: some View {
         HStack(spacing: 12) {
-            CheatStoreLogoView(size: 34, cornerRadius: 9)
+            if let onBackToGames {
+                Button {
+                    onBackToGames()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("Ứng Dụng")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundStyle(brandBlue)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(brandBlue.opacity(0.12))
+                    .cornerRadius(12)
+                }
+            } else {
+                CheatStoreLogoView(size: 34, cornerRadius: 9)
+            }
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("CheatStore VN")
@@ -842,6 +864,14 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
+                    if item.project == nil && item.isLocked {
+                        DispatchQueue.main.async {
+                            self.workingPatchID = nil
+                            self.patchStore.requestUnlock(for: item)
+                        }
+                        return
+                    }
+
                     guard let project = item.project else {
                         throw PatchPackageError.unsupportedFormat
                     }
@@ -894,14 +924,18 @@ struct CheatStoreDashboardView: View {
     }
 
     private func displayName(for item: PatchLibraryItem) -> String {
-        let name = item.project?.name ?? ""
-        if name.lowercased().contains("esp") || name.lowercased().contains("aim") || name.isEmpty {
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        let name = (item.project?.name ?? "").lowercased()
+        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
+            return "AIM ONLY DRAG"
+        }
+        if name.contains("esp") || filename.contains("enginecore") || filename.contains("esp") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
-        if name.lowercased().contains("ignis") {
+        if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
-        return name
+        return item.project?.name ?? "Bản Mod VIP"
     }
 
     private func userFriendlyErrorMessage(_ error: Error) -> String {
@@ -918,7 +952,7 @@ struct CheatStoreDashboardView: View {
             case .restoreTargetsChanged:
                 return "File game đã được cập nhật khi chơi. Hệ thống đã khôi phục bản sạch an toàn."
             case .unsupportedFormat:
-                return "Dữ liệu cấu hình mod không hợp lệ."
+                return "Dữ liệu cấu hình mod không hợp lệ hoặc đang bị khoá."
             default:
                 return patchError.localizedDescription
             }
@@ -933,25 +967,32 @@ struct CheatStoreDashboardView: View {
     }
 }
 
-// MARK: - CheatItemCard (Định Vị & AimNeck 2.0)
+// MARK: - CheatItemCard (Định Vị & AimNeck 2.0 / AIM ONLY DRAG)
 private struct CheatItemCard: View {
     let item: PatchLibraryItem
     let isWorking: Bool
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
-    // Đổi tên chức năng thành "Định Vị & AimNeck 2.0" theo yêu cầu
     private var displayName: String {
-        let name = item.project?.name ?? ""
-        if name.lowercased().contains("esp") || name.lowercased().contains("aim") || name.isEmpty {
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        let name = (item.project?.name ?? "").lowercased()
+        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
+            return "AIM ONLY DRAG"
+        }
+        if name.contains("esp") || filename.contains("enginecore") || filename.contains("esp") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
-        return name
+        return item.project?.name ?? "AIM ONLY DRAG"
     }
 
-    // Mô tả chữ nhỏ ở dưới: "Antiban - No Backlist"
     private var subtitle: String {
-        "Antiban - No Backlist"
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        let name = (item.project?.name ?? "").lowercased()
+        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
+            return "An Toàn"
+        }
+        return "Antiban - No Backlist"
     }
 
     private var isApplied: Bool {

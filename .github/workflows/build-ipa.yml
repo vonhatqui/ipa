@@ -49,6 +49,7 @@ jobs:
           # Inject Logo vào Bundle để app hiển thị tức thì
           cp -v ThreeOneOSFive/CheatLogo.png Payload/cheatstorevip.app/ || true
           cp -v ThreeOneOSFive/CheatStoreLogo.jpg Payload/cheatstorevip.app/ || true
+          cp -v ThreeOneOSFive/FreeFireIcon.png Payload/cheatstorevip.app/ || true
 
           # Inject EngineData (.dat) - Hoàn toàn không để lộ file .3105 hay thư mục BundledPatches
           if [ -d "ThreeOneOSFive/EngineData" ]; then

@@ -109,8 +109,22 @@ enum BundledPatchInjector {
                     if fileManager.fileExists(atPath: legacyURL.path) && destinationURL.lastPathComponent == "EngineCore.dat" {
                         try? fileManager.removeItem(at: legacyURL)
                     }
+
+                    let legacyAimURL = targetRoot.appendingPathComponent("ONLY AIM.dat")
+                    if fileManager.fileExists(atPath: legacyAimURL.path) && destinationURL.lastPathComponent == "AimDrag.dat" {
+                        try? fileManager.removeItem(at: legacyAimURL)
+                    }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
+                }
+            }
+
+            // Dọn dẹp sạch mọi file .3105 cũ còn sót lại trong targetRoot để ẩn danh tuyệt đối
+            if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
+                for file in files {
+                    if file.lowercased().hasSuffix(".3105") {
+                        try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
+                    }
                 }
             }
 
