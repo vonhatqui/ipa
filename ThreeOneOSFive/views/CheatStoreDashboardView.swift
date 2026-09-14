@@ -868,10 +868,15 @@ struct CheatStoreDashboardView: View {
                     // 2. Thực hiện Apply bản mod vào game
                     _ = try DevicePatchService.apply(project: project)
 
+                    // 3. Đồng bộ bổ sung trực tiếp vào container
+                    if isAimOrEsp(item) {
+                        EspConfigManager.shared.syncDirectlyToGameContainer()
+                    }
+
                     DispatchQueue.main.async {
                         self.patchStore.reload()
                         self.workingPatchID = nil
-                        self.alertMessage = "Đã BẬT thành công: \(modName)"
+                        self.alertMessage = "Đã BẬT thành công: \(modName)\n\n⚠️ LƯU Ý: Nếu game Free Fire đang chạy ngầm, hãy vuốt tắt hẳn game rồi mở lại để game nạp cài đặt mới!"
                         self.showAlert = true
                     }
                 } else {
@@ -922,10 +927,11 @@ struct CheatStoreDashboardView: View {
                     EspConfigManager.shared.applyConfiguration(to: &project)
                     DevicePatchService.forceCleanupReceipts(projectID: item.id)
                     _ = try DevicePatchService.apply(project: project)
+                    EspConfigManager.shared.syncDirectlyToGameContainer()
                     DispatchQueue.main.async {
                         self.patchStore.reload()
                         self.workingPatchID = nil
-                        self.alertMessage = "Đã lưu và kích hoạt cấu hình ESP mới vào game!"
+                        self.alertMessage = "Đã lưu và cập nhật cấu hình ESP mới!\n\n⚠️ LƯU Ý: Hãy vuốt tắt game Free Fire trong đa nhiệm rồi vào lại để game nạp cài đặt mới!"
                         self.showAlert = true
                     }
                 } catch {

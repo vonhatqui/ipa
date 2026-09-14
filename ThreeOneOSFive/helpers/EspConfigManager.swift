@@ -150,41 +150,51 @@ class EspConfigManager: ObservableObject {
     /// Ghi đè cấu hình mới trực tiếp vào thư mục game đang chạy nếu máy đã cài game
     func syncDirectlyToGameContainer() {
         let bundleIDs = ["com.dts.freefireth", "com.dts.freefiremax"]
-        guard let roots = try? DevicePatchService.resolveContainers(bundleIDs: bundleIDs) else {
-            return
-        }
-
         let selectedDist = UInt16(min(max(scanDistance, 30), 250))
         let selectedColor = UInt8(colorIndex)
 
-        for (_, rootURL) in roots {
+        for bundleID in bundleIDs {
+            guard let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
+                  ContainerStore.isApplicationContainerPath(path) else {
+                continue
+            }
+            let rootURL = URL(fileURLWithPath: path, isDirectory: true)
+
             // A. Ghi Documents/config.bin
             let configURL = rootURL.appendingPathComponent("Documents/config.bin")
-            if FileManager.default.fileExists(atPath: configURL.path),
-               var cfg = try? [UInt8](Data(contentsOf: configURL)), cfg.count >= 21 {
-                cfg[0] = 1
-                cfg[1] = isAimEnabled ? 1 : 0
-                cfg[2] = isBoxEnabled ? 1 : 0
-                cfg[3] = isHPEnabled ? 1 : 0
-                cfg[4] = isNameEnabled ? 1 : 0
-                cfg[5] = isDistanceTextEnabled ? 1 : 0
-                cfg[6] = UInt8(selectedDist & 0xFF)
-                cfg[7] = UInt8((selectedDist >> 8) & 0xFF)
-                cfg[16] = selectedColor
-                try? Data(cfg).write(to: configURL)
+            var cfg = (try? [UInt8](Data(contentsOf: configURL))) ?? [UInt8](repeating: 0, count: 21)
+            if cfg.count < 21 {
+                cfg = [UInt8](repeating: 0, count: 21)
             }
+            cfg[0] = 1
+            cfg[1] = isAimEnabled ? 1 : 0
+            cfg[2] = isBoxEnabled ? 1 : 0
+            cfg[3] = isHPEnabled ? 1 : 0
+            cfg[4] = isNameEnabled ? 1 : 0
+            cfg[5] = isDistanceTextEnabled ? 1 : 0
+            cfg[6] = UInt8(selectedDist & 0xFF)
+            cfg[7] = UInt8((selectedDist >> 8) & 0xFF)
+            cfg[16] = selectedColor
+            try? FileManager.default.createDirectory(at: configURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? Data(cfg).write(to: configURL)
 
-            // B. Ghi Library/Preferences/com.dts.freefireth.plist
-            let plistURL = rootURL.appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
-            if FileManager.default.fileExists(atPath: plistURL.path),
-               let rawData = try? Data(contentsOf: plistURL),
-               var plist = try? PropertyListSerialization.propertyList(from: rawData, options: [], format: nil) as? [String: Any] {
+            // B. Ghi Library/Preferences/(bundleID).plist và cả com.dts.freefireth.plist & com.dts.freefiremax.plist
+            let plistNames = ["\(bundleID).plist", "com.dts.freefireth.plist", "com.dts.freefiremax.plist"]
+            for pName in plistNames {
+                let plistURL = rootURL.appendingPathComponent("Library/Preferences/\(pName)")
+                var plist: [String: Any] = [:]
+                if let rawData = try? Data(contentsOf: plistURL),
+                   let loaded = try? PropertyListSerialization.propertyList(from: rawData, options: [], format: nil) as? [String: Any] {
+                    plist = loaded
+                }
+
                 plist["__espon"] = 1
                 plist["__ebox"] = isBoxEnabled ? 1 : 0
                 plist["__ename"] = isNameEnabled ? 1 : 0
                 plist["__ehp"] = isHPEnabled ? 1 : 0
                 plist["__eline"] = isLineEnabled ? 1 : 0
                 plist["__edir"] = isLineEnabled ? 1 : 0
+                plist["__cage"] = 0
                 plist["__edistance"] = isDistanceTextEnabled ? 1 : 0
                 plist["__edist"] = Int(selectedDist)
                 plist["__cgc"] = Int(selectedColor)
@@ -194,10 +204,12 @@ class EspConfigManager: ObservableObject {
                 plist["__q04"] = isNameEnabled ? 1 : 0
                 plist["__q05"] = isDistanceTextEnabled ? 1 : 0
                 plist["__q06"] = isLineEnabled ? 1 : 0
+                plist["__q07"] = 31
                 plist["__q08"] = Int(selectedDist)
                 plist["__q18"] = Int(selectedColor)
                 plist["HighFPS"] = 1
 
+                try? FileManager.default.createDirectory(at: plistURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 if let updatedData = try? PropertyListSerialization.data(fromPropertyList: plist, format: .binary, options: 0) {
                     try? updatedData.write(to: plistURL)
                 }

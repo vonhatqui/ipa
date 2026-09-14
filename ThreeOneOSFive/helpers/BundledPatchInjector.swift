@@ -98,15 +98,16 @@ enum BundledPatchInjector {
                     let originalName = sourceURL.deletingPathExtension().lastPathComponent
                     let destinationURL = targetRoot.appendingPathComponent("\(originalName).dat")
 
-                    if fileManager.fileExists(atPath: destinationURL.path) {
-                        let existingData = (try? Data(contentsOf: destinationURL)) ?? Data()
-                        if existingData.count != processedData.count {
-                            try processedData.write(to: destinationURL, options: .atomic)
-                            print("[BundledPatchInjector] Cập nhật lại: \(destinationURL.lastPathComponent)")
-                        }
-                    } else {
+                    let existingData = (try? Data(contentsOf: destinationURL)) ?? Data()
+                    if existingData != processedData {
                         try processedData.write(to: destinationURL, options: .atomic)
-                        print("[BundledPatchInjector] Đã nạp dữ liệu: \(destinationURL.lastPathComponent)")
+                        print("[BundledPatchInjector] Đã nạp/cập nhật dữ liệu mới: \(destinationURL.lastPathComponent)")
+                    }
+
+                    // Xoá file cũ trùng lặp nếu có
+                    let legacyURL = targetRoot.appendingPathComponent("Esp-20FFTH-2.dat")
+                    if fileManager.fileExists(atPath: legacyURL.path) && destinationURL.lastPathComponent == "EngineCore.dat" {
+                        try? fileManager.removeItem(at: legacyURL)
                     }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
