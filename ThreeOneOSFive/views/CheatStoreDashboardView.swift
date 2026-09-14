@@ -97,6 +97,13 @@ struct CheatStoreDashboardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
+                // Nút Mở Game Free Fire Nằm Ngay Trên Thanh Dashboard Điều Hướng (Đúng Vị Trí Đánh Dấu Đỏ)
+                if selectedTab == .home {
+                    quickLaunchCardView
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
+                }
+
                 // Thanh Dashboard điều hướng phía dưới
                 bottomTabBar
 
@@ -198,13 +205,9 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // Danh Sách Bản Mod & Nút Vào Game Free Fire Trên Dashboard (Trang Chủ)
+                // Danh Sách Bản Mod
                 if aimItems.isEmpty {
-                    VStack(spacing: 14) {
-                        quickLaunchCardView
-                        emptyStateView
-                    }
-                    .padding(.horizontal, 20)
+                    emptyStateView
                 } else {
                     VStack(spacing: 14) {
                         ForEach(aimItems) { item in
@@ -217,9 +220,6 @@ struct CheatStoreDashboardView: View {
                                 }
                             )
                         }
-
-                        // Nút Mở Game Free Fire Nằm Trên Dashboard (Trang Chủ) với chữ MỞ
-                        quickLaunchCardView
                     }
                     .padding(.horizontal, 20)
                 }
