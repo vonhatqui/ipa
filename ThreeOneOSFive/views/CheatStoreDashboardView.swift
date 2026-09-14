@@ -53,13 +53,13 @@ struct CheatStoreDashboardView: View {
     private func isEspItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? "").lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi")
+        return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network")
     }
 
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? "").lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("skin") || name.contains("ignis") || filename.contains("skin") || filename.contains("ignis")
+        return name.contains("skin") || name.contains("ignis") || filename.contains("resources")
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
@@ -1133,14 +1133,17 @@ struct CheatStoreDashboardView: View {
     private func displayName(for item: PatchLibraryItem) -> String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if name.contains("aimneck") || name.contains("aim neck") || filename.contains("aimneck") {
+        if name.contains("aimneck") || name.contains("aim neck") || name.contains("neck") || filename.contains("runtime") {
             return "AIMNECK"
         }
-        if name.contains("aimdrag") || name.contains("aim drag") || filename.contains("aimdrag") || name.contains("usp") || filename.contains("usp") {
+        if name.contains("aimdrag") || name.contains("aim drag") || name.contains("drag") || name.contains("usp") || filename.contains("system") {
             return "AIMDRAG CÂN USP"
         }
-        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi") {
+        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network") {
             return "ĐỊNH VỊ ESP"
+        }
+        if name.contains("ignis") || name.contains("skin") || filename.contains("resources") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
         }
         return item.project?.name ?? "CHỨC NĂNG VIP"
     }
@@ -1335,14 +1338,17 @@ private struct CheatItemCard: View {
     private var displayName: String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if name.contains("aimneck") || name.contains("aim neck") || filename.contains("aimneck") {
+        if name.contains("aimneck") || name.contains("aim neck") || name.contains("neck") || filename.contains("runtime") {
             return "AIMNECK"
         }
-        if name.contains("aimdrag") || name.contains("aim drag") || filename.contains("aimdrag") || name.contains("usp") || filename.contains("usp") {
+        if name.contains("aimdrag") || name.contains("aim drag") || name.contains("drag") || name.contains("usp") || filename.contains("system") {
             return "AIMDRAG CÂN USP"
         }
-        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi") {
+        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network") {
             return "ĐỊNH VỊ ESP"
+        }
+        if name.contains("ignis") || name.contains("skin") || filename.contains("resources") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
         }
         return item.project?.name ?? "CHỨC NĂNG VIP"
     }

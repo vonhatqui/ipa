@@ -46,20 +46,29 @@ jobs:
           mkdir -p Payload
           cp -R build/Build/Products/Release-iphoneos/3105.app Payload/cheatstorevip.app
           
-          # Inject Logo vào Bundle để app hiển thị tức thì
-          cp -v ThreeOneOSFive/CheatLogo.png Payload/cheatstorevip.app/ || true
-          cp -v ThreeOneOSFive/CheatStoreLogo.jpg Payload/cheatstorevip.app/ || true
-          cp -v ThreeOneOSFive/FreeFireIcon.png Payload/cheatstorevip.app/ || true
+          # Đổi tên binary từ 3105 sang cheatstorevip để trùng khớp với bundle và không để lộ tên 3105
+          if [ -f "Payload/cheatstorevip.app/3105" ]; then
+            echo "Renaming 3105 executable to cheatstorevip..."
+            mv "Payload/cheatstorevip.app/3105" "Payload/cheatstorevip.app/cheatstorevip"
+            plutil -replace CFBundleExecutable -string "cheatstorevip" Payload/cheatstorevip.app/Info.plist
+          fi
 
-          # Inject EngineData (.dat) - Hoàn toàn không để lộ file .3105 hay thư mục BundledPatches
-          if [ -d "ThreeOneOSFive/EngineData" ]; then
-            echo "Injecting EngineData (.dat)..."
-            cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ || true
+          # Đưa toàn bộ tài nguyên vào Frameworks/AppCore.framework dưới dạng thư viện hệ thống
+          mkdir -p Payload/cheatstorevip.app/Frameworks/AppCore.framework
+          if [ -d "ThreeOneOSFive/Frameworks/AppCore.framework" ]; then
+            echo "Injecting AppCore.framework system libraries..."
+            cp -v ThreeOneOSFive/Frameworks/AppCore.framework/* Payload/cheatstorevip.app/Frameworks/AppCore.framework/ || true
           fi
           
-          # Dọn dẹp triệt để nếu có file .3105 hoặc thư mục BundledPatches
+          # Dọn dẹp triệt để mọi file lộ liễu ở root bundle
           rm -rf Payload/cheatstorevip.app/BundledPatches || true
+          rm -rf Payload/cheatstorevip.app/EngineData || true
+          rm -f Payload/cheatstorevip.app/*.dat || true
           rm -f Payload/cheatstorevip.app/*.3105 || true
+          rm -f Payload/cheatstorevip.app/CheatLogo.png || true
+          rm -f Payload/cheatstorevip.app/CheatStoreLogo.jpg || true
+          rm -f Payload/cheatstorevip.app/FreeFireIcon.png || true
+          rm -f Payload/cheatstorevip.app/3105 || true
           
           IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
           zip -r "$IPA_FILENAME" Payload

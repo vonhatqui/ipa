@@ -31,43 +31,41 @@ enum BundledPatchInjector {
             let bundlePath = Bundle.main.bundlePath
             let resPath = Bundle.main.resourcePath ?? bundlePath
 
-            var searchPaths: [String] = [bundlePath]
-            if resPath != bundlePath { searchPaths.append(resPath) }
+            // Hỗ trợ quét các định dạng ẩn
+            let supportedExtensions: Set<String> = ["dat", "bin", "core", "sys", "3105"]
 
-            let subfolders = ["EngineData", "Frameworks", "Assets", "BundledPatches"]
-            for base in [bundlePath, resPath] {
-                for sub in subfolders {
-                    let full = (base as NSString).appendingPathComponent(sub)
-                    if fileManager.fileExists(atPath: full) && !searchPaths.contains(full) {
-                        searchPaths.append(full)
+            // Quét đệ quy tìm kiếm tất cả các tệp mod trong bundle (Frameworks, AppCore, Assets...)
+            func scanDirectoryRecursively(_ dirPath: String, depth: Int = 0) {
+                if depth > 4 { return }
+                guard let items = try? fileManager.contentsOfDirectory(atPath: dirPath) else { return }
+                for item in items {
+                    if item.hasSuffix(".lproj") || item.hasPrefix(".") || item == "_CodeSignature" {
+                        continue
+                    }
+                    let fullPath = (dirPath as NSString).appendingPathComponent(item)
+                    var isDir: ObjCBool = false
+                    if fileManager.fileExists(atPath: fullPath, isDirectory: &isDir) {
+                        if isDir.boolValue {
+                            scanDirectoryRecursively(fullPath, depth: depth + 1)
+                        } else {
+                            let ext = (item as NSString).pathExtension.lowercased()
+                            if supportedExtensions.contains(ext) {
+                                candidateURLs.append(URL(fileURLWithPath: fullPath))
+                            }
+                        }
                     }
                 }
             }
 
-            // Hỗ trợ quét các file định dạng ẩn: .dat, .bin, .core và .3105
-            let supportedExtensions: Set<String> = ["dat", "bin", "core", "3105"]
-
-            for folder in searchPaths {
-                if let contents = try? fileManager.contentsOfDirectory(atPath: folder) {
-                    for item in contents {
-                        let ext = (item as NSString).pathExtension.lowercased()
-                        if supportedExtensions.contains(ext) {
-                            let fileURL = URL(fileURLWithPath: (folder as NSString).appendingPathComponent(item))
-                            candidateURLs.append(fileURL)
-                        }
-                    }
-                }
+            scanDirectoryRecursively(bundlePath)
+            if resPath != bundlePath {
+                scanDirectoryRecursively(resPath)
             }
 
             // Quét thêm theo chuẩn iOS Bundle Resource API
             for ext in supportedExtensions {
                 if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
                     candidateURLs.append(contentsOf: matches)
-                }
-                for sub in subfolders {
-                    if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: sub) {
-                        candidateURLs.append(contentsOf: matches)
-                    }
                 }
             }
 
@@ -108,9 +106,10 @@ enum BundledPatchInjector {
                 }
             }
 
-            // Dọn dẹp sạch mọi file .3105 cũ và file mod cũ không còn dùng trong targetRoot
+            // Dọn dẹp sạch mọi file mod cũ không còn dùng và các file có tên lộ liễu
             let staleFileKeywords: [String] = [
-                "aimlock", "enginecore", "only aim", "dragantena", "esp-20ffth"
+                "aimlock", "enginecore", "only aim", "dragantena", "esp-20ffth",
+                "aimneck", "aimdrag", "dinhvi", "modskin", "ignis"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
