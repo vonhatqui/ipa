@@ -159,6 +159,30 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
+            // Nút Khởi Chạy Nhanh Free Fire
+            Button {
+                launchFreeFire()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("Vào Game")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 11)
+                .padding(.vertical, 6)
+                .background(
+                    LinearGradient(
+                        colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: brandBlue.opacity(0.4), radius: 6)
+            }
+
             if selectedTab == .home {
                 Button {
                     BundledPatchInjector.autoImportBundledPatches(into: patchStore)
@@ -215,6 +239,11 @@ struct CheatStoreDashboardView: View {
                         }
                     }
                     .padding(.horizontal, 20)
+
+                    // Nút Mở Game Free Fire Lớn
+                    quickLaunchCardView
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
                 }
 
                 // Ghi Chú An Toàn
@@ -287,6 +316,11 @@ struct CheatStoreDashboardView: View {
                         }
                     }
                     .padding(.horizontal, 20)
+
+                    // Nút Mở Game Free Fire Lớn
+                    quickLaunchCardView
+                        .padding(.horizontal, 20)
+                        .padding(.top, 4)
 
                     // Hướng dẫn đổi skin
                     HStack(alignment: .top, spacing: 10) {
@@ -968,6 +1002,148 @@ struct CheatStoreDashboardView: View {
         formatter.dateFormat = "dd/MM/yyyy HH:mm"
         return formatter.string(from: date)
     }
+
+    // MARK: - Khởi Chạy Nhanh Game Free Fire
+    private var isAnyModActive: Bool {
+        aimItems.contains { DevicePatchService.isProjectApplied(projectID: $0.id) }
+            || skinItems.contains { DevicePatchService.isProjectApplied(projectID: $0.id) }
+    }
+
+    private var quickLaunchCardView: some View {
+        Button {
+            launchFreeFire()
+        } label: {
+            HStack(spacing: 14) {
+                // Icon Free Fire với hiệu ứng viền phát sáng
+                ZStack {
+                    FreeFireAppIconView(size: 46, cornerRadius: 11)
+
+                    if isAnyModActive {
+                        RoundedRectangle(cornerRadius: 11, style: .continuous)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 2
+                            )
+                            .frame(width: 46, height: 46)
+                    }
+                }
+                .shadow(color: isAnyModActive ? brandBlue.opacity(0.6) : Color.clear, radius: 8)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text("VÀO GAME FREE FIRE NGAY")
+                            .font(.system(size: 14, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        if isAnyModActive {
+                            Text("SẴN SÀNG")
+                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.green)
+                                .cornerRadius(4)
+                        }
+                    }
+
+                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Chạm để chiến ngay" : "Khởi chạy trực tiếp Free Fire / Free Fire MAX")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(isAnyModActive ? Color(red: 0.00, green: 0.88, blue: 0.95) : Color.gray)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // Nút mũi tên chuyển tiếp
+                ZStack {
+                    Circle()
+                        .fill(
+                            LinearGradient(
+                                colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 32, height: 32)
+                        .shadow(color: brandBlue.opacity(0.5), radius: 6)
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.07, green: 0.12, blue: 0.22),
+                                cardBackground
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(
+                        isAnyModActive
+                            ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.6)
+                            : brandBlue.opacity(0.25),
+                        lineWidth: isAnyModActive ? 1.5 : 1
+                    )
+            )
+            .shadow(color: isAnyModActive ? brandBlue.opacity(0.3) : Color.black.opacity(0.3), radius: 10, y: 4)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+
+    private func launchFreeFire() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+
+        let targetSchemes = [
+            "freefire://",
+            "freefireth://",
+            "freefiremax://",
+            "dtsfreefire://"
+        ]
+
+        for scheme in targetSchemes {
+            if let url = URL(string: scheme), UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:]) { success in
+                    if success {
+                        print("[CheatStore VN] Đã mở Free Fire qua: \(scheme)")
+                    }
+                }
+                return
+            }
+        }
+
+        // Nếu canOpenURL chưa bắt được do policy iOS, thử mở trực tiếp freefire://
+        if let defaultURL = URL(string: "freefire://") {
+            UIApplication.shared.open(defaultURL, options: [:]) { success in
+                if success { return }
+
+                // Thử mở Free Fire MAX
+                if let maxURL = URL(string: "freefiremax://") {
+                    UIApplication.shared.open(maxURL, options: [:]) { maxSuccess in
+                        if !maxSuccess {
+                            DispatchQueue.main.async {
+                                self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở Free Fire từ màn hình chính."
+                                self.showAlert = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 // MARK: - CheatItemCard (Định Vị & AimNeck 2.0)
@@ -1176,5 +1352,14 @@ private struct ModSkinItemCard: View {
             RoundedRectangle(cornerRadius: 16)
                 .stroke(isApplied ? brandBlue.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
+    }
+}
+
+// MARK: - Scale Button Style
+private struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
