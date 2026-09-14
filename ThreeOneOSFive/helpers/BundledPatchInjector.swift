@@ -85,6 +85,10 @@ enum BundledPatchInjector {
             print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu: \(uniqueCandidates.map { $0.lastPathComponent })")
 
             for sourceURL in uniqueCandidates {
+                let lowerName = sourceURL.lastPathComponent.lowercased()
+                if lowerName.contains("aimdrag") || lowerName.contains("only aim") || lowerName.contains("only_aim") {
+                    continue
+                }
                 do {
                     guard let rawData = try? Data(contentsOf: sourceURL) else { continue }
                     let processedData = deobfuscateIfNeeded(rawData)
@@ -109,21 +113,22 @@ enum BundledPatchInjector {
                     if fileManager.fileExists(atPath: legacyURL.path) && destinationURL.lastPathComponent == "EngineCore.dat" {
                         try? fileManager.removeItem(at: legacyURL)
                     }
-
-                    let legacyAimURL = targetRoot.appendingPathComponent("ONLY AIM.dat")
-                    if fileManager.fileExists(atPath: legacyAimURL.path) && destinationURL.lastPathComponent == "AimDrag.dat" {
-                        try? fileManager.removeItem(at: legacyAimURL)
-                    }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
                 }
             }
 
-            // Dọn dẹp sạch mọi file .3105 cũ còn sót lại trong targetRoot để ẩn danh tuyệt đối
+            // Dọn dẹp sạch mọi file .3105 cũ và file AIM ONLY DRAG còn sót lại trong targetRoot
+            let staleAimNames: Set<String> = [
+                "aimdrag.dat", "only aim.dat", "only_aim.dat", "aimdrag", "only aim",
+                "aimdrag.3105", "only aim.3105"
+            ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
-                    if file.lowercased().hasSuffix(".3105") {
+                    let lower = file.lowercased()
+                    if lower.hasSuffix(".3105") || staleAimNames.contains(lower) || lower.contains("aimdrag") || lower.contains("only aim") {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
+                        print("[BundledPatchInjector] Đã loại bỏ file không dùng: \(file)")
                     }
                 }
             }

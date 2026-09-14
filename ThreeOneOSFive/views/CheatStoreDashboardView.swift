@@ -48,11 +48,17 @@ struct CheatStoreDashboardView: View {
 
     // Phân loại mod
     private var aimItems: [PatchLibraryItem] {
-        patchStore.items.filter { !isSkinItem($0) }
+        patchStore.items.filter { !isSkinItem($0) && !isStaleAimDrag($0) }
     }
 
     private var skinItems: [PatchLibraryItem] {
         patchStore.items.filter { isSkinItem($0) }
+    }
+
+    private func isStaleAimDrag(_ item: PatchLibraryItem) -> Bool {
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        let name = (item.project?.name ?? "").lowercased()
+        return filename.contains("aimdrag") || filename.contains("only aim") || name.contains("only drag")
     }
 
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
@@ -926,16 +932,13 @@ struct CheatStoreDashboardView: View {
     private func displayName(for item: PatchLibraryItem) -> String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
-            return "AIM ONLY DRAG"
-        }
-        if name.contains("esp") || filename.contains("enginecore") || filename.contains("esp") || name.isEmpty {
-            return "Định Vị & AimNeck 2.0"
-        }
         if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
-        return item.project?.name ?? "Bản Mod VIP"
+        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
+            return "Định Vị & AimNeck 2.0"
+        }
+        return item.project?.name ?? "Định Vị & AimNeck 2.0"
     }
 
     private func userFriendlyErrorMessage(_ error: Error) -> String {
@@ -967,7 +970,7 @@ struct CheatStoreDashboardView: View {
     }
 }
 
-// MARK: - CheatItemCard (Định Vị & AimNeck 2.0 / AIM ONLY DRAG)
+// MARK: - CheatItemCard (Định Vị & AimNeck 2.0)
 private struct CheatItemCard: View {
     let item: PatchLibraryItem
     let isWorking: Bool
@@ -977,22 +980,17 @@ private struct CheatItemCard: View {
     private var displayName: String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
-            return "AIM ONLY DRAG"
+        if name.contains("ignis") || filename.contains("skin") {
+            return "IGNIS ĐẠO SĨ ĐỎ"
         }
-        if name.contains("esp") || filename.contains("enginecore") || filename.contains("esp") || name.isEmpty {
+        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
-        return item.project?.name ?? "AIM ONLY DRAG"
+        return item.project?.name ?? "Định Vị & AimNeck 2.0"
     }
 
     private var subtitle: String {
-        let filename = item.packageURL.lastPathComponent.lowercased()
-        let name = (item.project?.name ?? "").lowercased()
-        if filename.contains("aim") || filename.contains("drag") || name.contains("drag") || name.contains("only") {
-            return "An Toàn"
-        }
-        return "Antiban - No Backlist"
+        "Antiban - No Backlist"
     }
 
     private var isApplied: Bool {
