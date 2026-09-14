@@ -181,11 +181,6 @@ struct CheatStoreDashboardView: View {
     private var homeView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // Thanh Mở Nhanh Free Fire Nổi Bật Trên Đầu Dashboard
-                quickLaunchCardView
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-
                 // Banner Tiêu Đề
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -201,11 +196,15 @@ struct CheatStoreDashboardView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 2)
+                .padding(.top, 10)
 
-                // Danh Sách Bản Mod
+                // Danh Sách Bản Mod & Nút Vào Game Free Fire Trên Dashboard (Trang Chủ)
                 if aimItems.isEmpty {
-                    emptyStateView
+                    VStack(spacing: 14) {
+                        quickLaunchCardView
+                        emptyStateView
+                    }
+                    .padding(.horizontal, 20)
                 } else {
                     VStack(spacing: 14) {
                         ForEach(aimItems) { item in
@@ -218,6 +217,9 @@ struct CheatStoreDashboardView: View {
                                 }
                             )
                         }
+
+                        // Nút Mở Game Free Fire Nằm Trên Dashboard (Trang Chủ) với chữ MỞ
+                        quickLaunchCardView
                     }
                     .padding(.horizontal, 20)
                 }
@@ -259,11 +261,6 @@ struct CheatStoreDashboardView: View {
     private var modSkinView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // Thanh Mở Nhanh Free Fire Nổi Bật Trên Đầu Dashboard
-                quickLaunchCardView
-                    .padding(.horizontal, 20)
-                    .padding(.top, 10)
-
                 // Tiêu đề phần ModSkin
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -279,7 +276,7 @@ struct CheatStoreDashboardView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 2)
+                .padding(.top, 10)
 
                 if skinItems.isEmpty {
                     modSkinEmptyView
