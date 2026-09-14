@@ -162,8 +162,33 @@ enum DevicePatchService {
                 )
             }
 
-            // 2. Nếu trước đó đã từng apply project này (hoặc có receipt cũ), thực hiện restore sạch trước
+            // 2. Tự động chuyển đổi thông minh: Nếu có project khác đang chiếm target file trùng lặp, tự động khôi phục project đó trước
             let backupRoot = try PatchProjectLibrary.backupRootURL()
+            let occupied = PatchTransaction.appliedTargetKeys(backupRoot: backupRoot, excludingProjectID: project.id, fileManager: fileManager)
+            var conflictingPIDs = Set<UUID>()
+            for rule in project.rules {
+                let key = rule.bundleID + "\0" + rule.relativePath
+                if occupied.contains(key) {
+                    if let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
+                        for entry in entries {
+                            if let otherPID = UUID(uuidString: entry), otherPID != project.id {
+                                conflictingPIDs.insert(otherPID)
+                            }
+                        }
+                    }
+                }
+            }
+            for conflictPID in conflictingPIDs {
+                if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot) {
+                    try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
+                        roots[bID] ?? URL(fileURLWithPath: "/")
+                    })
+                }
+                forceCleanupReceipts(projectID: conflictPID)
+                setProjectAppliedInMemory(projectID: conflictPID, applied: false)
+            }
+
+            // Nếu chính project này có receipt cũ, dọn sạch trước khi apply lại
             if let existingReceipt = PatchTransaction.latestReceipt(projectID: project.id, backupRoot: backupRoot) {
                 try? PatchTransaction.restore(receipt: existingReceipt, allowChangedTargets: true, containerResolver: { bID in
                     guard let r = roots[bID] else { throw PatchPackageError.targetAppUnavailable(bID) }
@@ -217,6 +242,7 @@ enum DevicePatchService {
     // MARK: - Restore & Rollback (Tắt chức năng)
     static func restore(
         receipt: PatchTransactionReceipt,
+        project: PatchProject? = nil,
         allowChangedTargets: Bool = true
     ) throws {
         try serialQueue.sync {
@@ -239,8 +265,9 @@ enum DevicePatchService {
                 log("patch: PatchTransaction.restore gặp lỗi: \(error), tiến hành khôi phục sâu qua Golden Snapshots...")
             }
 
-            // 2. PHỤC HỒI TRIỆT ĐỂ: Dùng Golden Snapshot khôi phục 100% dữ liệu ban đầu
-            restoreAllGoldenSnapshots()
+            // 2. PHỤC HỒI TRIỆT ĐỂ: Chỉ khôi phục các file thuộc về project này từ Golden Snapshot
+            let resolvedProject = project ?? (try? PatchProjectLibrary.load(fileManager: FileManager.default).first(where: { $0.id == receipt.projectID }))?.project
+            restoreAllGoldenSnapshots(for: resolvedProject)
 
             // 3. Dọn dẹp receipt & cập nhật cache
             forceCleanupReceipts(projectID: receipt.projectID)

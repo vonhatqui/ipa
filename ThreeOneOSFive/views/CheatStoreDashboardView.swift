@@ -46,27 +46,36 @@ struct CheatStoreDashboardView: View {
     private let cardBackground = Color(red: 0.06, green: 0.09, blue: 0.16)
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
-    // Phân loại mod
+    // Phân loại mod hiển thị trên Dashboard theo đúng thứ tự 3 chức năng mới
     private var aimItems: [PatchLibraryItem] {
-        patchStore.items.filter { !isSkinItem($0) && !isStaleAimDrag($0) }
+        let order: [String: Int] = [
+            "aimneck": 1,
+            "aim neck": 1,
+            "aimdrag": 2,
+            "aim drag": 2,
+            "usp": 2,
+            "dinhvi": 3,
+            "định vị": 3,
+            "esp": 3
+        ]
+        return patchStore.items.filter { !isSkinItem($0) }
+            .sorted { (item1, item2) -> Bool in
+                let n1 = (item1.project?.name ?? item1.packageURL.lastPathComponent).lowercased()
+                let n2 = (item2.project?.name ?? item2.packageURL.lastPathComponent).lowercased()
+                let o1 = order.first(where: { n1.contains($0.key) })?.value ?? 99
+                let o2 = order.first(where: { n2.contains($0.key) })?.value ?? 99
+                return o1 < o2
+            }
     }
 
     private var skinItems: [PatchLibraryItem] {
         patchStore.items.filter { isSkinItem($0) }
     }
 
-    private func isStaleAimDrag(_ item: PatchLibraryItem) -> Bool {
-        let filename = item.packageURL.lastPathComponent.lowercased()
-        let name = (item.project?.name ?? "").lowercased()
-        return filename.contains("aimdrag") || filename.contains("only aim") || name.contains("only drag")
-            || filename.contains("dragantena") || name.contains("drag + antena")
-    }
-
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? "").lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("skin") || name.contains("ignis") || name.contains("avatar")
-            || filename.contains("skin") || filename.contains("ignis")
+        return name.contains("skin") || name.contains("ignis") || filename.contains("skin") || filename.contains("ignis")
     }
 
     var body: some View {
@@ -904,7 +913,7 @@ struct CheatStoreDashboardView: View {
                     let receipt = DevicePatchService.latestReceipt(projectID: item.id)
                     if let receipt = receipt {
                         do {
-                            try DevicePatchService.restore(receipt: receipt, allowChangedTargets: true)
+                            try DevicePatchService.restore(receipt: receipt, project: item.project, allowChangedTargets: true)
                         } catch {
                             // Fallback phục hồi cưỡng chế từ Golden Snapshots
                             DevicePatchService.forceRestoreAndCleanup(receipt: receipt, project: item.project)
@@ -941,16 +950,16 @@ struct CheatStoreDashboardView: View {
     private func displayName(for item: PatchLibraryItem) -> String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if name.contains("ignis") || filename.contains("skin") {
-            return "IGNIS ĐẠO SĨ ĐỎ"
+        if name.contains("aimneck") || name.contains("aim neck") || filename.contains("aimneck") {
+            return "AIMNECK"
         }
-        if name.contains("aimlock") || filename.contains("aimlock") {
-            return "AIMLOCK NO ESP"
+        if name.contains("aimdrag") || name.contains("aim drag") || filename.contains("aimdrag") || name.contains("usp") || filename.contains("usp") {
+            return "AIMDRAG CÂN USP"
         }
-        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || name.isEmpty {
-            return "Định Vị & AimNeck 2.0"
+        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi") {
+            return "ĐỊNH VỊ ESP"
         }
-        return item.project?.name ?? "Định Vị & AimNeck 2.0"
+        return item.project?.name ?? "CHỨC NĂNG VIP"
     }
 
     private func userFriendlyErrorMessage(_ error: Error) -> String {
@@ -1144,23 +1153,30 @@ private struct CheatItemCard: View {
     private var displayName: String {
         let filename = item.packageURL.lastPathComponent.lowercased()
         let name = (item.project?.name ?? "").lowercased()
-        if name.contains("ignis") || filename.contains("skin") {
-            return "IGNIS ĐẠO SĨ ĐỎ"
+        if name.contains("aimneck") || name.contains("aim neck") || filename.contains("aimneck") {
+            return "AIMNECK"
         }
-        if name.contains("aimlock") || filename.contains("aimlock") {
-            return "AIMLOCK NO ESP"
+        if name.contains("aimdrag") || name.contains("aim drag") || filename.contains("aimdrag") || name.contains("usp") || filename.contains("usp") {
+            return "AIMDRAG CÂN USP"
         }
-        if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || name.isEmpty {
-            return "Định Vị & AimNeck 2.0"
+        if name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || filename.contains("esp") || filename.contains("dinhvi") {
+            return "ĐỊNH VỊ ESP"
         }
-        return item.project?.name ?? "Định Vị & AimNeck 2.0"
+        return item.project?.name ?? "CHỨC NĂNG VIP"
     }
 
     private var subtitle: String {
-        if displayName == "AIMLOCK NO ESP" {
-            return "Khóa Tâm Chuẩn • Antiban"
+        let name = displayName
+        if name == "AIMNECK" {
+            return "Khóa Cổ Siêu Chuẩn • Antiban"
         }
-        return "Antiban - No Backlist"
+        if name == "AIMDRAG CÂN USP" {
+            return "Kéo Tâm Cân Mọi Súng • Siêu Mượt"
+        }
+        if name == "ĐỊNH VỊ ESP" {
+            return "Định Vị Người Chơi • Xuyên Tường"
+        }
+        return "Antiban - No Blacklist"
     }
 
     private var isApplied: Bool {

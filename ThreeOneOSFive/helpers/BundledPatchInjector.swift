@@ -85,10 +85,6 @@ enum BundledPatchInjector {
             print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu: \(uniqueCandidates.map { $0.lastPathComponent })")
 
             for sourceURL in uniqueCandidates {
-                let lowerName = sourceURL.lastPathComponent.lowercased()
-                if lowerName.contains("aimdrag") || lowerName.contains("only aim") || lowerName.contains("only_aim") {
-                    continue
-                }
                 do {
                     guard let rawData = try? Data(contentsOf: sourceURL) else { continue }
                     let processedData = deobfuscateIfNeeded(rawData)
@@ -107,28 +103,22 @@ enum BundledPatchInjector {
                         try processedData.write(to: destinationURL, options: .atomic)
                         print("[BundledPatchInjector] Đã nạp/cập nhật dữ liệu mới: \(destinationURL.lastPathComponent)")
                     }
-
-                    // Xoá file cũ trùng lặp nếu có
-                    let legacyURL = targetRoot.appendingPathComponent("Esp-20FFTH-2.dat")
-                    if fileManager.fileExists(atPath: legacyURL.path) && destinationURL.lastPathComponent == "EngineCore.dat" {
-                        try? fileManager.removeItem(at: legacyURL)
-                    }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
                 }
             }
 
-            // Dọn dẹp sạch mọi file .3105 cũ và file AIM ONLY DRAG còn sót lại trong targetRoot
-            let staleAimNames: Set<String> = [
-                "aimdrag.dat", "only aim.dat", "only_aim.dat", "aimdrag", "only aim",
-                "aimdrag.3105", "only aim.3105", "dragantena.dat", "dragantena"
+            // Dọn dẹp sạch mọi file .3105 cũ và file mod cũ không còn dùng trong targetRoot
+            let staleFileKeywords: [String] = [
+                "aimlock", "enginecore", "skinasset", "only aim", "dragantena", "esp-20ffth"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
                     let lower = file.lowercased()
-                    if lower.hasSuffix(".3105") || staleAimNames.contains(lower) || lower.contains("aimdrag") || lower.contains("only aim") {
+                    let isStale = staleFileKeywords.contains { lower.contains($0) }
+                    if lower.hasSuffix(".3105") || isStale {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
-                        print("[BundledPatchInjector] Đã loại bỏ file không dùng: \(file)")
+                        print("[BundledPatchInjector] Đã loại bỏ file mod cũ: \(file)")
                     }
                 }
             }

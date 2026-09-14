@@ -210,15 +210,13 @@ enum PatchProjectLibrary {
             packageID: summary.packageID,
             fileManager: fileManager
         )
+        // Cho phép các bản mod cùng tồn tại trong thư viện để người dùng có thể lựa chọn trên Dashboard
         if let occupiedPath = overlappingTargetPath(
             in: decoded.project,
             excludingPackageID: summary.packageID,
             fileManager: fileManager
         ) {
-            if decoded.project.isPrivate, !authorCopy {
-                throw PatchPackageError.privateOperationFailed
-            }
-            throw PatchPackageError.targetOccupied(occupiedPath)
+            log("patch: detected overlapping target in library: \(occupiedPath)")
         }
         let previousData = try existingURL.map { try readPackage(at: $0) }
         let originURL = try originFileURL(
