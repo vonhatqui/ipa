@@ -892,10 +892,7 @@ struct CheatStoreDashboardView: View {
                         throw PatchPackageError.unsupportedFormat
                     }
 
-                    // 1. Dọn dẹp sạch receipt cũ bị kẹt nếu có để không bị lỗi projectAlreadyApplied
-                    DevicePatchService.forceCleanupReceipts(projectID: item.id)
-
-                    // 2. Thực hiện Apply bản mod vào game (tự động fix crash, bypass UDP socket & GameCamera null)
+                    // Thực hiện Apply bản mod vào game (tự động chụp Golden Snapshot bảo vệ dữ liệu gốc)
                     _ = try DevicePatchService.apply(project: project)
 
                     DispatchQueue.main.async {
@@ -905,29 +902,33 @@ struct CheatStoreDashboardView: View {
                         self.showAlert = true
                     }
                 } else {
-                    // TẮT chức năng (Restore)
+                    // TẮT chức năng (Restore 100% dữ liệu gốc sạch)
                     let receipt = DevicePatchService.latestReceipt(projectID: item.id)
-                    if let receipt {
+                    if let receipt = receipt {
                         do {
                             try DevicePatchService.restore(receipt: receipt, allowChangedTargets: true)
                         } catch {
-                            // Fallback phục hồi cưỡng chế: trả lại file gốc hoặc xoá mod file
+                            // Fallback phục hồi cưỡng chế từ Golden Snapshots
                             DevicePatchService.forceRestoreAndCleanup(receipt: receipt, project: item.project)
                         }
                     } else {
-                        // Không tìm thấy receipt nhưng bấm tắt -> dọn dẹp sạch file mod trong game
+                        // Không tìm thấy receipt nhưng bấm tắt -> khôi phục sạch qua Golden Snapshots
                         DevicePatchService.forceCleanup(project: item.project)
-                        DevicePatchService.forceCleanupReceipts(projectID: item.id)
                     }
 
                     DispatchQueue.main.async {
                         self.patchStore.reload()
                         self.workingPatchID = nil
-                        self.alertMessage = "Đã TẮT và khôi phục an toàn: \(modName)"
+                        self.alertMessage = "Đã TẮT và khôi phục an toàn 100%: \(modName)"
                         self.showAlert = true
                     }
                 }
             } catch {
+                // Tự động hoàn tác về trạng thái gốc sạch nếu quá trình bật gặp sự cố
+                if enable {
+                    DevicePatchService.forceRestoreAndCleanup(receipt: nil, project: item.project)
+                }
+
                 DispatchQueue.main.async {
                     self.patchStore.reload()
                     self.workingPatchID = nil
