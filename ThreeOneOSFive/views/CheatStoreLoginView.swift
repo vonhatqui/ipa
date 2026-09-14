@@ -200,13 +200,13 @@ struct CheatStoreLoginView: View {
                     // Nút Hỗ trợ / Mua Key
                     HStack(spacing: 14) {
                         Button {
-                            if let url = URL(string: "https://cheatingenginexyz.online") {
+                            if let url = URL(string: "https://zalo.me/0365829172") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
-                            HStack {
-                                Image(systemName: "cart.fill")
-                                Text("Mua Key Tại Web")
+                            HStack(spacing: 6) {
+                                Image(systemName: "message.fill")
+                                Text("Mua Key Zalo")
                             }
                             .font(.system(size: 14, weight: .semibold))
                             .foregroundStyle(brandBlue)
@@ -552,17 +552,20 @@ struct KeyNotificationModalView: View {
 
                         HStack(spacing: 12) {
                             Button {
-                                if let url = URL(string: "https://cheatingenginexyz.online") {
+                                if let url = URL(string: "https://zalo.me/0365829172") {
                                     UIApplication.shared.open(url)
                                 }
                             } label: {
-                                Text("Mua Key Tại Web")
-                                    .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(brandBlue)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 38)
-                                    .background(brandBlue.opacity(0.12))
-                                    .cornerRadius(10)
+                                HStack(spacing: 4) {
+                                    Image(systemName: "message.fill")
+                                    Text("Mua Key Zalo")
+                                }
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(brandBlue)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 38)
+                                .background(brandBlue.opacity(0.12))
+                                .cornerRadius(10)
                             }
 
                             Button {

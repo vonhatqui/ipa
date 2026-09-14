@@ -92,6 +92,9 @@ struct CheatStoreDashboardView: View {
 
                 // Thanh Dashboard điều hướng phía dưới
                 bottomTabBar
+
+                // Footer thông tin thiết bị & phiên bản iOS & trạng thái hỗ trợ
+                deviceStatusFooterView
             }
         }
         .alert(isPresented: $showAlert) {
@@ -512,6 +515,63 @@ struct CheatStoreDashboardView: View {
                                 .cornerRadius(8)
                         }
                     }
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Thiết Bị Đang Dùng
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("THIẾT BỊ ĐANG DÙNG")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.gray)
+
+                            Text(AppInfo.hardwareDisplayName)
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+                        Spacer()
+                        Image(systemName: "iphone.gen3")
+                            .font(.system(size: 20))
+                            .foregroundStyle(brandBlue)
+                    }
+
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Phiên bản iOS & Hỗ trợ
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("PHIÊN BẢN HỆ ĐIỀU HÀNH")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.gray)
+
+                            Text("iOS \(AppInfo.osVersion) (\(AppInfo.osBuild))")
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundStyle(.white)
+                        }
+                        Spacer()
+                        if isDeviceSupported {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                Text("Có hỗ trợ")
+                            }
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
+                            .cornerRadius(8)
+                        } else {
+                            HStack(spacing: 4) {
+                                Image(systemName: "xmark.circle.fill")
+                                Text("Không hỗ trợ")
+                            }
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.12))
+                            .cornerRadius(8)
+                        }
+                    }
                 }
                 .padding(16)
                 .background(cardBackground)
@@ -522,29 +582,48 @@ struct CheatStoreDashboardView: View {
                 )
                 .padding(.horizontal, 20)
 
-                // Nút Gia Hạn Key
-                Button {
-                    if let url = URL(string: discordRenewalURL) {
-                        UIApplication.shared.open(url)
-                    }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "creditcard.fill")
-                        Text("GIA HẠN KEY (DISCORD)")
-                    }
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(
-                        LinearGradient(
-                            colors: [brandBlue, brandBlueDark],
-                            startPoint: .leading,
-                            endPoint: .trailing
+                // Nút Gia Hạn Key Qua Zalo & Discord
+                HStack(spacing: 12) {
+                    Button {
+                        if let url = URL(string: "https://zalo.me/0365829172") {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "message.fill")
+                            Text("Gia Hạn Zalo")
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            LinearGradient(
+                                colors: [brandBlue, brandBlueDark],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .cornerRadius(12)
-                    .shadow(color: brandBlue.opacity(0.4), radius: 8)
+                        .cornerRadius(12)
+                        .shadow(color: brandBlue.opacity(0.4), radius: 8)
+                    }
+
+                    Button {
+                        if let url = URL(string: discordRenewalURL) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                            Text("Discord")
+                        }
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(12)
+                    }
                 }
                 .padding(.horizontal, 20)
 
@@ -612,7 +691,110 @@ struct CheatStoreDashboardView: View {
                 .stroke(brandBlue.opacity(0.25), lineWidth: 1)
         )
         .padding(.horizontal, 20)
-        .padding(.bottom, 8)
+        .padding(.bottom, 4)
+    }
+
+    // MARK: - Footer: Thông Tin Thiết Bị & Phiên Bản iOS & Trạng Thái Hỗ Trợ
+    private var isDeviceSupported: Bool {
+        let v = AppInfo.versionTuple
+        return ExploitSupportPolicy.isSupported(
+            major: v.major,
+            minor: v.minor,
+            patch: v.patch,
+            build: AppInfo.osBuild
+        )
+    }
+
+    private var deviceStatusFooterView: some View {
+        HStack(spacing: 8) {
+            // Tên máy hiện tại (Ví dụ: iPhone 13 Pro Max)
+            HStack(spacing: 4) {
+                Image(systemName: "iphone.gen3")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(brandBlue)
+
+                Text(AppInfo.hardwareDisplayName)
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
+
+            Text("•")
+                .font(.system(size: 10))
+                .foregroundStyle(Color.gray.opacity(0.4))
+
+            // Phiên bản iOS (Ví dụ: iOS 17.5.1)
+            HStack(spacing: 4) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.85))
+
+                Text("iOS \(AppInfo.osVersion)")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            // Trạng thái Hỗ trợ: Tích xanh có hỗ trợ / Dấu X đỏ không hỗ trợ
+            if isDeviceSupported {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+
+                    Text("Có hỗ trợ")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                }
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3), lineWidth: 0.8)
+                )
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
+
+                    Text("Không hỗ trợ")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
+                }
+                .padding(.horizontal, 7)
+                .padding(.vertical, 3)
+                .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.12))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.3), lineWidth: 0.8)
+                )
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color(red: 0.05, green: 0.08, blue: 0.14).opacity(0.92))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [brandBlue.opacity(0.25), Color.white.opacity(0.06)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    ),
+                    lineWidth: 0.8
+                )
+        )
+        .padding(.horizontal, 20)
+        .padding(.bottom, 6)
     }
 
     // MARK: - Empty State
