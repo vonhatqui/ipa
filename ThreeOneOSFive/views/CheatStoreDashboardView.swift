@@ -1601,6 +1601,8 @@ private struct ModSkinItemCard: View {
         DevicePatchService.isProjectApplied(projectID: item.id)
     }
 
+    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
+
     var body: some View {
         HStack(spacing: 14) {
             // Icon Áo / Skin với hiệu ứng phát sáng neon
