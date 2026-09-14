@@ -37,6 +37,7 @@ struct CheatStoreDashboardView: View {
     @State private var showAlert = false
     @State private var copiedKey = false
     @State private var copiedDeviceID = false
+    @State private var showEspSettings = false
 
     // Theme: Xanh Dương Đen (Cyber Blue & AMOLED Dark)
     private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00) // Electric Cyan #00b8ff
@@ -103,6 +104,13 @@ struct CheatStoreDashboardView: View {
                 message: Text(alertMessage ?? ""),
                 dismissButton: .default(Text("Đã hiểu"))
             )
+        }
+        .sheet(isPresented: $showEspSettings) {
+            EspSettingsSheetView {
+                if let espItem = aimItems.first {
+                    handleSaveEspSettings(item: espItem)
+                }
+            }
         }
         .onAppear {
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
@@ -182,6 +190,9 @@ struct CheatStoreDashboardView: View {
                                 brandBlue: brandBlue,
                                 onToggle: { enable in
                                     handleToggle(item: item, enable: enable)
+                                },
+                                onOpenSettings: {
+                                    showEspSettings = true
                                 }
                             )
                         }
@@ -842,8 +853,13 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    guard let project = item.project else {
+                    guard var project = item.project else {
                         throw PatchPackageError.unsupportedFormat
+                    }
+
+                    // Tự động nạp cấu hình tùy chỉnh ESP của người dùng
+                    if isAimOrEsp(item) {
+                        EspConfigManager.shared.applyConfiguration(to: &project)
                     }
 
                     // 1. Dọn dẹp sạch receipt cũ bị kẹt nếu có để không bị lỗi projectAlreadyApplied
@@ -893,6 +909,40 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    private func handleSaveEspSettings(item: PatchLibraryItem) {
+        // 1. Ghi đè cấu hình mới trực tiếp vào container game nếu máy đã cài game
+        EspConfigManager.shared.syncDirectlyToGameContainer()
+
+        // 2. Nếu mod đang BẬT, re-apply project với cấu hình mới
+        if DevicePatchService.isProjectApplied(projectID: item.id) {
+            workingPatchID = item.id
+            DispatchQueue.global(qos: .userInitiated).async {
+                do {
+                    guard var project = item.project else { return }
+                    EspConfigManager.shared.applyConfiguration(to: &project)
+                    DevicePatchService.forceCleanupReceipts(projectID: item.id)
+                    _ = try DevicePatchService.apply(project: project)
+                    DispatchQueue.main.async {
+                        self.patchStore.reload()
+                        self.workingPatchID = nil
+                        self.alertMessage = "Đã lưu và kích hoạt cấu hình ESP mới vào game!"
+                        self.showAlert = true
+                    }
+                } catch {
+                    DispatchQueue.main.async {
+                        self.workingPatchID = nil
+                    }
+                }
+            }
+        }
+    }
+
+    private func isAimOrEsp(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? "").lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("esp") || name.contains("aim") || filename.contains("esp") || filename.contains("core") || name.isEmpty
+    }
+
     private func displayName(for item: PatchLibraryItem) -> String {
         let name = item.project?.name ?? ""
         if name.lowercased().contains("esp") || name.lowercased().contains("aim") || name.isEmpty {
@@ -939,6 +989,7 @@ private struct CheatItemCard: View {
     let isWorking: Bool
     let brandBlue: Color
     let onToggle: (Bool) -> Void
+    var onOpenSettings: (() -> Void)? = nil
 
     // Đổi tên chức năng thành "Định Vị & AimNeck 2.0" theo yêu cầu
     private var displayName: String {
@@ -993,6 +1044,30 @@ private struct CheatItemCard: View {
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
+
+                // Nút Mở Menu Cài Đặt ESP
+                if let onOpen = onOpenSettings {
+                    Button {
+                        onOpen()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("Cài Đặt ESP")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(brandBlue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(brandBlue.opacity(0.12))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(brandBlue.opacity(0.35), lineWidth: 0.8)
+                        )
+                    }
+                    .padding(.top, 3)
+                }
             }
 
             Spacer()
