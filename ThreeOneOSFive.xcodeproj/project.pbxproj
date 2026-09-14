@@ -79,8 +79,6 @@
 		3105M201 /* BundledPatchInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M101; };
 		3105M202 /* CheatStoreLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M102; };
 		3105M203 /* CheatStoreDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M103; };
-		3105M204 /* EspConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M104; };
-		3105M205 /* EspSettingsSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M105; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -174,8 +172,6 @@
 		3105M101 /* BundledPatchInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPatchInjector.swift; sourceTree = "<group>"; };
 		3105M102 /* CheatStoreLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreLoginView.swift; sourceTree = "<group>"; };
 		3105M103 /* CheatStoreDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreDashboardView.swift; sourceTree = "<group>"; };
-		3105M104 /* EspConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspConfigManager.swift; sourceTree = "<group>"; };
-		3105M105 /* EspSettingsSheetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspSettingsSheetView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -256,7 +252,6 @@
 				3105L104 /* RepositorySourcesView.swift */,
 				3105M102 /* CheatStoreLoginView.swift */,
 				3105M103 /* CheatStoreDashboardView.swift */,
-				3105M105 /* EspSettingsSheetView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -265,7 +260,6 @@
 			isa = PBXGroup;
 			children = (
 				3105M100 /* CheatStoreLicenseManager.swift */,
-				3105M104 /* EspConfigManager.swift */,
 				3105M101 /* BundledPatchInjector.swift */,
 				3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
@@ -459,8 +453,6 @@
 				3105M201,
 				3105M202,
 				3105M203,
-				3105M204,
-				3105M205,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -4,7 +4,7 @@ enum DevicePatchService {
     static func apply(project: PatchProject) throws -> PatchTransactionReceipt {
         let bundleIDs = orderedBundleIdentifiers(in: project)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
-            try PatchTransaction.apply(
+            let receipt = try PatchTransaction.apply(
                 project: project,
                 backupRoot: try PatchProjectLibrary.backupRootURL(),
                 containerResolver: { bundleID in
@@ -14,6 +14,22 @@ enum DevicePatchService {
                     return root
                 }
             )
+
+            // Đảm bảo tương thích cả Free Fire Standard lẫn Free Fire MAX
+            for (_, root) in roots {
+                let prefsDir = root.appendingPathComponent("Library/Preferences", isDirectory: true)
+                let thPlist = prefsDir.appendingPathComponent("com.dts.freefireth.plist")
+                let maxPlist = prefsDir.appendingPathComponent("com.dts.freefiremax.plist")
+                let fileManager = FileManager.default
+                if fileManager.fileExists(atPath: thPlist.path) {
+                    if fileManager.fileExists(atPath: maxPlist.path) {
+                        try? fileManager.removeItem(at: maxPlist)
+                    }
+                    try? fileManager.copyItem(at: thPlist, to: maxPlist)
+                }
+            }
+
+            return receipt
         }
     }
 
