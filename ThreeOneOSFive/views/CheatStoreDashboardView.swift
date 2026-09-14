@@ -180,7 +180,12 @@ struct CheatStoreDashboardView: View {
     // MARK: - Tab 1: Trang Chủ (Hiện Aim & Mod)
     private var homeView: some View {
         ScrollView(showsIndicators: false) {
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
+                // Thanh Mở Nhanh Free Fire Nổi Bật Trên Đầu Dashboard
+                quickLaunchCardView
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+
                 // Banner Tiêu Đề
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -196,7 +201,7 @@ struct CheatStoreDashboardView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .padding(.top, 2)
 
                 // Danh Sách Bản Mod
                 if aimItems.isEmpty {
@@ -215,11 +220,6 @@ struct CheatStoreDashboardView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-
-                    // Nút Mở Game Free Fire Lớn
-                    quickLaunchCardView
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
                 }
 
                 // Ghi Chú An Toàn
@@ -259,6 +259,11 @@ struct CheatStoreDashboardView: View {
     private var modSkinView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
+                // Thanh Mở Nhanh Free Fire Nổi Bật Trên Đầu Dashboard
+                quickLaunchCardView
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+
                 // Tiêu đề phần ModSkin
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -274,7 +279,7 @@ struct CheatStoreDashboardView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .padding(.top, 2)
 
                 if skinItems.isEmpty {
                     modSkinEmptyView
@@ -292,11 +297,6 @@ struct CheatStoreDashboardView: View {
                         }
                     }
                     .padding(.horizontal, 20)
-
-                    // Nút Mở Game Free Fire Lớn
-                    quickLaunchCardView
-                        .padding(.horizontal, 20)
-                        .padding(.top, 4)
 
                     // Hướng dẫn đổi skin
                     HStack(alignment: .top, spacing: 10) {
