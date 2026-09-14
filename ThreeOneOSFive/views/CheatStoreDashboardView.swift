@@ -943,6 +943,9 @@ struct CheatStoreDashboardView: View {
         if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
+        if name.contains("antena") || name.contains("drag") || filename.contains("antena") || filename.contains("drag") {
+            return "Drag & Antena"
+        }
         if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
@@ -1135,6 +1138,9 @@ private struct CheatItemCard: View {
         if name.contains("ignis") || filename.contains("skin") {
             return "IGNIS ĐẠO SĨ ĐỎ"
         }
+        if name.contains("antena") || name.contains("drag") || filename.contains("antena") || filename.contains("drag") {
+            return "Drag & Antena"
+        }
         if name.contains("esp") || filename.contains("enginecore") || name.contains("aim") || filename.contains("esp") || name.isEmpty {
             return "Định Vị & AimNeck 2.0"
         }
@@ -1142,7 +1148,10 @@ private struct CheatItemCard: View {
     }
 
     private var subtitle: String {
-        "Antiban - No Backlist"
+        if displayName == "Drag & Antena" {
+            return "Kéo Tâm & Định Vị Antena • Antiban"
+        }
+        return "Antiban - No Backlist"
     }
 
     private var isApplied: Bool {
