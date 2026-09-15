@@ -57,6 +57,23 @@ enum PatchProjectLibrary {
         return root
     }
 
+    private static let knownPasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin"]
+
+    static func decodePackageSafely(data: Data, summary: PatchPackageSummary) -> DecodedPatchPackage? {
+        if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
+            if let decoded = try? PatchPackageCodec.decode(data, contentKey: contentKey) {
+                return decoded
+            }
+        }
+        for pwd in knownPasswords {
+            if let decoded = try? PatchPackageCodec.decode(data, password: pwd) {
+                try? PatchKeyStore.store(decoded.contentKey, for: summary)
+                return decoded
+            }
+        }
+        return nil
+    }
+
     static func load(fileManager: FileManager = .default) -> [PatchLibraryItem] {
         guard let root = try? packageRootURL(fileManager: fileManager),
               let urls = try? fileManager.contentsOfDirectory(
@@ -70,14 +87,7 @@ enum PatchProjectLibrary {
             do {
                 let data = try readPackage(at: url)
                 let summary = try PatchPackageCodec.inspect(data)
-                let decoded: DecodedPatchPackage?
-                if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
-                    decoded = try PatchPackageCodec.decode(data, contentKey: contentKey)
-                } else if summary.isPasswordProtected {
-                    decoded = nil
-                } else {
-                    decoded = try PatchPackageCodec.decode(data, password: nil)
-                }
+                let decoded = decodePackageSafely(data: data, summary: summary)
                 let isAuthorCopy = isAuthorCopy(
                     packageID: summary.packageID,
                     fileManager: fileManager
@@ -139,17 +149,7 @@ enum PatchProjectLibrary {
                     let data = try readPackage(at: fileURL)
                     let summary = try PatchPackageCodec.inspect(data)
                     if byID[summary.packageID] == nil {
-                        let decoded: DecodedPatchPackage?
-                        if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
-                            decoded = try PatchPackageCodec.decode(data, contentKey: contentKey)
-                        } else if summary.isPasswordProtected {
-                            decoded = nil
-                        } else {
-                            decoded = try PatchPackageCodec.decode(data, password: nil)
-                        }
-                        if let k = decoded?.contentKey {
-                            try? PatchKeyStore.store(k, for: summary)
-                        }
+                        let decoded = decodePackageSafely(data: data, summary: summary)
                         let item = PatchLibraryItem(
                             summary: summary,
                             project: decoded?.project,

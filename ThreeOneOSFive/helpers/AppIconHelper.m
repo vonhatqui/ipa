@@ -340,6 +340,32 @@ NSString *findFreeFireContainerPath(void) {
         @"com.dts.freefirevn"
     ];
 
+    // 1. Check LSApplicationRecord (iOS 15+)
+    Class recordClass = NSClassFromString(@"LSApplicationRecord");
+    if (recordClass) {
+        SEL recordInitSel = NSSelectorFromString(@"initWithBundleIdentifier:allowPlaceholder:error:");
+        if ([recordClass instancesRespondToSelector:recordInitSel]) {
+            for (NSString *bid in targetIDs) {
+                NSError *recErr = nil;
+                id record = [recordClass alloc];
+                record = ((id (*)(id, SEL, id, BOOL, id*))objc_msgSend)(record, recordInitSel, bid, NO, &recErr);
+                if (record) {
+                    for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
+                        SEL containerSel = NSSelectorFromString(selectorName);
+                        if (![record respondsToSelector:containerSel]) continue;
+                        id containerValue = ((id (*)(id, SEL))objc_msgSend)(record, containerSel);
+                        NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
+                        if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
+                            NSLog(@"[3105] findFreeFireContainerPath: found via LSApplicationRecord %@ -> %@", bid, containerPath);
+                            return containerPath;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 2. Check LSApplicationProxy
     Class proxyClass = NSClassFromString(@"LSApplicationProxy");
     if (proxyClass) {
         SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
@@ -362,12 +388,34 @@ NSString *findFreeFireContainerPath(void) {
         }
     }
 
+    // 3. Check LSApplicationWorkspace
     Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
     if (workspaceClass) {
         SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
         if ([workspaceClass respondsToSelector:defaultWorkspaceSel]) {
             id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
             if (workspace) {
+                // Direct application lookup by bundleID
+                SEL appForBidSel = NSSelectorFromString(@"applicationForBundleIdentifier:");
+                if ([workspace respondsToSelector:appForBidSel]) {
+                    for (NSString *bid in targetIDs) {
+                        id app = ((id (*)(id, SEL, id))objc_msgSend)(workspace, appForBidSel, bid);
+                        if (app) {
+                            for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
+                                SEL containerSel = NSSelectorFromString(selectorName);
+                                if (![app respondsToSelector:containerSel]) continue;
+                                id containerValue = ((id (*)(id, SEL))objc_msgSend)(app, containerSel);
+                                NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
+                                if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
+                                    NSLog(@"[3105] findFreeFireContainerPath: found via workspace appForBid %@ -> %@", bid, containerPath);
+                                    return containerPath;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Enumeration fallback
                 NSArray *apps = nil;
                 for (NSString *selName in @[@"allApplications", @"allInstalledApplications"]) {
                     SEL sel = NSSelectorFromString(selName);

@@ -1059,38 +1059,68 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    private func resolveProject(for item: PatchLibraryItem) -> PatchProject? {
+        if let project = item.project {
+            return project
+        }
+        let candidatePasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin"]
+
+        // 1. Thử giải mã từ packageURL của item
+        if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL) {
+            for pwd in candidatePasswords {
+                if let decoded = try? PatchPackageCodec.decode(data, password: pwd) {
+                    try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                    return decoded.project
+                }
+            }
+        }
+
+        // 2. Thử quét tìm trong AppCore của Bundle
+        var candidateURLs: [URL] = []
+        let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
+        if let files = try? FileManager.default.contentsOfDirectory(at: coreDir1, includingPropertiesForKeys: nil) {
+            candidateURLs.append(contentsOf: files)
+        }
+        if let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore"), resURL != coreDir1 {
+            if let files = try? FileManager.default.contentsOfDirectory(at: resURL, includingPropertiesForKeys: nil) {
+                candidateURLs.append(contentsOf: files)
+            }
+        }
+        for file in candidateURLs where ["dat", "bin", "3105"].contains(file.pathExtension.lowercased()) {
+            if let data = try? PatchProjectLibrary.readPackage(at: file) {
+                for pwd in candidatePasswords {
+                    if let decoded = try? PatchPackageCodec.decode(data, password: pwd),
+                       decoded.project.id == item.id || decoded.project.name.lowercased() == item.summary.name.lowercased() {
+                        try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                        return decoded.project
+                    }
+                }
+            }
+        }
+        return nil
+    }
+
     // MARK: - Toggle Mod Action
     private func handleToggle(item: PatchLibraryItem, enable: Bool) {
-        workingPatchID = item.id
+        let currentID = item.id
+        workingPatchID = currentID
         let modName = displayName(for: item)
+
+        // Safety watchdog: Tuyệt đối không để spinner treo vô tận
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) { [weak self] in
+            guard let self = self else { return }
+            if self.workingPatchID == currentID {
+                self.workingPatchID = nil
+                self.alertMessage = "Thời gian xử lý quá lâu. Vui lòng kiểm tra đã cài đặt game Free Fire hoặc Free Fire MAX và mở ít nhất một lần trước khi bật mod!"
+                self.showAlert = true
+            }
+        }
 
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    var targetProject = item.project
-                    if targetProject == nil {
-                        // Cố gắng tự giải mã gói trực tiếp từ packageURL
-                        if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL),
-                           let decoded = try? PatchPackageCodec.decode(data, password: nil) {
-                            targetProject = decoded.project
-                            try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
-                        } else {
-                            // Thử quét tìm trong AppCore của Bundle
-                            let coreDir = Bundle.main.bundleURL.appendingPathComponent("AppCore")
-                            if let files = try? FileManager.default.contentsOfDirectory(at: coreDir, includingPropertiesForKeys: nil) {
-                                for file in files where ["dat", "bin", "3105"].contains(file.pathExtension.lowercased()) {
-                                    if let data = try? PatchProjectLibrary.readPackage(at: file),
-                                       let decoded = try? PatchPackageCodec.decode(data, password: nil),
-                                       decoded.project.id == item.id {
-                                        targetProject = decoded.project
-                                        try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
-                                        break
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    let targetProject = self.resolveProject(for: item)
 
                     guard let project = targetProject else {
                         throw PatchPackageError.unsupportedFormat
@@ -1100,6 +1130,7 @@ struct CheatStoreDashboardView: View {
                     _ = try DevicePatchService.apply(project: project)
 
                     DispatchQueue.main.async {
+                        guard self.workingPatchID == currentID else { return }
                         self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                         self.patchStore.reload()
                         self.workingPatchID = nil
@@ -1108,13 +1139,7 @@ struct CheatStoreDashboardView: View {
                     }
                 } else {
                     // TẮT chức năng (Restore 100% dữ liệu gốc sạch)
-                    var restoreProject = item.project
-                    if restoreProject == nil {
-                        if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL),
-                           let decoded = try? PatchPackageCodec.decode(data, password: nil) {
-                            restoreProject = decoded.project
-                        }
-                    }
+                    let restoreProject = self.resolveProject(for: item)
 
                     let receipt = DevicePatchService.latestReceipt(projectID: item.id)
                     if let receipt = receipt {
@@ -1130,6 +1155,7 @@ struct CheatStoreDashboardView: View {
                     }
 
                     DispatchQueue.main.async {
+                        guard self.workingPatchID == currentID else { return }
                         self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                         self.patchStore.reload()
                         self.workingPatchID = nil
@@ -1144,6 +1170,7 @@ struct CheatStoreDashboardView: View {
                 }
 
                 DispatchQueue.main.async {
+                    guard self.workingPatchID == currentID else { return }
                     self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                     self.patchStore.reload()
                     self.workingPatchID = nil

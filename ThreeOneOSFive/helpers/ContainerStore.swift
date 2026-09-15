@@ -100,9 +100,33 @@ enum ContainerStore {
         return nil
     }
 
+    private static var resolvedContainerCache: [String: String] = [:]
+    private static let containerCacheLock = NSLock()
+
     static func resolveAppContainerPath(bundleID: String) -> String? {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
+        }
+
+        containerCacheLock.lock()
+        if let cached = resolvedContainerCache[bundleID], isApplicationContainerPath(cached) {
+            containerCacheLock.unlock()
+            return cached
+        }
+        containerCacheLock.unlock()
+
+        func recordAndReturn(_ resolved: String) -> String {
+            containerCacheLock.lock()
+            resolvedContainerCache[bundleID] = resolved
+            let lower = bundleID.lowercased()
+            if lower.contains("freefire") || lower.contains("dts") {
+                resolvedContainerCache["com.dts.freefireth"] = resolved
+                resolvedContainerCache["com.dts.freefiremax"] = resolved
+                resolvedContainerCache["com.dts.freefire"] = resolved
+                resolvedContainerCache["com.dts.freefirevn"] = resolved
+            }
+            containerCacheLock.unlock()
+            return resolved
         }
 
         let isFreeFire = bundleID.lowercased().contains("freefire") || bundleID.lowercased().contains("dts")
@@ -119,7 +143,7 @@ enum ContainerStore {
         // Method 1: Dedicated Free Fire scan via LaunchServices workspace
         if isFreeFire, let ffPath = findFreeFireContainerPath(), isApplicationContainerPath(ffPath) {
             log("patch: findFreeFireContainerPath resolved container -> \(ffPath)")
-            return ffPath
+            return recordAndReturn(ffPath)
         }
 
         // Method 2: MobileHouseArrest MCM activation across candidates
@@ -128,7 +152,7 @@ enum ContainerStore {
             if let path = MCMActivateContainerPath(2, bid, false, &lookupError),
                isApplicationContainerPath(path) {
                 log("patch: MHA-C2 resolved \(bid) -> \(path)")
-                return path
+                return recordAndReturn(path)
             }
         }
 
@@ -139,7 +163,7 @@ enum ContainerStore {
                !container.isEmpty,
                isApplicationContainerPath(container) {
                 log("patch: LSApplicationProxy resolved \(bid) -> \(container)")
-                return container
+                return recordAndReturn(container)
             }
         }
 
@@ -150,7 +174,7 @@ enum ContainerStore {
                 let appBid = app.bundleID.lowercased()
                 if (appBid == bid.lowercased() || appBid.hasSuffix("." + bid.lowercased())) && isApplicationContainerPath(app.containerPath) {
                     log("patch: installedAppsFromAPI resolved \(bid) -> \(app.containerPath)")
-                    return app.containerPath
+                    return recordAndReturn(app.containerPath)
                 }
             }
         }
@@ -161,7 +185,7 @@ enum ContainerStore {
                 let appBid = app.bundleID.lowercased()
                 if appBid.contains("freefire") && isApplicationContainerPath(app.containerPath) {
                     log("patch: installedAppsFromAPI matched freefire app \(app.bundleID) -> \(app.containerPath)")
-                    return app.containerPath
+                    return recordAndReturn(app.containerPath)
                 }
             }
         }
@@ -170,12 +194,17 @@ enum ContainerStore {
         for bid in targetIDs {
             if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bid) {
                 log("patch: filesystem metadata scan resolved \(bid) -> \(scanned)")
-                return scanned
+                return recordAndReturn(scanned)
             }
         }
 
         // Method 6: Direct filesystem inspection for Free Fire signature files
         if isFreeFire {
+            // Skip direct filesystem scan if sandbox escape is required but inactive
+            if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
+                log("patch: direct signature scan skipped — sandbox access not active")
+                return nil
+            }
             let dirs = enumerateDirectories(path: appDataRoot)
             for dir in dirs {
                 let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
@@ -194,13 +223,13 @@ enum ContainerStore {
                 for cp in checkPaths {
                     if FileManager.default.fileExists(atPath: cp) {
                         log("patch: direct signature matched Free Fire at \(canonical)")
-                        return canonical
+                        return recordAndReturn(canonical)
                     }
                 }
                 if let meta = readContainerMetadata(containerPath: canonical),
                    meta.bundleID.lowercased().contains("freefire") {
                     log("patch: direct metadata matched Free Fire \(meta.bundleID) at \(canonical)")
-                    return canonical
+                    return recordAndReturn(canonical)
                 }
             }
         }
@@ -535,18 +564,24 @@ enum ContainerStore {
     static func isApplicationContainerPath(_ path: String) -> Bool {
         let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
         let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
-        guard canonicalPath.hasPrefix(canonicalRoot + "/") else { return false }
-        return UUID(uuidString: (canonicalPath as NSString).lastPathComponent) != nil
+        let clean = canonicalPath.hasSuffix("/") ? String(canonicalPath.dropLast()) : canonicalPath
+        guard clean.hasPrefix(canonicalRoot + "/") else { return false }
+        return UUID(uuidString: (clean as NSString).lastPathComponent) != nil
     }
 
     // MARK: Filesystem discovery
 
-    static func enumerateDirectories(path: String, maxInode: Int64 = 2_000_000) -> [String] {
+    static func enumerateDirectories(path: String, maxInode: Int64 = 50_000) -> [String] {
         let clean = path.hasSuffix("/") ? String(path.dropLast()) : path
         guard clean.hasPrefix("/") else { return [] }
 
         if let names = try? FileManager.default.contentsOfDirectory(atPath: clean), !names.isEmpty {
             return names.map { (clean as NSString).appendingPathComponent($0) }
+        }
+
+        // Only attempt inode scan if sandbox access is active (or if bad_query is specifically usable)
+        if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
+            return []
         }
 
         var pathC = clean.utf8CString.map { Int8($0) }

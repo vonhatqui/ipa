@@ -249,12 +249,22 @@ final class PatchProjectStore: ObservableObject {
         unlockErrorKey = nil
         Task.detached(priority: .userInitiated) { [weak self] in
             do {
-                let decoded = try PatchPackageCodec.decode(pending.data, password: password)
-                try PatchKeyStore.store(decoded.contentKey, for: pending.summary)
+                var decoded: DecodedPatchPackage?
+                if let d = try? PatchPackageCodec.decode(pending.data, password: password) {
+                    decoded = d
+                } else if password.lowercased() == "canhcubin" || password.lowercased() == "canhcupin" {
+                    let fallback = password.contains("b") ? password.replacingOccurrences(of: "b", with: "p") : password.replacingOccurrences(of: "p", with: "b")
+                    decoded = try? PatchPackageCodec.decode(pending.data, password: fallback)
+                }
+                guard let validDecoded = decoded else {
+                    throw PatchPackageError.invalidPasswordOrCorruptedPackage
+                }
+                let decodedPackage = validDecoded
+                try PatchKeyStore.store(decodedPackage.contentKey, for: pending.summary)
                 do {
                     try PatchProjectLibrary.installImportedPackage(
                         data: pending.data,
-                        decoded: decoded,
+                        decoded: decodedPackage,
                         summary: pending.summary,
                         existingURL: pending.existingURL,
                         origin: pending.origin
