@@ -80,6 +80,8 @@
 		3105M202 /* CheatStoreLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M102; };
 		3105M203 /* CheatStoreDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M103; };
 		3105M204 /* GameSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M104; };
+		3105M205 /* BlossomTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M105; };
+		3105M206 /* BlossomSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M106; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -174,6 +176,8 @@
 		3105M102 /* CheatStoreLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreLoginView.swift; sourceTree = "<group>"; };
 		3105M103 /* CheatStoreDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreDashboardView.swift; sourceTree = "<group>"; };
 		3105M104 /* GameSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSelectionView.swift; sourceTree = "<group>"; };
+		3105M105 /* BlossomTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomTheme.swift; sourceTree = "<group>"; };
+		3105M106 /* BlossomSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomSplashView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -255,6 +259,8 @@
 				3105M102 /* CheatStoreLoginView.swift */,
 				3105M103 /* CheatStoreDashboardView.swift */,
 				3105M104 /* GameSelectionView.swift */,
+				3105M105 /* BlossomTheme.swift */,
+				3105M106 /* BlossomSplashView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -457,6 +463,8 @@
 				3105M202,
 				3105M203,
 				3105M204,
+				3105M205,
+				3105M206,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

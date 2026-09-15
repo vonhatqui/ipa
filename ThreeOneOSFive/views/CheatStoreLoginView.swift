@@ -12,30 +12,24 @@ struct CheatStoreLoginView: View {
         self.licenseManager = licenseManager
     }
 
-    // Theme: Xanh Dương Đen (Cyber Blue & AMOLED Dark)
-    private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00) // Electric Cyan #00b8ff
-    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
-    private let darkBackground = Color(red: 0.03, green: 0.05, blue: 0.09)
+    // Theme: Blossom Luxury Sakura Purple (Chuẩn 100% blossom.re)
+    private let brandBlue = BlossomTheme.sakura
+    private let brandBlueDark = BlossomTheme.sakuraDeep
+    private let darkBackground = BlossomTheme.bgBottom
 
     var body: some View {
         ZStack {
-            // Nền AMOLED Dark
-            darkBackground
-                .ignoresSafeArea()
-
-            // Vòng tròn phát sáng hiệu ứng Cyberpunk Neon Xanh Dương
-            Circle()
-                .fill(brandBlue.opacity(0.15))
-                .blur(radius: 70)
-                .frame(width: 260, height: 260)
-                .offset(y: -180)
+            // Nền hoa anh đào đêm và hạt bay rơi nhẹ chuẩn blossom.re
+            BlossomBackgroundView(showParticles: true)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    // Header Logo & Tên Shop
-                    VStack(spacing: 12) {
-                        CheatStoreLogoView(size: 84, cornerRadius: 22)
-                            .padding(.top, 40)
+                    // Header Logo với vòng xoay Conic Rings đa chiều (.brand-icon-ring của blossom.re)
+                    VStack(spacing: 16) {
+                        BlossomLogoRingView(size: 84, cornerRadius: 22) {
+                            CheatStoreLogoView(size: 84, cornerRadius: 22)
+                        }
+                        .padding(.top, 36)
 
                         Text("CheatStore VN")
                             .font(.system(size: 28, weight: .black, design: .rounded))
