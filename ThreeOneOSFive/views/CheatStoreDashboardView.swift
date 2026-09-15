@@ -1106,15 +1106,6 @@ struct CheatStoreDashboardView: View {
         workingPatchID = currentID
         let modName = displayName(for: item)
 
-        // Safety watchdog: Tuyệt đối không để spinner treo vô tận
-        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) {
-            if self.workingPatchID == currentID {
-                self.workingPatchID = nil
-                self.alertMessage = "Thời gian xử lý quá lâu. Vui lòng kiểm tra đã cài đặt game Free Fire hoặc Free Fire MAX và mở ít nhất một lần trước khi bật mod!"
-                self.showAlert = true
-            }
-        }
-
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 if enable {
@@ -1165,7 +1156,8 @@ struct CheatStoreDashboardView: View {
             } catch {
                 // Tự động hoàn tác về trạng thái gốc sạch nếu quá trình bật gặp sự cố
                 if enable {
-                    DevicePatchService.forceRestoreAndCleanup(receipt: nil, project: item.project)
+                    let fallbackProject = self.resolveProject(for: item) ?? item.project
+                    DevicePatchService.forceRestoreAndCleanup(receipt: nil, project: fallbackProject)
                 }
 
                 DispatchQueue.main.async {
