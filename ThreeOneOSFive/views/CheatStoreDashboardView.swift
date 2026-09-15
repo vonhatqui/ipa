@@ -1090,7 +1090,7 @@ struct CheatStoreDashboardView: View {
             if let data = try? PatchProjectLibrary.readPackage(at: file) {
                 for pwd in candidatePasswords {
                     if let decoded = try? PatchPackageCodec.decode(data, password: pwd),
-                       decoded.project.id == item.id || decoded.project.name.lowercased() == item.summary.name.lowercased() {
+                       decoded.project.id == item.id || decoded.project.name.lowercased().contains(item.id.uuidString.lowercased()) {
                         try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
                         return decoded.project
                     }
@@ -1107,8 +1107,7 @@ struct CheatStoreDashboardView: View {
         let modName = displayName(for: item)
 
         // Safety watchdog: Tuyệt đối không để spinner treo vô tận
-        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) { [weak self] in
-            guard let self = self else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 7.0) {
             if self.workingPatchID == currentID {
                 self.workingPatchID = nil
                 self.alertMessage = "Thời gian xử lý quá lâu. Vui lòng kiểm tra đã cài đặt game Free Fire hoặc Free Fire MAX và mở ít nhất một lần trước khi bật mod!"
