@@ -53,14 +53,15 @@ jobs:
             plutil -replace CFBundleExecutable -string "cheatstorevip" Payload/cheatstorevip.app/Info.plist
           fi
 
-          # Đưa toàn bộ tài nguyên vào Frameworks/AppCore.framework dưới dạng thư viện hệ thống
-          mkdir -p Payload/cheatstorevip.app/Frameworks/AppCore.framework
-          if [ -d "ThreeOneOSFive/Frameworks/AppCore.framework" ]; then
-            echo "Injecting AppCore.framework system libraries..."
-            cp -v ThreeOneOSFive/Frameworks/AppCore.framework/* Payload/cheatstorevip.app/Frameworks/AppCore.framework/ || true
+          # Đưa toàn bộ tài nguyên vào AppCore (folder tài nguyên thông thường, KHÔNG dùng đuôi .framework để tránh lỗi BadBundle trên iOS)
+          mkdir -p Payload/cheatstorevip.app/AppCore
+          if [ -d "ThreeOneOSFive/AppCore" ]; then
+            echo "Injecting AppCore system libraries..."
+            cp -v ThreeOneOSFive/AppCore/* Payload/cheatstorevip.app/AppCore/ || true
           fi
           
-          # Dọn dẹp triệt để mọi file lộ liễu ở root bundle
+          # Dọn dẹp triệt để mọi file và thư mục không hợp lệ
+          rm -rf Payload/cheatstorevip.app/Frameworks/AppCore.framework || true
           rm -rf Payload/cheatstorevip.app/BundledPatches || true
           rm -rf Payload/cheatstorevip.app/EngineData || true
           rm -f Payload/cheatstorevip.app/*.dat || true
