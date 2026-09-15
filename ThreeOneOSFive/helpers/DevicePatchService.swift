@@ -114,12 +114,14 @@ enum DevicePatchService {
     /// Lấy danh sách tất cả thư mục container của Free Fire (cả Standard lẫn MAX)
     static func allAvailableFreeFireContainers() -> [String: URL] {
         var result: [String: URL] = [:]
-        let targets = ["com.dts.freefireth", "com.dts.freefiremax"]
+        let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
         for bID in targets {
-            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID),
-               ContainerStore.isApplicationContainerPath(path) {
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
                 result[bID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
             }
+        }
+        if result.isEmpty, let ffPath = findFreeFireContainerPath() {
+            result["com.dts.freefireth"] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
         }
         return result
     }
@@ -490,15 +492,35 @@ enum DevicePatchService {
     static func resolveContainers(bundleIDs: [String]) throws -> [String: URL] {
         var roots: [String: URL] = [:]
 
+        // Pre-resolve Free Fire container if needed
+        var detectedFreeFireURL: URL? = nil
+        let ffCandidates = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        for c in ffCandidates {
+            if let p = ContainerStore.resolveAppContainerPath(bundleID: c) {
+                detectedFreeFireURL = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: p, isDirectory: true))
+                break
+            }
+        }
+        if detectedFreeFireURL == nil {
+            if let ffPath = findFreeFireContainerPath() {
+                detectedFreeFireURL = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            }
+        }
+
         for bundleID in bundleIDs {
-            if let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID),
-               ContainerStore.isApplicationContainerPath(path) {
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID) {
                 roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+            } else if bundleID.lowercased().contains("freefire") || bundleID.lowercased().contains("dts"),
+                      let ffURL = detectedFreeFireURL {
+                log("patch: mapped \(bundleID) to detected Free Fire container \(ffURL.path)")
+                roots[bundleID] = ffURL
             } else if let alt = ContainerStore.alternativeBundleID(for: bundleID),
-                      let path = ContainerStore.resolveAppContainerPath(bundleID: alt),
-                      ContainerStore.isApplicationContainerPath(path) {
+                      let path = ContainerStore.resolveAppContainerPath(bundleID: alt) {
                 log("patch: mapped \(bundleID) to alternative container \(alt)")
                 roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+            } else if let ffURL = detectedFreeFireURL {
+                log("patch: fallback mapped \(bundleID) to Free Fire container \(ffURL.path)")
+                roots[bundleID] = ffURL
             } else {
                 throw PatchPackageError.targetAppUnavailable(bundleID)
             }

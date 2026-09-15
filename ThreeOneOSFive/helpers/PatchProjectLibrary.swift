@@ -115,6 +115,57 @@ enum PatchProjectLibrary {
                 log("patch: skipped invalid local package \(url.lastPathComponent)")
             }
         }
+
+        // Fallback: nếu thư mục local thiếu mod, đọc trực tiếp từ AppCore trong Bundle để UI luôn sẵn sàng 100%
+        if byID.count < 4 {
+            var bundleCandidates: [URL] = []
+            let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
+            if let files = try? fileManager.contentsOfDirectory(at: coreDir1, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+                bundleCandidates.append(contentsOf: files)
+            }
+            if let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore"), resURL != coreDir1 {
+                if let files = try? fileManager.contentsOfDirectory(at: resURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+                    bundleCandidates.append(contentsOf: files)
+                }
+            }
+            for ext in ["dat", "bin", "3105"] {
+                if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
+                    bundleCandidates.append(contentsOf: matches)
+                }
+            }
+
+            for fileURL in bundleCandidates where ["dat", "bin", "3105"].contains(fileURL.pathExtension.lowercased()) {
+                do {
+                    let data = try readPackage(at: fileURL)
+                    let summary = try PatchPackageCodec.inspect(data)
+                    if byID[summary.packageID] == nil {
+                        let decoded: DecodedPatchPackage?
+                        if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
+                            decoded = try PatchPackageCodec.decode(data, contentKey: contentKey)
+                        } else if summary.isPasswordProtected {
+                            decoded = nil
+                        } else {
+                            decoded = try PatchPackageCodec.decode(data, password: nil)
+                        }
+                        if let k = decoded?.contentKey {
+                            try? PatchKeyStore.store(k, for: summary)
+                        }
+                        let item = PatchLibraryItem(
+                            summary: summary,
+                            project: decoded?.project,
+                            contentKey: decoded?.contentKey,
+                            packageURL: fileURL,
+                            isAuthorCopy: false,
+                            origin: nil
+                        )
+                        byID[summary.packageID] = item
+                    }
+                } catch {
+                    log("patch: bundle fallback skipped \(fileURL.lastPathComponent): \(error)")
+                }
+            }
+        }
+
         return byID.values.sorted {
             ($0.project?.updatedAt ?? .distantPast) > ($1.project?.updatedAt ?? .distantPast)
         }

@@ -1068,15 +1068,31 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    if item.project == nil && item.isLocked {
-                        DispatchQueue.main.async {
-                            self.workingPatchID = nil
-                            self.patchStore.requestUnlock(for: item)
+                    var targetProject = item.project
+                    if targetProject == nil {
+                        // Cố gắng tự giải mã gói trực tiếp từ packageURL
+                        if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL),
+                           let decoded = try? PatchPackageCodec.decode(data, password: nil) {
+                            targetProject = decoded.project
+                            try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                        } else {
+                            // Thử quét tìm trong AppCore của Bundle
+                            let coreDir = Bundle.main.bundleURL.appendingPathComponent("AppCore")
+                            if let files = try? FileManager.default.contentsOfDirectory(at: coreDir, includingPropertiesForKeys: nil) {
+                                for file in files where ["dat", "bin", "3105"].contains(file.pathExtension.lowercased()) {
+                                    if let data = try? PatchProjectLibrary.readPackage(at: file),
+                                       let decoded = try? PatchPackageCodec.decode(data, password: nil),
+                                       decoded.project.id == item.id {
+                                        targetProject = decoded.project
+                                        try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                                        break
+                                    }
+                                }
+                            }
                         }
-                        return
                     }
 
-                    guard let project = item.project else {
+                    guard let project = targetProject else {
                         throw PatchPackageError.unsupportedFormat
                     }
 
@@ -1092,17 +1108,25 @@ struct CheatStoreDashboardView: View {
                     }
                 } else {
                     // TẮT chức năng (Restore 100% dữ liệu gốc sạch)
+                    var restoreProject = item.project
+                    if restoreProject == nil {
+                        if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL),
+                           let decoded = try? PatchPackageCodec.decode(data, password: nil) {
+                            restoreProject = decoded.project
+                        }
+                    }
+
                     let receipt = DevicePatchService.latestReceipt(projectID: item.id)
                     if let receipt = receipt {
                         do {
-                            try DevicePatchService.restore(receipt: receipt, project: item.project, allowChangedTargets: true)
+                            try DevicePatchService.restore(receipt: receipt, project: restoreProject, allowChangedTargets: true)
                         } catch {
                             // Fallback phục hồi cưỡng chế từ Golden Snapshots
-                            DevicePatchService.forceRestoreAndCleanup(receipt: receipt, project: item.project)
+                            DevicePatchService.forceRestoreAndCleanup(receipt: receipt, project: restoreProject)
                         }
                     } else {
                         // Không tìm thấy receipt nhưng bấm tắt -> khôi phục sạch qua Golden Snapshots
-                        DevicePatchService.forceCleanup(project: item.project)
+                        DevicePatchService.forceCleanup(project: restoreProject)
                     }
 
                     DispatchQueue.main.async {

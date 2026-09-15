@@ -259,6 +259,8 @@ NSDictionary *appInfoForBundleID(NSString *bundleID) {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"name"] = bundleID;
 
+    ensureLaunchServicesLoaded();
+
     Class proxyClass = NSClassFromString(@"LSApplicationProxy");
     if (!proxyClass) return result;
     SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
@@ -266,15 +268,6 @@ NSDictionary *appInfoForBundleID(NSString *bundleID) {
     id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bundleID);
     if (!proxy) return result;
 
-    BOOL matchesRequestedIdentifier = NO;
-    for (NSString *selectorName in @[@"applicationIdentifier", @"bundleIdentifier"]) {
-        SEL identifierSel = NSSelectorFromString(selectorName);
-        if (![proxy respondsToSelector:identifierSel]) continue;
-        id value = ((id (*)(id, SEL))objc_msgSend)(proxy, identifierSel);
-        if ([value isKindOfClass:[NSString class]] && [value isEqualToString:bundleID])
-            matchesRequestedIdentifier = YES;
-    }
-    if (!matchesRequestedIdentifier) return result;
     result[@"found"] = @YES;
 
     NSURL *bundleURL = nil;
@@ -337,6 +330,88 @@ NSDictionary *appInfoForBundleID(NSString *bundleID) {
     return result;
 }
 
+NSString *findFreeFireContainerPath(void) {
+    ensureLaunchServicesLoaded();
+
+    NSArray<NSString *> *targetIDs = @[
+        @"com.dts.freefireth",
+        @"com.dts.freefiremax",
+        @"com.dts.freefire",
+        @"com.dts.freefirevn"
+    ];
+
+    Class proxyClass = NSClassFromString(@"LSApplicationProxy");
+    if (proxyClass) {
+        SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
+        if ([proxyClass respondsToSelector:appProxySel]) {
+            for (NSString *bid in targetIDs) {
+                id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bid);
+                if (proxy) {
+                    for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
+                        SEL containerSel = NSSelectorFromString(selectorName);
+                        if (![proxy respondsToSelector:containerSel]) continue;
+                        id value = ((id (*)(id, SEL))objc_msgSend)(proxy, containerSel);
+                        NSString *path = [value isKindOfClass:[NSURL class]] ? [value path] : value;
+                        if ([path isKindOfClass:[NSString class]] && path.length > 0) {
+                            NSLog(@"[3105] findFreeFireContainerPath: found via proxy %@ -> %@", bid, path);
+                            return path;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
+    if (workspaceClass) {
+        SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
+        if ([workspaceClass respondsToSelector:defaultWorkspaceSel]) {
+            id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
+            if (workspace) {
+                NSArray *apps = nil;
+                for (NSString *selName in @[@"allApplications", @"allInstalledApplications"]) {
+                    SEL sel = NSSelectorFromString(selName);
+                    if ([workspace respondsToSelector:sel]) {
+                        id res = ((id (*)(id, SEL))objc_msgSend)(workspace, sel);
+                        if ([res isKindOfClass:[NSArray class]] && [res count] > 0) {
+                            apps = res;
+                            break;
+                        }
+                    }
+                }
+                if (apps) {
+                    for (id app in apps) {
+                        NSString *bid = nil;
+                        for (NSString *selectorName in @[@"bundleIdentifier", @"applicationIdentifier"]) {
+                            SEL bundleSel = NSSelectorFromString(selectorName);
+                            if (![app respondsToSelector:bundleSel]) continue;
+                            id value = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
+                            if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
+                                bid = value;
+                                break;
+                            }
+                        }
+                        if (bid && [bid.lowercaseString containsString:@"freefire"]) {
+                            for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
+                                SEL containerSel = NSSelectorFromString(selectorName);
+                                if (![app respondsToSelector:containerSel]) continue;
+                                id containerValue = ((id (*)(id, SEL))objc_msgSend)(app, containerSel);
+                                NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
+                                if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
+                                    NSLog(@"[3105] findFreeFireContainerPath: found via workspace %@ -> %@", bid, containerPath);
+                                    return containerPath;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return nil;
+}
+
 BOOL openApplicationForBundleID(NSString *bundleID) {
     if (bundleID.length == 0) return NO;
     Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
@@ -353,3 +428,4 @@ BOOL openApplicationForBundleID(NSString *bundleID) {
     if (![workspace respondsToSelector:openSelector]) return NO;
     return ((BOOL (*)(id, SEL, id))objc_msgSend)(workspace, openSelector, bundleID);
 }
+

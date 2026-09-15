@@ -104,56 +104,103 @@ enum ContainerStore {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
-        var lookupError: NSString?
-        // Method 1: MobileHouseArrest MCM activation
-        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
-           isApplicationContainerPath(path) {
-            log("patch: MHA-C2 resolved \(bundleID)")
-            return path
-        }
-        let detail = lookupError.map(String.init) ?? "unavailable"
-        log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
-        // Method 2: LSApplicationProxy container URL (works on all iOS versions without MHA)
-        if let info = appInfoForBundleID(bundleID) as? [String: Any],
-           let container = info["container"] as? String,
-           !container.isEmpty,
-           isApplicationContainerPath(container) {
-            log("patch: LSApplicationProxy resolved \(bundleID) -> \(container)")
-            return container
+        let isFreeFire = bundleID.lowercased().contains("freefire") || bundleID.lowercased().contains("dts")
+        var targetIDs: [String] = [bundleID]
+        if isFreeFire {
+            let ffList = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+            for ff in ffList where !targetIDs.contains(ff) {
+                targetIDs.append(ff)
+            }
+        } else if let alt = alternativeBundleID(for: bundleID), !targetIDs.contains(alt) {
+            targetIDs.append(alt)
         }
 
-        // Method 3: Installed apps scan from workspace
-        for app in installedAppsFromAPI() {
-            if app.bundleID == bundleID && isApplicationContainerPath(app.containerPath) {
-                log("patch: installedAppsFromAPI resolved \(bundleID) -> \(app.containerPath)")
-                return app.containerPath
+        // Method 1: Dedicated Free Fire scan via LaunchServices workspace
+        if isFreeFire, let ffPath = findFreeFireContainerPath(), isApplicationContainerPath(ffPath) {
+            log("patch: findFreeFireContainerPath resolved container -> \(ffPath)")
+            return ffPath
+        }
+
+        // Method 2: MobileHouseArrest MCM activation across candidates
+        for bid in targetIDs {
+            var lookupError: NSString?
+            if let path = MCMActivateContainerPath(2, bid, false, &lookupError),
+               isApplicationContainerPath(path) {
+                log("patch: MHA-C2 resolved \(bid) -> \(path)")
+                return path
             }
         }
 
-        // Method 4: Fallback filesystem metadata scan (MCM metadata plist read)
-        if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
-            log("patch: filesystem metadata scan resolved \(bundleID)")
-            return scanned
-        }
-
-        // Method 5: Check alternative bundle ID (e.g. Free Fire MAX for Free Fire TH)
-        if let alt = alternativeBundleID(for: bundleID) {
-            if let info = appInfoForBundleID(alt) as? [String: Any],
+        // Method 3: LSApplicationProxy container URL across candidates
+        for bid in targetIDs {
+            if let info = appInfoForBundleID(bid) as? [String: Any],
                let container = info["container"] as? String,
                !container.isEmpty,
                isApplicationContainerPath(container) {
-                log("patch: alternative LSApplicationProxy resolved \(alt) for \(bundleID)")
+                log("patch: LSApplicationProxy resolved \(bid) -> \(container)")
                 return container
             }
-            if let scanned = resolveAppContainerPathByMetadataScan(bundleID: alt) {
-                log("patch: alternative metadata scan resolved \(alt) for \(bundleID)")
+        }
+
+        // Method 4: Installed apps scan from workspace
+        let allApps = installedAppsFromAPI()
+        for bid in targetIDs {
+            for app in allApps {
+                let appBid = app.bundleID.lowercased()
+                if (appBid == bid.lowercased() || appBid.hasSuffix("." + bid.lowercased())) && isApplicationContainerPath(app.containerPath) {
+                    log("patch: installedAppsFromAPI resolved \(bid) -> \(app.containerPath)")
+                    return app.containerPath
+                }
+            }
+        }
+
+        if isFreeFire {
+            // Check any app containing freefire
+            for app in allApps {
+                let appBid = app.bundleID.lowercased()
+                if appBid.contains("freefire") && isApplicationContainerPath(app.containerPath) {
+                    log("patch: installedAppsFromAPI matched freefire app \(app.bundleID) -> \(app.containerPath)")
+                    return app.containerPath
+                }
+            }
+        }
+
+        // Method 5: Fallback filesystem metadata scan
+        for bid in targetIDs {
+            if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bid) {
+                log("patch: filesystem metadata scan resolved \(bid) -> \(scanned)")
                 return scanned
             }
-            for app in installedAppsFromAPI() {
-                if app.bundleID == alt && isApplicationContainerPath(app.containerPath) {
-                    log("patch: alternative installedAppsFromAPI resolved \(alt) for \(bundleID)")
-                    return app.containerPath
+        }
+
+        // Method 6: Direct filesystem inspection for Free Fire signature files
+        if isFreeFire {
+            let dirs = enumerateDirectories(path: appDataRoot)
+            for dir in dirs {
+                let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
+                guard isApplicationContainerPath(canonical) else { continue }
+                let checkPaths = [
+                    (canonical as NSString).appendingPathComponent("Documents/contentcache"),
+                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist"),
+                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist"),
+                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefire.plist"),
+                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefirevn.plist"),
+                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefireth"),
+                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefiremax"),
+                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefirevn"),
+                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefire")
+                ]
+                for cp in checkPaths {
+                    if FileManager.default.fileExists(atPath: cp) {
+                        log("patch: direct signature matched Free Fire at \(canonical)")
+                        return canonical
+                    }
+                }
+                if let meta = readContainerMetadata(containerPath: canonical),
+                   meta.bundleID.lowercased().contains("freefire") {
+                    log("patch: direct metadata matched Free Fire \(meta.bundleID) at \(canonical)")
+                    return canonical
                 }
             }
         }
@@ -172,10 +219,15 @@ enum ContainerStore {
             log("patch: metadata scan unavailable — no containers enumerated")
             return nil
         }
+        let targetLower = bundleID.lowercased()
         for dir in dirs {
             guard UUID(uuidString: (dir as NSString).lastPathComponent) != nil else { continue }
-            guard let metadata = readContainerMetadata(containerPath: dir),
-                  metadata.bundleID == bundleID else { continue }
+            guard let metadata = readContainerMetadata(containerPath: dir) else { continue }
+            let metaLower = metadata.bundleID.lowercased()
+            let matched = (metaLower == targetLower) ||
+                          (targetLower.contains("freefire") && metaLower.contains("freefire")) ||
+                          (targetLower.contains("dts") && metaLower.contains("dts"))
+            guard matched else { continue }
             let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
             guard isApplicationContainerPath(canonical) else { continue }
             return canonical
