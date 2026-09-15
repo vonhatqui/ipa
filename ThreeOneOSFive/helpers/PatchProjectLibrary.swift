@@ -71,7 +71,7 @@ enum PatchProjectLibrary {
                 let data = try readPackage(at: url)
                 let summary = try PatchPackageCodec.inspect(data)
                 let decoded: DecodedPatchPackage?
-                if let contentKey = try PatchKeyStore.load(for: summary) {
+                if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
                     decoded = try PatchPackageCodec.decode(data, contentKey: contentKey)
                 } else if summary.isPasswordProtected {
                     decoded = nil
@@ -127,7 +127,8 @@ enum PatchProjectLibrary {
               values.isRegularFile == true else {
             throw PatchPackageError.invalidProject
         }
-        return try Data(contentsOf: url, options: .mappedIfSafe)
+        let rawData = try Data(contentsOf: url, options: .mappedIfSafe)
+        return BundledPatchInjector.deobfuscateIfNeeded(rawData)
     }
 
     static func save(

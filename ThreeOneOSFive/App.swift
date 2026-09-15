@@ -16,6 +16,7 @@ struct ThreeOneOSFiveApp: App {
     @State private var isGameLoaded = false
     @State private var isSplashActive = true
     @State private var mainUIAppeared = false
+    @State private var showPostSplashNotice = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -83,9 +84,36 @@ struct ThreeOneOSFiveApp: App {
                         withAnimation(.easeOut(duration: 0.6)) {
                             isSplashActive = false
                         }
+                        // Hiện thông báo đồng bộ với app sau khi load xong các chữ
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                                showPostSplashNotice = true
+                            }
+                        }
                     })
                     .zIndex(999)
                     .transition(.opacity)
+                }
+
+                // Thông báo CheatStore Vn đồng bộ phong cách xuất hiện sau khi load xong chữ Splash
+                if showPostSplashNotice {
+                    BlossomNoticeModalView(
+                        onDiscord: {
+                            if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
+                                UIApplication.shared.open(url)
+                            }
+                        },
+                        onDismiss: {
+                            withAnimation(.easeOut(duration: 0.25)) {
+                                showPostSplashNotice = false
+                            }
+                        }
+                    )
+                    .zIndex(1000)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.92)),
+                        removal: .opacity.combined(with: .scale(scale: 0.95))
+                    ))
                 }
             }
             .onChange(of: licenseManager.isActivated) { activated in

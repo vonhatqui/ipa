@@ -155,3 +155,134 @@ struct BlossomSplashView: View {
         }
     }
 }
+
+// MARK: - Blossom Notice Modal Component (Thông báo chào mừng đồng bộ CheatStore Vn)
+struct BlossomNoticeModalView: View {
+    var onDiscord: () -> Void
+    var onDismiss: () -> Void
+
+    var body: some View {
+        ZStack {
+            // Lớp nền mờ tối sẫm (Backdrop Blur)
+            Color.black.opacity(0.65)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onDismiss()
+                }
+
+            // Hộp thoại thông báo kính mờ Blossom Glassmorphism
+            VStack(spacing: 18) {
+                // Header: Icon dấu tích nhỏ + CheatStore Vn
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [BlossomTheme.sakuraLight, BlossomTheme.sakura],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .shadow(color: BlossomTheme.sakura.opacity(0.8), radius: 8)
+
+                    Text("CheatStore Vn")
+                        .font(.system(size: 19, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Spacer()
+
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(Color.white.opacity(0.35))
+                    }
+                }
+
+                // Dải kẻ ngang gradient tinh tế
+                LinearGradient(
+                    colors: [
+                        BlossomTheme.sakura.opacity(0.6),
+                        BlossomTheme.sakuraDeep.opacity(0.2),
+                        Color.clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(height: 1)
+
+                // Nội dung thông báo
+                Text("Chúng tôi luôn cung cấp những thứ an toàn, chất lượng đến các bạn và những cập nhật mang tính an toàn, tự bảo về tài khoản của bạn nhé")
+                    .font(.system(size: 13.5, weight: .medium))
+                    .foregroundStyle(Color.white.opacity(0.88))
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                // 2 Nút Hành Động: Discord - Đóng
+                HStack(spacing: 12) {
+                    // Nút Discord
+                    Button {
+                        onDiscord()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text("Discord")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                        }
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(BlossomTheme.buttonGradient)
+                        .cornerRadius(12)
+                        .shadow(color: BlossomTheme.sakuraDeep.opacity(0.4), radius: 8, y: 3)
+                    }
+
+                    // Nút Đóng
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Text("Đóng")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 42)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(12)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            )
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .padding(22)
+            .background(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .fill(Color(red: 0.082, green: 0.043, blue: 0.137).opacity(0.96))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(
+                        LinearGradient(
+                            colors: [
+                                BlossomTheme.sakura.opacity(0.65),
+                                BlossomTheme.sakuraDeep.opacity(0.3),
+                                Color.white.opacity(0.1)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1.2
+                    )
+            )
+            .shadow(color: BlossomTheme.sakura.opacity(0.25), radius: 24, y: 8)
+            .shadow(color: Color.black.opacity(0.6), radius: 30, y: 15)
+            .padding(.horizontal, 28)
+        }
+    }
+}
+

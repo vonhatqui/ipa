@@ -567,6 +567,42 @@ enum PatchTransaction {
         return keys
     }
 
+    static func projectIDs(
+        occupyingKeys targetKeys: Set<String>,
+        backupRoot: URL,
+        excludingProjectID: UUID? = nil,
+        fileManager: FileManager = .default
+    ) -> Set<UUID> {
+        guard let projectDirectories = try? fileManager.contentsOfDirectory(
+            at: backupRoot,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        var conflicting = Set<UUID>()
+        for directory in projectDirectories {
+            guard let projectID = UUID(uuidString: directory.lastPathComponent),
+                  projectID != excludingProjectID,
+                  let receipt = latestReceipt(
+                    projectID: projectID,
+                    backupRoot: backupRoot,
+                    fileManager: fileManager
+                  ),
+                  let journal = try? readJournal(receipt.journalURL),
+                  journal.status == .applied || journal.status == .prepared
+            else { continue }
+
+            for record in journal.records {
+                let key = record.bundleID + "\0" + record.relativePath
+                if targetKeys.contains(key) {
+                    conflicting.insert(projectID)
+                    break
+                }
+            }
+        }
+        return conflicting
+    }
+
     static func requiredBundleIdentifiers(for receipt: PatchTransactionReceipt) throws -> [String] {
         let journal = try readJournal(receipt.journalURL)
         guard (minimumSchemaVersion...schemaVersion).contains(journal.schemaVersion),

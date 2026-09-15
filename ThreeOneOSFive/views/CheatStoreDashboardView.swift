@@ -37,6 +37,7 @@ struct CheatStoreDashboardView: View {
 
     @State private var selectedTab: CheatStoreTab = .home
     @State private var workingPatchID: UUID?
+    @State private var appliedProjectIDs: Set<UUID> = []
     @State private var alertMessage: String?
     @State private var showAlert = false
     @State private var copiedKey = false
@@ -141,6 +142,7 @@ struct CheatStoreDashboardView: View {
             PatchUnlockView(store: patchStore, request: request)
         }
         .onAppear {
+            appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
         }
     }
@@ -232,6 +234,7 @@ struct CheatStoreDashboardView: View {
                         ForEach(aimItems) { item in
                             CheatItemCard(
                                 item: item,
+                                isApplied: appliedProjectIDs.contains(item.id),
                                 isWorking: workingPatchID == item.id,
                                 brandBlue: brandBlue,
                                 onToggle: { enable in
@@ -304,6 +307,7 @@ struct CheatStoreDashboardView: View {
                         ForEach(espItems) { item in
                             EspItemCard(
                                 item: item,
+                                isApplied: appliedProjectIDs.contains(item.id),
                                 isWorking: workingPatchID == item.id,
                                 brandBlue: brandBlue,
                                 onToggle: { enable in
@@ -481,6 +485,7 @@ struct CheatStoreDashboardView: View {
                         ForEach(skinItems) { item in
                             ModSkinItemCard(
                                 item: item,
+                                isApplied: appliedProjectIDs.contains(item.id),
                                 isWorking: workingPatchID == item.id,
                                 brandBlue: brandBlue,
                                 onToggle: { enable in
@@ -1079,6 +1084,7 @@ struct CheatStoreDashboardView: View {
                     _ = try DevicePatchService.apply(project: project)
 
                     DispatchQueue.main.async {
+                        self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                         self.patchStore.reload()
                         self.workingPatchID = nil
                         self.alertMessage = "Đã BẬT thành công: \(modName)\n\n⚠️ LƯU Ý: Hãy vuốt tắt hẳn game Free Fire trong đa nhiệm rồi mở lại để vào trận mượt mà không văng game!"
@@ -1100,6 +1106,7 @@ struct CheatStoreDashboardView: View {
                     }
 
                     DispatchQueue.main.async {
+                        self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                         self.patchStore.reload()
                         self.workingPatchID = nil
                         self.alertMessage = "Đã TẮT và khôi phục an toàn 100%: \(modName)"
@@ -1113,6 +1120,7 @@ struct CheatStoreDashboardView: View {
                 }
 
                 DispatchQueue.main.async {
+                    self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                     self.patchStore.reload()
                     self.workingPatchID = nil
                     let friendlyError = self.userFriendlyErrorMessage(error)
@@ -1171,7 +1179,7 @@ struct CheatStoreDashboardView: View {
 
     // MARK: - Khởi Chạy Nhanh Game Free Fire
     private var isAnyModActive: Bool {
-        patchStore.items.contains { DevicePatchService.isProjectApplied(projectID: $0.id) }
+        !appliedProjectIDs.isEmpty
     }
 
     private var quickLaunchCardView: some View {
@@ -1324,6 +1332,7 @@ struct CheatStoreDashboardView: View {
 // MARK: - CheatItemCard (Định Vị & AimNeck 2.0)
 private struct CheatItemCard: View {
     let item: PatchLibraryItem
+    let isApplied: Bool
     let isWorking: Bool
     let brandBlue: Color
     let onToggle: (Bool) -> Void
@@ -1358,10 +1367,6 @@ private struct CheatItemCard: View {
             return "Định Vị Người Chơi • Xuyên Tường"
         }
         return "Antiban - No Blacklist"
-    }
-
-    private var isApplied: Bool {
-        DevicePatchService.isProjectApplied(projectID: item.id)
     }
 
     var body: some View {
@@ -1464,13 +1469,10 @@ private struct CheatItemCard: View {
 // MARK: - EspItemCard (Định Vị Xuyên Tường VIP)
 private struct EspItemCard: View {
     let item: PatchLibraryItem
+    let isApplied: Bool
     let isWorking: Bool
     let brandBlue: Color
     let onToggle: (Bool) -> Void
-
-    private var isApplied: Bool {
-        DevicePatchService.isProjectApplied(projectID: item.id)
-    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -1580,6 +1582,7 @@ private struct EspItemCard: View {
 // MARK: - ModSkinItemCard (Mod Skin VIP)
 private struct ModSkinItemCard: View {
     let item: PatchLibraryItem
+    let isApplied: Bool
     let isWorking: Bool
     let brandBlue: Color
     let onToggle: (Bool) -> Void
@@ -1594,10 +1597,6 @@ private struct ModSkinItemCard: View {
 
     private var subtitle: String {
         "Skin Trang Phục VIP • Antiban"
-    }
-
-    private var isApplied: Bool {
-        DevicePatchService.isProjectApplied(projectID: item.id)
     }
 
     private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)

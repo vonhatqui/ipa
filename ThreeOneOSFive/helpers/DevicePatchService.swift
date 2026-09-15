@@ -162,22 +162,15 @@ enum DevicePatchService {
                 )
             }
 
-            // 2. Tự động chuyển đổi thông minh: Nếu có project khác đang chiếm target file trùng lặp, tự động khôi phục project đó trước
+            // 2. Tự động chuyển đổi thông minh: Chỉ tự động khôi phục project nào có target file TRÙNG LẶP trực tiếp
             let backupRoot = try PatchProjectLibrary.backupRootURL()
-            let occupied = PatchTransaction.appliedTargetKeys(backupRoot: backupRoot, excludingProjectID: project.id, fileManager: fileManager)
-            var conflictingPIDs = Set<UUID>()
-            for rule in project.rules {
-                let key = rule.bundleID + "\0" + rule.relativePath
-                if occupied.contains(key) {
-                    if let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
-                        for entry in entries {
-                            if let otherPID = UUID(uuidString: entry), otherPID != project.id {
-                                conflictingPIDs.insert(otherPID)
-                            }
-                        }
-                    }
-                }
-            }
+            let projectTargetKeys = Set(project.rules.map { $0.bundleID + "\0" + $0.relativePath })
+            let conflictingPIDs = PatchTransaction.projectIDs(
+                occupyingKeys: projectTargetKeys,
+                backupRoot: backupRoot,
+                excludingProjectID: project.id,
+                fileManager: fileManager
+            )
             for conflictPID in conflictingPIDs {
                 if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot) {
                     try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
@@ -419,6 +412,25 @@ enum DevicePatchService {
     static func latestReceipt(projectID: UUID) -> PatchTransactionReceipt? {
         guard let backupRoot = try? PatchProjectLibrary.backupRootURL() else { return nil }
         return PatchTransaction.latestReceipt(projectID: projectID, backupRoot: backupRoot)
+    }
+
+    static func allAppliedProjectIDs() -> Set<UUID> {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        var set = Set<UUID>()
+        if let backupRoot = try? PatchProjectLibrary.backupRootURL() {
+            if let entries = try? FileManager.default.contentsOfDirectory(atPath: backupRoot.path) {
+                for entry in entries {
+                    if let pid = UUID(uuidString: entry),
+                       PatchTransaction.latestReceipt(projectID: pid, backupRoot: backupRoot) != nil {
+                        set.insert(pid)
+                    }
+                }
+            }
+        }
+        appliedProjectsCache = set
+        return set
     }
 
     static func isProjectApplied(projectID: UUID) -> Bool {
