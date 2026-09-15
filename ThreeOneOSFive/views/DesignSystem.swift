@@ -7,9 +7,12 @@ enum ThemePreset: String, CaseIterable {
     case emeraldMint    = "Emerald"    // Xanh ngọc lục bảo tươi mát
     case crimsonRuby    = "Crimson"    // Đỏ Ruby cá tính
     case cyberBlue      = "CyberBlue"  // Xanh dương Cyber AMOLED chuẩn logo CheatStore
+    case blossomSakura  = "Blossom"    // Hoa anh đào Blossom chuẩn blossom.re
 
     var accentColor: Color {
         switch self {
+        case .blossomSakura:
+            return BlossomTheme.sakura
         case .originalOrange:
             return Color(
                 uiColor: UIColor { traits in
@@ -64,7 +67,7 @@ enum ThemePreset: String, CaseIterable {
 
 enum AppTheme {
     /// Đổi màu chủ đạo ứng dụng bằng cách thay đổi giá trị dưới đây:
-    static let activePreset: ThemePreset = .cyberBlue
+    static let activePreset: ThemePreset = .blossomSakura
 
     static var accent: Color {
         activePreset.accentColor

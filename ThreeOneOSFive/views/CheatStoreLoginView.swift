@@ -288,22 +288,22 @@ struct CheatStoreLogoView: View {
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.5), lineWidth: 1.5)
+                        .stroke(BlossomTheme.sakura.opacity(0.6), lineWidth: 1.5)
                 )
-                .shadow(color: Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.35), radius: 10)
+                .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 10)
         } else {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.16))
+                    .fill(BlossomTheme.sakura.opacity(0.16))
                     .frame(width: size, height: size)
                     .overlay(
-                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(Color(red: 0.00, green: 0.72, blue: 1.00).opacity(0.5), lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                        .stroke(BlossomTheme.sakura.opacity(0.6), lineWidth: 1.5)
                     )
 
                 Image(systemName: "bolt.shield.fill")
                     .font(.system(size: size * 0.5, weight: .bold))
-                    .foregroundStyle(Color(red: 0.00, green: 0.72, blue: 1.00))
+                    .foregroundStyle(BlossomTheme.sakura)
             }
         }
     }

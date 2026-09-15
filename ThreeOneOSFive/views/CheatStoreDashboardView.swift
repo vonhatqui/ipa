@@ -42,11 +42,11 @@ struct CheatStoreDashboardView: View {
     @State private var copiedKey = false
     @State private var copiedDeviceID = false
 
-    // Theme: Xanh Dương Đen (Cyber Blue & AMOLED Dark)
-    private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00) // Electric Cyan #00b8ff
-    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
-    private let darkBackground = Color(red: 0.03, green: 0.05, blue: 0.09) // Deep AMOLED Navy
-    private let cardBackground = Color(red: 0.06, green: 0.09, blue: 0.16)
+    // Theme: Blossom Dark Sakura (#c084fc & Midnight Purple)
+    private let brandBlue = BlossomTheme.sakura         // #c084fc
+    private let brandBlueDark = BlossomTheme.sakuraDeep // #a855f7
+    private let darkBackground = BlossomTheme.bgBottom  // #09040f
+    private let cardBackground = Color(red: 0.082, green: 0.043, blue: 0.137) // #150b23
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
     // Phân loại mod: Aim ở Trang Chủ, Định Vị (ESP) ở Tab riêng, Mod Skin ở Tab riêng
@@ -94,15 +94,8 @@ struct CheatStoreDashboardView: View {
 
     var body: some View {
         ZStack {
-            // Nền đen xanh AMOLED
-            darkBackground.ignoresSafeArea()
-
-            // Vầng sáng neon xanh dương
-            Circle()
-                .fill(brandBlue.opacity(0.12))
-                .blur(radius: 80)
-                .frame(width: 280, height: 280)
-                .offset(x: 0, y: -240)
+            // Nền hoa anh đào Blossom chuyển động
+            BlossomBackgroundView(showParticles: true)
 
             VStack(spacing: 0) {
                 // Header thanh trên
@@ -912,7 +905,7 @@ struct CheatStoreDashboardView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
-        .background(Color(red: 0.05, green: 0.08, blue: 0.14).opacity(0.96))
+        .background(cardBackground.opacity(0.96))
         .cornerRadius(22)
         .overlay(
             RoundedRectangle(cornerRadius: 22)
@@ -1008,7 +1001,7 @@ struct CheatStoreDashboardView: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(red: 0.05, green: 0.08, blue: 0.14).opacity(0.92))
+                .fill(cardBackground.opacity(0.92))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1194,7 +1187,7 @@ struct CheatStoreDashboardView: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(
                                 LinearGradient(
-                                    colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
+                                    colors: [BlossomTheme.sakuraLight, brandBlue],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
@@ -1232,7 +1225,7 @@ struct CheatStoreDashboardView: View {
 
                     Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chưa nạp dữ liệu mod • Vào game thường")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(isAnyModActive ? Color(red: 0.00, green: 0.88, blue: 0.95) : Color.gray)
+                        .foregroundStyle(isAnyModActive ? BlossomTheme.sakuraLight : Color.gray)
                         .lineLimit(1)
                 }
 
@@ -1246,7 +1239,7 @@ struct CheatStoreDashboardView: View {
                     .padding(.vertical, 8)
                     .background(
                         LinearGradient(
-                            colors: [brandBlue, Color(red: 0.00, green: 0.88, blue: 0.95)],
+                            colors: [BlossomTheme.sakuraDeep, brandBlue],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -1264,7 +1257,7 @@ struct CheatStoreDashboardView: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.07, green: 0.12, blue: 0.22),
+                                Color(red: 0.14, green: 0.07, blue: 0.23),
                                 cardBackground
                             ],
                             startPoint: .topLeading,
@@ -1276,7 +1269,7 @@ struct CheatStoreDashboardView: View {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(
                         isAnyModActive
-                            ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.6)
+                            ? BlossomTheme.sakuraLight.opacity(0.7)
                             : brandBlue.opacity(0.25),
                         lineWidth: isAnyModActive ? 1.5 : 1
                     )
@@ -1400,7 +1393,7 @@ private struct CheatItemCard: View {
                             .padding(.vertical, 2)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(red: 0.00, green: 0.72, blue: 1.00), Color(red: 0.00, green: 0.45, blue: 0.90)],
+                                    colors: [BlossomTheme.sakura, BlossomTheme.sakuraDeep],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -1414,7 +1407,7 @@ private struct CheatItemCard: View {
                             .padding(.vertical, 2)
                             .background(
                                 LinearGradient(
-                                    colors: [Color(red: 0.00, green: 0.85, blue: 0.80), Color(red: 0.00, green: 0.55, blue: 0.85)],
+                                    colors: [BlossomTheme.sakuraDeep, Color(red: 0.45, green: 0.20, blue: 0.75)],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -1459,7 +1452,7 @@ private struct CheatItemCard: View {
             }
         }
         .padding(14)
-        .background(Color(red: 0.06, green: 0.09, blue: 0.16))
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
@@ -1487,7 +1480,7 @@ private struct EspItemCard: View {
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.25 : 0.12),
+                                BlossomTheme.sakuraLight.opacity(isApplied ? 0.25 : 0.12),
                                 brandBlue.opacity(isApplied ? 0.2 : 0.08)
                             ],
                             startPoint: .topLeading,
@@ -1499,7 +1492,7 @@ private struct EspItemCard: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(
                                 isApplied
-                                    ? Color(red: 0.00, green: 0.88, blue: 0.95)
+                                    ? BlossomTheme.sakuraLight
                                     : brandBlue.opacity(0.4),
                                 lineWidth: isApplied ? 1.8 : 1
                             )
@@ -1509,10 +1502,10 @@ private struct EspItemCard: View {
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(
                         isApplied
-                            ? Color(red: 0.00, green: 0.88, blue: 0.95)
+                            ? BlossomTheme.sakuraLight
                             : brandBlue
                     )
-                    .shadow(color: isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.8) : .clear, radius: 6)
+                    .shadow(color: isApplied ? BlossomTheme.sakuraLight.opacity(0.8) : .clear, radius: 6)
             }
 
             // Tên và thông tin chức năng
@@ -1530,7 +1523,7 @@ private struct EspItemCard: View {
                         .padding(.vertical, 2)
                         .background(
                             LinearGradient(
-                                colors: [Color(red: 0.00, green: 0.72, blue: 1.00), Color(red: 0.00, green: 0.45, blue: 0.90)],
+                                colors: [BlossomTheme.sakura, BlossomTheme.sakuraDeep],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -1574,11 +1567,11 @@ private struct EspItemCard: View {
             }
         }
         .padding(14)
-        .background(Color(red: 0.06, green: 0.09, blue: 0.16))
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
         .cornerRadius(16)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
+                .stroke(isApplied ? BlossomTheme.sakura.opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
         )
         .shadow(color: isApplied ? brandBlue.opacity(0.2) : .clear, radius: 8)
     }

@@ -15,23 +15,16 @@ struct GameSelectionView: View {
     @State private var pulseScale: CGFloat = 1.0
     @State private var glowOpacity: Double = 0.4
 
-    // Cyber Blue & AMOLED Dark Theme
-    private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00)
-    private let brandCyan = Color(red: 0.00, green: 0.88, blue: 0.95)
-    private let darkBackground = Color(red: 0.03, green: 0.05, blue: 0.09)
-    private let cardBackground = Color(red: 0.06, green: 0.09, blue: 0.16)
+    // Theme: Blossom Dark Sakura (blossom.re)
+    private let brandBlue = BlossomTheme.sakura
+    private let brandCyan = BlossomTheme.sakuraLight
+    private let darkBackground = BlossomTheme.bgBottom
+    private let cardBackground = Color(red: 0.082, green: 0.043, blue: 0.137)
 
     var body: some View {
         ZStack {
-            // Nền đen xanh AMOLED
-            darkBackground.ignoresSafeArea()
-
-            // Vầng sáng neon xanh dương phía trên
-            Circle()
-                .fill(brandBlue.opacity(0.12))
-                .blur(radius: 90)
-                .frame(width: 300, height: 300)
-                .offset(x: 0, y: -260)
+            // Nền hoa anh đào Blossom
+            BlossomBackgroundView(showParticles: true)
 
             VStack(spacing: 0) {
                 // Thanh Header trên cùng
