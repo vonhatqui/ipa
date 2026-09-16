@@ -1,0 +1,51 @@
+name: Build Unsigned IPA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Select Xcode 16
+        run: sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build archive (unsigned)
+        run: |
+          xcodebuild archive \
+            -project ThreeOneOSFive.xcodeproj \
+            -scheme "3105" \
+            -configuration Release \
+            -archivePath $RUNNER_TEMP/3105.xcarchive \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES | tail -50
+
+      - name: Create unsigned IPA
+        run: |
+          mkdir -p $RUNNER_TEMP/Payload
+          cp -r $RUNNER_TEMP/3105.xcarchive/Products/Applications/3105.app $RUNNER_TEMP/Payload/
+          cd $RUNNER_TEMP
+          zip -r 3105-v2.0-unsigned.ipa Payload
+          echo "IPA size: $(du -sh 3105-v2.0-unsigned.ipa | cut -f1)"
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: 3105-v2.0-unsigned
+          path: ${{ runner.temp }}/3105-v2.0-unsigned.ipa
+          retention-days: 90
