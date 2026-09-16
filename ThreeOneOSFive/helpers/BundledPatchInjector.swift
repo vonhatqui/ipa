@@ -109,7 +109,7 @@ enum BundledPatchInjector {
             // Dọn dẹp sạch mọi file mod cũ không còn dùng và các file có tên lộ liễu
             let staleFileKeywords: [String] = [
                 "aimlock", "enginecore", "only aim", "dragantena", "esp-20ffth",
-                "aimneck", "aimdrag", "dinhvi", "modskin", "ignis",
+                "aimneck", "aimdrag", "dinhvi", "modskin",
                 "lib_app_runtime", "lib_app_resources"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {

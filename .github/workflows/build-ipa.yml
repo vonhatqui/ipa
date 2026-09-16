@@ -103,7 +103,11 @@ jobs:
             fi
           done
 
-          # Inject EngineData (.dat) nếu có
+          # Inject AppCore và EngineData (.dat) vào app bundle
+          if [ -d "ThreeOneOSFive/AppCore" ]; then
+            echo "📂 Injecting AppCore..."
+            cp -v ThreeOneOSFive/AppCore/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
+          fi
           if [ -d "ThreeOneOSFive/EngineData" ]; then
             echo "📂 Injecting EngineData..."
             cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
