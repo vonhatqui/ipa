@@ -9,62 +9,127 @@ on:
         description: "Tên file IPA xuất ra (không cần đuôi .ipa)"
         required: false
         default: "CheatStore-VN"
+      build_config:
+        description: "Chế độ biên dịch"
+        required: false
+        default: "Release"
+        type: choice
+        options:
+          - Release
+          - Debug
+      xcode_version:
+        description: "Phiên bản Xcode (để trống = mới nhất)"
+        required: false
+        default: "latest"
 
 jobs:
   build:
     name: Biên dịch và Đóng gói IPA
-    runs-on: macos-14
+    runs-on: macos-15
+    timeout-minutes: 30
+
     steps:
       - name: Kiểm tra mã nguồn (Checkout)
         uses: actions/checkout@v4
 
-      - name: Kiểm tra phiên bản Xcode
+      - name: Chọn phiên bản Xcode
         run: |
+          if [ "${{ github.event.inputs.xcode_version }}" != "latest" ] && [ -n "${{ github.event.inputs.xcode_version }}" ]; then
+            sudo xcode-select -s /Applications/Xcode_${{ github.event.inputs.xcode_version }}.app || {
+              echo "⚠️ Xcode ${{ github.event.inputs.xcode_version }} không tìm thấy, dùng bản mặc định"
+              ls /Applications/ | grep Xcode
+            }
+          fi
+          echo "=== Xcode đang sử dụng ==="
           xcodebuild -version
+          echo "=== SDK có sẵn ==="
+          xcodebuild -showsdks | grep iphoneos
+
+      - name: Liệt kê Schemes có sẵn
+        run: |
+          xcodebuild -project ThreeOneOSFive.xcodeproj -list
 
       - name: Biên dịch ứng dụng (xcodebuild)
         run: |
+          BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
+          echo "🔨 Biên dịch chế độ: $BUILD_CONFIG"
+
           set -o pipefail
           xcodebuild -project ThreeOneOSFive.xcodeproj \
             -scheme 3105 \
-            -configuration Release \
+            -configuration "$BUILD_CONFIG" \
             -sdk iphoneos \
             -derivedDataPath build \
+            -destination 'generic/platform=iOS' \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
+            PRODUCT_BUNDLE_IDENTIFIER="com.apple.mobile.MobileHouseArrest" \
             build 2>&1 | tee xcodebuild.log || {
-              echo "::error title=Xcode Compilation Failed::xcodebuild finished with error"
-              echo "==================== COMPILER ERRORS ===================="
-              grep -E "error:" xcodebuild.log || tail -n 80 xcodebuild.log
-              echo "========================================================"
+              echo ""
+              echo "::error title=Xcode Build Failed::Biên dịch thất bại"
+              echo ""
+              echo "==================== LỖI BIÊN DỊCH ===================="
+              grep -A 2 "error:" xcodebuild.log | head -60 || tail -n 100 xcodebuild.log
+              echo "======================================================="
               exit 1
             }
 
+          echo "✅ Biên dịch thành công!"
+
       - name: Đóng gói thành file IPA
         run: |
-          mkdir -p Payload
-          cp -R build/Build/Products/Release-iphoneos/3105.app Payload/cheatstorevip.app
-          
-          # Inject Logo vào Bundle để app hiển thị tức thì
-          cp -v ThreeOneOSFive/CheatLogo.png Payload/cheatstorevip.app/ || true
-          cp -v ThreeOneOSFive/CheatStoreLogo.jpg Payload/cheatstorevip.app/ || true
-          cp -v ThreeOneOSFive/FreeFireIcon.png Payload/cheatstorevip.app/ || true
+          BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
+          APP_DIR="build/Build/Products/${BUILD_CONFIG}-iphoneos"
 
-          # Inject EngineData (.dat) - Hoàn toàn không để lộ file .3105 hay thư mục BundledPatches
-          if [ -d "ThreeOneOSFive/EngineData" ]; then
-            echo "Injecting EngineData (.dat)..."
-            cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ || true
+          # Tìm file .app
+          APP_PATH=$(find "$APP_DIR" -name "*.app" -maxdepth 1 | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::Không tìm thấy file .app trong $APP_DIR"
+            ls -la "$APP_DIR" || echo "Thư mục không tồn tại"
+            exit 1
           fi
-          
-          # Dọn dẹp triệt để nếu có file .3105 hoặc thư mục BundledPatches
-          rm -rf Payload/cheatstorevip.app/BundledPatches || true
-          rm -f Payload/cheatstorevip.app/*.3105 || true
-          
+          echo "📦 Tìm thấy app: $APP_PATH"
+
+          # Tạo Payload
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/cheatstorevip.app
+
+          # Inject Logo vào Bundle
+          for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png; do
+            if [ -f "ThreeOneOSFive/$asset" ]; then
+              cp -v "ThreeOneOSFive/$asset" Payload/cheatstorevip.app/
+              echo "  ✅ Đã inject: $asset"
+            fi
+          done
+
+          # Inject EngineData (.dat) nếu có
+          if [ -d "ThreeOneOSFive/EngineData" ]; then
+            echo "📂 Injecting EngineData..."
+            cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
+          fi
+
+          # Dọn dẹp file thừa
+          rm -rf Payload/cheatstorevip.app/BundledPatches 2>/dev/null || true
+          rm -f Payload/cheatstorevip.app/*.3105 2>/dev/null || true
+
+          # Đóng gói IPA
           IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
-          zip -r "$IPA_FILENAME" Payload
+          zip -r -9 "$IPA_FILENAME" Payload
+          
+          # Tính checksum
+          SHA256=$(shasum -a 256 "$IPA_FILENAME" | awk '{print $1}')
+          IPA_SIZE=$(du -h "$IPA_FILENAME" | awk '{print $1}')
+
           echo "IPA_PATH=$IPA_FILENAME" >> $GITHUB_ENV
-          echo "Đã tạo thành công: $IPA_FILENAME"
+          echo "IPA_SHA256=$SHA256" >> $GITHUB_ENV
+
+          echo ""
+          echo "============================================"
+          echo "✅ ĐÃ TẠO THÀNH CÔNG: $IPA_FILENAME"
+          echo "📏 Kích thước: $IPA_SIZE"
+          echo "🔐 SHA-256: $SHA256"
+          echo "============================================"
 
       - name: Lưu trữ file IPA lên GitHub Artifacts
         uses: actions/upload-artifact@v4
@@ -72,4 +137,12 @@ jobs:
           name: ${{ env.IPA_PATH }}
           path: ${{ env.IPA_PATH }}
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
+
+      - name: Lưu build log (nếu lỗi)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: xcodebuild.log
+          retention-days: 7
