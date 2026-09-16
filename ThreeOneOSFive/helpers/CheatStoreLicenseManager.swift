@@ -1,4 +1,5 @@
 import Foundation
+import Security
 import UIKit
 
 /// Cấu trúc phản hồi chuẩn từ API Server CheatStore
@@ -98,13 +99,73 @@ final class CheatStoreLicenseManager: ObservableObject {
         return lines.joined(separator: "\n")
     }
 
-    /// Mã định danh duy nhất của thiết bị iOS (IDFV)
+    // MARK: - Keychain Persistence
+    private static let keychainService = "com.cheatstore.vn.auth"
+    private static let keychainDeviceIDKey = "unique_device_id"
+    private static let keychainLicenseKey = "saved_license_key"
+
+    private static func loadKeychainString(key: String) -> String? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: key,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne
+        ]
+        var result: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecSuccess, let data = result as? Data, let str = String(data: data, encoding: .utf8) {
+            return str
+        }
+        return nil
+    }
+
+    private static func saveKeychainString(key: String, value: String) {
+        guard let data = value.data(using: .utf8) else { return }
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: key
+        ]
+        let attributes: [String: Any] = [
+            kSecValueData as String: data,
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+        ]
+        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess { return }
+
+        var newItem = query
+        attributes.forEach { newItem[$0.key] = $0.value }
+        _ = SecItemAdd(newItem as CFDictionary, nil)
+    }
+
+    private static func deleteKeychainString(key: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: keychainService,
+            kSecAttrAccount as String: key
+        ]
+        SecItemDelete(query as CFDictionary)
+    }
+
+    /// Mã định danh duy nhất của thiết bị iOS (IDFV + Keychain persistence)
     var deviceID: String {
+        // 1. Kiểm tra Keychain trước (không bị mất khi xóa và cài lại app)
+        if let kcID = Self.loadKeychainString(key: Self.keychainDeviceIDKey), !kcID.isEmpty {
+            if UserDefaults.standard.string(forKey: storageKeyDeviceID) != kcID {
+                UserDefaults.standard.set(kcID, forKey: storageKeyDeviceID)
+            }
+            return kcID
+        }
+        // 2. Kiểm tra UserDefaults
         if let stored = UserDefaults.standard.string(forKey: storageKeyDeviceID), !stored.isEmpty {
+            Self.saveKeychainString(key: Self.keychainDeviceIDKey, value: stored)
             return stored
         }
+        // 3. Tạo mới nếu chưa có
         let id = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
         UserDefaults.standard.set(id, forKey: storageKeyDeviceID)
+        Self.saveKeychainString(key: Self.keychainDeviceIDKey, value: id)
         return id
     }
 
@@ -114,7 +175,12 @@ final class CheatStoreLicenseManager: ObservableObject {
 
     // MARK: - 3.1. Khi mở App (Auto-login ngầm)
     private func loadSavedStateAndAutoLogin() {
-        let savedKey = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        var savedKey = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        // Phục hồi từ Keychain nếu UserDefaults bị mất (ví dụ khi cài lại app)
+        if savedKey.isEmpty, let kcKey = Self.loadKeychainString(key: Self.keychainLicenseKey)?.trimmingCharacters(in: .whitespacesAndNewlines), !kcKey.isEmpty {
+            savedKey = kcKey
+        }
+
         let savedPlan = UserDefaults.standard.string(forKey: storageKeyPlan) ?? "Gói VIP"
         let savedExpiryTimestamp = UserDefaults.standard.double(forKey: storageKeyExpiry)
         let savedExpiryStr = UserDefaults.standard.string(forKey: storageKeyExpiryStr) ?? ""
@@ -123,7 +189,7 @@ final class CheatStoreLicenseManager: ObservableObject {
         let savedSecondsLeft = UserDefaults.standard.double(forKey: storageKeySecondsLeft)
 
         // Kiểm tra trong bộ nhớ máy xem có lưu key cũ hay không
-        if savedActivated, !savedKey.isEmpty {
+        if (savedActivated || !savedKey.isEmpty), !savedKey.isEmpty {
             self.activeKey = savedKey
             self.planName = savedPlan
             self.daysLeft = savedDaysLeft
@@ -348,6 +414,7 @@ final class CheatStoreLicenseManager: ObservableObject {
 
         UserDefaults.standard.set(true, forKey: storageKeyActivation)
         UserDefaults.standard.set(key, forKey: storageKeyLicense)
+        Self.saveKeychainString(key: Self.keychainLicenseKey, value: key)
         UserDefaults.standard.set(package, forKey: storageKeyPlan)
         UserDefaults.standard.set(expiryDate.timeIntervalSince1970, forKey: storageKeyExpiry)
         UserDefaults.standard.set(expiresAtStr, forKey: storageKeyExpiryStr)
@@ -374,6 +441,7 @@ final class CheatStoreLicenseManager: ObservableObject {
 
         UserDefaults.standard.removeObject(forKey: storageKeyActivation)
         UserDefaults.standard.removeObject(forKey: storageKeyLicense)
+        Self.deleteKeychainString(key: Self.keychainLicenseKey)
         UserDefaults.standard.removeObject(forKey: storageKeyPlan)
         UserDefaults.standard.removeObject(forKey: storageKeyExpiry)
         UserDefaults.standard.removeObject(forKey: storageKeyExpiryStr)
