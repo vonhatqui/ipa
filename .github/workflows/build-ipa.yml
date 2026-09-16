@@ -37,8 +37,19 @@ jobs:
 
       - name: Create unsigned IPA
         run: |
+          echo "=== Archive contents ==="
+          find $RUNNER_TEMP/3105.xcarchive/Products -name "*.app" -type d
+          
+          APP_PATH=$(find $RUNNER_TEMP/3105.xcarchive/Products -name "*.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: No .app found in archive!"
+            find $RUNNER_TEMP/3105.xcarchive -type d -maxdepth 4
+            exit 1
+          fi
+          
+          echo "Found app: $APP_PATH"
           mkdir -p $RUNNER_TEMP/Payload
-          cp -r $RUNNER_TEMP/3105.xcarchive/Products/Applications/3105.app $RUNNER_TEMP/Payload/
+          cp -r "$APP_PATH" $RUNNER_TEMP/Payload/
           cd $RUNNER_TEMP
           zip -r 3105-v2.0-unsigned.ipa Payload
           echo "IPA size: $(du -sh 3105-v2.0-unsigned.ipa | cut -f1)"
