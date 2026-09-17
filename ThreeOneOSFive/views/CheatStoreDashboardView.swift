@@ -62,26 +62,26 @@ struct CheatStoreDashboardView: View {
 
     // Phân loại mod
     private func isEspItem(_ item: PatchLibraryItem) -> Bool {
-        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network")
     }
 
     private func isCpanelItem(_ item: PatchLibraryItem) -> Bool {
-        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("cpanel") || name.contains("leaked") || filename.contains("cpanel")
     }
 
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
-        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("skin") || name.contains("ignis") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
         if isEspItem(item) || isCpanelItem(item) || isSkinItem(item) { return false }
-        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("aim") || name.contains("drag") || filename.contains("system")
     }
@@ -1201,7 +1201,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private func previewSkin(for item: PatchLibraryItem) {
-        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         if name.contains("ignis") {
             previewSkinInfo = SkinPreviewInfo(
                 title: "IGNIS Đạo Sĩ Đỏ",
@@ -1227,7 +1227,7 @@ struct CheatStoreDashboardView: View {
             return "Cpanel Leaked"
         }
         if isSkinItem(item) {
-            return item.project?.name ?? item.summary.projectName
+            return item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
         }
         return "AIMDRAG PRO"
     }
@@ -1736,7 +1736,7 @@ private struct SkinItemCard: View {
     let onPreview: () -> Void
 
     private var skinTitle: String {
-        item.project?.name ?? item.summary.projectName
+        item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
     }
 
     private var skinSubtitle: String {
@@ -1746,7 +1746,7 @@ private struct SkinItemCard: View {
         } else if n.contains("nạ cỏ") || n.contains("đá bóng") {
             return "Bộ trang phục Nạ Cỏ & Áo Đá Bóng siêu nét"
         }
-        return item.project?.notes ?? "Trang phục VIP độc quyền trong trận"
+        return "Trang phục VIP độc quyền trong trận"
     }
 
     private var skinBadge: String {
