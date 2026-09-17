@@ -4,12 +4,14 @@ import UIKit
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
     case esp = 1
-    case profile = 2
+    case skin = 2
+    case profile = 3
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
         case .esp: return "Định Vị"
+        case .skin: return "Mod Skin"
         case .profile: return "Cá Nhân"
         }
     }
@@ -18,9 +20,19 @@ enum CheatStoreTab: Int, CaseIterable {
         switch self {
         case .home: return "house.fill"
         case .esp: return "location.viewfinder"
+        case .skin: return "tshirt.fill"
         case .profile: return "person.crop.circle.fill"
         }
     }
+}
+
+// MARK: - Skin Preview Info Model
+struct SkinPreviewInfo: Identifiable {
+    let id = UUID()
+    let title: String
+    let subtitle: String
+    let imageURL: String
+    let localImageName: String
 }
 
 struct CheatStoreDashboardView: View {
@@ -39,6 +51,7 @@ struct CheatStoreDashboardView: View {
     @State private var showAlert = false
     @State private var copiedKey = false
     @State private var copiedDeviceID = false
+    @State private var previewSkinInfo: SkinPreviewInfo? = nil
 
     // Theme: Blossom Dark Sakura (#c084fc & Midnight Purple)
     private let brandBlue = BlossomTheme.sakura         // #c084fc
@@ -47,15 +60,46 @@ struct CheatStoreDashboardView: View {
     private let cardBackground = Color(red: 0.082, green: 0.043, blue: 0.137) // #150b23
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
-    // Phân loại mod: AIMDRAG PRO ở Trang Chủ, ESP 2.0 ở Tab Định Vị
+    // Phân loại mod
     private func isEspItem(_ item: PatchLibraryItem) -> Bool {
-        let name = (item.project?.name ?? "").lowercased()
+        let name = (item.project?.name ?? item.summary.projectName).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network")
     }
 
+    private func isCpanelItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("cpanel") || name.contains("leaked") || filename.contains("cpanel")
+    }
+
+    private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("skin") || name.contains("ignis") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
+    }
+
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        return !isEspItem(item)
+        if isEspItem(item) || isCpanelItem(item) || isSkinItem(item) { return false }
+        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("aim") || name.contains("drag") || filename.contains("system")
+    }
+
+    private var aimItem: PatchLibraryItem? {
+        patchStore.items.first(where: { isAimItem($0) })
+    }
+
+    private var cpanelItem: PatchLibraryItem? {
+        patchStore.items.first(where: { isCpanelItem($0) })
+    }
+
+    private var espItem: PatchLibraryItem? {
+        patchStore.items.first(where: { isEspItem($0) })
+    }
+
+    private var skinItems: [PatchLibraryItem] {
+        patchStore.items.filter { isSkinItem($0) }
     }
 
     private var aimItems: [PatchLibraryItem] {
@@ -82,6 +126,8 @@ struct CheatStoreDashboardView: View {
                         homeView
                     case .esp:
                         espView
+                    case .skin:
+                        skinView
                     case .profile:
                         profileView
                     }
@@ -89,7 +135,7 @@ struct CheatStoreDashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // Nút Mở Game Free Fire Nằm Ngay Trên Thanh Dashboard Điều Hướng
-                if selectedTab == .home || selectedTab == .esp {
+                if selectedTab == .home || selectedTab == .esp || selectedTab == .skin {
                     quickLaunchCardView
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
@@ -100,6 +146,21 @@ struct CheatStoreDashboardView: View {
 
                 // Footer thông tin thiết bị & phiên bản iOS & trạng thái hỗ trợ
                 deviceStatusFooterView
+            }
+
+            // Modal xem trước ảnh Skin
+            if let preview = previewSkinInfo {
+                SkinImagePreviewModal(
+                    info: preview,
+                    brandBlue: brandBlue,
+                    onClose: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            previewSkinInfo = nil
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                .zIndex(999)
             }
         }
         .alert(isPresented: $showAlert) {
@@ -158,7 +219,7 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
-            if selectedTab == .home || selectedTab == .esp {
+            if selectedTab == .home || selectedTab == .esp || selectedTab == .skin {
                 Button {
                     BundledPatchInjector.autoImportBundledPatches(into: patchStore)
                 } label: {
@@ -197,22 +258,53 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // Danh Sách Bản Mod
-                if aimItems.isEmpty {
-                    emptyStateView
-                } else {
+                // Danh Sách Bản Mod (AIMBOT)
+                if let item = aimItems.first {
                     VStack(spacing: 14) {
-                        ForEach(aimItems) { item in
-                            CheatItemCard(
-                                item: item,
-                                isApplied: appliedProjectIDs.contains(item.id),
-                                isWorking: workingPatchID == item.id,
-                                brandBlue: brandBlue,
-                                onToggle: { enable in
-                                    handleToggle(item: item, enable: enable)
-                                }
-                            )
-                        }
+                        CheatItemCard(
+                            item: item,
+                            isApplied: appliedProjectIDs.contains(item.id),
+                            isWorking: workingPatchID == item.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleToggle(item: item, enable: enable)
+                            }
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                } else {
+                    emptyStateView
+                }
+
+                // DANH MỤC 2: LỰA CHỌN 2
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("LỰA CHỌN 2")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+                            .tracking(1.1)
+
+                        Text("Chức năng bổ trợ chống văng game")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 6)
+
+                // Danh Sách Bản Mod (Cpanel Leaked)
+                if let item = cpanelItem {
+                    VStack(spacing: 14) {
+                        CpanelItemCard(
+                            item: item,
+                            isApplied: appliedProjectIDs.contains(item.id),
+                            isWorking: workingPatchID == item.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleToggle(item: item, enable: enable)
+                            }
+                        )
                     }
                     .padding(.horizontal, 20)
                 }
@@ -271,21 +363,17 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                if espItems.isEmpty {
-                    emptyEspStateView
-                } else {
+                if let item = espItems.first {
                     VStack(spacing: 14) {
-                        ForEach(espItems) { item in
-                            EspItemCard(
-                                item: item,
-                                isApplied: appliedProjectIDs.contains(item.id),
-                                isWorking: workingPatchID == item.id,
-                                brandBlue: brandBlue,
-                                onToggle: { enable in
-                                    handleToggle(item: item, enable: enable)
-                                }
-                            )
-                        }
+                        EspItemCard(
+                            item: item,
+                            isApplied: appliedProjectIDs.contains(item.id),
+                            isWorking: workingPatchID == item.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleToggle(item: item, enable: enable)
+                            }
+                        )
                     }
                     .padding(.horizontal, 20)
 
@@ -429,6 +517,144 @@ struct CheatStoreDashboardView: View {
     }
 
 
+
+    // MARK: - Tab 3: Mod Skin (Trang Phục VIP Độc Quyền)
+    private var skinView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                // Tiêu đề phần Mod Skin
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("BẢNG ĐIỀU KHIỂN MOD TRANG PHỤC")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+                            .tracking(1.1)
+
+                        Text("Bật / Tắt Skin VIP Độc Quyền • Vào Game Là Có Ngay")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 10)
+
+                // Danh Sách Bản Mod Skin
+                if !skinItems.isEmpty {
+                    VStack(spacing: 14) {
+                        ForEach(skinItems) { item in
+                            SkinItemCard(
+                                item: item,
+                                isApplied: appliedProjectIDs.contains(item.id),
+                                isWorking: workingPatchID == item.id,
+                                brandBlue: brandBlue,
+                                onToggle: { enable in
+                                    handleToggle(item: item, enable: enable)
+                                },
+                                onPreview: {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                        previewSkin(for: item)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                } else {
+                    emptySkinStateView
+                }
+
+                // Thông tin tính năng Mod Skin
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "tshirt.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(brandBlue)
+
+                        Text("Đặc Quyền Mod Skin VIP")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        featureBullet(text: "Kích hoạt hiệu ứng trang phục đặc biệt trong trận đấu")
+                        featureBullet(text: "Mỗi skin tác động tệp avatar độc lập, có thể bật cùng lúc")
+                        featureBullet(text: "Tương thích 100% khi bật song song với AIMDRAG & ESP / Cpanel")
+                        featureBullet(text: "Cơ chế Golden Snapshot bảo vệ & phục hồi dữ liệu gốc an toàn")
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(cardBackground)
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(brandBlue.opacity(0.25), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
+
+                // Hướng dẫn quy trình
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 16))
+                        .foregroundStyle(brandBlue)
+                        .padding(.top, 2)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Quy trình chuẩn:")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text("Gạt BẬT Skin mong muốn > Bấm nút [MỞ] Free Fire bên dưới. Bạn có thể bật song song cả 2 skin và kết hợp cùng Aim/ESP mượt mà!")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.gray)
+                            .lineSpacing(2)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(cardBackground)
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+            }
+            .padding(.bottom, 24)
+        }
+    }
+
+    private var emptySkinStateView: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "tshirt")
+                .font(.system(size: 40))
+                .foregroundStyle(.gray)
+                .padding(.top, 30)
+
+            Text("Đang tải dữ liệu Mod Skin...")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.white)
+
+            Button {
+                BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.clockwise")
+                    Text("Quét lại skin")
+                }
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(brandBlue)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(brandBlue.opacity(0.12))
+                .cornerRadius(16)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+    }
 
     // MARK: - Tab 4: Cá Nhân (Thời Hạn Key, Gia Hạn, Đăng Xuất)
     private var profileView: some View {
@@ -738,7 +964,7 @@ struct CheatStoreDashboardView: View {
         )
     }
 
-    private var deviceStatusFooterView: some View {
+        private var deviceStatusFooterView: some View {
         HStack(spacing: 8) {
             // Tên máy hiện tại (Ví dụ: iPhone 13 Pro Max)
             HStack(spacing: 4) {
@@ -749,56 +975,28 @@ struct CheatStoreDashboardView: View {
                 Text(AppInfo.hardwareDisplayName)
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                    .lineLimit(1)
             }
 
-            Text("•")
-                .font(.system(size: 10))
-                .foregroundStyle(Color.gray.opacity(0.4))
+            Spacer()
 
-            // Phiên bản iOS (Ví dụ: iOS 17.5.1)
-            HStack(spacing: 4) {
-                Image(systemName: "apple.logo")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.85))
-
-                Text("iOS \(AppInfo.osVersion)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 4)
-
-            // Trạng thái Hỗ trợ: Tích xanh có hỗ trợ / Dấu X đỏ không hỗ trợ
             if isDeviceSupported {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-
                     Text("Có hỗ trợ")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
                 }
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
                 .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
                 .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3), lineWidth: 0.8)
-                )
             } else {
                 HStack(spacing: 4) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
-
                     Text("Không hỗ trợ")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
                 }
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
                 .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.12))
@@ -917,6 +1115,28 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
+                    // Xử lý xung đột file: Cpanel Leaked và ESP 2.0 sửa cùng file Assembly-CSharp & localConfig
+                    // Tự động tắt bản mod đối nghịch trước khi bật bản mới để tránh lỗi target hoặc văng game
+                    if self.isCpanelItem(item) {
+                        if let esp = self.espItem, self.appliedProjectIDs.contains(esp.id) {
+                            let espProj = self.resolveProject(for: esp)
+                            if let receipt = DevicePatchService.latestReceipt(projectID: esp.id) {
+                                _ = try? DevicePatchService.restore(receipt: receipt, project: espProj, allowChangedTargets: true)
+                            } else {
+                                DevicePatchService.forceCleanup(project: espProj)
+                            }
+                        }
+                    } else if self.isEspItem(item) {
+                        if let cpanel = self.cpanelItem, self.appliedProjectIDs.contains(cpanel.id) {
+                            let cpProj = self.resolveProject(for: cpanel)
+                            if let receipt = DevicePatchService.latestReceipt(projectID: cpanel.id) {
+                                _ = try? DevicePatchService.restore(receipt: receipt, project: cpProj, allowChangedTargets: true)
+                            } else {
+                                DevicePatchService.forceCleanup(project: cpProj)
+                            }
+                        }
+                    }
+
                     let targetProject = self.resolveProject(for: item)
 
                     guard let project = targetProject else {
@@ -980,9 +1200,34 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    private func previewSkin(for item: PatchLibraryItem) {
+        let name = (item.project?.name ?? item.summary.projectName).lowercased()
+        if name.contains("ignis") {
+            previewSkinInfo = SkinPreviewInfo(
+                title: "IGNIS Đạo Sĩ Đỏ",
+                subtitle: "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis",
+                imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
+                localImageName: "skin_ignis"
+            )
+        } else {
+            previewSkinInfo = SkinPreviewInfo(
+                title: "Nạ cỏ - Áo đá bóng",
+                subtitle: "Bộ trang phục Nạ Cỏ & Áo Đá Bóng cực hot",
+                imageURL: "https://files.catbox.moe/6cit3j.png",
+                localImageName: "skin_naco"
+            )
+        }
+    }
+
     private func displayName(for item: PatchLibraryItem) -> String {
         if isEspItem(item) {
             return "ESP 2.0"
+        }
+        if isCpanelItem(item) {
+            return "Cpanel Leaked"
+        }
+        if isSkinItem(item) {
+            return item.project?.name ?? item.summary.projectName
         }
         return "AIMDRAG PRO"
     }
@@ -1299,13 +1544,8 @@ private struct EspItemCard: View {
                     )
 
                 Image(systemName: "location.viewfinder")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(
-                        isApplied
-                            ? BlossomTheme.sakuraLight
-                            : brandBlue
-                    )
-                    .shadow(color: isApplied ? BlossomTheme.sakuraLight.opacity(0.8) : .clear, radius: 6)
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(isApplied ? BlossomTheme.sakuraLight : brandBlue)
             }
 
             // Tên và thông tin chức năng
@@ -1316,14 +1556,14 @@ private struct EspItemCard: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    Text("ESP 2.0")
+                    Text("XUYÊN TƯỜNG")
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(
                             LinearGradient(
-                                colors: [BlossomTheme.sakura, BlossomTheme.sakuraDeep],
+                                colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -1331,9 +1571,9 @@ private struct EspItemCard: View {
                         .cornerRadius(4)
                 }
 
-                Text("Định Vị Người Chơi • Xuyên Tường")
+                Text("Định Vị Tên • Máu • Khoảng Cách Kẻ Địch")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(brandBlue)
+                    .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
@@ -1377,7 +1617,464 @@ private struct EspItemCard: View {
     }
 }
 
+// MARK: - CpanelItemCard (Lựa Chọn 2: Cpanel Leaked)
+private struct CpanelItemCard: View {
+    let item: PatchLibraryItem
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
 
+    var body: some View {
+        HStack(spacing: 14) {
+            // Icon chức năng
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                BlossomTheme.sakuraLight.opacity(isApplied ? 0.25 : 0.12),
+                                brandBlue.opacity(isApplied ? 0.2 : 0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(
+                                isApplied
+                                    ? BlossomTheme.sakuraLight
+                                    : brandBlue.opacity(0.4),
+                                lineWidth: isApplied ? 1.8 : 1
+                            )
+                    )
+
+                Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(isApplied ? BlossomTheme.sakuraLight : brandBlue)
+            }
+
+            // Tên và thông tin chức năng
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text("Cpanel Leaked")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text("LEAKED")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.95, green: 0.40, blue: 0.20), BlossomTheme.sakuraDeep],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
+                }
+
+                Text("không muốn văng game thì cùng cái này nhé.")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .lineLimit(1)
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
+            }
+        }
+        .padding(14)
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? BlossomTheme.sakura.opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: isApplied ? brandBlue.opacity(0.2) : .clear, radius: 8)
+    }
+}
+
+// MARK: - SkinItemCard (Mod Skin VIP)
+private struct SkinItemCard: View {
+    let item: PatchLibraryItem
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+    let onPreview: () -> Void
+
+    private var skinTitle: String {
+        item.project?.name ?? item.summary.projectName
+    }
+
+    private var skinSubtitle: String {
+        let n = skinTitle.lowercased()
+        if n.contains("ignis") {
+            return "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis"
+        } else if n.contains("nạ cỏ") || n.contains("đá bóng") {
+            return "Bộ trang phục Nạ Cỏ & Áo Đá Bóng siêu nét"
+        }
+        return item.project?.notes ?? "Trang phục VIP độc quyền trong trận"
+    }
+
+    private var skinBadge: String {
+        let n = skinTitle.lowercased()
+        if n.contains("ignis") {
+            return "HOT SKIN"
+        }
+        return "VIP SKIN"
+    }
+
+    private var localImageName: String {
+        let n = skinTitle.lowercased()
+        if n.contains("ignis") { return "skin_ignis" }
+        return "skin_naco"
+    }
+
+    private var localUIImage: UIImage? {
+        if let img = UIImage(named: localImageName) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: localImageName, ofType: "jpeg") ??
+                      Bundle.main.path(forResource: localImageName, ofType: "png") ??
+                      Bundle.main.path(forResource: localImageName, ofType: "jpg") {
+            return UIImage(contentsOfFile: path)
+        }
+        return nil
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // Thumbnail / Icon với hiệu ứng viền phát sáng (Bấm vào xem trước)
+            Button {
+                onPreview()
+            } label: {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    BlossomTheme.sakuraLight.opacity(isApplied ? 0.25 : 0.12),
+                                    brandBlue.opacity(isApplied ? 0.2 : 0.08)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .frame(width: 48, height: 48)
+
+                    if let thumb = localUIImage {
+                        Image(uiImage: thumb)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    } else {
+                        Image(systemName: "tshirt.fill")
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(isApplied ? BlossomTheme.sakuraLight : brandBlue)
+                    }
+
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(
+                            isApplied
+                                ? BlossomTheme.sakuraLight
+                                : brandBlue.opacity(0.4),
+                            lineWidth: isApplied ? 1.8 : 1
+                        )
+                        .frame(width: 48, height: 48)
+                }
+            }
+            .buttonStyle(ScaleButtonStyle())
+
+            // Tên và thông tin skin
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text(skinTitle)
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Text(skinBadge)
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.95, green: 0.30, blue: 0.45), BlossomTheme.sakuraDeep],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
+                }
+
+                Text(skinSubtitle)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .lineLimit(1)
+
+                // Trạng thái Bật / Tắt & Nút Xem Ảnh
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+
+                    Text("•")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.gray.opacity(0.4))
+
+                    Button {
+                        onPreview()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "eye.fill")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("Xem ảnh")
+                                .font(.system(size: 10, weight: .bold))
+                        }
+                        .foregroundStyle(brandBlue)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(brandBlue.opacity(0.12))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(brandBlue.opacity(0.3), lineWidth: 0.8)
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
+            }
+        }
+        .padding(14)
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? BlossomTheme.sakura.opacity(0.8) : Color.white.opacity(0.08), lineWidth: 1)
+        )
+        .shadow(color: isApplied ? brandBlue.opacity(0.2) : .clear, radius: 8)
+    }
+}
+
+// MARK: - Skin Image View (Hỗ trợ nạp Offline & Online Fallback)
+private struct SkinImageView: View {
+    let info: SkinPreviewInfo
+
+    private var localUIImage: UIImage? {
+        if let img = UIImage(named: info.localImageName) {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: info.localImageName, ofType: "jpeg") ??
+                      Bundle.main.path(forResource: info.localImageName, ofType: "png") ??
+                      Bundle.main.path(forResource: info.localImageName, ofType: "jpg") {
+            return UIImage(contentsOfFile: path)
+        }
+        return nil
+    }
+
+    var body: some View {
+        Group {
+            if let uiImage = localUIImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+            } else if let url = URL(string: info.imageURL) {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .empty:
+                        VStack(spacing: 10) {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Đang tải ảnh xem trước...")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundStyle(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 220)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFit()
+                    case .failure:
+                        VStack(spacing: 8) {
+                            Image(systemName: "photo.badge.exclamationmark")
+                                .font(.system(size: 30))
+                                .foregroundStyle(.orange)
+                            Text("Không tải được ảnh xem trước")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.gray)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 160)
+                    @unknown default:
+                        EmptyView()
+                    }
+                }
+            } else {
+                Image(systemName: "photo")
+                    .font(.system(size: 40))
+                    .foregroundStyle(.gray)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 160)
+            }
+        }
+    }
+}
+
+// MARK: - Skin Image Preview Modal (Cửa sổ bật lên xem ảnh sắc nét)
+private struct SkinImagePreviewModal: View {
+    let info: SkinPreviewInfo
+    let brandBlue: Color
+    let onClose: () -> Void
+
+    var body: some View {
+        ZStack {
+            // Lớp nền đen mờ bao quanh, chạm vào để đóng
+            Color.black.opacity(0.82)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    onClose()
+                }
+
+            VStack(spacing: 14) {
+                // Header thanh tiêu đề & Nút đóng
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(info.title)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Text("XEM TRƯỚC")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(brandBlue)
+                                .cornerRadius(4)
+                        }
+
+                        Text(info.subtitle)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.gray)
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Button {
+                        onClose()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 26))
+                            .foregroundStyle(Color.white.opacity(0.75))
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
+
+                // Khung ảnh xem trước bo góc phát sáng
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color(red: 0.05, green: 0.02, blue: 0.09))
+
+                    SkinImageView(info: info)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .frame(maxHeight: 360)
+                .padding(.horizontal, 14)
+
+                // Nút Đóng phía dưới
+                Button {
+                    onClose()
+                } label: {
+                    Text("Đóng xem trước")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(
+                            LinearGradient(
+                                colors: [BlossomTheme.sakuraDeep, brandBlue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(12)
+                        .shadow(color: brandBlue.opacity(0.4), radius: 6)
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+            .background(Color(red: 0.10, green: 0.05, blue: 0.17))
+            .cornerRadius(22)
+            .overlay(
+                RoundedRectangle(cornerRadius: 22)
+                    .stroke(brandBlue.opacity(0.45), lineWidth: 1.5)
+            )
+            .shadow(color: brandBlue.opacity(0.35), radius: 24)
+            .padding(.horizontal, 22)
+        }
+    }
+}
 
 // MARK: - Scale Button Style
 private struct ScaleButtonStyle: ButtonStyle {
@@ -1387,3 +2084,4 @@ private struct ScaleButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+

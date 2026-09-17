@@ -210,18 +210,30 @@ enum DevicePatchService {
             for conflictPID in conflictingPIDs {
                 if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot) {
                     try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
-                        roots[bID] ?? URL(fileURLWithPath: "/")
+                        roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
                     })
                 }
                 forceCleanupReceipts(projectID: conflictPID)
                 setProjectAppliedInMemory(projectID: conflictPID, applied: false)
             }
 
+            // Dọn dẹp triệt để mọi receipt chiếm dụng cùng target keys (tránh hoàn toàn lỗi targetOccupied từ bản build cũ)
+            let occupiedKeys = PatchTransaction.appliedTargetKeys(backupRoot: backupRoot, excludingProjectID: project.id, fileManager: fileManager)
+            if !occupiedKeys.isDisjoint(with: projectTargetKeys) {
+                if let dirs = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
+                    for d in dirs {
+                        if let pid = UUID(uuidString: d), pid != project.id {
+                            forceCleanupReceipts(projectID: pid)
+                            setProjectAppliedInMemory(projectID: pid, applied: false)
+                        }
+                    }
+                }
+            }
+
             // Nếu chính project này có receipt cũ, dọn sạch trước khi apply lại
             if let existingReceipt = PatchTransaction.latestReceipt(projectID: project.id, backupRoot: backupRoot) {
                 try? PatchTransaction.restore(receipt: existingReceipt, allowChangedTargets: true, containerResolver: { bID in
-                    guard let r = roots[bID] else { throw PatchPackageError.targetAppUnavailable(bID) }
-                    return r
+                    roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
                 })
             }
             // Dọn dẹp receipt cũ

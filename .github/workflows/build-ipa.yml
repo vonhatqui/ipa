@@ -95,8 +95,8 @@ jobs:
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/cheatstorevip.app
 
-          # Inject Logo vào Bundle
-          for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png; do
+          # Inject Logo và hình ảnh vào Bundle
+          for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png skin_ignis.jpeg skin_naco.png; do
             if [ -f "ThreeOneOSFive/$asset" ]; then
               cp -v "ThreeOneOSFive/$asset" Payload/cheatstorevip.app/
               echo "  ✅ Đã inject: $asset"
@@ -107,6 +107,8 @@ jobs:
           if [ -d "ThreeOneOSFive/AppCore" ]; then
             echo "📂 Injecting AppCore..."
             cp -v ThreeOneOSFive/AppCore/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
+            mkdir -p Payload/cheatstorevip.app/AppCore
+            cp -v ThreeOneOSFive/AppCore/*.dat Payload/cheatstorevip.app/AppCore/ 2>/dev/null || true
           fi
           if [ -d "ThreeOneOSFive/EngineData" ]; then
             echo "📂 Injecting EngineData..."
