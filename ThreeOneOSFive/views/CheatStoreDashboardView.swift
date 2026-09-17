@@ -76,7 +76,7 @@ struct CheatStoreDashboardView: View {
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("skin") || name.contains("ignis") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
+        return name.contains("skin") || name.contains("ignis") || name.contains("alock") || name.contains("alok") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
@@ -1204,15 +1204,15 @@ struct CheatStoreDashboardView: View {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         if name.contains("ignis") {
             previewSkinInfo = SkinPreviewInfo(
-                title: "IGNIS Đạo Sĩ Đỏ",
+                title: "Mod Skin Ignis",
                 subtitle: "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis",
                 imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
                 localImageName: "skin_ignis"
             )
         } else {
             previewSkinInfo = SkinPreviewInfo(
-                title: "Nạ cỏ - Áo đá bóng",
-                subtitle: "Bộ trang phục Nạ Cỏ & Áo Đá Bóng cực hot",
+                title: "Mod Skin Alock Thất tỉnh",
+                subtitle: "Bộ trang phục Alock Thất Tỉnh (Nạ Cỏ - Áo Đá Bóng)",
                 imageURL: "https://files.catbox.moe/6cit3j.png",
                 localImageName: "skin_naco"
             )
@@ -1743,8 +1743,8 @@ private struct SkinItemCard: View {
         let n = skinTitle.lowercased()
         if n.contains("ignis") {
             return "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis"
-        } else if n.contains("nạ cỏ") || n.contains("đá bóng") {
-            return "Bộ trang phục Nạ Cỏ & Áo Đá Bóng siêu nét"
+        } else if n.contains("alock") || n.contains("alok") || n.contains("nạ cỏ") || n.contains("đá bóng") {
+            return "Bộ trang phục Alock Thất Tỉnh (Nạ Cỏ - Áo Đá Bóng)"
         }
         return "Trang phục VIP độc quyền trong trận"
     }

@@ -101,8 +101,8 @@ struct PatchProject: Codable, Identifiable, Hashable {
         name = try container.decode(String.self, forKey: .name)
         author = try container.decodeIfPresent(String.self, forKey: .author) ?? ""
         isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
+        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
         bundleIdentifiers = try container.decodeIfPresent(
             [String].self,
             forKey: .bundleIdentifiers
