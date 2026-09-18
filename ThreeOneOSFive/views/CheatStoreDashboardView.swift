@@ -71,7 +71,20 @@ struct CheatStoreDashboardView: View {
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
     // Phân loại mod
+    private func isAimneckVipItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("aimneck") || filename.contains("aimneck") || name.contains("aim neck")
+    }
+
+    private func isEspAimheadV3Item(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("aimhead") || filename.contains("aimhead")
+    }
+
     private func isEspItem(_ item: PatchLibraryItem) -> Bool {
+        if isEspAimheadV3Item(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network")
@@ -90,10 +103,18 @@ struct CheatStoreDashboardView: View {
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        if isEspItem(item) || isCpanelItem(item) || isSkinItem(item) { return false }
+        if isAimneckVipItem(item) || isEspAimheadV3Item(item) || isEspItem(item) || isCpanelItem(item) || isSkinItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("aim") || name.contains("drag") || filename.contains("system")
+    }
+
+    private var aimneckVipItem: PatchLibraryItem? {
+        patchStore.items.first(where: { isAimneckVipItem($0) })
+    }
+
+    private var espAimheadV3Item: PatchLibraryItem? {
+        patchStore.items.first(where: { isEspAimheadV3Item($0) })
     }
 
     private var aimItem: PatchLibraryItem? {
@@ -276,8 +297,24 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // Danh Sách Bản Mod (AIMBOT)
-                if let item = aimItems.first {
+                // 1. AIMNECK VIP (Chức Năng Trang Chủ Mới Nhất)
+                if let vipItem = aimneckVipItem {
+                    VStack(spacing: 14) {
+                        AimneckVipCard(
+                            item: vipItem,
+                            isApplied: appliedProjectIDs.contains(vipItem.id),
+                            isWorking: workingPatchID == vipItem.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleToggle(item: vipItem, enable: enable)
+                            }
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                }
+
+                // 2. Chức Năng AIMBOT Cổ Điển (AIMDRAG PRO nếu có)
+                if let item = aimItem, item.id != aimneckVipItem?.id {
                     VStack(spacing: 14) {
                         CheatItemCard(
                             item: item,
@@ -290,7 +327,7 @@ struct CheatStoreDashboardView: View {
                         )
                     }
                     .padding(.horizontal, 20)
-                } else {
+                } else if aimneckVipItem == nil {
                     emptyStateView
                 }
 
@@ -390,6 +427,22 @@ struct CheatStoreDashboardView: View {
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
+
+                // 1. ĐỊNH VỊ + AIMHEAD V3 (Chức Năng Định Vị Mới Nhất)
+                if let v3Item = espAimheadV3Item {
+                    VStack(spacing: 14) {
+                        EspAimheadV3Card(
+                            item: v3Item,
+                            isApplied: appliedProjectIDs.contains(v3Item.id),
+                            isWorking: workingPatchID == v3Item.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleToggle(item: v3Item, enable: enable)
+                            }
+                        )
+                    }
+                    .padding(.horizontal, 20)
+                }
 
                 // Banner thông báo Chế độ 50m chống văng
                 HStack(spacing: 10) {
@@ -1773,24 +1826,15 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    // Xử lý xung đột file: Cpanel Leaked và ESP 2.0 sửa cùng file Assembly-CSharp & localConfig
-                    // Tự động tắt bản mod đối nghịch trước khi bật bản mới để tránh lỗi target hoặc văng game
-                    if self.isCpanelItem(item) {
-                        if let esp = self.espItem, self.appliedProjectIDs.contains(esp.id) {
-                            let espProj = self.resolveProject(for: esp)
-                            if let receipt = DevicePatchService.latestReceipt(projectID: esp.id) {
-                                _ = try? DevicePatchService.restore(receipt: receipt, project: espProj, allowChangedTargets: true)
+                    // Xử lý xung đột file: Cpanel Leaked, ESP 2.0 và ESP+AimHead V3 cùng sửa Assembly-CSharp & localConfig
+                    if self.isCpanelItem(item) || self.isEspItem(item) || self.isEspAimheadV3Item(item) {
+                        let assemblyMods = [self.espItem, self.cpanelItem, self.espAimheadV3Item].compactMap { $0 }
+                        for other in assemblyMods where other.id != item.id && self.appliedProjectIDs.contains(other.id) {
+                            let otherProj = self.resolveProject(for: other)
+                            if let receipt = DevicePatchService.latestReceipt(projectID: other.id) {
+                                _ = try? DevicePatchService.restore(receipt: receipt, project: otherProj, allowChangedTargets: true)
                             } else {
-                                DevicePatchService.forceCleanup(project: espProj)
-                            }
-                        }
-                    } else if self.isEspItem(item) {
-                        if let cpanel = self.cpanelItem, self.appliedProjectIDs.contains(cpanel.id) {
-                            let cpProj = self.resolveProject(for: cpanel)
-                            if let receipt = DevicePatchService.latestReceipt(projectID: cpanel.id) {
-                                _ = try? DevicePatchService.restore(receipt: receipt, project: cpProj, allowChangedTargets: true)
-                            } else {
-                                DevicePatchService.forceCleanup(project: cpProj)
+                                DevicePatchService.forceCleanup(project: otherProj)
                             }
                         }
                     }
@@ -1878,6 +1922,12 @@ struct CheatStoreDashboardView: View {
     }
 
     private func displayName(for item: PatchLibraryItem) -> String {
+        if isAimneckVipItem(item) {
+            return "AIMNECK VIP"
+        }
+        if isEspAimheadV3Item(item) {
+            return "ĐỊNH VỊ + AIMHEAD V3"
+        }
         if isEspItem(item) {
             return "ESP 2.0"
         }
@@ -2067,6 +2117,291 @@ struct CheatStoreDashboardView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - FeatureImageView (Tải ảnh sắc nét từ Assets.xcassets hoặc AppCore/Assets)
+private struct FeatureImageView: View {
+    let name: String
+    var cornerRadius: CGFloat = 16
+
+    private var uiImage: UIImage? {
+        if let img = UIImage(named: name) {
+            return img
+        }
+        if let resPath = Bundle.main.resourcePath {
+            let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
+            let extList = ["jpg", "jpeg", "png"]
+            for ext in extList {
+                let p = (appCoreAssets as NSString).appendingPathComponent("\(name).\(ext)")
+                if let img = UIImage(contentsOfFile: p) { return img }
+            }
+        }
+        if let path = Bundle.main.path(forResource: name, ofType: "jpg") ??
+                      Bundle.main.path(forResource: name, ofType: "jpeg") ??
+                      Bundle.main.path(forResource: name, ofType: "png") {
+            return UIImage(contentsOfFile: path)
+        }
+        return nil
+    }
+
+    var body: some View {
+        if let img = uiImage {
+            Image(uiImage: img)
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .cornerRadius(cornerRadius)
+        } else {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color.purple.opacity(0.4), Color(red: 0.14, green: 0.07, blue: 0.23)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(cornerRadius)
+        }
+    }
+}
+
+// MARK: - AimneckVipCard (Chức Năng Trang Chủ VIP)
+private struct AimneckVipCard: View {
+    let item: PatchLibraryItem
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Banner Ảnh Tạo Mới Cực Đẹp
+            ZStack(alignment: .topTrailing) {
+                FeatureImageView(name: "aimneck_vip", cornerRadius: 16)
+                    .frame(height: 155)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.clear,
+                                Color.black.opacity(0.2),
+                                Color(red: 0.082, green: 0.043, blue: 0.137)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                // Badges Góc Phải
+                HStack(spacing: 6) {
+                    Text("BẬT SẢNH")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.red.opacity(0.85))
+                        .cornerRadius(6)
+
+                    Text("VIP EDITION")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            LinearGradient(
+                                colors: [BlossomTheme.sakuraDeep, brandBlue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(6)
+                }
+                .padding(10)
+            }
+
+            // Nội dung điều khiển
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text("AIMNECK VIP")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Circle()
+                                .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                                .frame(width: 8, height: 8)
+
+                            Text(isApplied ? "ĐÃ NẠP" : "CHƯA NẠP")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(isApplied ? Color.green : .gray)
+                        }
+
+                        Text("Khóa Cổ Siêu Dính • Kéo Tâm Mượt • An Toàn")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(brandBlue.opacity(0.9))
+                    }
+
+                    Spacer()
+
+                    // Nút Bật/Tắt Switch
+                    if isWorking {
+                        ProgressView()
+                            .tint(brandBlue)
+                            .frame(width: 50)
+                    } else {
+                        Toggle("", isOn: Binding(
+                            get: { isApplied },
+                            set: { newValue in onToggle(newValue) }
+                        ))
+                        .labelsHidden()
+                        .tint(brandBlue)
+                    }
+                }
+
+                // Chi tiết tính năng tags
+                HStack(spacing: 8) {
+                    Label("Ghim Tâm", systemImage: "scope")
+                    Label("Bật Sảnh", systemImage: "bolt.fill")
+                    Label("Anti-Ban", systemImage: "shield.fill")
+                }
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.75))
+            }
+            .padding(14)
+        }
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    isApplied
+                        ? LinearGradient(colors: [BlossomTheme.sakuraLight, brandBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        : LinearGradient(colors: [Color.white.opacity(0.12), Color.clear], startPoint: .top, endPoint: .bottom),
+                    lineWidth: isApplied ? 1.8 : 1
+                )
+        )
+        .shadow(color: isApplied ? brandBlue.opacity(0.35) : Color.black.opacity(0.25), radius: 10, y: 4)
+    }
+}
+
+// MARK: - EspAimheadV3Card (Chức Năng Định Vị + AimHead V3)
+private struct EspAimheadV3Card: View {
+    let item: PatchLibraryItem
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // Banner Ảnh Radar HUD Mới Cực Đẹp
+            ZStack(alignment: .topTrailing) {
+                FeatureImageView(name: "esp_aimhead_v3", cornerRadius: 16)
+                    .frame(height: 155)
+                    .clipped()
+                    .overlay(
+                        LinearGradient(
+                            colors: [
+                                Color.clear,
+                                Color.black.opacity(0.2),
+                                Color(red: 0.082, green: 0.043, blue: 0.137)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                // Badges Góc Phải
+                HStack(spacing: 6) {
+                    Text("HOT V3")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(Color.orange.opacity(0.9))
+                        .cornerRadius(6)
+
+                    Text("BẬT NGOÀI GAME")
+                        .font(.system(size: 9, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(6)
+                }
+                .padding(10)
+            }
+
+            // Nội dung điều khiển
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) {
+                            Text("ĐỊNH VỊ + AIMHEAD V3")
+                                .font(.system(size: 16, weight: .black, design: .rounded))
+                                .foregroundStyle(.white)
+
+                            Circle()
+                                .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                                .frame(width: 8, height: 8)
+
+                            Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(isApplied ? Color.green : .gray)
+                        }
+
+                        Text("Khung Định Vị Head 3D • Khóa Đầu Chuẩn Xác 100%")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(brandBlue.opacity(0.9))
+                    }
+
+                    Spacer()
+
+                    // Nút Bật/Tắt Switch
+                    if isWorking {
+                        ProgressView()
+                            .tint(brandBlue)
+                            .frame(width: 50)
+                    } else {
+                        Toggle("", isOn: Binding(
+                            get: { isApplied },
+                            set: { newValue in onToggle(newValue) }
+                        ))
+                        .labelsHidden()
+                        .tint(brandBlue)
+                    }
+                }
+
+                // Chi tiết tính năng tags
+                HStack(spacing: 8) {
+                    Label("ESP Head 3D", systemImage: "viewfinder")
+                    Label("Auto AimHead", systemImage: "target")
+                    Label("Ngoài Game", systemImage: "iphone")
+                }
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.75))
+            }
+            .padding(14)
+        }
+        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(
+                    isApplied
+                        ? LinearGradient(colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
+                        : LinearGradient(colors: [Color.white.opacity(0.12), Color.clear], startPoint: .top, endPoint: .bottom),
+                    lineWidth: isApplied ? 1.8 : 1
+                )
+        )
+        .shadow(color: isApplied ? brandBlue.opacity(0.35) : Color.black.opacity(0.25), radius: 10, y: 4)
     }
 }
 

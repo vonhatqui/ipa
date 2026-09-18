@@ -129,6 +129,9 @@ jobs:
 
           # 4. Gom ảnh phụ trợ vào AppCore/Assets/ (không để rải rác ở root)
           mkdir -p "$TARGET_APP/AppCore/Assets"
+          if [ -d "ThreeOneOSFive/AppCore/Assets" ]; then
+            cp -v ThreeOneOSFive/AppCore/Assets/* "$TARGET_APP/AppCore/Assets/" 2>/dev/null || true
+          fi
           for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png skin_ignis.jpeg skin_naco.png; do
             if [ -f "ThreeOneOSFive/$asset" ]; then
               cp -v "ThreeOneOSFive/$asset" "$TARGET_APP/AppCore/Assets/" 2>/dev/null || true
