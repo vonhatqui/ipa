@@ -661,6 +661,18 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    private func featureBullet(text: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
+                .padding(.top, 2)
+            Text(text)
+                .font(.system(size: 11))
+                .foregroundStyle(.white.opacity(0.85))
+        }
+    }
+
     private var emptySkinStateView: some View {
         VStack(spacing: 14) {
             Image(systemName: "tshirt")
