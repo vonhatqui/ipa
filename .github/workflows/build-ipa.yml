@@ -54,9 +54,16 @@ jobs:
           BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
           echo "🔨 Biên dịch chế độ: $BUILD_CONFIG"
 
+          # Tự động chọn scheme ưu tiên CheatStore
+          SCHEME="CheatStore"
+          if ! xcodebuild -project ThreeOneOSFive.xcodeproj -list | grep -q "CheatStore"; then
+            SCHEME="3105"
+          fi
+          echo "🎯 Đang build với Scheme: $SCHEME"
+
           set -o pipefail
           xcodebuild -project ThreeOneOSFive.xcodeproj \
-            -scheme 3105 \
+            -scheme "$SCHEME" \
             -configuration "$BUILD_CONFIG" \
             -sdk iphoneos \
             -derivedDataPath build \
@@ -91,33 +98,55 @@ jobs:
           fi
           echo "📦 Tìm thấy app: $APP_PATH"
 
-          # Tạo Payload
+          # Tạo Payload sạch sẽ
+          rm -rf Payload
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/cheatstorevip.app
+          TARGET_APP="Payload/cheatstorevip.app"
 
-          # Inject Logo và hình ảnh vào Bundle
+          # 1. Đổi tên executable 3105 thành CheatStore (nếu còn sót binary tên 3105)
+          if [ -f "$TARGET_APP/3105" ]; then
+            echo "🔄 Đổi tên binary: 3105 -> CheatStore..."
+            mv "$TARGET_APP/3105" "$TARGET_APP/CheatStore"
+          fi
+
+          # 2. Cập nhật Info.plist: đảm bảo CFBundleExecutable trỏ đúng vào CheatStore
+          if [ -f "$TARGET_APP/Info.plist" ]; then
+            plutil -replace CFBundleExecutable -string "CheatStore" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
+          fi
+
+          # 3. Gom toàn bộ file mod .dat vào DUY NHẤT thư mục AppCore/
+          # Tuyệt đối KHÔNG copy .dat ra ngoài root
+          mkdir -p "$TARGET_APP/AppCore"
+          if [ -d "ThreeOneOSFive/AppCore" ]; then
+            echo "📂 Đang copy AppCore/*.dat vào $TARGET_APP/AppCore/..."
+            cp -v ThreeOneOSFive/AppCore/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
+          fi
+          if [ -d "ThreeOneOSFive/EngineData" ]; then
+            cp -v ThreeOneOSFive/EngineData/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
+          fi
+
+          # 4. Gom ảnh phụ trợ vào AppCore/Assets/ (không để rải rác ở root)
+          mkdir -p "$TARGET_APP/AppCore/Assets"
           for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png skin_ignis.jpeg skin_naco.png; do
             if [ -f "ThreeOneOSFive/$asset" ]; then
-              cp -v "ThreeOneOSFive/$asset" Payload/cheatstorevip.app/
-              echo "  ✅ Đã inject: $asset"
+              cp -v "ThreeOneOSFive/$asset" "$TARGET_APP/AppCore/Assets/" 2>/dev/null || true
             fi
           done
 
-          # Inject AppCore và EngineData (.dat) vào app bundle
-          if [ -d "ThreeOneOSFive/AppCore" ]; then
-            echo "📂 Injecting AppCore..."
-            cp -v ThreeOneOSFive/AppCore/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
-            mkdir -p Payload/cheatstorevip.app/AppCore
-            cp -v ThreeOneOSFive/AppCore/*.dat Payload/cheatstorevip.app/AppCore/ 2>/dev/null || true
-          fi
-          if [ -d "ThreeOneOSFive/EngineData" ]; then
-            echo "📂 Injecting EngineData..."
-            cp -v ThreeOneOSFive/EngineData/*.dat Payload/cheatstorevip.app/ 2>/dev/null || true
-          fi
+          # 5. DỌN DẸP TRIỆT ĐỂ ROOT: Xóa sạch toàn bộ file bừa bãi và lộ liễu
+          echo "🧹 Dọn dẹp sạch sẽ thư mục gốc cheatstorevip.app..."
+          rm -f "$TARGET_APP"/*.dat 2>/dev/null || true
+          rm -f "$TARGET_APP"/*.3105 2>/dev/null || true
+          rm -f "$TARGET_APP"/*.bak 2>/dev/null || true
+          rm -f "$TARGET_APP"/*.log 2>/dev/null || true
+          rm -f "$TARGET_APP"/CheatLogo.png "$TARGET_APP"/CheatStoreLogo.jpg "$TARGET_APP"/FreeFireIcon.png 2>/dev/null || true
+          rm -f "$TARGET_APP"/skin_ignis.jpeg "$TARGET_APP"/skin_naco.png 2>/dev/null || true
+          rm -rf "$TARGET_APP"/BundledPatches 2>/dev/null || true
 
-          # Dọn dẹp file thừa
-          rm -rf Payload/cheatstorevip.app/BundledPatches 2>/dev/null || true
-          rm -f Payload/cheatstorevip.app/*.3105 2>/dev/null || true
+          echo "📋 Danh sách các file trong app sau khi tối ưu gọn gàng:"
+          ls -la "$TARGET_APP"
 
           # Đóng gói IPA
           IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"

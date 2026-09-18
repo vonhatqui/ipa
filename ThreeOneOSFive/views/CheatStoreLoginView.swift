@@ -261,18 +261,20 @@ struct CheatStoreLogoView: View {
     var cornerRadius: CGFloat = 22
 
     private var loadedImage: UIImage? {
-        if let img = UIImage(named: "CheatLogo") {
+        if let img = UIImage(named: "CheatLogo") ?? UIImage(named: "CheatStoreLogo") {
             return img
         }
-        if let path = Bundle.main.path(forResource: "CheatLogo", ofType: "png"),
-           let img = UIImage(contentsOfFile: path) {
-            return img
+        if let resPath = Bundle.main.resourcePath {
+            let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
+            let candidates = ["CheatLogo.png", "CheatStoreLogo.jpg", "CheatStoreLogo.png"]
+            for name in candidates {
+                let p = (appCoreAssets as NSString).appendingPathComponent(name)
+                if let img = UIImage(contentsOfFile: p) { return img }
+            }
         }
-        if let path = Bundle.main.path(forResource: "CheatStoreLogo", ofType: "png"),
-           let img = UIImage(contentsOfFile: path) {
-            return img
-        }
-        if let path = Bundle.main.path(forResource: "CheatStoreLogo", ofType: "jpg"),
+        if let path = Bundle.main.path(forResource: "CheatLogo", ofType: "png") ??
+                      Bundle.main.path(forResource: "CheatStoreLogo", ofType: "png") ??
+                      Bundle.main.path(forResource: "CheatStoreLogo", ofType: "jpg"),
            let img = UIImage(contentsOfFile: path) {
             return img
         }

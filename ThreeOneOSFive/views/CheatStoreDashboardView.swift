@@ -2487,8 +2487,17 @@ private struct SkinItemCard: View {
     }
 
     private var localUIImage: UIImage? {
-        if let img = UIImage(named: localImageName) {
+        if let img = UIImage(named: localImageName) ??
+                     UIImage(named: localImageName == "skin_ignis" ? "SkinIgnis" : "SkinNaco") {
             return img
+        }
+        if let resPath = Bundle.main.resourcePath {
+            let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
+            let extList = ["jpeg", "png", "jpg"]
+            for ext in extList {
+                let p = (appCoreAssets as NSString).appendingPathComponent("\(localImageName).\(ext)")
+                if let img = UIImage(contentsOfFile: p) { return img }
+            }
         }
         if let path = Bundle.main.path(forResource: localImageName, ofType: "jpeg") ??
                       Bundle.main.path(forResource: localImageName, ofType: "png") ??
