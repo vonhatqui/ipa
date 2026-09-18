@@ -53,15 +53,7 @@ struct CheatStoreDashboardView: View {
     @State private var copiedDeviceID = false
     @State private var previewSkinInfo: SkinPreviewInfo? = nil
 
-    // Cài đặt Định Vị (ESP) & Chế độ Chống Văng 50m
-    @AppStorage("esp_distance_mode") private var espDistanceMode: Int = 0 // 0: 50m (Chống Văng), 1: 100m, 2: Toàn Map
-    @AppStorage("esp_show_hp") private var espShowHp: Bool = true
-    @AppStorage("esp_show_distance") private var espShowDistance: Bool = true
-    @AppStorage("esp_show_name") private var espShowName: Bool = true
-    @AppStorage("esp_box_type") private var espBoxType: Int = 0 // 0: Khung Box 2D, 1: Tia Snapline
-    @State private var selectedEspEngine: Int = 0 // 0: V6 Box 2D (Chống Văng), 1: Laser 2.0
-    @State private var isCleaningMemory: Bool = false
-    @State private var memoryCleanSuccess: Bool = false
+
 
     // Theme: Blossom Dark Sakura (#c084fc & Midnight Purple)
     private let brandBlue = BlossomTheme.sakura         // #c084fc
@@ -129,13 +121,7 @@ struct CheatStoreDashboardView: View {
         patchStore.items.first(where: { isEspItem($0) })
     }
 
-    private var activeEspItem: PatchLibraryItem? {
-        if selectedEspEngine == 0 {
-            return cpanelItem ?? espItem
-        } else {
-            return espItem ?? cpanelItem
-        }
-    }
+
 
     private var skinItems: [PatchLibraryItem] {
         patchStore.items.filter { isSkinItem($0) }
@@ -405,21 +391,27 @@ struct CheatStoreDashboardView: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 6) {
-                            Text("BẢNG ĐIỀU KHIỂN ĐỊNH VỊ (ESP PRO)")
+                            Text("BẢNG ĐIỀU KHIỂN ĐỊNH VỊ")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(brandBlue)
                                 .tracking(1.1)
 
-                            Text("V6 AN TOÀN")
+                            Text("VIP")
                                 .font(.system(size: 8, weight: .black))
-                                .foregroundStyle(.black)
+                                .foregroundStyle(.white)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2)
-                                .background(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                                 .cornerRadius(4)
                         }
 
-                        Text("Bản Nâng Cấp 50m Chống Văng • Hiện Máu & Khoảng Cách")
+                        Text("Định Vị Xuyên Tường • Khóa Đầu Chuẩn Xác 100%")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.gray)
                     }
@@ -444,722 +436,56 @@ struct CheatStoreDashboardView: View {
                     .padding(.horizontal, 20)
                 }
 
-                // Banner thông báo Chế độ 50m chống văng
-                HStack(spacing: 10) {
-                    Image(systemName: "shield.checkered")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("CHẾ ĐỘ 50M: ĐÃ KÍCH HOẠT CHỐNG VĂNG")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-
-                        Text("Chỉ quét cự ly giao tranh <= 50m, ngắt lệnh vẽ xa 1000m, triệt tiêu 85% RAM chống văng sau 5-10p.")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
-                }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-
-                // Bộ chọn Engine Định Vị
-                espEngineSelectorView
-                    .padding(.horizontal, 20)
-
-                // Thẻ Kích Hoạt Chính
-                if let item = activeEspItem {
+                // 2. Chức Năng ESP 2.0 (Nếu Có)
+                if let item = espItem, item.id != espAimheadV3Item?.id {
                     VStack(spacing: 14) {
                         EspItemCard(
                             item: item,
                             isApplied: appliedProjectIDs.contains(item.id),
                             isWorking: workingPatchID == item.id,
                             brandBlue: brandBlue,
-                            selectedEngine: selectedEspEngine,
-                            distanceMode: espDistanceMode,
-                            showHp: espShowHp,
-                            showDistance: espShowDistance,
-                            boxType: espBoxType,
                             onToggle: { enable in
                                 handleToggle(item: item, enable: enable)
                             }
                         )
                     }
                     .padding(.horizontal, 20)
+                }
 
-                    // Widget Mô Phỏng Màn Hình Trận Đấu Trực Quan (Live HUD Simulation)
-                    espLiveHUDPreview
-                        .padding(.horizontal, 20)
-
-                    // Bộ Lọc Khoảng Cách Quét (Distance Filter Culling)
-                    espDistanceSelectorView
-                        .padding(.horizontal, 20)
-
-                    // Bộ Tùy Chọn Thành Phần Hiển Thị (Display Customizer)
-                    espDisplayOptionsView
-                        .padding(.horizontal, 20)
-
-                    // Trình Giám Sát RAM & Nút Xả Bộ Nhớ Đệm Chống Văng (RAM Shield)
-                    espRamShieldView
-                        .padding(.horizontal, 20)
-
-                    // Hướng Dẫn Quy Trình Chuẩn
-                    espSafeWorkflowView
-                        .padding(.horizontal, 20)
-                } else {
+                if espAimheadV3Item == nil && espItem == nil {
                     emptyEspStateView
                 }
+
+                // Ghi Chú An Toàn
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "shield.lefthalf.filled")
+                        .font(.system(size: 16))
+                        .foregroundStyle(brandBlue)
+                        .padding(.top, 2)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Quy trình chuẩn:")
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Text("Gạt BẬT [ĐỊNH VỊ + AIMHEAD V3] trước khi vào game > Bấm [MỞ] Free Fire bên dưới. Bạn có thể sang tab Trang Chủ bật thêm AIMBOT!")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.gray)
+                            .lineSpacing(2)
+                    }
+                }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(cardBackground)
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+                .padding(.top, 4)
             }
             .padding(.bottom, 24)
-        }
-    }
-
-    // MARK: - Bộ Chọn Động Cơ Định Vị (Engine Selector)
-    private var espEngineSelectorView: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("LỰA CHỌN ĐỘNG CƠ ĐỊNH VỊ")
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.gray)
-                .tracking(0.8)
-
-            HStack(spacing: 8) {
-                // Engine 0: V6 Box 2D Chống Văng (Recommended)
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                        selectedEspEngine = 0
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "shield.fill")
-                                .font(.system(size: 10))
-                            Text("Engine V6 Box 2D")
-                                .font(.system(size: 11, weight: .bold))
-                            Spacer()
-                            Text("KHUYÊN DÙNG")
-                                .font(.system(size: 7, weight: .black))
-                                .foregroundStyle(.black)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(Color(red: 0.20, green: 0.88, blue: 0.45))
-                                .cornerRadius(3)
-                        }
-                        Text("Hiện Máu • Khoảng cách • Chống văng")
-                            .font(.system(size: 9))
-                            .foregroundStyle(selectedEspEngine == 0 ? .white.opacity(0.8) : .gray)
-                    }
-                    .padding(10)
-                    .background(
-                        selectedEspEngine == 0
-                            ? brandBlue.opacity(0.18)
-                            : Color.white.opacity(0.02)
-                    )
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(selectedEspEngine == 0 ? brandBlue : Color.white.opacity(0.08), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-
-                // Engine 1: Laser 2.0
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                        selectedEspEngine = 1
-                    }
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "location.viewfinder")
-                                .font(.system(size: 10))
-                            Text("Engine Laser 2.0")
-                                .font(.system(size: 11, weight: .bold))
-                            Spacer()
-                        }
-                        Text("Tia laser truyền thống (Dưới 10p)")
-                            .font(.system(size: 9))
-                            .foregroundStyle(selectedEspEngine == 1 ? .white.opacity(0.8) : .gray)
-                    }
-                    .padding(10)
-                    .background(
-                        selectedEspEngine == 1
-                            ? brandBlue.opacity(0.18)
-                            : Color.white.opacity(0.02)
-                    )
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(selectedEspEngine == 1 ? brandBlue : Color.white.opacity(0.08), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(12)
-        .background(cardBackground)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    // MARK: - Mô phỏng HUD Trận Đấu (Live In-Game HUD Simulation)
-    private var espLiveHUDPreview: some View {
-        VStack(spacing: 10) {
-            HStack {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(Color.red)
-                        .frame(width: 8, height: 8)
-                    Text("MÔ PHỎNG MÀN HÌNH TRONG TRẬN (HUD ESP)")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
-                        .tracking(0.8)
-                }
-                Spacer()
-                Text("CỰ LY: 32M <= 50M")
-                    .font(.system(size: 9, weight: .black))
-                    .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.15))
-                    .cornerRadius(4)
-            }
-
-            // Game Screen Mockup Frame
-            ZStack {
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(red: 0.04, green: 0.02, blue: 0.07))
-                    .frame(height: 180)
-
-                // Background radar grid lines
-                VStack {
-                    Divider().background(Color.white.opacity(0.04))
-                    Spacer()
-                    Divider().background(Color.white.opacity(0.04))
-                    Spacer()
-                    Divider().background(Color.white.opacity(0.04))
-                }
-                .padding(.horizontal, 10)
-
-                // Center crosshair
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .light))
-                    .foregroundStyle(Color.white.opacity(0.2))
-
-                // Simulated Enemy Target in 32m range
-                VStack(spacing: 3) {
-                    // 1. Tag Tên & Khoảng cách
-                    if espShowName || espShowDistance {
-                        HStack(spacing: 4) {
-                            if espShowName {
-                                Text("Sát Thủ Booyah")
-                                    .font(.system(size: 10, weight: .bold))
-                                    .foregroundStyle(.white)
-                            }
-                            if espShowDistance {
-                                Text("32m")
-                                    .font(.system(size: 10, weight: .black))
-                                    .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
-                            }
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(Color.black.opacity(0.65))
-                        .cornerRadius(4)
-                    }
-
-                    // 2. Thanh Máu HP Bar (0 - 200)
-                    if espShowHp {
-                        VStack(spacing: 1) {
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(Color.black.opacity(0.7))
-                                    .frame(width: 80, height: 6)
-
-                                RoundedRectangle(cornerRadius: 3)
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(red: 0.20, green: 0.88, blue: 0.45), Color.yellow],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: 72, height: 6)
-                            }
-                            HStack {
-                                Text("HP: 180/200")
-                                    .font(.system(size: 8, weight: .bold))
-                                    .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                                Spacer()
-                            }
-                            .frame(width: 80)
-                        }
-                    }
-
-                    // 3. Khung Box 2D hoặc Tia Snapline
-                    ZStack {
-                        if espBoxType == 0 {
-                            // 2D Box
-                            RoundedRectangle(cornerRadius: 4)
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    ),
-                                    lineWidth: 1.5
-                                )
-                                .frame(width: 55, height: 75)
-                                .background(Color.purple.opacity(0.06))
-                        } else {
-                            // Snapline
-                            VStack {
-                                LineShape()
-                                    .stroke(Color(red: 0.00, green: 0.88, blue: 0.95), lineWidth: 1.5)
-                                    .frame(width: 2, height: 60)
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 6, height: 6)
-                            }
-                            .frame(height: 75)
-                        }
-
-                        // Simulated Enemy Figure silhouette
-                        Image(systemName: "figure.walk")
-                            .font(.system(size: 32))
-                            .foregroundStyle(Color.white.opacity(0.75))
-                    }
-                }
-
-                // Top-Left Radar mini badge
-                VStack {
-                    HStack {
-                        HStack(spacing: 4) {
-                            Image(systemName: "radar")
-                                .font(.system(size: 10))
-                            Text(espDistanceMode == 0 ? "Bán kính: 50m" : (espDistanceMode == 1 ? "Bán kính: 100m" : "Toàn Map"))
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                        .foregroundStyle(brandBlue)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(cardBackground.opacity(0.85))
-                        .cornerRadius(6)
-
-                        Spacer()
-
-                        // RAM Shield indicator
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(espDistanceMode == 0 ? Color.green : Color.yellow)
-                                .frame(width: 5, height: 5)
-                            Text(espDistanceMode == 0 ? "RAM: 320MB (Mượt)" : (espDistanceMode == 1 ? "RAM: 750MB" : "RAM: 1.8GB!"))
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(espDistanceMode == 0 ? Color.green : Color.yellow)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(cardBackground.opacity(0.85))
-                        .cornerRadius(6)
-                    }
-                    Spacer()
-                }
-                .padding(8)
-            }
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(brandBlue.opacity(0.3), lineWidth: 1)
-            )
-        }
-        .padding(14)
-        .background(cardBackground)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    // MARK: - Bộ Chọn Bán Kính Quét (Khoảng Cách Giới Hạn 50m)
-    private var espDistanceSelectorView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.up.left.and.down.right.and.arrow.up.right.and.down.left")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(brandBlue)
-
-                Text("GIỚI HẠN KHOẢNG CÁCH QUÉT (CHỐNG VĂNG)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-
-            VStack(spacing: 8) {
-                // Option 0: 50m (Chế độ máy yếu - Khuyên dùng)
-                distanceOptionButton(
-                    mode: 0,
-                    title: "⚡ 50m - Tiết Kiệm RAM (Máy Yếu) [KHUYÊN DÙNG]",
-                    subtitle: "Chỉ quét trong 50m giao tranh. Giảm 85% RAM, chống văng tuyệt đối!",
-                    isRecommended: true
-                )
-
-                // Option 1: 100m
-                distanceOptionButton(
-                    mode: 1,
-                    title: "🎯 100m - Cân Bằng (Tầm Trung)",
-                    subtitle: "Quét bán kính tầm trung, phù hợp máy từ 4GB RAM trở lên.",
-                    isRecommended: false
-                )
-
-                // Option 2: Full Map
-                distanceOptionButton(
-                    mode: 2,
-                    title: "🔥 Toàn Map - Tầm Xa (Máy Cấu Hình Cao)",
-                    subtitle: "⚠️ Cảnh báo: Máy yếu có nguy cơ văng game sau 5-10 phút khi nạp cả map.",
-                    isRecommended: false
-                )
-            }
-        }
-        .padding(14)
-        .background(cardBackground)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    private func distanceOptionButton(mode: Int, title: String, subtitle: String, isRecommended: Bool) -> some View {
-        Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                espDistanceMode = mode
-            }
-        } label: {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .stroke(espDistanceMode == mode ? brandBlue : Color.gray.opacity(0.4), lineWidth: 2)
-                        .frame(width: 18, height: 18)
-
-                    if espDistanceMode == mode {
-                        Circle()
-                            .fill(brandBlue)
-                            .frame(width: 10, height: 10)
-                    }
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 6) {
-                        Text(title)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(espDistanceMode == mode ? .white : .white.opacity(0.85))
-
-                        if isRecommended {
-                            Text("AN TOÀN")
-                                .font(.system(size: 8, weight: .black))
-                                .foregroundStyle(Color.black)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1.5)
-                                .background(Color(red: 0.20, green: 0.88, blue: 0.45))
-                                .cornerRadius(3)
-                        }
-                    }
-
-                    Text(subtitle)
-                        .font(.system(size: 10))
-                        .foregroundStyle(espDistanceMode == mode ? Color.gray.opacity(0.9) : Color.gray.opacity(0.6))
-                        .multilineTextAlignment(.leading)
-                }
-
-                Spacer()
-            }
-            .padding(10)
-            .background(
-                espDistanceMode == mode
-                    ? brandBlue.opacity(0.12)
-                    : Color.white.opacity(0.02)
-            )
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(espDistanceMode == mode ? brandBlue.opacity(0.5) : Color.white.opacity(0.06), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Bộ Tùy Chọn Thành Phần Hiển Thị (Máu, Khoảng cách, Tên)
-    private var espDisplayOptionsView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(brandBlue)
-
-                Text("TÙY CHỈNH THÀNH PHẦN ĐỊNH VỊ")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-            }
-
-            VStack(spacing: 10) {
-                // Toggle Máu
-                espToggleRow(
-                    icon: "heart.fill",
-                    iconColor: Color.red,
-                    title: "Hiện Thanh Máu & Chỉ Số HP (0 - 200)",
-                    subtitle: "Thanh máu trực quan trên đầu mục tiêu, cập nhật theo thời gian thực",
-                    isOn: $espShowHp
-                )
-
-                Divider().background(Color.white.opacity(0.06))
-
-                // Toggle Khoảng Cách
-                espToggleRow(
-                    icon: "ruler.fill",
-                    iconColor: Color(red: 0.00, green: 0.88, blue: 0.95),
-                    title: "Hiện Khoảng Cách Mét (<= 50m)",
-                    subtitle: "Hiện số mét chính xác theo từng bước chân (Ví dụ: 12m, 35m, 48m)",
-                    isOn: $espShowDistance
-                )
-
-                Divider().background(Color.white.opacity(0.06))
-
-                // Toggle Tên
-                espToggleRow(
-                    icon: "person.text.rectangle.fill",
-                    iconColor: brandBlue,
-                    title: "Hiện Tên Kẻ Địch (Player Tag)",
-                    subtitle: "Nhận diện tên và ID của kẻ địch xuyên vật cản",
-                    isOn: $espShowName
-                )
-
-                Divider().background(Color.white.opacity(0.06))
-
-                // Kiểu Dáng: Box 2D vs Snapline
-                HStack {
-                    HStack(spacing: 8) {
-                        Image(systemName: espBoxType == 0 ? "viewfinder" : "line.diagonal")
-                            .font(.system(size: 14))
-                            .foregroundStyle(brandBlue)
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("Kiểu Dáng Hiển Thị")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(.white)
-                            Text(espBoxType == 0 ? "Khung Hộp 2D Box (Gọn nhẹ)" : "Tia Dẫn Đường (Snapline)")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.gray)
-                        }
-                    }
-
-                    Spacer()
-
-                    Picker("", selection: $espBoxType) {
-                        Text("Box 2D").tag(0)
-                        Text("Tia Line").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(width: 140)
-                }
-            }
-        }
-        .padding(14)
-        .background(cardBackground)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    private func espToggleRow(icon: String, iconColor: Color, title: String, subtitle: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: icon)
-                .font(.system(size: 15))
-                .foregroundStyle(iconColor)
-                .frame(width: 22)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.white)
-
-                Text(subtitle)
-                    .font(.system(size: 10))
-                    .foregroundStyle(.gray)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(brandBlue)
-        }
-    }
-
-    // MARK: - Trình Giám Sát RAM Shield & Tối Ưu Tức Thì
-    private var espRamShieldView: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 6) {
-                Image(systemName: "cpu.fill")
-                    .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-
-                Text("TRÌNH BẢO VỆ BỘ NHỚ RAM (RAM SHIELD)")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-
-                Spacer()
-
-                Text("60 FPS MƯỢT")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-            }
-
-            // So sánh RAM cũ vs mới
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Chế độ Cũ (Full Map):")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.gray)
-                    Text("~1.85 GB RAM ❌")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
-                    Text("Nguy cơ văng sau 5-10p")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.gray.opacity(0.8))
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.red.opacity(0.08))
-                .cornerRadius(8)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Chế độ Mới (<= 50m):")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.gray)
-                    Text("~320 MB RAM ✅")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                    Text("An toàn tuyệt đối 100%")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.8))
-                }
-                .padding(8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.08))
-                .cornerRadius(8)
-            }
-
-            // Nút Xả Bộ Nhớ Đệm RAM
-            Button {
-                cleanRamAction()
-            } label: {
-                HStack(spacing: 8) {
-                    if isCleaningMemory {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(0.8)
-                    } else {
-                        Image(systemName: memoryCleanSuccess ? "checkmark.circle.fill" : "bolt.fill")
-                            .font(.system(size: 13, weight: .bold))
-                    }
-
-                    Text(memoryCleanSuccess ? "ĐÃ XẢ BỘ NHỚ RAM THÀNH CÔNG!" : "XẢ BỘ NHỚ ĐỆM & TỐI ƯU RAM NGAY")
-                        .font(.system(size: 11, weight: .bold))
-                }
-                .foregroundStyle(memoryCleanSuccess ? Color.green : .white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    memoryCleanSuccess
-                        ? Color.green.opacity(0.15)
-                        : brandBlue.opacity(0.2)
-                )
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(memoryCleanSuccess ? Color.green.opacity(0.5) : brandBlue.opacity(0.4), lineWidth: 1)
-                )
-            }
-            .buttonStyle(.plain)
-            .disabled(isCleaningMemory)
-        }
-        .padding(14)
-        .background(cardBackground)
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    private func cleanRamAction() {
-        isCleaningMemory = true
-        memoryCleanSuccess = false
-        URLCache.shared.removeAllCachedResponses()
-        DispatchQueue.global(qos: .userInitiated).async {
-            Thread.sleep(forTimeInterval: 0.8)
-            DispatchQueue.main.async {
-                withAnimation {
-                    self.isCleaningMemory = false
-                    self.memoryCleanSuccess = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    withAnimation {
-                        self.memoryCleanSuccess = false
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Quy Trình Chuẩn Chống Văng Game
-    private var espSafeWorkflowView: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "shield.lefthalf.filled")
-                .font(.system(size: 16))
-                .foregroundStyle(brandBlue)
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Quy trình chuẩn cho máy yếu:")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
-
-                Text("1. Thoát hẳn Free Fire khỏi đa nhiệm.\n2. Chọn chế độ [⚡ 50m Chống Văng] > Bấm [Xả RAM] > Bật [ESP PRO].\n3. Bấm nút [MỞ] Free Fire bên dưới để vào trận mượt mà không lo bị văng!")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
-                    .lineSpacing(3)
-            }
-        }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(brandBlue.opacity(0.25), lineWidth: 1)
-        )
-    }
-
-    private func featureBullet(text: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 11))
-                .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
-                .padding(.top, 2)
-            Text(text)
-                .font(.system(size: 11))
-                .foregroundStyle(.white.opacity(0.85))
         }
     }
 
@@ -1226,8 +552,6 @@ struct CheatStoreDashboardView: View {
         }
         .padding(.horizontal, 20)
     }
-
-
 
     // MARK: - Tab 3: Mod Skin (Trang Phục VIP Độc Quyền)
     private var skinView: some View {
@@ -2120,10 +1444,12 @@ struct CheatStoreDashboardView: View {
     }
 }
 
-// MARK: - FeatureImageView (Tải ảnh sắc nét từ Assets.xcassets hoặc AppCore/Assets)
-private struct FeatureImageView: View {
+// MARK: - FeatureLogoView (Hiển thị Logo Chức Năng Vuông Bo Tròn Đẹp Mắt)
+private struct FeatureLogoView: View {
     let name: String
-    var cornerRadius: CGFloat = 16
+    var size: CGFloat = 50
+    var cornerRadius: CGFloat = 13
+    var isApplied: Bool = false
 
     private var uiImage: UIImage? {
         if let img = UIImage(named: name) {
@@ -2146,26 +1472,46 @@ private struct FeatureImageView: View {
     }
 
     var body: some View {
-        if let img = uiImage {
-            Image(uiImage: img)
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .cornerRadius(cornerRadius)
-        } else {
-            Rectangle()
+        ZStack {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .fill(
                     LinearGradient(
-                        colors: [Color.purple.opacity(0.4), Color(red: 0.14, green: 0.07, blue: 0.23)],
+                        colors: [
+                            Color(red: 0.16, green: 0.08, blue: 0.25),
+                            Color(red: 0.08, green: 0.04, blue: 0.14)
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .cornerRadius(cornerRadius)
+                .frame(width: size, height: size)
+
+            if let img = uiImage {
+                Image(uiImage: img)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: size, height: size)
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            } else {
+                Image(systemName: "bolt.shield.fill")
+                    .font(.system(size: size * 0.45))
+                    .foregroundStyle(BlossomTheme.sakura)
+            }
+
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(
+                    isApplied
+                        ? BlossomTheme.sakuraLight
+                        : Color.white.opacity(0.12),
+                    lineWidth: isApplied ? 1.8 : 1
+                )
+                .frame(width: size, height: size)
         }
+        .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.4) : Color.clear, radius: 6)
     }
 }
 
-// MARK: - AimneckVipCard (Chức Năng Trang Chủ VIP)
+// MARK: - AimneckVipCard (Chức Năng Trang Chủ: AIMNECK VIP với Logo Chức Năng)
 private struct AimneckVipCard: View {
     let item: PatchLibraryItem
     let isApplied: Bool
@@ -2174,39 +1520,31 @@ private struct AimneckVipCard: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Banner Ảnh Tạo Mới Cực Đẹp
-            ZStack(alignment: .topTrailing) {
-                FeatureImageView(name: "aimneck_vip", cornerRadius: 16)
-                    .frame(height: 155)
-                    .clipped()
-                    .overlay(
-                        LinearGradient(
-                            colors: [
-                                Color.clear,
-                                Color.black.opacity(0.2),
-                                Color(red: 0.082, green: 0.043, blue: 0.137)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+        HStack(spacing: 14) {
+            // Logo Chức Năng
+            FeatureLogoView(name: "aimneck_vip", size: 50, cornerRadius: 13, isApplied: isApplied)
 
-                // Badges Góc Phải
+            // Thông tin chức năng
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
+                    Text("AIMNECK VIP")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
                     Text("BẬT SẢNH")
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(Color.red.opacity(0.85))
-                        .cornerRadius(6)
+                        .cornerRadius(4)
 
-                    Text("VIP EDITION")
+                    Text("VIP")
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [BlossomTheme.sakuraDeep, brandBlue],
@@ -2214,78 +1552,56 @@ private struct AimneckVipCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(6)
+                        .cornerRadius(4)
                 }
-                .padding(10)
+
+                Text("Khóa Cổ Siêu Dính • Kéo Tâm Mượt")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(brandBlue)
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
             }
 
-            // Nội dung điều khiển
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Text("AIMNECK VIP")
-                                .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundStyle(.white)
+            Spacer()
 
-                            Circle()
-                                .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                                .frame(width: 8, height: 8)
-
-                            Text(isApplied ? "ĐÃ NẠP" : "CHƯA NẠP")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(isApplied ? Color.green : .gray)
-                        }
-
-                        Text("Khóa Cổ Siêu Dính • Kéo Tâm Mượt • An Toàn")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(brandBlue.opacity(0.9))
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
                     }
-
-                    Spacer()
-
-                    // Nút Bật/Tắt Switch
-                    if isWorking {
-                        ProgressView()
-                            .tint(brandBlue)
-                            .frame(width: 50)
-                    } else {
-                        Toggle("", isOn: Binding(
-                            get: { isApplied },
-                            set: { newValue in onToggle(newValue) }
-                        ))
-                        .labelsHidden()
-                        .tint(brandBlue)
-                    }
-                }
-
-                // Chi tiết tính năng tags
-                HStack(spacing: 8) {
-                    Label("Ghim Tâm", systemImage: "scope")
-                    Label("Bật Sảnh", systemImage: "bolt.fill")
-                    Label("Anti-Ban", systemImage: "shield.fill")
-                }
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.75))
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
             }
-            .padding(14)
         }
+        .padding(14)
         .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(18)
+        .cornerRadius(16)
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    isApplied
-                        ? LinearGradient(colors: [BlossomTheme.sakuraLight, brandBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [Color.white.opacity(0.12), Color.clear], startPoint: .top, endPoint: .bottom),
-                    lineWidth: isApplied ? 1.8 : 1
-                )
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? brandBlue.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? brandBlue.opacity(0.35) : Color.black.opacity(0.25), radius: 10, y: 4)
+        .shadow(color: isApplied ? brandBlue.opacity(0.25) : Color.clear, radius: 8)
     }
 }
 
-// MARK: - EspAimheadV3Card (Chức Năng Định Vị + AimHead V3)
+// MARK: - EspAimheadV3Card (Chức Năng Định Vị: ĐỊNH VỊ + AIMHEAD V3 với Logo Chức Năng)
 private struct EspAimheadV3Card: View {
     let item: PatchLibraryItem
     let isApplied: Bool
@@ -2294,118 +1610,74 @@ private struct EspAimheadV3Card: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Banner Ảnh Radar HUD Mới Cực Đẹp
-            ZStack(alignment: .topTrailing) {
-                FeatureImageView(name: "esp_aimhead_v3", cornerRadius: 16)
-                    .frame(height: 155)
-                    .clipped()
-                    .overlay(
-                        LinearGradient(
-                            colors: [
-                                Color.clear,
-                                Color.black.opacity(0.2),
-                                Color(red: 0.082, green: 0.043, blue: 0.137)
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+        HStack(spacing: 14) {
+            // Logo Chức Năng
+            FeatureLogoView(name: "esp_aimhead_v3", size: 50, cornerRadius: 13, isApplied: isApplied)
 
-                // Badges Góc Phải
+            // Thông tin chức năng
+            VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
+                    Text("ĐỊNH VỊ + AIMHEAD V3")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
                     Text("HOT V3")
                         .font(.system(size: 9, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(Color.orange.opacity(0.9))
-                        .cornerRadius(6)
-
-                    Text("BẬT NGOÀI GAME")
-                        .font(.system(size: 9, weight: .black))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(6)
+                        .cornerRadius(4)
                 }
-                .padding(10)
+
+                Text("Khung Định Vị Head 3D • Khóa Đầu Chuẩn Xác")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
             }
 
-            // Nội dung điều khiển
-            VStack(alignment: .leading, spacing: 10) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 8) {
-                            Text("ĐỊNH VỊ + AIMHEAD V3")
-                                .font(.system(size: 16, weight: .black, design: .rounded))
-                                .foregroundStyle(.white)
+            Spacer()
 
-                            Circle()
-                                .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                                .frame(width: 8, height: 8)
-
-                            Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(isApplied ? Color.green : .gray)
-                        }
-
-                        Text("Khung Định Vị Head 3D • Khóa Đầu Chuẩn Xác 100%")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(brandBlue.opacity(0.9))
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
                     }
-
-                    Spacer()
-
-                    // Nút Bật/Tắt Switch
-                    if isWorking {
-                        ProgressView()
-                            .tint(brandBlue)
-                            .frame(width: 50)
-                    } else {
-                        Toggle("", isOn: Binding(
-                            get: { isApplied },
-                            set: { newValue in onToggle(newValue) }
-                        ))
-                        .labelsHidden()
-                        .tint(brandBlue)
-                    }
-                }
-
-                // Chi tiết tính năng tags
-                HStack(spacing: 8) {
-                    Label("ESP Head 3D", systemImage: "viewfinder")
-                    Label("Auto AimHead", systemImage: "target")
-                    Label("Ngoài Game", systemImage: "iphone")
-                }
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white.opacity(0.75))
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
             }
-            .padding(14)
         }
+        .padding(14)
         .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(18)
+        .cornerRadius(16)
         .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(
-                    isApplied
-                        ? LinearGradient(colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [Color.white.opacity(0.12), Color.clear], startPoint: .top, endPoint: .bottom),
-                    lineWidth: isApplied ? 1.8 : 1
-                )
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isApplied ? brandBlue.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? brandBlue.opacity(0.35) : Color.black.opacity(0.25), radius: 10, y: 4)
+        .shadow(color: isApplied ? brandBlue.opacity(0.25) : Color.clear, radius: 8)
     }
 }
 
-// MARK: - CheatItemCard (Định Vị & AimNeck 2.0)
+// MARK: - CheatItemCard (AIMDRAG PRO)
 private struct CheatItemCard: View {
     let item: PatchLibraryItem
     let isApplied: Bool
@@ -2502,166 +1774,101 @@ private struct CheatItemCard: View {
     }
 }
 
-// MARK: - LineShape Helper
-private struct LineShape: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.midX, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
-        return path
-    }
-}
-
-// MARK: - EspItemCard (Định Vị Xuyên Tường VIP)
+// MARK: - EspItemCard (ESP 2.0 Tối Giản)
 private struct EspItemCard: View {
     let item: PatchLibraryItem
     let isApplied: Bool
     let isWorking: Bool
     let brandBlue: Color
-    var selectedEngine: Int = 0
-    var distanceMode: Int = 0
-    var showHp: Bool = true
-    var showDistance: Bool = true
-    var boxType: Int = 0
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 14) {
-                // Radar Icon với hiệu ứng phát sáng
-                ZStack {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    BlossomTheme.sakuraLight.opacity(isApplied ? 0.25 : 0.12),
-                                    brandBlue.opacity(isApplied ? 0.2 : 0.08)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+        HStack(spacing: 14) {
+            // Radar Icon
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                BlossomTheme.sakuraLight.opacity(isApplied ? 0.25 : 0.12),
+                                brandBlue.opacity(isApplied ? 0.2 : 0.08)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
-                        .frame(width: 48, height: 48)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(
-                                    isApplied
-                                        ? BlossomTheme.sakuraLight
-                                        : brandBlue.opacity(0.4),
-                                    lineWidth: isApplied ? 1.8 : 1
-                                )
-                        )
-
-                    Image(systemName: "location.viewfinder")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundStyle(isApplied ? BlossomTheme.sakuraLight : brandBlue)
-                }
-
-                // Tên và thông tin chức năng
-                VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text(selectedEngine == 0 ? "ESP V6 PRO" : "ESP 2.0")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
-                            .lineLimit(1)
-
-                        Text(selectedEngine == 0 ? "50M CHỐNG VĂNG" : "LASER XUYÊN TƯỜNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(
-                                LinearGradient(
-                                    colors: selectedEngine == 0
-                                        ? [Color(red: 0.20, green: 0.88, blue: 0.45), brandBlue]
-                                        : [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                    )
+                    .frame(width: 48, height: 48)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(
+                                isApplied
+                                    ? BlossomTheme.sakuraLight
+                                    : brandBlue.opacity(0.4),
+                                lineWidth: isApplied ? 1.8 : 1
                             )
-                            .cornerRadius(4)
-                    }
+                    )
 
-                    Text(selectedEngine == 0 ? "Khung Box 2D • Hiện Máu • Khoảng Cách Mét" : "Tia Dẫn Đường • Định Vị Xuyên Bản Đồ")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
-
-                    // Trạng thái Bật / Tắt
-                    HStack(spacing: 4) {
-                        Circle()
-                            .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                            .frame(width: 6, height: 6)
-
-                        Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(isApplied ? Color.green : .gray)
-                    }
-                    .padding(.top, 1)
-                }
-
-                Spacer()
-
-                // Nút Bật / Tắt Switch
-                if isWorking {
-                    ProgressView()
-                        .tint(brandBlue)
-                        .frame(width: 50)
-                } else {
-                    Toggle("", isOn: Binding(
-                        get: { isApplied },
-                        set: { newValue in
-                            onToggle(newValue)
-                        }
-                    ))
-                    .labelsHidden()
-                    .tint(brandBlue)
-                }
+                Image(systemName: "location.viewfinder")
+                    .font(.system(size: 22, weight: .bold))
+                    .foregroundStyle(isApplied ? BlossomTheme.sakuraLight : brandBlue)
             }
 
-            // Badges trạng thái cấu hình hiện tại
-            HStack(spacing: 6) {
-                // Cự ly badge
-                HStack(spacing: 3) {
-                    Image(systemName: "ruler")
-                        .font(.system(size: 8))
-                    Text(distanceMode == 0 ? "Cự ly 50m (Chống Văng)" : (distanceMode == 1 ? "Cự ly 100m" : "Toàn Map"))
-                        .font(.system(size: 9, weight: .bold))
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2.5)
-                .background(distanceMode == 0 ? Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.15) : Color.white.opacity(0.06))
-                .foregroundStyle(distanceMode == 0 ? Color(red: 0.20, green: 0.88, blue: 0.45) : .gray)
-                .cornerRadius(4)
+            // Tên và thông tin chức năng
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 6) {
+                    Text("ESP 2.0")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
 
-                if showHp {
-                    HStack(spacing: 3) {
-                        Image(systemName: "heart.fill")
-                            .font(.system(size: 8))
-                        Text("Hiện Máu HP")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Color.red.opacity(0.12))
-                    .foregroundStyle(Color.red)
-                    .cornerRadius(4)
+                    Text("LASER")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.00, green: 0.88, blue: 0.95), brandBlue],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(4)
                 }
 
-                if showDistance {
-                    HStack(spacing: 3) {
-                        Image(systemName: "location.fill")
-                            .font(.system(size: 8))
-                        Text("Khoảng Cách Mét")
-                            .font(.system(size: 9, weight: .bold))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.12))
+                Text("Tia Dẫn Đường • Định Vị Xuyên Bản Đồ")
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
-                    .cornerRadius(4)
-                }
 
-                Spacer()
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 6, height: 6)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Bật / Tắt Switch
+            if isWorking {
+                ProgressView()
+                    .tint(brandBlue)
+                    .frame(width: 50)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(brandBlue)
             }
         }
         .padding(14)
@@ -2675,7 +1882,7 @@ private struct EspItemCard: View {
     }
 }
 
-// MARK: - CpanelItemCard (Lựa Chọn 2: Cpanel Leaked)
+// MARK: - CpanelItemCard// MARK: - CpanelItemCard (Lựa Chọn 2: Cpanel Leaked)
 private struct CpanelItemCard: View {
     let item: PatchLibraryItem
     let isApplied: Bool
