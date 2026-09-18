@@ -455,7 +455,7 @@ struct GameSelectionView: View {
         // Giai đoạn 3: 58% -> 88%
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.00) {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            self.loadingStep = "Nạp module Định Vị & AimNeck 2.0..."
+            self.loadingStep = "Nạp module Định Vị 50m Chống Văng & AimNeck..."
             withAnimation(.easeOut(duration: 0.35)) {
                 self.loadProgress = 0.88
             }
