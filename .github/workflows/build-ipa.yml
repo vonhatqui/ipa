@@ -110,10 +110,12 @@ jobs:
             mv "$TARGET_APP/3105" "$TARGET_APP/CheatStore"
           fi
 
-          # 2. Cập nhật Info.plist: đảm bảo CFBundleExecutable trỏ đúng vào CheatStore
+          # 2. Cập nhật Info.plist: đảm bảo CFBundleExecutable trỏ đúng vào CheatStore và phiên bản là 2.1
           if [ -f "$TARGET_APP/Info.plist" ]; then
             plutil -replace CFBundleExecutable -string "CheatStore" "$TARGET_APP/Info.plist" 2>/dev/null || true
             plutil -replace CFBundleName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleShortVersionString -string "2.1" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleVersion -string "9" "$TARGET_APP/Info.plist" 2>/dev/null || true
           fi
 
           # 3. Gom toàn bộ file mod .dat vào DUY NHẤT thư mục AppCore/
