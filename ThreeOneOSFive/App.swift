@@ -120,7 +120,7 @@ struct ThreeOneOSFiveApp: App {
                 if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
                     BlossomForceUpdateModalView(info: info)
                         .zIndex(99999)
-                        .transition(.opacity)
+                        .transition(AnyTransition.opacity)
                 }
             }
             .onChange(of: licenseManager.isActivated) { activated in
