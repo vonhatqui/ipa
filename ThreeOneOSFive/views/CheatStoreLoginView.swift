@@ -442,20 +442,22 @@ struct KeyNotificationModalView: View {
                         .padding(.bottom, 4)
 
                     VStack(spacing: 8) {
-                        // Badge Xác Minh Chuẩn Apple
-                        HStack(spacing: 6) {
-                            Text("XÁC MINH APPLE SECURE")
-                                .font(.system(size: 9, weight: .black))
-                                .foregroundStyle(brandGreen)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(brandGreen.opacity(0.15))
-                                .cornerRadius(6)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(brandGreen.opacity(0.35), lineWidth: 1)
-                                )
+                        // Badge Bản quyền AppleStore (icon trái táo)
+                        HStack(spacing: 4) {
+                            Image(systemName: "apple.logo")
+                                .font(.system(size: 10, weight: .bold))
+                            Text("Bản quyền AppleStore")
+                                .font(.system(size: 9, weight: .bold))
                         }
+                        .foregroundStyle(brandGreen)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 3.5)
+                        .background(brandGreen.opacity(0.15))
+                        .cornerRadius(6)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(brandGreen.opacity(0.35), lineWidth: 1)
+                        )
 
                         Text("Kích Hoạt Thành Công")
                             .font(.system(size: 20, weight: .bold, design: .rounded))
