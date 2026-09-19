@@ -24,6 +24,9 @@ struct ThreeOneOSFiveApp: App {
     init() {
         setupLogCapture()
         log("app: CheatStore VN launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
+        Task {
+            await AppUpdateChecker.shared.checkForUpdates()
+        }
     }
 
     private var language: AppLanguage {
@@ -86,8 +89,10 @@ struct ThreeOneOSFiveApp: App {
                         }
                         // Hiện thông báo đồng bộ với app sau khi load xong các chữ
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-                                showPostSplashNotice = true
+                            if !updateChecker.isForceUpdateRequired {
+                                withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                                    showPostSplashNotice = true
+                                }
                             }
                         }
                     })
@@ -96,7 +101,7 @@ struct ThreeOneOSFiveApp: App {
                 }
 
                 // Thông báo CheatStore Vn đồng bộ phong cách xuất hiện sau khi load xong chữ Splash
-                if showPostSplashNotice {
+                if showPostSplashNotice && !updateChecker.isForceUpdateRequired {
                     BlossomNoticeModalView(
                         onDiscord: {
                             if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
@@ -121,6 +126,12 @@ struct ThreeOneOSFiveApp: App {
                     BlossomForceUpdateModalView(info: info)
                         .zIndex(99999)
                         .transition(AnyTransition.opacity)
+                }
+            }
+            .onChange(of: updateChecker.isForceUpdateRequired) { isRequired in
+                if isRequired {
+                    showPostSplashNotice = false
+                    isSplashActive = false
                 }
             }
             .onChange(of: licenseManager.isActivated) { activated in

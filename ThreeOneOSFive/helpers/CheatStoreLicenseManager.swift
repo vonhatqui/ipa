@@ -48,6 +48,18 @@ final class CheatStoreLicenseManager: ObservableObject {
     private let storageKeyDaysLeft = "cheatstore_days_left"
     private let storageKeySecondsLeft = "cheatstore_seconds_left"
     private let storageKeyDeviceID = "cheatstore_device_id"
+    private let storageKeyRememberKey = "cheatstore_remember_key"
+
+    /// Tùy chọn Ghi Nhớ Key: Khi bật sẽ điền sẵn key vào ô đăng nhập, người dùng bấm Login để vào
+    @Published var rememberKey: Bool {
+        didSet {
+            UserDefaults.standard.set(rememberKey, forKey: storageKeyRememberKey)
+            if !rememberKey {
+                UserDefaults.standard.removeObject(forKey: storageKeyLicense)
+                Self.deleteKeychainString(key: Self.keychainLicenseKey)
+            }
+        }
+    }
 
     /// Chuỗi hiển thị thời hạn còn lại (VD: 1 ngày 0 giờ, hoặc 23 giờ 45 phút)
     var formattedRemainingTime: String {
@@ -170,26 +182,29 @@ final class CheatStoreLicenseManager: ObservableObject {
     }
 
     init() {
+        self.rememberKey = UserDefaults.standard.object(forKey: storageKeyRememberKey) as? Bool ?? true
         loadSavedStateAndAutoLogin()
     }
 
-    // MARK: - 3.1. Khi mở App (Auto-login ngầm)
+    // MARK: - 3.1. Khi mở App (Điền sẵn key nếu ghi nhớ, yêu cầu bấm Login để xác thực)
     private func loadSavedStateAndAutoLogin() {
-        var savedKey = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        // Phục hồi từ Keychain nếu UserDefaults bị mất (ví dụ khi cài lại app)
-        if savedKey.isEmpty, let kcKey = Self.loadKeychainString(key: Self.keychainLicenseKey)?.trimmingCharacters(in: .whitespacesAndNewlines), !kcKey.isEmpty {
-            savedKey = kcKey
+        var savedKey = ""
+        if rememberKey {
+            savedKey = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            // Phục hồi từ Keychain nếu UserDefaults bị mất (ví dụ khi cài lại app)
+            if savedKey.isEmpty, let kcKey = Self.loadKeychainString(key: Self.keychainLicenseKey)?.trimmingCharacters(in: .whitespacesAndNewlines), !kcKey.isEmpty {
+                savedKey = kcKey
+            }
         }
 
         let savedPlan = UserDefaults.standard.string(forKey: storageKeyPlan) ?? "Gói VIP"
         let savedExpiryTimestamp = UserDefaults.standard.double(forKey: storageKeyExpiry)
         let savedExpiryStr = UserDefaults.standard.string(forKey: storageKeyExpiryStr) ?? ""
-        let savedActivated = UserDefaults.standard.bool(forKey: storageKeyActivation)
         let savedDaysLeft = UserDefaults.standard.double(forKey: storageKeyDaysLeft)
         let savedSecondsLeft = UserDefaults.standard.double(forKey: storageKeySecondsLeft)
 
-        // Kiểm tra trong bộ nhớ máy xem có lưu key cũ hay không
-        if (savedActivated || !savedKey.isEmpty), !savedKey.isEmpty {
+        // Nếu có lưu key cũ, chỉ nạp vào bộ nhớ để điền sẵn vào ô đăng nhập
+        if !savedKey.isEmpty {
             self.activeKey = savedKey
             self.planName = savedPlan
             self.daysLeft = savedDaysLeft
@@ -198,16 +213,11 @@ final class CheatStoreLicenseManager: ObservableObject {
             if savedExpiryTimestamp > 0 {
                 self.expirationDate = Date(timeIntervalSince1970: savedExpiryTimestamp)
             }
-            self.isActivated = true
-
-            // ĐÃ CÓ KEY: Tự động gửi API kiểm tra ngầm với máy chủ
-            Task { @MainActor in
-                await self.performSilentAutoVerification(key: savedKey)
-            }
-        } else {
-            // CHƯA CÓ KEY: Chưa kích hoạt
-            self.isActivated = false
         }
+
+        // Luôn để isActivated = false khi khởi động app:
+        // Key được tự động điền sẵn trong ô nhập, người dùng bấm nút Đăng Nhập để gửi verify lên server
+        self.isActivated = false
     }
 
     /// Kiểm tra ngầm trạng thái key với máy chủ khi mở ứng dụng
@@ -289,7 +299,7 @@ final class CheatStoreLicenseManager: ObservableObject {
 
                 // Kiểm tra nếu server yêu cầu cập nhật phiên bản (chặn bản cũ)
                 if statusCode == 426 || code.uppercased() == "UPDATE_REQUIRED" {
-                    let updateURL = json["update_url"] as? String ?? "https://t.me/ioscrackvn"
+                    let updateURL = json["update_url"] as? String ?? "https://cheatingenginexyz.online/update.php"
                     let msg = message ?? "Phiên bản bạn đang sử dụng đã cũ và đã ngừng hỗ trợ. Vui lòng tải bản cập nhật mới nhất!"
                     await MainActor.run {
                         self.errorMessage = msg
@@ -300,7 +310,7 @@ final class CheatStoreLicenseManager: ObservableObject {
                             force_update: true,
                             client_version: AppUpdateChecker.currentVersion,
                             client_build: AppUpdateChecker.currentBuild,
-                            latest_version: (json["latest_version"] as? String) ?? "2.0",
+                            latest_version: (json["latest_version"] as? String) ?? "2.1",
                             latest_build: nil,
                             min_version: nil,
                             update_url: updateURL,
@@ -308,9 +318,7 @@ final class CheatStoreLicenseManager: ObservableObject {
                             message: msg,
                             changelog: nil
                         )
-                        if isSilent {
-                            self.deactivate(withReason: msg)
-                        }
+                        self.deactivate(withReason: msg)
                     }
                     return false
                 }
@@ -442,8 +450,13 @@ final class CheatStoreLicenseManager: ObservableObject {
         self.errorMessage = nil
 
         UserDefaults.standard.set(true, forKey: storageKeyActivation)
-        UserDefaults.standard.set(key, forKey: storageKeyLicense)
-        Self.saveKeychainString(key: Self.keychainLicenseKey, value: key)
+        if rememberKey {
+            UserDefaults.standard.set(key, forKey: storageKeyLicense)
+            Self.saveKeychainString(key: Self.keychainLicenseKey, value: key)
+        } else {
+            UserDefaults.standard.removeObject(forKey: storageKeyLicense)
+            Self.deleteKeychainString(key: Self.keychainLicenseKey)
+        }
         UserDefaults.standard.set(package, forKey: storageKeyPlan)
         UserDefaults.standard.set(expiryDate.timeIntervalSince1970, forKey: storageKeyExpiry)
         UserDefaults.standard.set(expiresAtStr, forKey: storageKeyExpiryStr)
@@ -459,7 +472,11 @@ final class CheatStoreLicenseManager: ObservableObject {
 
     func deactivate(withReason reason: String? = nil) {
         self.isActivated = false
-        self.activeKey = ""
+        if !rememberKey {
+            self.activeKey = ""
+            UserDefaults.standard.removeObject(forKey: storageKeyLicense)
+            Self.deleteKeychainString(key: Self.keychainLicenseKey)
+        }
         self.planName = ""
         self.expirationDate = nil
         self.expiresAtString = ""
@@ -469,8 +486,6 @@ final class CheatStoreLicenseManager: ObservableObject {
         self.errorMessage = reason
 
         UserDefaults.standard.removeObject(forKey: storageKeyActivation)
-        UserDefaults.standard.removeObject(forKey: storageKeyLicense)
-        Self.deleteKeychainString(key: Self.keychainLicenseKey)
         UserDefaults.standard.removeObject(forKey: storageKeyPlan)
         UserDefaults.standard.removeObject(forKey: storageKeyExpiry)
         UserDefaults.standard.removeObject(forKey: storageKeyExpiryStr)

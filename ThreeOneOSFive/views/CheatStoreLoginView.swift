@@ -90,7 +90,41 @@ struct CheatStoreLoginView: View {
                                 .stroke(brandBlue.opacity(0.3), lineWidth: 1)
                         )
 
-                        // Nút Kích Hoạt
+                        // Tùy chọn Ghi Nhớ Mã Key trên thiết bị
+                        Button {
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                                licenseManager.rememberKey.toggle()
+                            }
+                        } label: {
+                            HStack(spacing: 10) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(licenseManager.rememberKey ? brandBlue.opacity(0.2) : Color.white.opacity(0.05))
+                                        .frame(width: 22, height: 22)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(licenseManager.rememberKey ? brandBlue : Color.white.opacity(0.25), lineWidth: 1.5)
+                                        )
+
+                                    if licenseManager.rememberKey {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundStyle(brandBlue)
+                                    }
+                                }
+
+                                Text("Ghi nhớ mã key trên thiết bị này")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(licenseManager.rememberKey ? .white : .gray)
+
+                                Spacer()
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.vertical, 2)
+
+                        // Nút Kích Hoạt / Đăng Nhập
                         Button {
                             Task {
                                 let success = await licenseManager.activateKey(inputKey)
@@ -126,7 +160,7 @@ struct CheatStoreLoginView: View {
                                         .foregroundStyle(.black)
                                 } else {
                                     Image(systemName: "checkmark.seal.fill")
-                                    Text("Kích Hoạt Ngay")
+                                    Text(!licenseManager.activeKey.isEmpty && inputKey == licenseManager.activeKey ? "Đăng Nhập Ngay" : "Kích Hoạt Ngay")
                                         .font(.system(size: 16, weight: .bold))
                                 }
                             }
@@ -251,6 +285,11 @@ struct CheatStoreLoginView: View {
                 )
                 .transition(.scale(scale: 0.86).combined(with: .opacity))
                 .zIndex(50)
+            }
+        }
+        .onAppear {
+            if inputKey.isEmpty && !licenseManager.activeKey.isEmpty {
+                inputKey = licenseManager.activeKey
             }
         }
     }

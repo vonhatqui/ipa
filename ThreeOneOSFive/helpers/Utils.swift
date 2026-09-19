@@ -225,8 +225,8 @@ final class AppUpdateChecker: ObservableObject {
     }
 
     static var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
-            ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
             ?? "2.1"
     }
 
