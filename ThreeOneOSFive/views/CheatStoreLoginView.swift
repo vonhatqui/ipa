@@ -438,6 +438,63 @@ struct ApplePayCheckmarkView: View {
     }
 }
 
+// MARK: - BIỂU TƯỢNG TẢI XUỐNG VỚI HIỆU ỨNG LÊN XUỐNG NHẸ NHÀNG
+struct AnimatedDownloadIconView: View {
+    @State private var isFloating = false
+    private let sakura = BlossomTheme.sakura
+    private let cyan = Color(red: 0.00, green: 0.88, blue: 1.00)
+
+    var body: some View {
+        ZStack {
+            // Glow nền tròn đa tầng
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [cyan.opacity(0.35), sakura.opacity(0.20), Color.clear],
+                        center: .center,
+                        startRadius: 10,
+                        endRadius: 46
+                    )
+                )
+                .frame(width: 88, height: 88)
+                .blur(radius: 14)
+
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        colors: [cyan, sakura.opacity(0.7)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 2
+                )
+                .frame(width: 74, height: 74)
+
+            Circle()
+                .fill(Color(red: 0.08, green: 0.04, blue: 0.14))
+                .frame(width: 66, height: 66)
+
+            // Icon download với hiệu ứng nhấp nhô lên xuống nhẹ nhàng
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 42, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [cyan, sakura],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .shadow(color: cyan.opacity(0.65), radius: 8, y: 2)
+                .offset(y: isFloating ? -5 : 5)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                isFloating = true
+            }
+        }
+    }
+}
+
 // MARK: - POPUP MODAL THÔNG BÁO NHẬP KEY (APPLE PAY GLASS MODAL)
 struct KeyNotificationModalView: View {
     let notification: KeyNotificationType
@@ -604,105 +661,245 @@ struct KeyNotificationModalView: View {
                     .padding(.bottom, 18)
 
                 case .error(let message):
-                    // Biểu tượng thất bại với hiệu ứng Glow
-                    ZStack {
-                        Circle()
-                            .fill(brandRed.opacity(0.2))
-                            .frame(width: 80, height: 80)
-                            .blur(radius: 12)
+                    let isUpdate = message.lowercased().contains("cũ")
+                        || message.lowercased().contains("cập nhật")
+                        || message.lowercased().contains("phiên bản")
+                        || message.lowercased().contains("update")
+                        || message.lowercased().contains("tải xuống")
+                        || AppUpdateChecker.shared.isForceUpdateRequired
 
-                        Circle()
-                            .stroke(brandRed.opacity(0.6), lineWidth: 2)
-                            .frame(width: 72, height: 72)
+                    if isUpdate {
+                        // 1. Biểu tượng Download với hiệu ứng lên xuống nhẹ nhàng
+                        AnimatedDownloadIconView()
+                            .padding(.top, 4)
 
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 40, weight: .bold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [brandRed, Color.orange],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                        VStack(spacing: 8) {
+                            // Badge Phiên bản mới
+                            HStack(spacing: 5) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 10, weight: .black))
+                                Text("CẬP NHẬT BẢN MỚI")
+                                    .font(.system(size: 10, weight: .black))
+                            }
+                            .foregroundStyle(sakura)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 4)
+                            .background(sakura.opacity(0.16))
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke(sakura.opacity(0.4), lineWidth: 1)
                             )
-                    }
 
-                    VStack(spacing: 8) {
-                        Text("KÍCH HOẠT THẤT BÀI")
-                            .font(.system(size: 13, weight: .black))
-                            .foregroundStyle(brandRed)
-                            .tracking(1.5)
+                            // Tiêu đề thay thế: "CheatStore đã có phiên bản mới nhất"
+                            Text("CheatStore đã có phiên bản mới nhất")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .multilineTextAlignment(.center)
 
-                        Text("Không Thể Xác Thực Key")
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text(message)
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.white.opacity(0.9))
+                            // Nội dung thông báo
+                            VStack(spacing: 5) {
+                                Text("Vui lòng ấn Tải Xuống cập nhật mới nhé.")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.92))
+                                Text("Thanks You !")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundStyle(sakura)
+                            }
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 8)
-                            .background(brandRed.opacity(0.12))
+                            .background(Color.white.opacity(0.06))
                             .cornerRadius(10)
-                    }
-                    .padding(.horizontal, 16)
-
-                    // Nút Đóng & Các lựa chọn hỗ trợ
-                    VStack(spacing: 12) {
-                        Button {
-                            onDismiss()
-                        } label: {
-                            HStack {
-                                Image(systemName: "xmark")
-                                Text("Đóng")
-                                    .font(.system(size: 16, weight: .bold))
-                            }
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.white.opacity(0.1))
-                            .foregroundStyle(.white)
-                            .cornerRadius(12)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(sakura.opacity(0.25), lineWidth: 1)
                             )
                         }
+                        .padding(.horizontal, 16)
 
-                        HStack(spacing: 12) {
+                        // Nút Tải Xuống & Nút Đóng & Các lựa chọn hỗ trợ
+                        VStack(spacing: 12) {
+                            // Nút TẢI XUỐNG to, nổi bật
                             Button {
-                                if let url = URL(string: "https://zalo.me/0365829172") {
+                                let downloadUrl = AppUpdateChecker.shared.updateInfo?.update_url ?? "https://cheatingenginexyz.online/update.php"
+                                if let url = URL(string: downloadUrl) {
                                     UIApplication.shared.open(url)
                                 }
                             } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "message.fill")
-                                    Text("Mua Key Zalo")
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.down.circle.fill")
+                                        .font(.system(size: 18, weight: .bold))
+                                    Text("Tải Xuống")
+                                        .font(.system(size: 16, weight: .bold, design: .rounded))
                                 }
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(brandBlue)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(
+                                    LinearGradient(
+                                        colors: [sakura, BlossomTheme.sakuraDeep],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .foregroundStyle(.white)
+                                .cornerRadius(14)
+                                .shadow(color: sakura.opacity(0.45), radius: 10, y: 4)
+                            }
+
+                            // Nút Đóng
+                            Button {
+                                onDismiss()
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "xmark")
+                                    Text("Đóng")
+                                }
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(.white.opacity(0.75))
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 38)
-                                .background(brandBlue.opacity(0.12))
+                                .background(Color.white.opacity(0.08))
                                 .cornerRadius(10)
                             }
 
-                            Button {
-                                if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
-                                    UIApplication.shared.open(url)
-                                }
-                            } label: {
-                                Text("Hỗ Trợ Admin")
+                            // 2 nút phụ Hỗ trợ & Mua key
+                            HStack(spacing: 12) {
+                                Button {
+                                    if let url = URL(string: "https://zalo.me/0365829172") {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "message.fill")
+                                        Text("Mua Key Zalo")
+                                    }
                                     .font(.system(size: 12, weight: .semibold))
-                                    .foregroundStyle(.white.opacity(0.8))
+                                    .foregroundStyle(brandBlue)
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 38)
-                                    .background(Color.white.opacity(0.08))
+                                    .background(brandBlue.opacity(0.12))
                                     .cornerRadius(10)
+                                }
+
+                                Button {
+                                    if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    Text("Hỗ Trợ Admin")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 38)
+                                        .background(Color.white.opacity(0.08))
+                                        .cornerRadius(10)
+                                }
                             }
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
+                    } else {
+                        // Biểu tượng thất bại với hiệu ứng Glow (Lỗi sai key, hết hạn, bị khóa...)
+                        ZStack {
+                            Circle()
+                                .fill(brandRed.opacity(0.2))
+                                .frame(width: 80, height: 80)
+                                .blur(radius: 12)
+
+                            Circle()
+                                .stroke(brandRed.opacity(0.6), lineWidth: 2)
+                                .frame(width: 72, height: 72)
+
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 40, weight: .bold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [brandRed, Color.orange],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        }
+
+                        VStack(spacing: 8) {
+                            Text("KÍCH HOẠT THẤT BÀI")
+                                .font(.system(size: 13, weight: .black))
+                                .foregroundStyle(brandRed)
+                                .tracking(1.5)
+
+                            Text("Không Thể Xác Thực Key")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundStyle(.white)
+
+                            Text(message)
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.white.opacity(0.9))
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 8)
+                                .background(brandRed.opacity(0.12))
+                                .cornerRadius(10)
+                        }
+                        .padding(.horizontal, 16)
+
+                        // Nút Đóng & Các lựa chọn hỗ trợ
+                        VStack(spacing: 12) {
+                            Button {
+                                onDismiss()
+                            } label: {
+                                HStack {
+                                    Image(systemName: "xmark")
+                                    Text("Đóng")
+                                        .font(.system(size: 16, weight: .bold))
+                                }
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 48)
+                                .background(Color.white.opacity(0.1))
+                                .foregroundStyle(.white)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                )
+                            }
+
+                            HStack(spacing: 12) {
+                                Button {
+                                    if let url = URL(string: "https://zalo.me/0365829172") {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    HStack(spacing: 4) {
+                                        Image(systemName: "message.fill")
+                                        Text("Mua Key Zalo")
+                                    }
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(brandBlue)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 38)
+                                    .background(brandBlue.opacity(0.12))
+                                    .cornerRadius(10)
+                                }
+
+                                Button {
+                                    if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
+                                        UIApplication.shared.open(url)
+                                    }
+                                } label: {
+                                    Text("Hỗ Trợ Admin")
+                                        .font(.system(size: 12, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .frame(maxWidth: .infinity)
+                                        .frame(height: 38)
+                                        .background(Color.white.opacity(0.08))
+                                        .cornerRadius(10)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 20)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
                 }
             }
             .frame(maxWidth: min(UIScreen.main.bounds.width - 48, 380))

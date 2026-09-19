@@ -296,6 +296,7 @@ struct BlossomForceUpdateModalView: View {
     @State private var isCopied: Bool = false
     @State private var isCheckingAgain: Bool = false
     @State private var isPulsing: Bool = false
+    @State private var isFloating: Bool = false
 
     private var targetURL: URL? {
         URL(string: info.update_url)
@@ -309,62 +310,56 @@ struct BlossomForceUpdateModalView: View {
 
             // Thẻ thông báo kính mờ Blossom Glassmorphism
             VStack(spacing: 16) {
-                // Header: Biểu tượng cập nhật LED đỏ neon phát sáng
+                // Header: Biểu tượng download với hiệu ứng nhấp nhô nhẹ nhàng
                 ZStack {
                     Circle()
                         .fill(
                             RadialGradient(
                                 colors: [
-                                    Color(red: 1.0, green: 0.20, blue: 0.35).opacity(0.35),
+                                    Color(red: 0.00, green: 0.88, blue: 1.00).opacity(0.35),
+                                    BlossomTheme.sakura.opacity(0.20),
                                     Color.clear
                                 ],
                                 center: .center,
                                 startRadius: 10,
-                                endRadius: 40
+                                endRadius: 44
                             )
                         )
-                        .frame(width: 80, height: 80)
-                        .scaleEffect(isPulsing ? 1.15 : 0.95)
+                        .frame(width: 84, height: 84)
 
                     Circle()
-                        .fill(
+                        .stroke(
                             LinearGradient(
-                                colors: [
-                                    Color(red: 0.30, green: 0.05, blue: 0.10),
-                                    Color(red: 0.12, green: 0.02, blue: 0.05)
-                                ],
+                                colors: [Color(red: 0.00, green: 0.88, blue: 1.00), BlossomTheme.sakura],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
-                            )
+                            ),
+                            lineWidth: 2
                         )
-                        .frame(width: 58, height: 58)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    LinearGradient(
-                                        colors: [
-                                            Color(red: 1.0, green: 0.25, blue: 0.35),
-                                            Color(red: 1.0, green: 0.60, blue: 0.20)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ),
-                                    lineWidth: 2
-                                )
-                        )
+                        .frame(width: 68, height: 68)
 
-                    Image(systemName: "arrow.triangle.2.circlepath")
-                        .font(.system(size: 26, weight: .black))
+                    Circle()
+                        .fill(Color(red: 0.12, green: 0.04, blue: 0.18))
+                        .frame(width: 60, height: 60)
+
+                    Image(systemName: "arrow.down.circle.fill")
+                        .font(.system(size: 38, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
-                                colors: [Color.white, Color(red: 1.0, green: 0.85, blue: 0.90)],
+                                colors: [Color(red: 0.00, green: 0.88, blue: 1.00), BlossomTheme.sakura],
                                 startPoint: .top,
                                 endPoint: .bottom
                             )
                         )
-                        .shadow(color: Color.red.opacity(0.8), radius: 6)
+                        .shadow(color: Color(red: 0.00, green: 0.88, blue: 1.00).opacity(0.6), radius: 8)
+                        .offset(y: isFloating ? -5 : 5)
                 }
                 .padding(.top, 4)
+                .onAppear {
+                    withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                        isFloating = true
+                    }
+                }
 
                 // Tiêu đề thông báo CheatStore Update
                 VStack(spacing: 8) {
@@ -491,7 +486,7 @@ struct BlossomForceUpdateModalView: View {
                             Image(systemName: "arrow.down.circle.fill")
                                 .font(.system(size: 18, weight: .black))
 
-                            Text("UPDATE NOW")
+                            Text("TẢI XUỐNG NGAY")
                                 .font(.system(size: 16, weight: .black, design: .rounded))
                                 .tracking(0.8)
                         }
