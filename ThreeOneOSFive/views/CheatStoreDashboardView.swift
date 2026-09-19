@@ -1496,7 +1496,7 @@ struct CheatStoreDashboardView: View {
 // MARK: - PulsingLedTag (Thẻ Tag PRIME Màu ĐỎ Có Đèn LED Đổi Màu Rực Rỡ)
 private struct PulsingLedTag: View {
     let text: String
-    @State private var phase: CGFloat = 0.0
+    @State private var isPulsing: Bool = false
 
     var body: some View {
         HStack(spacing: 4) {
@@ -1511,7 +1511,8 @@ private struct PulsingLedTag: View {
                     )
                 )
                 .frame(width: 5, height: 5)
-                .shadow(color: Color(red: 1.0, green: 0.2, blue: 0.3), radius: 4)
+                .shadow(color: Color(red: 1.0, green: 0.2, blue: 0.3), radius: isPulsing ? 5 : 2)
+                .opacity(isPulsing ? 1.0 : 0.65)
 
             Text(text)
                 .font(.system(size: 9, weight: .black))
@@ -1522,10 +1523,14 @@ private struct PulsingLedTag: View {
         .padding(.vertical, 2.5)
         .background(
             LinearGradient(
-                colors: [
-                    Color(red: 1.0, green: 0.08 + 0.12 * sin(phase), blue: 0.20),
-                    Color(red: 0.95 + 0.05 * cos(phase), green: 0.25, blue: 0.08),
-                    Color(red: 0.85, green: 0.02, blue: 0.30)
+                colors: isPulsing ? [
+                    Color(red: 1.0, green: 0.18, blue: 0.22),
+                    Color(red: 1.0, green: 0.35, blue: 0.10),
+                    Color(red: 0.88, green: 0.05, blue: 0.30)
+                ] : [
+                    Color(red: 0.90, green: 0.06, blue: 0.15),
+                    Color(red: 0.82, green: 0.18, blue: 0.05),
+                    Color(red: 0.75, green: 0.02, blue: 0.20)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -1536,10 +1541,14 @@ private struct PulsingLedTag: View {
             RoundedRectangle(cornerRadius: 5)
                 .stroke(
                     LinearGradient(
-                        colors: [
-                            Color(red: 1.0, green: 0.5, blue: 0.5),
-                            Color(red: 1.0, green: 0.85, blue: 0.3),
-                            Color(red: 1.0, green: 0.3, blue: 0.6)
+                        colors: isPulsing ? [
+                            Color(red: 1.0, green: 0.6, blue: 0.6),
+                            Color(red: 1.0, green: 0.9, blue: 0.3),
+                            Color(red: 1.0, green: 0.4, blue: 0.7)
+                        ] : [
+                            Color(red: 0.9, green: 0.3, blue: 0.3),
+                            Color(red: 0.9, green: 0.6, blue: 0.2),
+                            Color(red: 0.8, green: 0.2, blue: 0.4)
                         ],
                         startPoint: .leading,
                         endPoint: .trailing
@@ -1548,14 +1557,14 @@ private struct PulsingLedTag: View {
                 )
         )
         .shadow(
-            color: Color(red: 1.0, green: 0.15, blue: 0.25).opacity(0.65 + 0.35 * sin(phase)),
-            radius: 7,
+            color: Color(red: 1.0, green: 0.15, blue: 0.25).opacity(isPulsing ? 0.95 : 0.45),
+            radius: isPulsing ? 9 : 4,
             x: 0,
             y: 0
         )
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
-                phase = .pi
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) {
+                isPulsing = true
             }
         }
     }
@@ -1605,7 +1614,7 @@ private struct ApplestorePrimeCard: View {
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
-    @State private var ledPhase: CGFloat = 0.0
+    @State private var isLedActive: Bool = false
 
     var body: some View {
         HStack(spacing: 14) {
@@ -1642,10 +1651,14 @@ private struct ApplestorePrimeCard: View {
                 RoundedRectangle(cornerRadius: 13, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.15 + 0.15 * sin(ledPhase), blue: 0.25),
-                                Color(red: 1.0, green: 0.45, blue: 0.10),
-                                Color(red: 0.90, green: 0.05, blue: 0.30)
+                            colors: isLedActive ? [
+                                Color(red: 1.0, green: 0.25, blue: 0.35),
+                                Color(red: 1.0, green: 0.55, blue: 0.15),
+                                Color(red: 0.95, green: 0.10, blue: 0.35)
+                            ] : [
+                                Color(red: 0.85, green: 0.10, blue: 0.20),
+                                Color(red: 0.80, green: 0.35, blue: 0.05),
+                                Color(red: 0.70, green: 0.05, blue: 0.20)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -1654,10 +1667,10 @@ private struct ApplestorePrimeCard: View {
                     )
                     .frame(width: 50, height: 50)
             }
-            .shadow(color: Color.red.opacity(isApplied ? 0.6 : 0.25), radius: 8)
+            .shadow(color: Color.red.opacity(isApplied ? 0.6 : (isLedActive ? 0.4 : 0.15)), radius: isLedActive ? 8 : 4)
             .onAppear {
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    ledPhase = .pi
+                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                    isLedActive = true
                 }
             }
 
