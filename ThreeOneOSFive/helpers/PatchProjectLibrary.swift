@@ -126,49 +126,83 @@ enum PatchProjectLibrary {
             }
         }
 
-        // Fallback: nếu thư mục local thiếu mod, đọc trực tiếp từ AppCore trong Bundle để UI luôn sẵn sàng 100%
-        if byID.count < 4 {
-            var bundleCandidates: [URL] = []
-            let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
-            if let files = try? fileManager.contentsOfDirectory(at: coreDir1, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+        // Luôn luôn nạp và đồng bộ toàn bộ mod từ AppCore trong Bundle để đảm bảo 100% có mặt các tính năng mới như APPLESTORE PRIME
+        var bundleCandidates: [URL] = []
+        let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
+        if let files = try? fileManager.contentsOfDirectory(at: coreDir1, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
+            bundleCandidates.append(contentsOf: files)
+        }
+        if let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore"), resURL != coreDir1 {
+            if let files = try? fileManager.contentsOfDirectory(at: resURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
                 bundleCandidates.append(contentsOf: files)
             }
-            if let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore"), resURL != coreDir1 {
-                if let files = try? fileManager.contentsOfDirectory(at: resURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
-                    bundleCandidates.append(contentsOf: files)
-                }
+        }
+        for ext in ["dat", "bin", "3105"] {
+            if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
+                bundleCandidates.append(contentsOf: matches)
             }
-            for ext in ["dat", "bin", "3105"] {
-                if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
-                    bundleCandidates.append(contentsOf: matches)
-                }
-            }
+        }
 
-            for fileURL in bundleCandidates where ["dat", "bin", "3105"].contains(fileURL.pathExtension.lowercased()) {
-                do {
-                    let data = try readPackage(at: fileURL)
-                    let summary = try PatchPackageCodec.inspect(data)
-                    if byID[summary.packageID] == nil {
-                        let decoded = decodePackageSafely(data: data, summary: summary)
-                        let item = PatchLibraryItem(
-                            summary: summary,
-                            project: decoded?.project,
-                            contentKey: decoded?.contentKey,
-                            packageURL: fileURL,
-                            isAuthorCopy: false,
-                            origin: nil
-                        )
-                        byID[summary.packageID] = item
+        for fileURL in bundleCandidates where ["dat", "bin", "3105"].contains(fileURL.pathExtension.lowercased()) {
+            do {
+                let data = try readPackage(at: fileURL)
+                let summary = try PatchPackageCodec.inspect(data)
+                if byID[summary.packageID] == nil {
+                    let decoded = decodePackageSafely(data: data, summary: summary)
+                    let item = PatchLibraryItem(
+                        summary: summary,
+                        project: decoded?.project,
+                        contentKey: decoded?.contentKey,
+                        packageURL: fileURL,
+                        isAuthorCopy: false,
+                        origin: nil
+                    )
+                    byID[summary.packageID] = item
+
+                    // Tự động lưu vào local sandbox để các lần sau có sẵn
+                    if let root = try? packageRootURL(fileManager: fileManager) {
+                        let dest = root.appendingPathComponent(fileURL.lastPathComponent)
+                        if !fileManager.fileExists(atPath: dest.path) {
+                            try? data.write(to: dest, options: .atomic)
+                        }
                     }
-                } catch {
-                    log("patch: bundle fallback skipped \(fileURL.lastPathComponent): \(error)")
                 }
+            } catch {
+                log("patch: bundle sync skipped \(fileURL.lastPathComponent): \(error)")
             }
         }
 
         return byID.values.sorted {
             ($0.project?.updatedAt ?? .distantPast) > ($1.project?.updatedAt ?? .distantPast)
         }
+    }
+
+    
+    static func loadBundledItem(named name: String) -> PatchLibraryItem? {
+        let fileManager = FileManager.default
+        var candidateURLs: [URL] = []
+        let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
+        let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore")
+        for dir in [coreDir1, resURL].compactMap({ $0 }) {
+            for ext in ["dat", "bin", "3105"] {
+                candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
+            }
+        }
+        for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
+            if let data = try? readPackage(at: url),
+               let summary = try? PatchPackageCodec.inspect(data) {
+                let decoded = decodePackageSafely(data: data, summary: summary)
+                return PatchLibraryItem(
+                    summary: summary,
+                    project: decoded?.project,
+                    contentKey: decoded?.contentKey,
+                    packageURL: url,
+                    isAuthorCopy: false,
+                    origin: nil
+                )
+            }
+        }
+        return nil
     }
 
     static func readPackage(at url: URL) throws -> Data {

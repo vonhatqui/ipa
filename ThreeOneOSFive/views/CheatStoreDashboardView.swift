@@ -121,7 +121,10 @@ struct CheatStoreDashboardView: View {
     }
 
     private var applestorePrimeItem: PatchLibraryItem? {
-        patchStore.items.first(where: { isApplestorePrimeItem($0) })
+        if let found = patchStore.items.first(where: { isApplestorePrimeItem($0) }) {
+            return found
+        }
+        return PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime")
     }
 
     private var cpanelItem: PatchLibraryItem? {
@@ -345,21 +348,23 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
 
-                // 1. Chức Năng Mới: APPLESTORE PRIME (Tag PRIME LED Đỏ Đổi Màu)
-                if let primeItem = applestorePrimeItem {
-                    VStack(spacing: 14) {
-                        ApplestorePrimeCard(
-                            item: primeItem,
-                            isApplied: appliedProjectIDs.contains(primeItem.id),
-                            isWorking: workingPatchID == primeItem.id,
-                            brandBlue: brandBlue,
-                            onToggle: { enable in
-                                handleToggle(item: primeItem, enable: enable)
+                // 1. Chức Năng Mới: APPLESTORE PRIME (Tag PRIME LED Đỏ Đổi Màu) - LUÔN LUÔN HIỂN THỊ TRANG TRỌNG
+                VStack(spacing: 14) {
+                    ApplestorePrimeCard(
+                        item: applestorePrimeItem,
+                        isApplied: applestorePrimeItem != nil && appliedProjectIDs.contains(applestorePrimeItem!.id),
+                        isWorking: applestorePrimeItem != nil && workingPatchID == applestorePrimeItem!.id,
+                        brandBlue: brandBlue,
+                        onToggle: { enable in
+                            if let item = applestorePrimeItem {
+                                handleToggle(item: item, enable: enable)
+                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime") {
+                                handleToggle(item: loaded, enable: enable)
                             }
-                        )
-                    }
-                    .padding(.horizontal, 20)
+                        }
+                    )
                 }
+                .padding(.horizontal, 20)
 
                 // 2. Danh Sách Bản Mod Phụ (Cpanel Leaked nếu có)
                 if let item = cpanelItem, item.id != applestorePrimeItem?.id {
@@ -1608,7 +1613,7 @@ private struct FeatureLogoView: View {
 
 // MARK: - ApplestorePrimeCard (Chức Năng Lựa Chọn 2: APPLESTORE PRIME)
 private struct ApplestorePrimeCard: View {
-    let item: PatchLibraryItem
+    let item: PatchLibraryItem?
     let isApplied: Bool
     let isWorking: Bool
     let brandBlue: Color
