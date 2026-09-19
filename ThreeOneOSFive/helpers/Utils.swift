@@ -216,7 +216,7 @@ final class AppUpdateChecker: ObservableObject {
 
     static let dismissedVersionKey = "update.dismissedVersion"
     static let apiBaseURL = "https://cheatingenginexyz.online/api.php"
-    static let defaultFallbackURL = "https://t.me/ioscrackvn"
+    static let defaultFallbackURL = "https://cheatingenginexyz.online/update.php"
 
     struct Offer: Identifiable {
         let id = UUID()
@@ -227,7 +227,7 @@ final class AppUpdateChecker: ObservableObject {
     static var currentVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "2.0"
+            ?? "2.1"
     }
 
     static var currentBuild: Int {
@@ -235,7 +235,7 @@ final class AppUpdateChecker: ObservableObject {
            let num = Int(str) {
             return num
         }
-        return 8
+        return 9
     }
 
     static func dismiss(version: String) {
