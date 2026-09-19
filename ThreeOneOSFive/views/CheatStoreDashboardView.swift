@@ -85,14 +85,11 @@ struct CheatStoreDashboardView: View {
     private func isApplestorePrimeItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("applestore") || name.contains("prime") || filename.contains("applestore")
+        return name.contains("applestore") || name.contains("prime") || filename.contains("applestore") || filename.contains("cpanel") || name.contains("cpanel")
     }
 
     private func isCpanelItem(_ item: PatchLibraryItem) -> Bool {
-        if isApplestorePrimeItem(item) { return false }
-        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
-        let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("cpanel") || name.contains("leaked") || filename.contains("cpanel")
+        return false
     }
 
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
@@ -331,7 +328,7 @@ struct CheatStoreDashboardView: View {
                     emptyStateView
                 }
 
-                // DANH MỤC 2: LỰA CHỌN 2
+                // DANH MỤC 2: LỰA CHỌN 2 (APPLESTORE PRIME)
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("LỰA CHỌN 2")
@@ -348,7 +345,7 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 6)
 
-                // 1. Chức Năng Mới: APPLESTORE PRIME (Tag PRIME LED Đỏ Đổi Màu) - LUÔN LUÔN HIỂN THỊ TRANG TRỌNG
+                // DUY NHẤT CHỨC NĂNG: APPLESTORE PRIME (Tag PRIME LED Đỏ Đổi Màu)
                 VStack(spacing: 14) {
                     ApplestorePrimeCard(
                         item: applestorePrimeItem,
@@ -358,29 +355,13 @@ struct CheatStoreDashboardView: View {
                         onToggle: { enable in
                             if let item = applestorePrimeItem {
                                 handleToggle(item: item, enable: enable)
-                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime") {
+                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime") ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_cpanel") {
                                 handleToggle(item: loaded, enable: enable)
                             }
                         }
                     )
                 }
                 .padding(.horizontal, 20)
-
-                // 2. Danh Sách Bản Mod Phụ (Cpanel Leaked nếu có)
-                if let item = cpanelItem, item.id != applestorePrimeItem?.id {
-                    VStack(spacing: 14) {
-                        CpanelItemCard(
-                            item: item,
-                            isApplied: appliedProjectIDs.contains(item.id),
-                            isWorking: workingPatchID == item.id,
-                            brandBlue: brandBlue,
-                            onToggle: { enable in
-                                handleToggle(item: item, enable: enable)
-                            }
-                        )
-                    }
-                    .padding(.horizontal, 20)
-                }
 
                 // Ghi Chú An Toàn
                 HStack(alignment: .top, spacing: 10) {
