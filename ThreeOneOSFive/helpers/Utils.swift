@@ -189,11 +189,34 @@ enum AppPaths {
     static var backupsURL: URL { URL(fileURLWithPath: backups, isDirectory: true) }
 }
 
-enum AppUpdateChecker {
+// MARK: - Remote App Update Information (OTA Update Model)
+struct RemoteAppUpdateInfo: Codable, Identifiable {
+    var id: String { latest_version }
+    let status: String?
+    let has_update: Bool
+    let force_update: Bool
+    let client_version: String?
+    let client_build: Int?
+    let latest_version: String
+    let latest_build: Int?
+    let min_version: String?
+    let update_url: String
+    let title: String?
+    let message: String?
+    let changelog: [String]?
+}
+
+final class AppUpdateChecker: ObservableObject {
+    static let shared = AppUpdateChecker()
+
+    @Published var isForceUpdateRequired: Bool = false
+    @Published var updateInfo: RemoteAppUpdateInfo?
+    @Published var isChecking: Bool = false
+    @Published var checkCompleted: Bool = false
+
     static let dismissedVersionKey = "update.dismissedVersion"
-    static let apiURL = URL(string: "https://api.github.com/repos/YangJiiii/3105/releases/latest")!
-    static let discordURL = URL(string: "https://discord.gg/A3wS4ZPFQn")!
-    static let fallbackURL = URL(string: "https://discord.gg/A3wS4ZPFQn")!
+    static let apiBaseURL = "https://cheatingenginexyz.online/api.php"
+    static let defaultFallbackURL = "https://t.me/ioscrackvn"
 
     struct Offer: Identifiable {
         let id = UUID()
@@ -204,45 +227,95 @@ enum AppUpdateChecker {
     static var currentVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
             ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? "0"
+            ?? "2.0"
+    }
+
+    static var currentBuild: Int {
+        if let str = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
+           let num = Int(str) {
+            return num
+        }
+        return 8
     }
 
     static func dismiss(version: String) {
         UserDefaults.standard.set(version, forKey: dismissedVersionKey)
     }
 
-    static func check() async -> Offer? {
-        var request = URLRequest(url: apiURL)
-        request.timeoutInterval = 15
-        request.setValue("CheatStore", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
+    func checkForUpdates() async {
+        await MainActor.run {
+            self.isChecking = true
+        }
+
+        var components = URLComponents(string: Self.apiBaseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "action", value: "check_update"),
+            URLQueryItem(name: "version", value: Self.currentVersion),
+            URLQueryItem(name: "build", value: "\(Self.currentBuild)")
+        ]
+
+        guard let requestURL = components?.url else {
+            await MainActor.run {
+                self.isChecking = false
+                self.checkCompleted = true
+            }
+            return
+        }
+
+        var request = URLRequest(url: requestURL)
+        request.httpMethod = "GET"
+        request.timeoutInterval = 10
+        request.setValue("CheatStore/\(Self.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                return nil
+                await MainActor.run {
+                    self.isChecking = false
+                    self.checkCompleted = true
+                }
+                return
             }
-            let decoded = try JSONDecoder().decode(GitHubRelease.self, from: data)
-            let remote = normalize(decoded.tagName)
-            guard !remote.isEmpty,
-                  isNewer(remote, than: currentVersion),
-                  UserDefaults.standard.string(forKey: dismissedVersionKey) != remote else {
-                return nil
+
+            let decoded = try JSONDecoder().decode(RemoteAppUpdateInfo.self, from: data)
+
+            // So sánh phiên bản hiện tại với phiên bản mới nhất và phiên bản tối thiểu
+            let isOlderThanLatest = Self.isOlder(Self.currentVersion, than: decoded.latest_version)
+            let isOlderThanMin = decoded.min_version != nil ? Self.isOlder(Self.currentVersion, than: decoded.min_version!) : false
+            let isBuildOlder = (Self.currentVersion == decoded.latest_version && (decoded.latest_build ?? 0) > Self.currentBuild)
+            let hasActualUpdate = isOlderThanLatest || isBuildOlder || decoded.has_update
+            let mustForce = isOlderThanMin || (decoded.force_update && hasActualUpdate)
+
+            await MainActor.run {
+                self.isChecking = false
+                self.checkCompleted = true
+                if hasActualUpdate && mustForce {
+                    // CHỈ HIỆN VÀ ÉP CẬP NHẬT CHO CÁC BẢN CŨ
+                    self.isForceUpdateRequired = true
+                    self.updateInfo = decoded
+                } else {
+                    // BẢN MỚI NHẤT: KHÔNG HIỆN BẤT CỨ THÔNG BÁO NÀO
+                    self.isForceUpdateRequired = false
+                    self.updateInfo = nil
+                }
             }
-            let url = discordURL
-            return Offer(version: remote, url: url)
         } catch {
-            return nil
+            print("[AppUpdateChecker] Lỗi kết nối kiểm tra cập nhật: \(error)")
+            await MainActor.run {
+                self.isChecking = false
+                self.checkCompleted = true
+            }
         }
     }
 
-    private struct GitHubRelease: Decodable {
-        let tagName: String
-        let htmlURL: String
-
-        enum CodingKeys: String, CodingKey {
-            case tagName = "tag_name"
-            case htmlURL = "html_url"
+    /// Tương thích ngược cho phương thức check() cũ
+    static func check() async -> Offer? {
+        await shared.checkForUpdates()
+        if shared.isForceUpdateRequired, let info = shared.updateInfo, let url = URL(string: info.update_url) {
+            return Offer(version: info.latest_version, url: url)
         }
+        return nil
     }
 
     static func normalize(_ version: String) -> String {
@@ -253,16 +326,22 @@ enum AppUpdateChecker {
         return value
     }
 
-    static func isNewer(_ remote: String, than local: String) -> Bool {
-        let remoteParts = numericParts(normalize(remote))
+    static func isOlder(_ local: String, than remote: String) -> Bool {
         let localParts = numericParts(normalize(local))
-        let count = max(remoteParts.count, localParts.count)
+        let remoteParts = numericParts(normalize(remote))
+        let count = max(localParts.count, remoteParts.count)
         for i in 0..<count {
-            let r = i < remoteParts.count ? remoteParts[i] : 0
             let l = i < localParts.count ? localParts[i] : 0
-            if r != l { return r > l }
+            let r = i < remoteParts.count ? remoteParts[i] : 0
+            if l != r {
+                return l < r
+            }
         }
         return false
+    }
+
+    static func isNewer(_ remote: String, than local: String) -> Bool {
+        isOlder(local, than: remote)
     }
 
     private static func numericParts(_ version: String) -> [Int] {
@@ -270,3 +349,4 @@ enum AppUpdateChecker {
         return core.split(separator: ".").compactMap { Int($0.filter(\.isNumber)) }
     }
 }
+

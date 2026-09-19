@@ -255,12 +255,13 @@ final class CheatStoreLicenseManager: ObservableObject {
             }
         }
 
-        // Tạo URL GET: https://cheatingenginexyz.online/api.php?action=verify&key=...&device_id=...
+        // Tạo URL GET: https://cheatingenginexyz.online/api.php?action=verify&key=...&device_id=...&app_version=...
         var components = URLComponents(string: apiBaseURL)
         components?.queryItems = [
             URLQueryItem(name: "action", value: fixedAction),
             URLQueryItem(name: "key", value: trimmedKey),
-            URLQueryItem(name: "device_id", value: deviceID)
+            URLQueryItem(name: "device_id", value: deviceID),
+            URLQueryItem(name: "app_version", value: AppUpdateChecker.currentVersion)
         ]
 
         guard let requestURL = components?.url else {
@@ -273,18 +274,46 @@ final class CheatStoreLicenseManager: ObservableObject {
         var request = URLRequest(url: requestURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 12
-        request.setValue("CheatStore/1.0 (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("CheatStore/\(AppUpdateChecker.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
-            // Giải mã JSON từ phản hồi server (kể cả khi statusCode = 400, 403, 404)
+            // Giải mã JSON từ phản hồi server (kể cả khi statusCode = 400, 403, 404, 426)
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                 let status = (json["status"] as? String ?? "").lowercased()
                 let code = json["code"] as? String ?? ""
                 let message = json["message"] as? String
+
+                // Kiểm tra nếu server yêu cầu cập nhật phiên bản (chặn bản cũ)
+                if statusCode == 426 || code.uppercased() == "UPDATE_REQUIRED" {
+                    let updateURL = json["update_url"] as? String ?? "https://t.me/ioscrackvn"
+                    let msg = message ?? "Phiên bản bạn đang sử dụng đã cũ và đã ngừng hỗ trợ. Vui lòng tải bản cập nhật mới nhất!"
+                    await MainActor.run {
+                        self.errorMessage = msg
+                        AppUpdateChecker.shared.isForceUpdateRequired = true
+                        AppUpdateChecker.shared.updateInfo = RemoteAppUpdateInfo(
+                            status: "error",
+                            has_update: true,
+                            force_update: true,
+                            client_version: AppUpdateChecker.currentVersion,
+                            client_build: AppUpdateChecker.currentBuild,
+                            latest_version: (json["latest_version"] as? String) ?? "2.0",
+                            latest_build: nil,
+                            min_version: nil,
+                            update_url: updateURL,
+                            title: "Yêu Cầu Cập Nhật Phiên Bản Mới",
+                            message: msg,
+                            changelog: nil
+                        )
+                        if isSilent {
+                            self.deactivate(withReason: msg)
+                        }
+                    }
+                    return false
+                }
 
                 if status == "success" || code.uppercased() == "KEY_VALID" {
                     // a. Khi KEY HỢP LỆ (Status Code 200)

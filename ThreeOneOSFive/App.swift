@@ -9,6 +9,7 @@ struct ThreeOneOSFiveApp: App {
     @StateObject private var patchStore = PatchProjectStore()
     @StateObject private var repositoryStore = PackageRepositoryStore()
     @StateObject private var licenseManager = CheatStoreLicenseManager.shared
+    @StateObject private var updateChecker = AppUpdateChecker.shared
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
     @State private var showOnboarding = false
     @State private var showAttribution = false
@@ -31,8 +32,7 @@ struct ThreeOneOSFiveApp: App {
 
     private func checkForUpdate() {
         Task {
-            guard let offer = await AppUpdateChecker.check() else { return }
-            await MainActor.run { updateOffer = offer }
+            await updateChecker.checkForUpdates()
         }
     }
 
@@ -115,6 +115,13 @@ struct ThreeOneOSFiveApp: App {
                         removal: .opacity.combined(with: .scale(scale: 0.95))
                     ))
                 }
+
+                // Popup Cập Nhật Bắt Buộc (OTA) - Chỉ hiện cho các phiên bản cũ và khóa chặt app
+                if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
+                    BlossomForceUpdateModalView(info: info)
+                        .zIndex(99999)
+                        .transition(.opacity)
+                }
             }
             .onChange(of: licenseManager.isActivated) { activated in
                 if !activated {
@@ -147,6 +154,7 @@ struct ThreeOneOSFiveApp: App {
             .onChange(of: scenePhase) { phase in
                 guard phase == .active, !showOnboarding else { return }
                 appState.detectSupport()
+                checkForUpdate()
             }
             .onOpenURL { url in
                 patchDraftCoordinator.presentImport(url)
