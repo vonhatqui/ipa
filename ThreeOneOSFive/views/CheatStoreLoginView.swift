@@ -317,27 +317,109 @@ enum KeyNotificationType {
     case error(message: String)
 }
 
-// MARK: - POPUP MODAL THÔNG BÁO HIỆU ỨNG CYBERPUNK (CÓ NÚT ĐÓNG)
+// MARK: - MẪU 1: HIỆU ỨNG DẤU TÍCH APPLE PAY GLASS (iOS 18)
+struct AppleCheckmarkShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let startX = rect.minX + rect.width * 0.16
+        let startY = rect.minY + rect.height * 0.52
+
+        let midX = rect.minX + rect.width * 0.44
+        let midY = rect.minY + rect.height * 0.82
+
+        let endX = rect.minX + rect.width * 0.94
+        let endY = rect.minY + rect.height * 0.22
+
+        path.move(to: CGPoint(x: startX, y: startY))
+        path.addLine(to: CGPoint(x: midX, y: midY))
+        path.addLine(to: CGPoint(x: endX, y: endY))
+        return path
+    }
+}
+
+struct ApplePayCheckmarkView: View {
+    @State private var circleProgress: CGFloat = 0.0
+    @State private var checkProgress: CGFloat = 0.0
+    @State private var glowOpacity: Double = 0.0
+    @State private var checkScale: CGFloat = 0.75
+
+    private let appleGreen = Color(red: 0.20, green: 0.88, blue: 0.45)
+
+    var body: some View {
+        ZStack {
+            // Hào quang lan tỏa
+            Circle()
+                .fill(appleGreen.opacity(glowOpacity))
+                .frame(width: 84, height: 84)
+                .blur(radius: 16)
+
+            // Vòng tròn track nền mờ
+            Circle()
+                .stroke(Color.white.opacity(0.12), lineWidth: 3.5)
+                .frame(width: 80, height: 80)
+
+            // Vòng tròn vẽ nét SVG động (0 -> 100%)
+            Circle()
+                .trim(from: 0.0, to: circleProgress)
+                .stroke(
+                    appleGreen,
+                    style: StrokeStyle(lineWidth: 3.8, lineCap: .round)
+                )
+                .frame(width: 80, height: 80)
+                .rotationEffect(.degrees(-90))
+
+            // Dấu checkmark thanh mảnh Apple Pay
+            AppleCheckmarkShape()
+                .trim(from: 0.0, to: checkProgress)
+                .stroke(
+                    appleGreen,
+                    style: StrokeStyle(lineWidth: 4.5, lineCap: .round, lineJoin: .round)
+                )
+                .frame(width: 44, height: 44)
+                .scaleEffect(checkScale)
+        }
+        .onAppear {
+            // 1. Vẽ vòng tròn khép kín mượt mà
+            withAnimation(.easeInOut(duration: 0.52)) {
+                circleProgress = 1.0
+            }
+            // 2. Kích hoạt hào quang
+            withAnimation(.easeOut(duration: 0.8).delay(0.35)) {
+                glowOpacity = 0.35
+            }
+            // 3. Nét vẽ dấu tích bung nhịp Spring của Apple
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.65).delay(0.40)) {
+                checkProgress = 1.0
+                checkScale = 1.0
+            }
+            // Rung haptic Apple Pay
+            let generator = UINotificationFeedbackGenerator()
+            generator.notificationOccurred(.success)
+        }
+    }
+}
+
+// MARK: - POPUP MODAL THÔNG BÁO NHẬP KEY (APPLE PAY GLASS MODAL)
 struct KeyNotificationModalView: View {
     let notification: KeyNotificationType
     let onDismiss: () -> Void
     let onConfirmSuccess: () -> Void
 
     private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00)
-    private let brandBlueDark = Color(red: 0.00, green: 0.45, blue: 0.90)
-    private let brandGreen = Color(red: 0.10, green: 0.85, blue: 0.55)
+    private let brandGreen = Color(red: 0.20, green: 0.88, blue: 0.45)
     private let brandRed = Color(red: 1.00, green: 0.30, blue: 0.35)
+    private let sakura = BlossomTheme.sakura
 
     var body: some View {
         ZStack {
             // Nền tối mờ hiệu ứng Blur
-            Color.black.opacity(0.68)
+            Color.black.opacity(0.72)
                 .ignoresSafeArea()
                 .onTapGesture {
                     onDismiss()
                 }
 
-            VStack(spacing: 18) {
+            VStack(spacing: 16) {
                 // Header góc phải có nút Đóng (X)
                 HStack {
                     Spacer()
@@ -349,133 +431,136 @@ struct KeyNotificationModalView: View {
                             .foregroundStyle(.white.opacity(0.6))
                     }
                 }
-                .padding(.top, 16)
-                .padding(.trailing, 16)
+                .padding(.top, 14)
+                .padding(.trailing, 14)
 
                 switch notification {
                 case .success(let plan, let remaining, let expiry):
-                    // Biểu tượng thành công với hiệu ứng Glow
-                    ZStack {
-                        Circle()
-                            .fill(brandGreen.opacity(0.2))
-                            .frame(width: 80, height: 80)
-                            .blur(radius: 12)
-
-                        Circle()
-                            .stroke(brandGreen.opacity(0.6), lineWidth: 2)
-                            .frame(width: 72, height: 72)
-
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 44, weight: .bold))
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [brandGreen, brandBlue],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                    }
+                    // Biểu tượng thành công Mẫu 1: Apple Pay Glass Checkmark
+                    ApplePayCheckmarkView()
+                        .padding(.top, 4)
+                        .padding(.bottom, 4)
 
                     VStack(spacing: 8) {
-                        Text("KÍCH HOẠT THÀNH CÔNG")
-                            .font(.system(size: 13, weight: .black))
-                            .foregroundStyle(brandGreen)
-                            .tracking(1.5)
+                        // Badge Xác Minh Chuẩn Apple
+                        HStack(spacing: 6) {
+                            Text("XÁC MINH APPLE SECURE")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundStyle(brandGreen)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(brandGreen.opacity(0.15))
+                                .cornerRadius(6)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(brandGreen.opacity(0.35), lineWidth: 1)
+                                )
+                        }
 
-                        Text("Chào mừng bạn!")
-                            .font(.system(size: 20, weight: .bold))
+                        Text("Kích Hoạt Thành Công")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
 
-                        Text("Bản quyền CheatStore VN đã sẵn sàng sử dụng.")
-                            .font(.system(size: 13))
+                        Text("Chào mừng bạn! Bản quyền VIP CheatStore VN đã sẵn sàng trên thiết bị.")
+                            .font(.system(size: 12))
                             .foregroundStyle(.gray)
                             .multilineTextAlignment(.center)
-                            .padding(.horizontal, 8)
+                            .padding(.horizontal, 14)
                     }
 
-                    // Card chi tiết gói
+                    // Card chi tiết gói phong cách Glass
                     VStack(spacing: 10) {
                         HStack {
                             Text("Gói bản quyền:")
-                                .font(.system(size: 13))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.gray)
                             Spacer()
-                            Text(plan)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(.white)
+                            Text(plan.uppercased())
+                                .font(.system(size: 13, weight: .black, design: .rounded))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.98, green: 0.88, blue: 0.35), sakura],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
                         }
 
-                        Divider().background(Color.white.opacity(0.1))
+                        Divider().background(Color.white.opacity(0.08))
 
                         HStack {
                             Text("Thời hạn:")
-                                .font(.system(size: 13))
+                                .font(.system(size: 12))
                                 .foregroundStyle(.gray)
                             Spacer()
                             Text(remaining)
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(brandBlue)
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(brandGreen)
                         }
 
                         if !expiry.isEmpty {
-                            Divider().background(Color.white.opacity(0.1))
+                            Divider().background(Color.white.opacity(0.08))
 
                             HStack {
                                 Text("Hạn sử dụng:")
-                                    .font(.system(size: 13))
+                                    .font(.system(size: 12))
                                     .foregroundStyle(.gray)
                                 Spacer()
                                 Text(expiry)
                                     .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.white.opacity(0.8))
+                                    .foregroundStyle(.white.opacity(0.85))
                             }
                         }
                     }
                     .padding(14)
-                    .background(Color.white.opacity(0.05))
-                    .cornerRadius(12)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(14)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(brandGreen.opacity(0.25), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 18)
 
-                    // Các nút thao tác (Vào Ứng Dụng + Đóng)
+                    // Các nút thao tác (Tiếp tục vào game + Đóng)
                     VStack(spacing: 10) {
                         Button {
                             onConfirmSuccess()
                         } label: {
-                            HStack {
-                                Image(systemName: "arrow.right.circle.fill")
-                                Text("Vào Ứng Dụng")
-                                    .font(.system(size: 16, weight: .bold))
+                            HStack(spacing: 8) {
+                                Text("Tiếp Tục Vào Game")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                Image(systemName: "arrow.right")
+                                    .font(.system(size: 14, weight: .bold))
                             }
                             .frame(maxWidth: .infinity)
                             .frame(height: 48)
                             .background(
                                 LinearGradient(
-                                    colors: [brandBlue, brandBlueDark],
+                                    colors: [
+                                        Color(red: 0.10, green: 0.85, blue: 0.55),
+                                        Color(red: 0.05, green: 0.65, blue: 0.40)
+                                    ],
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
                             )
                             .foregroundStyle(.white)
-                            .cornerRadius(12)
-                            .shadow(color: brandBlue.opacity(0.4), radius: 8, y: 3)
+                            .cornerRadius(14)
+                            .shadow(color: brandGreen.opacity(0.4), radius: 10, y: 4)
                         }
 
                         Button {
                             onDismiss()
                         } label: {
                             Text("Đóng")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
                                 .foregroundStyle(.gray)
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 38)
+                                .frame(height: 36)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, 18)
+                    .padding(.bottom, 18)
 
                 case .error(let message):
                     // Biểu tượng thất bại với hiệu ứng Glow
@@ -518,10 +603,6 @@ struct KeyNotificationModalView: View {
                             .padding(.vertical, 8)
                             .background(brandRed.opacity(0.12))
                             .cornerRadius(10)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(brandRed.opacity(0.3), lineWidth: 1)
-                            )
                     }
                     .padding(.horizontal, 16)
 
@@ -585,17 +666,17 @@ struct KeyNotificationModalView: View {
             }
             .frame(maxWidth: min(UIScreen.main.bounds.width - 48, 380))
             .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color(red: 0.05, green: 0.08, blue: 0.15))
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color(red: 0.07, green: 0.035, blue: 0.12).opacity(0.94))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
                     .stroke(
                         notificationBorderGradient,
-                        lineWidth: 1.5
+                        lineWidth: 1.2
                     )
             )
-            .shadow(color: notificationShadowColor, radius: 24, y: 8)
+            .shadow(color: notificationShadowColor, radius: 26, y: 10)
             .padding(.horizontal, 24)
         }
     }
@@ -604,7 +685,7 @@ struct KeyNotificationModalView: View {
         switch notification {
         case .success:
             return LinearGradient(
-                colors: [brandGreen.opacity(0.8), brandBlue.opacity(0.5)],
+                colors: [Color.white.opacity(0.25), brandGreen.opacity(0.5), Color.white.opacity(0.05)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

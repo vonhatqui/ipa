@@ -91,7 +91,7 @@ struct CheatStoreDashboardView: View {
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("skin") || name.contains("ignis") || name.contains("alock") || name.contains("alok") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
+        return name.contains("skin") || name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("ignis") || name.contains("alock") || name.contains("alok") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("skin")
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
@@ -1240,7 +1240,14 @@ struct CheatStoreDashboardView: View {
 
     private func previewSkin(for item: PatchLibraryItem) {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
-        if name.contains("ignis") {
+        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("vàng") {
+            previewSkinInfo = SkinPreviewInfo(
+                title: "Skin thẻ vô cực vàng mùa 1",
+                subtitle: "Trang phục Thẻ Vô Cực Vàng Mùa 1 Huyền Thoại",
+                imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
+                localImageName: "skin_vocuc"
+            )
+        } else if name.contains("ignis") {
             previewSkinInfo = SkinPreviewInfo(
                 title: "Mod Skin Ignis",
                 subtitle: "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis",
@@ -2018,7 +2025,9 @@ private struct SkinItemCard: View {
 
     private var skinSubtitle: String {
         let n = skinTitle.lowercased()
-        if n.contains("ignis") {
+        if n.contains("vô cực") || n.contains("vo cuc") || n.contains("mùa 1") || n.contains("mua 1") || n.contains("vàng") {
+            return "Trang phục Thẻ Vô Cực Vàng Mùa 1 Huyền Thoại"
+        } else if n.contains("ignis") {
             return "Trang phục Đạo Sĩ Đỏ cực ngầu cho tướng Ignis"
         } else if n.contains("alock") || n.contains("alok") || n.contains("nạ cỏ") || n.contains("đá bóng") {
             return "Bộ trang phục Alock Thất Tỉnh (Nạ Cỏ - Áo Đá Bóng)"
@@ -2028,7 +2037,9 @@ private struct SkinItemCard: View {
 
     private var skinBadge: String {
         let n = skinTitle.lowercased()
-        if n.contains("ignis") {
+        if n.contains("vô cực") || n.contains("vo cuc") || n.contains("mùa 1") || n.contains("mua 1") || n.contains("vàng") {
+            return "SEASON 1"
+        } else if n.contains("ignis") {
             return "HOT SKIN"
         }
         return "VIP SKIN"
@@ -2036,6 +2047,7 @@ private struct SkinItemCard: View {
 
     private var localImageName: String {
         let n = skinTitle.lowercased()
+        if n.contains("vô cực") || n.contains("vo cuc") || n.contains("mùa 1") || n.contains("mua 1") { return "skin_vocuc" }
         if n.contains("ignis") { return "skin_ignis" }
         return "skin_naco"
     }
