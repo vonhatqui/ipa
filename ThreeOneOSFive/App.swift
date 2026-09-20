@@ -24,9 +24,6 @@ struct ThreeOneOSFiveApp: App {
     init() {
         setupLogCapture()
         log("app: CheatStore VN launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
-        Task {
-            await AppUpdateChecker.shared.checkForUpdates()
-        }
     }
 
     private var language: AppLanguage {
@@ -89,10 +86,8 @@ struct ThreeOneOSFiveApp: App {
                     isSplashActive = false
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    if !updateChecker.isForceUpdateRequired {
-                        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-                            showPostSplashNotice = true
-                        }
+                    withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                        showPostSplashNotice = true
                     }
                 }
             })
@@ -103,7 +98,7 @@ struct ThreeOneOSFiveApp: App {
 
     @ViewBuilder
     private var noticeOverlayView: some View {
-        if showPostSplashNotice && !updateChecker.isForceUpdateRequired {
+        if showPostSplashNotice {
             BlossomNoticeModalView(
                 onDiscord: {
                     if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
@@ -124,59 +119,12 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
-    @ViewBuilder
-    private var maintenanceOverlayView: some View {
-        if licenseManager.isMaintenanceActive || updateChecker.isMaintenanceActive {
-            let info = licenseManager.maintenanceInfo ?? updateChecker.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
-            DarkMechMaintenanceModalView(
-                info: info,
-                onRefresh: {
-                    Task {
-                        await updateChecker.checkForUpdates()
-                        _ = await licenseManager.verifyCurrentDevice()
-                    }
-                }
-            )
-            .zIndex(99998)
-            .transition(AnyTransition.opacity)
-        }
-    }
-
-    @ViewBuilder
-    private var forceUpdateOverlayView: some View {
-        if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
-            BlossomForceUpdateModalView(info: info)
-                .zIndex(99999)
-                .transition(AnyTransition.opacity)
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
             ZStack {
                 mainContentView
                 splashOverlayView
                 noticeOverlayView
-                maintenanceOverlayView
-                forceUpdateOverlayView
-            }
-            .onChange(of: updateChecker.isMaintenanceActive) { isMaint in
-                if isMaint {
-                    showPostSplashNotice = false
-                    isSplashActive = false
-                }
-            }
-            .onChange(of: licenseManager.isMaintenanceActive) { isMaint in
-                if isMaint {
-                    showPostSplashNotice = false
-                    isSplashActive = false
-                }
-            }
-            .onChange(of: updateChecker.isForceUpdateRequired) { isRequired in
-                if isRequired {
-                    showPostSplashNotice = false
-                    isSplashActive = false
-                }
             }
             .onChange(of: licenseManager.isActivated) { activated in
                 if !activated {

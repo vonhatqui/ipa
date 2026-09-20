@@ -23,13 +23,67 @@ struct CheatStoreLoginView: View {
             BlossomBackgroundView(showParticles: true)
 
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: 20) {
+                    // TOP BAR: Hiển thị Phiên Bản & Nút "Check Update" (Gọn, Dễ nhìn, Dễ thấy)
+                    HStack {
+                        // Badge Phiên bản
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color(red: 0.2, green: 0.88, blue: 0.45))
+                                .frame(width: 7, height: 7)
+                                .shadow(color: Color(red: 0.2, green: 0.88, blue: 0.45).opacity(0.8), radius: 4)
+                            Text("v2.3 (Build 10)")
+                                .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.85))
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule().stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
+
+                        Spacer()
+
+                        // Nút Check Update
+                        Button {
+                            if let url = URL(string: "https://cheatingenginexyz.online/update") {
+                                UIApplication.shared.open(url)
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 11, weight: .bold))
+                                Text("Check Update")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 7)
+                            .background(
+                                LinearGradient(
+                                    colors: [BlossomTheme.sakura, BlossomTheme.sakuraDeep],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .clipShape(Capsule())
+                            .shadow(color: BlossomTheme.sakura.opacity(0.45), radius: 8, x: 0, y: 2)
+                            .overlay(
+                                Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 22)
+                    .padding(.top, 16)
+
                     // Header Logo với vòng xoay Conic Rings đa chiều (.brand-icon-ring của blossom.re)
-                    VStack(spacing: 16) {
+                    VStack(spacing: 14) {
                         BlossomLogoRingView(size: 84, cornerRadius: 22) {
                             CheatStoreLogoView(size: 84, cornerRadius: 22)
                         }
-                        .padding(.top, 36)
+                        .padding(.top, 8)
 
                         Text("CheatStore VN")
                             .font(.system(size: 28, weight: .black, design: .rounded))
@@ -286,22 +340,6 @@ struct CheatStoreLoginView: View {
                 )
                 .transition(.scale(scale: 0.86).combined(with: .opacity))
                 .zIndex(50)
-            }
-
-            // POPUP MODAL THÔNG BÁO BẢO TRÌ (MẪU 4: DARK MECH TITANIUM)
-            if licenseManager.isMaintenanceActive || AppUpdateChecker.shared.isMaintenanceActive {
-                let info = licenseManager.maintenanceInfo ?? AppUpdateChecker.shared.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
-                DarkMechMaintenanceModalView(
-                    info: info,
-                    onRefresh: {
-                        Task {
-                            await AppUpdateChecker.shared.checkForUpdates()
-                            _ = await licenseManager.verifyCurrentDevice()
-                        }
-                    }
-                )
-                .transition(.scale(scale: 0.86).combined(with: .opacity))
-                .zIndex(100)
             }
         }
         .onAppear {
