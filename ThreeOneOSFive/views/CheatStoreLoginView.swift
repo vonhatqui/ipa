@@ -48,7 +48,7 @@ struct CheatStoreLoginView: View {
 
                         // Nút Check Update
                         Button {
-                            if let url = URL(string: "https://cheatingenginexyz.online/update") {
+                            if let url = URL(string: "https://cheatingenginexyz.online/update.php") {
                                 UIApplication.shared.open(url)
                             }
                         } label: {
