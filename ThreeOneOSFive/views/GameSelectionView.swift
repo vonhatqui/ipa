@@ -113,50 +113,51 @@ struct GameSelectionView: View {
         Button {
             startGameLoading()
         } label: {
-            HStack(spacing: 14) {
+            HStack(spacing: 11) {
                 // Icon Free Fire
-                FreeFireAppIconView(size: 52, cornerRadius: 12)
+                FreeFireAppIconView(size: 42, cornerRadius: 11)
 
                 // Thông tin Game
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2.5) {
                     Text("Free Fire")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
 
                     Text("com.dts.freefireth")
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.white.opacity(0.65))
                 }
 
                 Spacer()
 
                 // Nút / Huy hiệu READY
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Text("READY")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
                         .foregroundStyle(brandCyan)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
                         .background(brandCyan.opacity(0.10))
-                        .cornerRadius(8)
+                        .cornerRadius(6)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(brandCyan, lineWidth: 1.2)
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(brandCyan, lineWidth: 1.1)
                         )
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(Color.white.opacity(0.55))
                 }
             }
-            .padding(14)
+            .padding(.horizontal, 13)
+            .padding(.vertical, 10)
             .background(cardBackground)
-            .cornerRadius(16)
+            .cornerRadius(13)
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 13)
                     .stroke(brandBlue.opacity(0.25), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.35), radius: 8, x: 0, y: 4)
+            .shadow(color: Color.black.opacity(0.35), radius: 6, x: 0, y: 3)
         }
         .buttonStyle(ScaleButtonStyle())
     }

@@ -330,7 +330,7 @@ final class CheatStoreLicenseManager: ObservableObject {
                             force_update: true,
                             client_version: AppUpdateChecker.currentVersion,
                             client_build: AppUpdateChecker.currentBuild,
-                            latest_version: (json["latest_version"] as? String) ?? "2.1",
+                            latest_version: (json["latest_version"] as? String) ?? "2.3",
                             latest_build: nil,
                             min_version: nil,
                             update_url: updateURL,

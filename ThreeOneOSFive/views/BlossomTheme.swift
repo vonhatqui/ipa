@@ -2,18 +2,18 @@ import SwiftUI
 
 // MARK: - Blossom Design Tokens (Trích xuất 100% từ blossom.re)
 enum BlossomTheme {
-    // Colors
-    static let bgTop = Color(red: 0.082, green: 0.039, blue: 0.129)       // #150a21
-    static let bgBottom = Color(red: 0.035, green: 0.016, blue: 0.059)    // #09040f
-    static let sakura = Color(red: 0.753, green: 0.518, blue: 0.988)      // #c084fc (Chính)
-    static let sakuraLight = Color(red: 0.914, green: 0.835, blue: 1.000) // #e9d5ff (Highlight)
-    static let sakuraDeep = Color(red: 0.659, green: 0.333, blue: 0.969)  // #a855f7 (Accent)
-    static let petal = Color(red: 0.847, green: 0.706, blue: 0.996)       // #d8b4fe
-    static let branch = Color(red: 0.298, green: 0.114, blue: 0.584)      // #4c1d95
-    static let cardBackground = Color(red: 0.078, green: 0.039, blue: 0.137).opacity(0.68) // rgba(20,10,35,0.68)
-    static let cardBorder = Color(red: 0.973, green: 0.643, blue: 0.784).opacity(0.12)    // rgba(248,164,200,0.12)
-    static let textPrimary = Color(red: 0.961, green: 0.953, blue: 1.000) // #f5f3ff
-    static let textDim = Color(red: 0.655, green: 0.545, blue: 0.980)     // #a78bfa
+    // Colors - Đậm sâu, phát sáng và rực rỡ hơn (Rich Neon Purple Aesthetic)
+    static let bgTop = Color(red: 0.055, green: 0.024, blue: 0.098)       // #0e0619 (Đậm sâu hơn)
+    static let bgBottom = Color(red: 0.020, green: 0.008, blue: 0.038)    // #05020a (Đậm sâu hơn)
+    static let sakura = Color(red: 0.812, green: 0.478, blue: 1.000)      // #cf7aff (Sáng rực rỡ và đậm đà hơn)
+    static let sakuraLight = Color(red: 0.957, green: 0.898, blue: 1.000) // #f4e5ff (Highlight siêu sáng)
+    static let sakuraDeep = Color(red: 0.627, green: 0.235, blue: 0.980)  // #a03cfa (Tím đậm sâu phát sáng)
+    static let petal = Color(red: 0.886, green: 0.706, blue: 1.000)       // #e2b4ff
+    static let branch = Color(red: 0.380, green: 0.125, blue: 0.725)      // #6120b9
+    static let cardBackground = Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82) // Đậm đặc tương phản hơn
+    static let cardBorder = Color(red: 0.812, green: 0.478, blue: 1.000).opacity(0.20)     // Viền tím neon sắc sảo
+    static let textPrimary = Color(red: 0.984, green: 0.980, blue: 1.000) // #fafaff
+    static let textDim = Color(red: 0.741, green: 0.620, blue: 0.980)     // #bd9efa
 
     // Gradients
     static var backgroundGradient: LinearGradient {
@@ -56,15 +56,15 @@ struct BlossomBackgroundView: View {
 
             // Vầng sáng neon mờ tím huyền ảo ở tâm và góc
             Circle()
-                .fill(BlossomTheme.sakura.opacity(0.14))
+                .fill(BlossomTheme.sakura.opacity(0.22))
                 .blur(radius: 90)
-                .frame(width: 320, height: 320)
+                .frame(width: 330, height: 330)
                 .offset(x: -80, y: -220)
 
             Circle()
-                .fill(BlossomTheme.sakuraDeep.opacity(0.10))
+                .fill(BlossomTheme.sakuraDeep.opacity(0.18))
                 .blur(radius: 110)
-                .frame(width: 280, height: 280)
+                .frame(width: 300, height: 300)
                 .offset(x: 100, y: 260)
 
             // Hiệu ứng hạt cánh hoa anh đào rơi nhẹ nhàng

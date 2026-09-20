@@ -51,13 +51,13 @@ struct CheatStoreLoginView: View {
                         HStack {
                             Image(systemName: "key.fill")
                                 .foregroundStyle(brandBlue)
-                                .frame(width: 24)
+                                .frame(width: 20)
 
                             TextField("Nhập mã key của bạn...", text: $inputKey)
                                 .textInputAutocapitalization(.characters)
                                 .autocorrectionDisabled()
                                 .foregroundStyle(.white)
-                                .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                                .font(.system(size: 13.5, weight: .semibold, design: .monospaced))
 
                             if !inputKey.isEmpty {
                                 Button {
@@ -74,19 +74,20 @@ struct CheatStoreLoginView: View {
                                 }
                             } label: {
                                 Text("Dán")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .padding(.horizontal, 10)
-                                    .padding(.vertical, 6)
+                                    .font(.system(size: 11, weight: .bold))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 5)
                                     .background(brandBlue.opacity(0.2))
                                     .foregroundStyle(brandBlue)
-                                    .cornerRadius(8)
+                                    .cornerRadius(6)
                             }
                         }
-                        .padding(14)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 10)
                         .background(Color.white.opacity(0.06))
-                        .cornerRadius(12)
+                        .cornerRadius(10)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 10)
                                 .stroke(brandBlue.opacity(0.3), lineWidth: 1)
                         )
 
@@ -96,25 +97,25 @@ struct CheatStoreLoginView: View {
                                 licenseManager.rememberKey.toggle()
                             }
                         } label: {
-                            HStack(spacing: 10) {
+                            HStack(spacing: 8) {
                                 ZStack {
-                                    RoundedRectangle(cornerRadius: 6)
+                                    RoundedRectangle(cornerRadius: 5)
                                         .fill(licenseManager.rememberKey ? brandBlue.opacity(0.2) : Color.white.opacity(0.05))
-                                        .frame(width: 22, height: 22)
+                                        .frame(width: 18, height: 18)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 6)
-                                                .stroke(licenseManager.rememberKey ? brandBlue : Color.white.opacity(0.25), lineWidth: 1.5)
+                                            RoundedRectangle(cornerRadius: 5)
+                                                .stroke(licenseManager.rememberKey ? brandBlue : Color.white.opacity(0.25), lineWidth: 1.2)
                                         )
 
                                     if licenseManager.rememberKey {
                                         Image(systemName: "checkmark")
-                                            .font(.system(size: 11, weight: .bold))
+                                            .font(.system(size: 9.5, weight: .bold))
                                             .foregroundStyle(brandBlue)
                                     }
                                 }
 
                                 Text("Ghi nhớ mã key trên thiết bị này")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.system(size: 11.5, weight: .medium))
                                     .foregroundStyle(licenseManager.rememberKey ? .white : .gray)
 
                                 Spacer()
@@ -122,7 +123,7 @@ struct CheatStoreLoginView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 1)
 
                         // Nút Kích Hoạt / Đăng Nhập
                         Button {
@@ -156,16 +157,16 @@ struct CheatStoreLoginView: View {
                                         .tint(.black)
                                         .padding(.trailing, 4)
                                     Text("Đang kiểm tra...")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(.system(size: 14, weight: .bold))
                                         .foregroundStyle(.black)
                                 } else {
                                     Image(systemName: "checkmark.seal.fill")
                                     Text(!licenseManager.activeKey.isEmpty && inputKey == licenseManager.activeKey ? "Đăng Nhập Ngay" : "Kích Hoạt Ngay")
-                                        .font(.system(size: 16, weight: .bold))
+                                        .font(.system(size: 14, weight: .bold))
                                 }
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: 42)
                             .background(
                                 LinearGradient(
                                     colors: [brandBlue, brandBlueDark],
@@ -174,17 +175,17 @@ struct CheatStoreLoginView: View {
                                 )
                             )
                             .foregroundStyle(.white)
-                            .cornerRadius(14)
-                            .shadow(color: brandBlue.opacity(0.4), radius: 8, y: 4)
+                            .cornerRadius(11)
+                            .shadow(color: brandBlue.opacity(0.4), radius: 6, y: 3)
                         }
                         .disabled(licenseManager.isVerifying || inputKey.isEmpty)
                         .opacity((licenseManager.isVerifying || inputKey.isEmpty) ? 0.6 : 1.0)
                     }
-                    .padding(20)
-                    .background(Color(red: 0.06, green: 0.09, blue: 0.16))
-                    .cornerRadius(20)
+                    .padding(16)
+                    .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+                    .cornerRadius(16)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 20)
+                        RoundedRectangle(cornerRadius: 16)
                             .stroke(brandBlue.opacity(0.2), lineWidth: 1)
                     )
                     .padding(.horizontal, 20)
@@ -236,12 +237,12 @@ struct CheatStoreLoginView: View {
                                 Image(systemName: "message.fill")
                                 Text("Mua Key Zalo")
                             }
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(brandBlue)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 44)
+                            .frame(height: 38)
                             .background(brandBlue.opacity(0.12))
-                            .cornerRadius(12)
+                            .cornerRadius(10)
                         }
 
                         Button {
@@ -253,12 +254,12 @@ struct CheatStoreLoginView: View {
                                 Image(systemName: "bubble.left.and.bubble.right.fill")
                                 Text("Hỗ Trợ Admin")
                             }
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 12.5, weight: .semibold))
                             .foregroundStyle(.white.opacity(0.8))
                             .frame(maxWidth: .infinity)
-                            .frame(height: 44)
+                            .frame(height: 38)
                             .background(Color.white.opacity(0.08))
-                            .cornerRadius(12)
+                            .cornerRadius(10)
                         }
                     }
                     .padding(.horizontal, 20)

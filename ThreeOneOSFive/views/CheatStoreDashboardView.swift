@@ -590,7 +590,7 @@ struct CheatStoreDashboardView: View {
                 }
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(.white)
-                .frame(height: 46)
+                .frame(height: 38)
                 .padding(.horizontal, 24)
                 .background(
                     LinearGradient(
@@ -958,7 +958,7 @@ struct CheatStoreDashboardView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
+                        .frame(height: 40)
                         .background(
                             LinearGradient(
                                 colors: [brandBlue, brandBlueDark],
@@ -982,7 +982,7 @@ struct CheatStoreDashboardView: View {
                         .font(.system(size: 14, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
+                        .frame(height: 40)
                         .background(Color.white.opacity(0.08))
                         .cornerRadius(12)
                     }
@@ -1000,7 +1000,7 @@ struct CheatStoreDashboardView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.red.opacity(0.85))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 46)
+                    .frame(height: 38)
                     .background(Color.red.opacity(0.08))
                     .cornerRadius(12)
                     .overlay(
@@ -1044,12 +1044,12 @@ struct CheatStoreDashboardView: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .background(cardBackground.opacity(0.96))
-        .cornerRadius(22)
+        .cornerRadius(18)
         .overlay(
-            RoundedRectangle(cornerRadius: 22)
+            RoundedRectangle(cornerRadius: 18)
                 .stroke(brandBlue.opacity(0.25), lineWidth: 1)
         )
         .padding(.horizontal, 20)
@@ -1635,7 +1635,7 @@ private struct FeatureLogoView: View {
     }
 }
 
-// MARK: - ApplestorePrimeCard (Chức Năng Lựa Chọn 2: APPLESTORE PRIME)
+// MARK: - ApplestorePrimeCard (Chức Năng Lựa Chọn 2: APPLESTORE PRIME - Royal Neon Purple)
 private struct ApplestorePrimeCard: View {
     let item: PatchLibraryItem?
     let isApplied: Bool
@@ -1646,88 +1646,88 @@ private struct ApplestorePrimeCard: View {
     @State private var isLedActive: Bool = false
 
     var body: some View {
-        HStack(spacing: 14) {
-            // Icon code AppleStore Prime vector quả táo phát sáng LED đỏ pulsing neon
+        HStack(spacing: 11) {
+            // Icon code AppleStore Prime vector quả táo phát sáng LED tím pulsing neon
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.28, green: 0.04, blue: 0.08),
-                                Color(red: 0.12, green: 0.02, blue: 0.05)
+                                Color(red: 0.26, green: 0.08, blue: 0.44),
+                                Color(red: 0.12, green: 0.03, blue: 0.22)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "apple.logo")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
                                 Color.white,
-                                Color(red: 1.0, green: 0.88, blue: 0.90)
+                                BlossomTheme.sakuraLight
                             ],
                             startPoint: .top,
                             endPoint: .bottom
                         )
                     )
-                    .shadow(color: Color.red.opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.95 : 0.6), radius: isApplied ? 7 : 3.5)
 
-                // Viền LED đỏ pulsing neon đổi màu nhấp nháy phát sáng
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                // Viền LED tím pulsing neon hoàng gia đổi màu nhấp nháy phát sáng
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: isLedActive ? [
-                                Color(red: 1.0, green: 0.22, blue: 0.35),
-                                Color(red: 1.0, green: 0.50, blue: 0.15),
-                                Color(red: 0.95, green: 0.10, blue: 0.35)
+                                BlossomTheme.sakuraLight,
+                                BlossomTheme.sakura,
+                                BlossomTheme.sakuraDeep
                             ] : [
-                                Color(red: 0.85, green: 0.08, blue: 0.20),
-                                Color(red: 0.78, green: 0.30, blue: 0.05),
-                                Color(red: 0.70, green: 0.05, blue: 0.20)
+                                BlossomTheme.sakuraDeep,
+                                BlossomTheme.branch,
+                                BlossomTheme.sakura
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: Color.red.opacity(isApplied ? 0.65 : (isLedActive ? 0.45 : 0.20)), radius: isLedActive ? 8 : 4)
+            .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.60 : (isLedActive ? 0.40 : 0.20)), radius: isLedActive ? 7 : 3.5)
             .onAppear {
-                withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
                     isLedActive = true
                 }
             }
 
             // Thông tin chức năng
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text("APPLESTORE PRIME")
-                        .font(.system(size: 14.5, weight: .black))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag PRIME (LED đổi màu)
+                    // Tag PRIME Tím Neon
                     PulsingLedTag(text: "PRIME")
                 }
 
                 Text("Menu Mod Độc Quyền AppleStore • Ổn Định Tuyệt Đối")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Color(red: 1.0, green: 0.48, blue: 0.58))
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(BlossomTheme.sakuraLight)
                     .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -1735,11 +1735,11 @@ private struct ApplestorePrimeCard: View {
 
             Spacer()
 
-            // Nút Switch Bật / Tắt
+            // Nút Switch Bật / Tắt (thu gọn 15-20%)
             if isWorking {
                 ProgressView()
-                    .tint(Color.red)
-                    .frame(width: 50)
+                    .tint(BlossomTheme.sakura)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -1748,22 +1748,24 @@ private struct ApplestorePrimeCard: View {
                     }
                 ))
                 .labelsHidden()
-                .tint(Color(red: 0.95, green: 0.15, blue: 0.25))
+                .tint(BlossomTheme.sakura)
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(
                     isApplied
-                        ? Color(red: 1.0, green: 0.2, blue: 0.3).opacity(0.85)
+                        ? BlossomTheme.sakura.opacity(0.85)
                         : Color.white.opacity(0.08),
                     lineWidth: 1
                 )
         )
-        .shadow(color: isApplied ? Color.red.opacity(0.3) : Color.clear, radius: 8)
+        .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.35) : Color.clear, radius: 7)
     }
 }
 
@@ -1776,10 +1778,10 @@ private struct AimneckVipCard: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Icon Code Vector: Tâm ngắm scope với viền hoa anh đào tím Sakura rực rỡ
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -1790,10 +1792,10 @@ private struct AimneckVipCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "scope")
-                    .font(.system(size: 23, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [BlossomTheme.sakuraLight, Color.white],
@@ -1801,10 +1803,10 @@ private struct AimneckVipCard: View {
                             endPoint: .bottom
                         )
                     )
-                    .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
 
                 // Viền hoa anh đào tím Sakura rực rỡ
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -1815,26 +1817,26 @@ private struct AimneckVipCard: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.5 : 0.25), radius: 6)
+            .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.5 : 0.25), radius: 5)
 
             // Thông tin chức năng
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text("AIMNECK VIP")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     // Tag LOCK CỔ (Màu Tím Hoa Anh Đào Sakura)
                     Text("LOCK CỔ")
-                        .font(.system(size: 8.5, weight: .black))
+                        .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
@@ -1842,22 +1844,22 @@ private struct AimneckVipCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(4)
+                        .cornerRadius(3.5)
                         .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 3)
                 }
 
                 Text("Khóa Cổ Siêu Dính • Kéo Tâm Mượt")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(BlossomTheme.sakuraLight)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -1865,11 +1867,11 @@ private struct AimneckVipCard: View {
 
             Spacer()
 
-            // Nút Bật / Tắt Switch
+            // Nút Bật / Tắt Switch (thu gọn 15-20%)
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -1879,16 +1881,18 @@ private struct AimneckVipCard: View {
                 ))
                 .labelsHidden()
                 .tint(brandBlue)
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(isApplied ? BlossomTheme.sakuraLight.opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.25) : Color.clear, radius: 8)
+        .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.25) : Color.clear, radius: 7)
     }
 }
 
@@ -1901,10 +1905,10 @@ private struct EspAimheadV3Card: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Icon Code Vector: Kính ngắm 3D viewfinder với viền xanh Cyan Neon
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -1915,10 +1919,10 @@ private struct EspAimheadV3Card: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "viewfinder")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [Color(red: 0.00, green: 0.95, blue: 1.0), Color.white],
@@ -1926,10 +1930,10 @@ private struct EspAimheadV3Card: View {
                             endPoint: .bottom
                         )
                     )
-                    .shadow(color: Color(red: 0.0, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: Color(red: 0.0, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
 
                 // Viền xanh Cyan Neon rực rỡ
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -1939,26 +1943,26 @@ private struct EspAimheadV3Card: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 6)
+            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 5)
 
             // Thông tin chức năng
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text("ĐỊNH VỊ + AIMHEAD V3")
-                        .font(.system(size: 14.5, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     // Tag ESP + AIM (Màu Cyan Neon)
                     Text("ESP + AIM")
-                        .font(.system(size: 8.5, weight: .black))
+                        .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.black)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 0.00, green: 0.98, blue: 1.0), Color(red: 0.00, green: 0.72, blue: 0.90)],
@@ -1966,22 +1970,22 @@ private struct EspAimheadV3Card: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(4)
+                        .cornerRadius(3.5)
                         .shadow(color: Color(red: 0.00, green: 0.95, blue: 1.0).opacity(0.4), radius: 3)
                 }
 
                 Text("Khung Định Vị Head 3D • Khóa Đầu Chuẩn Xác")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -1992,7 +1996,7 @@ private struct EspAimheadV3Card: View {
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2002,16 +2006,18 @@ private struct EspAimheadV3Card: View {
                 ))
                 .labelsHidden()
                 .tint(Color(red: 0.00, green: 0.85, blue: 0.95))
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.25) : Color.clear, radius: 8)
+        .shadow(color: isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.25) : Color.clear, radius: 7)
     }
 }
 
@@ -2032,10 +2038,10 @@ private struct CheatItemCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Icon code vector: Tâm kéo cross.fill với viền tím Cyber
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -2046,10 +2052,10 @@ private struct CheatItemCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "cross.fill")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [Color(red: 0.75, green: 0.50, blue: 1.0), Color.white],
@@ -2057,10 +2063,10 @@ private struct CheatItemCard: View {
                             endPoint: .bottom
                         )
                     )
-                    .shadow(color: Color(red: 0.60, green: 0.35, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: Color(red: 0.60, green: 0.35, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
 
                 // Viền tím Cyber
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -2070,26 +2076,26 @@ private struct CheatItemCard: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: Color(red: 0.65, green: 0.30, blue: 1.0).opacity(isApplied ? 0.5 : 0.25), radius: 6)
+            .shadow(color: Color(red: 0.65, green: 0.30, blue: 1.0).opacity(isApplied ? 0.5 : 0.25), radius: 5)
 
             // Tên và thông tin chức năng
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text(displayName)
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     // Tag PRO (Màu Tím Cyber)
                     Text("PRO")
-                        .font(.system(size: 8.5, weight: .black))
+                        .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 0.68, green: 0.25, blue: 0.98), Color(red: 0.42, green: 0.15, blue: 0.85)],
@@ -2097,22 +2103,22 @@ private struct CheatItemCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(4)
+                        .cornerRadius(3.5)
                         .shadow(color: Color(red: 0.65, green: 0.25, blue: 0.95).opacity(0.4), radius: 3)
                 }
 
                 Text(subtitle)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color(red: 0.75, green: 0.60, blue: 1.0))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -2123,7 +2129,7 @@ private struct CheatItemCard: View {
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2133,16 +2139,18 @@ private struct CheatItemCard: View {
                 ))
                 .labelsHidden()
                 .tint(Color(red: 0.65, green: 0.35, blue: 1.0))
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(isApplied ? Color(red: 0.65, green: 0.35, blue: 1.0).opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? Color(red: 0.65, green: 0.35, blue: 1.0).opacity(0.25) : Color.clear, radius: 8)
+        .shadow(color: isApplied ? Color(red: 0.65, green: 0.35, blue: 1.0).opacity(0.25) : Color.clear, radius: 7)
     }
 }
 
@@ -2155,10 +2163,10 @@ private struct EspItemCard: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Radar Icon Code: Biểu tượng radar location.viewfinder Laser Cyan
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -2169,10 +2177,10 @@ private struct EspItemCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "location.viewfinder")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [Color(red: 0.00, green: 0.95, blue: 1.0), Color.white],
@@ -2180,10 +2188,10 @@ private struct EspItemCard: View {
                             endPoint: .bottom
                         )
                     )
-                    .shadow(color: Color(red: 0.00, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: Color(red: 0.00, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
 
                 // Viền Laser Cyan
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -2193,26 +2201,26 @@ private struct EspItemCard: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 6)
+            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 5)
 
             // Tên và thông tin chức năng
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text("ESP 2.0")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     // Tag ESP (Màu Laser Cyan)
                     Text("ESP")
-                        .font(.system(size: 8.5, weight: .black))
+                        .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 0.00, green: 0.85, blue: 0.95), Color(red: 0.00, green: 0.55, blue: 0.80)],
@@ -2220,22 +2228,22 @@ private struct EspItemCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(4)
+                        .cornerRadius(3.5)
                         .shadow(color: Color(red: 0.00, green: 0.85, blue: 0.95).opacity(0.4), radius: 3)
                 }
 
                 Text("Tia Dẫn Đường • Định Vị Xuyên Bản Đồ")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -2246,7 +2254,7 @@ private struct EspItemCard: View {
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2256,16 +2264,18 @@ private struct EspItemCard: View {
                 ))
                 .labelsHidden()
                 .tint(Color(red: 0.00, green: 0.85, blue: 0.95))
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.25) : Color.clear, radius: 8)
+        .shadow(color: isApplied ? Color(red: 0.00, green: 0.88, blue: 0.95).opacity(0.25) : Color.clear, radius: 7)
     }
 }
 
@@ -2278,10 +2288,10 @@ private struct CpanelItemCard: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Icon Code Vector: Biểu tượng slider.horizontal.3 Amber-Violet
             ZStack {
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
@@ -2292,10 +2302,10 @@ private struct CpanelItemCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
 
                 Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 22, weight: .bold))
+                    .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(
                         LinearGradient(
                             colors: [
@@ -2306,10 +2316,10 @@ private struct CpanelItemCard: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 8 : 4)
+                    .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
 
                 // Viền Amber-Violet
-                RoundedRectangle(cornerRadius: 13, style: .continuous)
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
@@ -2319,26 +2329,26 @@ private struct CpanelItemCard: View {
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
-                        lineWidth: isApplied ? 2.0 : 1.3
+                        lineWidth: isApplied ? 1.8 : 1.2
                     )
-                    .frame(width: 50, height: 50)
+                    .frame(width: 42, height: 42)
             }
-            .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.5 : 0.25), radius: 6)
+            .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.5 : 0.25), radius: 5)
 
             // Tên và thông tin chức năng
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text("Cpanel Leaked")
-                        .font(.system(size: 15, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     // Tag LEAKED (Amber-Violet)
                     Text("LEAKED")
-                        .font(.system(size: 8.5, weight: .black))
+                        .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 0.95, green: 0.55, blue: 0.15), Color(red: 0.70, green: 0.20, blue: 0.85)],
@@ -2346,12 +2356,12 @@ private struct CpanelItemCard: View {
                                 endPoint: .trailing
                             )
                         )
-                        .cornerRadius(4)
+                        .cornerRadius(3.5)
                         .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.4), radius: 3)
                 }
 
                 Text("Chống văng game hiệu quả • Ổn định trận đấu")
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(Color(red: 1.0, green: 0.72, blue: 0.40))
                     .lineLimit(1)
 
@@ -2359,10 +2369,10 @@ private struct CpanelItemCard: View {
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -2373,7 +2383,7 @@ private struct CpanelItemCard: View {
             if isWorking {
                 ProgressView()
                     .tint(Color.orange)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2383,16 +2393,18 @@ private struct CpanelItemCard: View {
                 ))
                 .labelsHidden()
                 .tint(Color(red: 0.95, green: 0.55, blue: 0.15))
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(isApplied ? Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.7) : Color.white.opacity(0.08), lineWidth: 1)
         )
-        .shadow(color: isApplied ? Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.25) : .clear, radius: 8)
+        .shadow(color: isApplied ? Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.25) : .clear, radius: 7)
     }
 }
 
@@ -2430,13 +2442,13 @@ private struct SkinItemCard: View {
     }
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 11) {
             // Icon Code Vector: Vương miện Hoàng Gia Gold hoặc Trang phục hồng tím Neon
             Button {
                 onPreview()
             } label: {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .fill(
                             LinearGradient(
                                 colors: isGoldenSeason1
@@ -2446,10 +2458,10 @@ private struct SkinItemCard: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 50, height: 50)
+                        .frame(width: 42, height: 42)
 
                     Image(systemName: isGoldenSeason1 ? "crown.fill" : "tshirt.fill")
-                        .font(.system(size: 22, weight: .bold))
+                        .font(.system(size: 19, weight: .bold))
                         .foregroundStyle(
                             LinearGradient(
                                 colors: isGoldenSeason1
@@ -2463,11 +2475,11 @@ private struct SkinItemCard: View {
                             color: isGoldenSeason1
                                 ? Color(red: 1.0, green: 0.8, blue: 0.2).opacity(isApplied ? 0.95 : 0.5)
                                 : Color(red: 0.95, green: 0.30, blue: 0.80).opacity(isApplied ? 0.95 : 0.5),
-                            radius: isApplied ? 8 : 4
+                            radius: isApplied ? 7 : 3.5
                         )
 
                     // Viền vàng Gold óng ánh hoặc hồng tím Neon
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
                         .stroke(
                             LinearGradient(
                                 colors: isGoldenSeason1
@@ -2476,34 +2488,34 @@ private struct SkinItemCard: View {
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             ),
-                            lineWidth: isApplied ? 2.0 : 1.3
+                            lineWidth: isApplied ? 1.8 : 1.2
                         )
-                        .frame(width: 50, height: 50)
+                        .frame(width: 42, height: 42)
                 }
                 .shadow(
                     color: isGoldenSeason1
                         ? Color(red: 1.0, green: 0.8, blue: 0.2).opacity(isApplied ? 0.5 : 0.25)
                         : Color(red: 0.95, green: 0.30, blue: 0.80).opacity(isApplied ? 0.5 : 0.25),
-                    radius: 6
+                    radius: 5
                 )
             }
             .buttonStyle(ScaleButtonStyle())
 
             // Tên và thông tin skin
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
                     Text(skinTitle)
-                        .font(.system(size: 14.5, weight: .bold))
+                        .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
                     if isGoldenSeason1 {
                         // Tag GOLD (Màu Vàng Gold Óng Ánh)
                         Text("GOLD")
-                            .font(.system(size: 8.5, weight: .black))
+                            .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.black)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2.5)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
                             .background(
                                 LinearGradient(
                                     colors: [Color(red: 1.0, green: 0.90, blue: 0.30), Color(red: 0.95, green: 0.65, blue: 0.05)],
@@ -2511,15 +2523,15 @@ private struct SkinItemCard: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .cornerRadius(4)
+                            .cornerRadius(3.5)
                             .shadow(color: Color(red: 1.0, green: 0.8, blue: 0.2).opacity(0.4), radius: 3)
                     } else {
                         // Tag VIP SKIN (Màu Hồng Tím Neon)
                         Text("VIP SKIN")
-                            .font(.system(size: 8.5, weight: .black))
+                            .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2.5)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
                             .background(
                                 LinearGradient(
                                     colors: [Color(red: 0.95, green: 0.25, blue: 0.70), Color(red: 0.65, green: 0.15, blue: 0.85)],
@@ -2527,23 +2539,23 @@ private struct SkinItemCard: View {
                                     endPoint: .trailing
                                 )
                             )
-                            .cornerRadius(4)
+                            .cornerRadius(3.5)
                             .shadow(color: Color(red: 0.95, green: 0.25, blue: 0.70).opacity(0.4), radius: 3)
                     }
                 }
 
                 Text(skinSubtitle)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isGoldenSeason1 ? Color(red: 1.0, green: 0.84, blue: 0.3) : Color(red: 0.95, green: 0.55, blue: 0.85))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
 
                     Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
                 .padding(.top, 1)
@@ -2554,7 +2566,7 @@ private struct SkinItemCard: View {
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .frame(width: 50)
+                    .frame(width: 44)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2564,13 +2576,15 @@ private struct SkinItemCard: View {
                 ))
                 .labelsHidden()
                 .tint(isGoldenSeason1 ? Color(red: 1.0, green: 0.75, blue: 0.1) : Color(red: 0.90, green: 0.25, blue: 0.65))
+                .scaleEffect(0.85)
             }
         }
-        .padding(14)
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
+        .cornerRadius(13)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 13)
                 .stroke(
                     isApplied
                         ? (isGoldenSeason1 ? Color(red: 1.0, green: 0.85, blue: 0.2).opacity(0.85) : Color(red: 0.95, green: 0.35, blue: 0.80).opacity(0.85))
@@ -2582,7 +2596,7 @@ private struct SkinItemCard: View {
             color: isApplied
                 ? (isGoldenSeason1 ? Color(red: 1.0, green: 0.8, blue: 0.2).opacity(0.3) : Color(red: 0.95, green: 0.35, blue: 0.80).opacity(0.3))
                 : Color.clear,
-            radius: 8
+            radius: 7
         )
     }
 }
