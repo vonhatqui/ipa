@@ -206,6 +206,25 @@ struct RemoteAppUpdateInfo: Codable, Identifiable {
     let changelog: [String]?
 }
 
+// MARK: - THÔNG TIN BẢO TRÌ HỆ THỐNG
+struct AppMaintenanceInfo: Equatable {
+    var isActive: Bool
+    var badge: String
+    var title: String
+    var message: String
+    var estimatedDuration: String
+    var discordURL: String
+
+    static let defaultInfo = AppMaintenanceInfo(
+        isActive: true,
+        badge: "CheatStoreVN",
+        title: "Hệ Thống Đang Bảo Trì",
+        message: "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất.",
+        estimatedDuration: "Khoảng 15 - 30 Phút",
+        discordURL: "https://discord.gg/A3wS4ZPFQn"
+    )
+}
+
 final class AppUpdateChecker: ObservableObject {
     static let shared = AppUpdateChecker()
 
@@ -213,6 +232,10 @@ final class AppUpdateChecker: ObservableObject {
     @Published var updateInfo: RemoteAppUpdateInfo?
     @Published var isChecking: Bool = false
     @Published var checkCompleted: Bool = false
+
+    // CHẾ ĐỘ BẢO TRÌ MÁY CHỦ (HTTP 503)
+    @Published var isMaintenanceActive: Bool = false
+    @Published var maintenanceInfo: AppMaintenanceInfo?
 
     static let dismissedVersionKey = "update.dismissedVersion"
     static let apiBaseURL = "https://cheatingenginexyz.online/api.php"
@@ -270,6 +293,32 @@ final class AppUpdateChecker: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+
+            // KIỂM TRA CHẾ ĐỘ BẢO TRÌ TỪ MÁY CHỦ (HTTP 503)
+            if statusCode == 503, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                let badge = json["badge"] as? String ?? "CheatStoreVN"
+                let title = json["title"] as? String ?? "Hệ Thống Đang Bảo Trì"
+                let msg = json["message"] as? String ?? "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất."
+                let duration = json["estimated_duration"] as? String ?? "Khoảng 15 - 30 Phút"
+                let discord = json["discord_url"] as? String ?? "https://discord.gg/A3wS4ZPFQn"
+
+                await MainActor.run {
+                    self.isChecking = false
+                    self.checkCompleted = true
+                    self.isMaintenanceActive = true
+                    self.maintenanceInfo = AppMaintenanceInfo(
+                        isActive: true,
+                        badge: badge,
+                        title: title,
+                        message: msg,
+                        estimatedDuration: duration,
+                        discordURL: discord
+                    )
+                }
+                return
+            }
+
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 await MainActor.run {
                     self.isChecking = false

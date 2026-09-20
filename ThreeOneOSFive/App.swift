@@ -121,11 +121,39 @@ struct ThreeOneOSFiveApp: App {
                     ))
                 }
 
+                // Popup Bảo Trì Hệ Thống (MẪU 4: DARK MECH TITANIUM)
+                if licenseManager.isMaintenanceActive || updateChecker.isMaintenanceActive {
+                    let info = licenseManager.maintenanceInfo ?? updateChecker.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
+                    DarkMechMaintenanceModalView(
+                        info: info,
+                        onRefresh: {
+                            Task {
+                                await updateChecker.checkForUpdates()
+                                _ = await licenseManager.verifyCurrentDevice()
+                            }
+                        }
+                    )
+                    .zIndex(99998)
+                    .transition(AnyTransition.opacity)
+                }
+
                 // Popup Cập Nhật Bắt Buộc (OTA) - Chỉ hiện cho các phiên bản cũ và khóa chặt app
                 if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
                     BlossomForceUpdateModalView(info: info)
                         .zIndex(99999)
                         .transition(AnyTransition.opacity)
+                }
+            }
+            .onChange(of: updateChecker.isMaintenanceActive) { isMaint in
+                if isMaint {
+                    showPostSplashNotice = false
+                    isSplashActive = false
+                }
+            }
+            .onChange(of: licenseManager.isMaintenanceActive) { isMaint in
+                if isMaint {
+                    showPostSplashNotice = false
+                    isSplashActive = false
                 }
             }
             .onChange(of: updateChecker.isForceUpdateRequired) { isRequired in

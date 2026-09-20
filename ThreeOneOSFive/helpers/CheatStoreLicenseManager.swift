@@ -35,6 +35,10 @@ final class CheatStoreLicenseManager: ObservableObject {
     @Published var isAutoChecking: Bool = false
     @Published var errorMessage: String?
 
+    // CHẾ ĐỘ BẢO TRÌ MÁY CHỦ (HTTP 503)
+    @Published var isMaintenanceActive: Bool = false
+    @Published var maintenanceInfo: AppMaintenanceInfo?
+
     // 1. THÔNG TIN KẾT NỐI API
     private let apiBaseURL = "https://cheatingenginexyz.online/api.php"
     private let fixedAction = "verify"
@@ -319,6 +323,32 @@ final class CheatStoreLicenseManager: ObservableObject {
                             changelog: nil
                         )
                         self.deactivate(withReason: msg)
+                    }
+                    return false
+                }
+
+                // Kiểm tra nếu server đang BẢO TRÌ (HTTP 503 hoặc code == "SERVER_MAINTENANCE" hoặc status == "maintenance")
+                if statusCode == 503 || code.uppercased() == "SERVER_MAINTENANCE" || status == "maintenance" {
+                    let title = json["title"] as? String ?? "Hệ Thống Đang Bảo Trì"
+                    let badge = json["badge"] as? String ?? "CheatStoreVN"
+                    let msg = message ?? "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất."
+                    let duration = json["estimated_duration"] as? String ?? "Khoảng 15 - 30 Phút"
+                    let discord = json["discord_url"] as? String ?? "https://discord.gg/A3wS4ZPFQn"
+
+                    await MainActor.run {
+                        let info = AppMaintenanceInfo(
+                            isActive: true,
+                            badge: badge,
+                            title: title,
+                            message: msg,
+                            estimatedDuration: duration,
+                            discordURL: discord
+                        )
+                        self.maintenanceInfo = info
+                        self.isMaintenanceActive = true
+                        self.errorMessage = msg
+                        AppUpdateChecker.shared.isMaintenanceActive = true
+                        AppUpdateChecker.shared.maintenanceInfo = info
                     }
                     return false
                 }

@@ -286,6 +286,22 @@ struct CheatStoreLoginView: View {
                 .transition(.scale(scale: 0.86).combined(with: .opacity))
                 .zIndex(50)
             }
+
+            // POPUP MODAL THÔNG BÁO BẢO TRÌ (MẪU 4: DARK MECH TITANIUM)
+            if licenseManager.isMaintenanceActive || AppUpdateChecker.shared.isMaintenanceActive {
+                let info = licenseManager.maintenanceInfo ?? AppUpdateChecker.shared.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
+                DarkMechMaintenanceModalView(
+                    info: info,
+                    onRefresh: {
+                        Task {
+                            await AppUpdateChecker.shared.checkForUpdates()
+                            _ = await licenseManager.verifyCurrentDevice()
+                        }
+                    }
+                )
+                .transition(.scale(scale: 0.86).combined(with: .opacity))
+                .zIndex(100)
+            }
         }
         .onAppear {
             if inputKey.isEmpty && !licenseManager.activeKey.isEmpty {
@@ -491,6 +507,204 @@ struct AnimatedDownloadIconView: View {
             withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
                 isFloating = true
             }
+        }
+    }
+}
+
+// MARK: - MẪU 4: DARK MECH TITANIUM BẢO TRÌ HỆ THỐNG
+struct RotatingMechGearsView: View {
+    @State private var isSpinning = false
+    private let violetNeon = Color(red: 0.65, green: 0.35, blue: 0.98)
+    private let deepIndigo = Color(red: 0.35, green: 0.20, blue: 0.75)
+
+    var body: some View {
+        ZStack {
+            // Glow aura ánh tím
+            Circle()
+                .fill(violetNeon.opacity(0.18))
+                .frame(width: 96, height: 96)
+                .blur(radius: 16)
+
+            // Vòng tròn viền Titanium
+            Circle()
+                .stroke(
+                    LinearGradient(
+                        colors: [violetNeon.opacity(0.8), deepIndigo.opacity(0.4)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+                .frame(width: 80, height: 80)
+
+            // Bánh răng lớn xoay xuôi chiều kim đồng hồ
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 46, weight: .bold))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [violetNeon, deepIndigo],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .rotationEffect(.degrees(isSpinning ? 360 : 0))
+
+            // Bánh răng nhỏ bên trong xoay ngược chiều
+            Image(systemName: "gearshape.2.fill")
+                .font(.system(size: 26, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.85))
+                .rotationEffect(.degrees(isSpinning ? -360 : 0))
+
+            // Biểu tượng mỏ lết / công cụ trung tâm
+            Image(systemName: "wrench.and.screwdriver.fill")
+                .font(.system(size: 14, weight: .heavy))
+                .foregroundStyle(.white)
+                .shadow(color: violetNeon, radius: 4)
+        }
+        .onAppear {
+            withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+                isSpinning = true
+            }
+        }
+    }
+}
+
+struct DarkMechMaintenanceModalView: View {
+    let info: AppMaintenanceInfo
+    var onRefresh: (() -> Void)? = nil
+
+    private let violetNeon = Color(red: 0.65, green: 0.35, blue: 0.98)
+    private let deepIndigo = Color(red: 0.35, green: 0.20, blue: 0.75)
+
+    var body: some View {
+        ZStack {
+            // Nền mờ tối chống bấm can thiệp
+            Color.black.opacity(0.82)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                // Biểu tượng bánh răng cơ khí Titan chuyển động xoay
+                RotatingMechGearsView()
+                    .padding(.top, 8)
+
+                VStack(spacing: 8) {
+                    // Badge CheatStoreVN (yêu cầu riêng của bạn)
+                    HStack(spacing: 4) {
+                        Image(systemName: "shield.lefthalf.filled")
+                            .font(.system(size: 11, weight: .bold))
+                        Text(info.badge.isEmpty ? "CheatStoreVN" : info.badge)
+                            .font(.system(size: 11, weight: .black, design: .monospaced))
+                    }
+                    .foregroundStyle(violetNeon)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(violetNeon.opacity(0.18))
+                    .cornerRadius(8)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(violetNeon.opacity(0.4), lineWidth: 1)
+                    )
+
+                    // Tiêu đề
+                    Text(info.title.isEmpty ? "Hệ Thống Đang Bảo Trì" : info.title)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+
+                    // Lời nhắn chi tiết (đã cập nhật theo yêu cầu)
+                    Text(info.message.isEmpty ? "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất." : info.message)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color(red: 0.88, green: 0.88, blue: 0.92))
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(2)
+                        .padding(.horizontal, 12)
+                }
+
+                // Hộp thời gian dự kiến (đã bỏ thanh tiến trình theo yêu cầu)
+                VStack(spacing: 4) {
+                    Text("DỰ KIẾN HOÀN TẤT")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(violetNeon)
+                    Text(info.estimatedDuration.isEmpty ? "Khoảng 15 - 30 Phút" : info.estimatedDuration)
+                        .font(.system(size: 15, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Color(red: 0.12, green: 0.08, blue: 0.20))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(violetNeon.opacity(0.25), lineWidth: 1)
+                )
+                .padding(.horizontal, 14)
+
+                // Các nút hành động
+                VStack(spacing: 10) {
+                    // Nút Discord
+                    Button {
+                        let targetURL = info.discordURL.isEmpty ? "https://discord.gg/A3wS4ZPFQn" : info.discordURL
+                        if let url = URL(string: targetURL) {
+                            UIApplication.shared.open(url)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "bubble.left.and.bubble.right.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Tham Gia Discord Cập Nhật")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            LinearGradient(
+                                colors: [violetNeon, deepIndigo],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .cornerRadius(14)
+                        .shadow(color: violetNeon.opacity(0.4), radius: 10, y: 4)
+                    }
+
+                    // Nút Kiểm Tra Lại
+                    if let refreshAction = onRefresh {
+                        Button {
+                            refreshAction()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.clockwise")
+                                Text("Kiểm Tra Lại")
+                            }
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.7))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                        }
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 6)
+            }
+            .padding(18)
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.08, green: 0.06, blue: 0.13),
+                        Color(red: 0.04, green: 0.03, blue: 0.07)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .cornerRadius(24)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(violetNeon.opacity(0.4), lineWidth: 1.5)
+            )
+            .shadow(color: violetNeon.opacity(0.25), radius: 30, y: 10)
+            .padding(.horizontal, 24)
         }
     }
 }
