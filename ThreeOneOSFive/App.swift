@@ -39,110 +39,126 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
+    // MARK: - Subviews tối ưu hoá biên dịch (Type-Checking) cho Xcode
+    @ViewBuilder
+    private var mainContentView: some View {
+        Group {
+            if licenseManager.isActivated {
+                if isGameLoaded {
+                    CheatStoreDashboardView(onBackToGames: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isGameLoaded = false
+                        }
+                    })
+                    .environmentObject(appState)
+                    .environmentObject(patchDraftCoordinator)
+                    .environmentObject(fileOperationCoordinator)
+                    .environmentObject(patchStore)
+                    .environmentObject(repositoryStore)
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
+                } else {
+                    GameSelectionView(onSelectFreeFire: {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isGameLoaded = true
+                        }
+                    })
+                    .environmentObject(patchStore)
+                    .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
+                }
+            } else {
+                CheatStoreLoginView(licenseManager: licenseManager)
+                    .zIndex(2)
+            }
+        }
+        .scaleEffect(mainUIAppeared ? 1.0 : 0.96)
+        .offset(y: mainUIAppeared ? 0 : 35)
+        .blur(radius: mainUIAppeared ? 0 : 4)
+        .opacity(mainUIAppeared ? 1.0 : 0.0)
+    }
+
+    @ViewBuilder
+    private var splashOverlayView: some View {
+        if isSplashActive {
+            BlossomSplashView(onFinished: {
+                withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 1.2)) {
+                    mainUIAppeared = true
+                }
+                withAnimation(.easeOut(duration: 0.6)) {
+                    isSplashActive = false
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                    if !updateChecker.isForceUpdateRequired {
+                        withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
+                            showPostSplashNotice = true
+                        }
+                    }
+                }
+            })
+            .zIndex(999)
+            .transition(.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var noticeOverlayView: some View {
+        if showPostSplashNotice && !updateChecker.isForceUpdateRequired {
+            BlossomNoticeModalView(
+                onDiscord: {
+                    if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
+                        UIApplication.shared.open(url)
+                    }
+                },
+                onDismiss: {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showPostSplashNotice = false
+                    }
+                }
+            )
+            .zIndex(1000)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.92)),
+                removal: .opacity.combined(with: .scale(scale: 0.95))
+            ))
+        }
+    }
+
+    @ViewBuilder
+    private var maintenanceOverlayView: some View {
+        if licenseManager.isMaintenanceActive || updateChecker.isMaintenanceActive {
+            let info = licenseManager.maintenanceInfo ?? updateChecker.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
+            DarkMechMaintenanceModalView(
+                info: info,
+                onRefresh: {
+                    Task {
+                        await updateChecker.checkForUpdates()
+                        _ = await licenseManager.verifyCurrentDevice()
+                    }
+                }
+            )
+            .zIndex(99998)
+            .transition(AnyTransition.opacity)
+        }
+    }
+
+    @ViewBuilder
+    private var forceUpdateOverlayView: some View {
+        if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
+            BlossomForceUpdateModalView(info: info)
+                .zIndex(99999)
+                .transition(AnyTransition.opacity)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ZStack {
-                // Khung giao diện chính (Áp dụng hiệu ứng Entrance Transition chuẩn .main-container của blossom.re)
-                Group {
-                    if licenseManager.isActivated {
-                        if isGameLoaded {
-                            CheatStoreDashboardView(onBackToGames: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isGameLoaded = false
-                                }
-                            })
-                            .environmentObject(appState)
-                            .environmentObject(patchDraftCoordinator)
-                            .environmentObject(fileOperationCoordinator)
-                            .environmentObject(patchStore)
-                            .environmentObject(repositoryStore)
-                            .environment(\.appLanguage, language)
-                            .environment(\.locale, language.locale)
-                            .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-                        } else {
-                            GameSelectionView(onSelectFreeFire: {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    isGameLoaded = true
-                                }
-                            })
-                            .environmentObject(patchStore)
-                            .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
-                        }
-                    } else {
-                        CheatStoreLoginView(licenseManager: licenseManager)
-                            .zIndex(2)
-                    }
-                }
-                .scaleEffect(mainUIAppeared ? 1.0 : 0.96)
-                .offset(y: mainUIAppeared ? 0 : 35)
-                .blur(radius: mainUIAppeared ? 0 : 4)
-                .opacity(mainUIAppeared ? 1.0 : 0.0)
-
-                // Hiệu ứng Intro Splash Screen chuẩn 100% blossom.re khi vừa ấn icon mở app
-                if isSplashActive {
-                    BlossomSplashView(onFinished: {
-                        withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 1.2)) {
-                            mainUIAppeared = true
-                        }
-                        withAnimation(.easeOut(duration: 0.6)) {
-                            isSplashActive = false
-                        }
-                        // Hiện thông báo đồng bộ với app sau khi load xong các chữ
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                            if !updateChecker.isForceUpdateRequired {
-                                withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-                                    showPostSplashNotice = true
-                                }
-                            }
-                        }
-                    })
-                    .zIndex(999)
-                    .transition(.opacity)
-                }
-
-                // Thông báo CheatStore Vn đồng bộ phong cách xuất hiện sau khi load xong chữ Splash
-                if showPostSplashNotice && !updateChecker.isForceUpdateRequired {
-                    BlossomNoticeModalView(
-                        onDiscord: {
-                            if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
-                                UIApplication.shared.open(url)
-                            }
-                        },
-                        onDismiss: {
-                            withAnimation(.easeOut(duration: 0.25)) {
-                                showPostSplashNotice = false
-                            }
-                        }
-                    )
-                    .zIndex(1000)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.92)),
-                        removal: .opacity.combined(with: .scale(scale: 0.95))
-                    ))
-                }
-
-                // Popup Bảo Trì Hệ Thống (MẪU 4: DARK MECH TITANIUM)
-                if licenseManager.isMaintenanceActive || updateChecker.isMaintenanceActive {
-                    let info = licenseManager.maintenanceInfo ?? updateChecker.maintenanceInfo ?? AppMaintenanceInfo.defaultInfo
-                    DarkMechMaintenanceModalView(
-                        info: info,
-                        onRefresh: {
-                            Task {
-                                await updateChecker.checkForUpdates()
-                                _ = await licenseManager.verifyCurrentDevice()
-                            }
-                        }
-                    )
-                    .zIndex(99998)
-                    .transition(AnyTransition.opacity)
-                }
-
-                // Popup Cập Nhật Bắt Buộc (OTA) - Chỉ hiện cho các phiên bản cũ và khóa chặt app
-                if updateChecker.isForceUpdateRequired, let info = updateChecker.updateInfo {
-                    BlossomForceUpdateModalView(info: info)
-                        .zIndex(99999)
-                        .transition(AnyTransition.opacity)
-                }
+                mainContentView
+                splashOverlayView
+                noticeOverlayView
+                maintenanceOverlayView
+                forceUpdateOverlayView
             }
             .onChange(of: updateChecker.isMaintenanceActive) { isMaint in
                 if isMaint {

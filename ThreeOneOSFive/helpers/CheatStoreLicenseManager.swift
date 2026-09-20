@@ -238,7 +238,23 @@ final class CheatStoreLicenseManager: ObservableObject {
         }
     }
 
-    // MARK: - 3.2. Khi người dùng kích hoạt Key
+    // MARK: - 3.2. Xác thực thiết bị hiện tại (dùng cho nút Kiểm tra lại khi bảo trì)
+    @MainActor
+    func verifyCurrentDevice() async -> Bool {
+        var keyToCheck = activeKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if keyToCheck.isEmpty {
+            keyToCheck = UserDefaults.standard.string(forKey: storageKeyLicense)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+        if keyToCheck.isEmpty {
+            keyToCheck = Self.loadKeychainString(key: Self.keychainLicenseKey)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        }
+        if !keyToCheck.isEmpty {
+            return await verifyWithServer(key: keyToCheck, isSilent: true)
+        }
+        return false
+    }
+
+    // MARK: - 3.3. Khi người dùng kích hoạt Key
     func activateKey(_ keyInput: String) async -> Bool {
         await verifyWithServer(key: keyInput, isSilent: false)
     }
