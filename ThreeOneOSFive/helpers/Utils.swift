@@ -327,6 +327,8 @@ final class AppUpdateChecker: ObservableObject {
                 return
             }
 
+            let decoded = try JSONDecoder().decode(RemoteAppUpdateInfo.self, from: data)
+
             // So sánh phiên bản hiện tại với phiên bản mới nhất và phiên bản tối thiểu
             let isOlderThanLatest = Self.isOlder(Self.currentVersion, than: decoded.latest_version)
             let isBuildOlder = (Self.currentVersion == decoded.latest_version && (decoded.latest_build ?? 0) > Self.currentBuild)
