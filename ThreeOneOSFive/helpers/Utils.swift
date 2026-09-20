@@ -327,13 +327,13 @@ final class AppUpdateChecker: ObservableObject {
                 return
             }
 
-            let decoded = try JSONDecoder().decode(RemoteAppUpdateInfo.self, from: data)
-
             // So sánh phiên bản hiện tại với phiên bản mới nhất và phiên bản tối thiểu
             let isOlderThanLatest = Self.isOlder(Self.currentVersion, than: decoded.latest_version)
-            let isOlderThanMin = decoded.min_version != nil ? Self.isOlder(Self.currentVersion, than: decoded.min_version!) : false
             let isBuildOlder = (Self.currentVersion == decoded.latest_version && (decoded.latest_build ?? 0) > Self.currentBuild)
-            let hasActualUpdate = isOlderThanLatest || isBuildOlder || decoded.has_update
+            let isOlderThanMin = decoded.min_version != nil ? Self.isOlder(Self.currentVersion, than: decoded.min_version!) : false
+
+            // App CHỈ có bản cập nhật khi phiên bản máy hiện tại cũ hơn bản máy chủ
+            let hasActualUpdate = isOlderThanLatest || isBuildOlder
             let mustForce = isOlderThanMin || (decoded.force_update && hasActualUpdate)
 
             await MainActor.run {
