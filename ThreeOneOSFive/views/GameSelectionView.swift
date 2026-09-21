@@ -8,12 +8,19 @@ struct GameSelectionView: View {
     let onSelectFreeFire: () -> Void
 
     @State private var isLoading = false
-    @State private var loadingStep = "Khởi tạo nhân 3105 Kernel Bypass..."
     @State private var loadProgress: Double = 0.0
-    @State private var ringRotation1: Double = 0
-    @State private var ringRotation2: Double = 360
-    @State private var pulseScale: CGFloat = 1.0
-    @State private var glowOpacity: Double = 0.4
+    @State private var currentStepIndex: Int = 0
+    @State private var stepCardOpacity: Double = 1.0
+    @State private var stepCardOffsetY: CGFloat = 0.0
+    @State private var isFinalReady: Bool = false
+
+    private let loadingSteps: [String] = [
+        "Loading Free Fire",
+        "Bypass Anti-cheat",
+        "Inject 3105 Kernel Driver",
+        "Sync AimAssist & Memory ESP",
+        "All Systems Ready • Launching..."
+    ]
 
     // Theme: Blossom Dark Sakura (blossom.re)
     private let brandBlue = BlossomTheme.sakura
@@ -191,292 +198,282 @@ struct GameSelectionView: View {
         )
     }
 
-    // MARK: - Biểu tượng động của từng bước
-    private var currentStepIcon: String {
-        if loadProgress < 0.25 {
-            return "cpu.fill"
-        } else if loadProgress < 0.55 {
-            return "lock.shield.fill"
-        } else if loadProgress < 0.85 {
-            return "scope"
-        } else if loadProgress < 1.0 {
-            return "bolt.shield.fill"
-        } else {
-            return "checkmark.seal.fill"
+    private var currentStepTitle: String {
+        if currentStepIndex < loadingSteps.count {
+            return loadingSteps[currentStepIndex]
         }
+        return loadingSteps.last ?? "All Systems Ready • Launching..."
     }
 
-    // MARK: - Loading Overlay Nâng Cấp Hologram Cyberpunk
+    // MARK: - Loading Overlay Blossom Mẫu 1 (Hiện từng câu kèm icon xanh, xong biến mất)
     private var loadingOverlayView: some View {
         ZStack {
-            // Nền đen mờ AMOLED sâu
-            Color.black.opacity(0.85)
+            // Nền tối sẫm Blossom AMOLED
+            Color.black.opacity(0.88)
                 .ignoresSafeArea()
 
-            // Vầng hào quang neon tỏa trung tâm
-            RadialGradient(
-                colors: [brandCyan.opacity(0.22), brandBlue.opacity(0.08), Color.clear],
-                center: .center,
-                startRadius: 10,
-                endRadius: 240
-            )
-            .ignoresSafeArea()
+            BlossomTheme.bgBottom
+                .opacity(0.85)
+                .ignoresSafeArea()
 
-            // Thẻ HUD Loading Hologram
-            VStack(spacing: 24) {
-                // Vòng xoay Radar Hologram Đa Tầng & Icon Free Fire
-                ZStack {
-                    // Sóng xung kích Radar thở (Pulse Glow)
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                colors: [brandCyan.opacity(0.35), brandBlue.opacity(0.10), Color.clear],
-                                center: .center,
-                                startRadius: 15,
-                                endRadius: 75
-                            )
-                        )
-                        .frame(width: 140, height: 140)
-                        .scaleEffect(pulseScale)
-                        .opacity(glowOpacity)
+            BlossomTheme.backgroundGradient
+                .opacity(0.75)
+                .ignoresSafeArea()
 
-                    // Vòng ngoài 1: Xoay thuận kim đồng hồ với góc quét neon
-                    Circle()
-                        .trim(from: 0.08, to: 0.85)
-                        .stroke(
-                            AngularGradient(
-                                gradient: Gradient(colors: [
-                                    brandCyan,
-                                    brandBlue,
-                                    Color(red: 0.45, green: 0.20, blue: 1.00),
-                                    brandCyan
-                                ]),
-                                center: .center
-                            ),
-                            style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
-                        )
-                        .frame(width: 106, height: 106)
-                        .rotationEffect(.degrees(ringRotation1))
+            // Hạt cánh hoa anh đào rơi nhẹ
+            BlossomPetalParticlesView()
+                .opacity(0.35)
+                .ignoresSafeArea()
 
-                    // Vòng giữa 2: Xoay ngược kim đồng hồ nét đứt Cyberpunk
-                    Circle()
-                        .stroke(
-                            brandBlue.opacity(0.40),
-                            style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [5, 8])
-                        )
-                        .frame(width: 88, height: 88)
-                        .rotationEffect(.degrees(ringRotation2))
+            // Viền sáng neon bao quanh mép màn hình (Screen Inset Glow)
+            RoundedRectangle(cornerRadius: 38, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            BlossomTheme.sakura.opacity(0.65),
+                            BlossomTheme.sakuraDeep.opacity(0.25),
+                            Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35),
+                            Color.clear
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1.5
+                )
+                .padding(8)
+                .ignoresSafeArea()
 
-                    // Điểm sáng vệ tinh xoay quanh quỹ đạo
-                    Circle()
-                        .fill(brandCyan)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: brandCyan, radius: 4)
-                        .offset(x: 53)
-                        .rotationEffect(.degrees(ringRotation1))
-
-                    // Icon Free Fire ở tâm với viền phát sáng
+            VStack(spacing: 0) {
+                // TOP: Icon Free Fire & Thương hiệu
+                VStack(spacing: 8) {
                     ZStack {
-                        FreeFireAppIconView(size: 54, cornerRadius: 14)
-                            .shadow(color: brandBlue.opacity(0.7), radius: 12)
+                        Circle()
+                            .fill(BlossomTheme.sakura.opacity(0.3))
+                            .frame(width: 80, height: 80)
+                            .blur(radius: 20)
 
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [brandCyan, brandBlue.opacity(0.3)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.5
+                        FreeFireAppIconView(size: 72, cornerRadius: 18)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [BlossomTheme.sakuraLight, BlossomTheme.sakura.opacity(0.4)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1.5
+                                    )
                             )
-                            .frame(width: 54, height: 54)
+                            .shadow(color: BlossomTheme.sakura.opacity(0.5), radius: 18)
+                    }
+
+                    VStack(spacing: 3) {
+                        Text("CHEATSTORE VN")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .tracking(5)
+                            .foregroundStyle(Color.white.opacity(0.45))
+
+                        Text("FREE FIRE OS")
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .tracking(2.5)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white, BlossomTheme.sakuraLight, BlossomTheme.sakura],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
                     }
                 }
-                .frame(height: 115)
+                .padding(.top, 40)
 
-                // Nội dung HUD & Thanh Tiến Trình
-                VStack(spacing: 14) {
-                    VStack(spacing: 4) {
-                        Text("ĐANG NẠP DỮ LIỆU FREE FIRE")
-                            .font(.system(size: 14, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-                            .tracking(1.4)
+                Spacer()
 
-                        // Số phần trăm hiển thị phong cách HUD điện tử
-                        HStack(alignment: .firstTextBaseline, spacing: 2) {
-                            Text("\(Int(loadProgress * 100))")
-                                .font(.system(size: 30, weight: .heavy, design: .rounded))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.white, brandCyan],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                            Text("%")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundStyle(brandCyan)
-                        }
+                // CENTER SPOTLIGHT: Từng câu hiện lên trung tâm kèm dấu tích xanh, xong thì biến mất
+                VStack(spacing: 16) {
+                    // Dấu tích xanh neon phát sáng
+                    ZStack {
+                        Circle()
+                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35))
+                            .frame(width: 54, height: 54)
+                            .blur(radius: 12)
+
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                            .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.95), radius: 14)
                     }
 
-                    // Thanh tiến trình Neon Cyberpunk
+                    // Dòng chữ chính to rõ (không kèm chữ nhỏ)
+                    Text(currentStepTitle)
+                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .shadow(color: BlossomTheme.sakura.opacity(0.8), radius: 16)
+                        .padding(.horizontal, 20)
+
+                    // Huy hiệu bước
+                    Text("BƯỚC \(min(currentStepIndex + 1, loadingSteps.count)) / \(loadingSteps.count)")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .tracking(2)
+                        .foregroundStyle(Color.white.opacity(0.55))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Color.white.opacity(0.06))
+                        .clipShape(Capsule())
+                }
+                .padding(.vertical, 28)
+                .frame(maxWidth: .infinity)
+                .background(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .fill(Color(red: 0.08, green: 0.04, blue: 0.14).opacity(0.88))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                        .stroke(
+                            isFinalReady
+                                ? LinearGradient(colors: [Color(red: 0.20, green: 0.88, blue: 0.45), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                : LinearGradient(colors: [BlossomTheme.sakura.opacity(0.4), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 1.2
+                        )
+                )
+                .shadow(color: isFinalReady ? Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3) : BlossomTheme.sakura.opacity(0.25), radius: 30)
+                .padding(.horizontal, 24)
+                .opacity(stepCardOpacity)
+                .offset(y: stepCardOffsetY)
+
+                Spacer()
+
+                // BOTTOM: Tiến trình % & Nút vào ngay
+                VStack(spacing: 12) {
+                    HStack {
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                .frame(width: 7, height: 7)
+                            Text(isFinalReady ? "BẢO MẬT HOÀN TẤT" : "ĐANG XÁC THỰC...")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.white.opacity(0.8))
+                        }
+                        Spacer()
+                        Text("\(Int(loadProgress * 100))%")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                    }
+                    .padding(.horizontal, 4)
+
+                    // Thanh tiến trình
                     GeometryReader { geo in
-                        let barWidth = geo.size.width
                         ZStack(alignment: .leading) {
-                            // Rãnh thanh tối
                             Capsule()
                                 .fill(Color.white.opacity(0.08))
                                 .frame(height: 8)
 
-                            // Lớp fill phát sáng neon
                             Capsule()
                                 .fill(
                                     LinearGradient(
-                                        colors: [brandBlue, brandCyan, Color.white],
+                                        colors: [BlossomTheme.sakura, Color(red: 0.20, green: 0.88, blue: 0.45)],
                                         startPoint: .leading,
                                         endPoint: .trailing
                                     )
                                 )
-                                .frame(width: max(8, barWidth * CGFloat(loadProgress)), height: 8)
-                                .shadow(color: brandCyan.opacity(0.85), radius: 6, x: 0, y: 0)
-
-                            // Đầu dẫn sáng (Glow Tip)
-                            if loadProgress > 0.05 && loadProgress < 0.99 {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 10, height: 10)
-                                    .shadow(color: brandCyan, radius: 5)
-                                    .offset(x: barWidth * CGFloat(loadProgress) - 5)
-                            }
+                                .frame(width: max(8, geo.size.width * CGFloat(loadProgress)), height: 8)
+                                .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.85), radius: 6)
                         }
                     }
                     .frame(height: 8)
-                    .frame(width: 230)
 
-                    // Huy hiệu hiển thị trạng thái động với icon
-                    HStack(spacing: 7) {
-                        Image(systemName: currentStepIcon)
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(brandCyan)
-
-                        Text(loadingStep)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundStyle(Color.white.opacity(0.9))
-                            .lineLimit(1)
+                    Button {
+                        finishImmediately()
+                    } label: {
+                        Text("Chạm để vào game ngay")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.4))
+                            .padding(.top, 4)
                     }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(Color.white.opacity(0.05))
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(brandCyan.opacity(0.25), lineWidth: 0.8)
-                    )
-                    .animation(.easeInOut(duration: 0.25), value: loadingStep)
                 }
+                .padding(.horizontal, 26)
+                .padding(.bottom, 36)
             }
-            .padding(.horizontal, 28)
-            .padding(.vertical, 32)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.07, green: 0.11, blue: 0.20),
-                                Color(red: 0.04, green: 0.06, blue: 0.12)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [brandCyan.opacity(0.65), brandBlue.opacity(0.25), Color.clear],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.2
-                    )
-            )
-            .shadow(color: brandBlue.opacity(0.35), radius: 32, x: 0, y: 12)
-            .padding(.horizontal, 32)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            finishImmediately()
         }
     }
 
-    // MARK: - Bắt đầu quá trình nạp file đa tầng Cyberpunk
+    // MARK: - Bắt đầu quá trình nạp file Mẫu 1 (Hiện từng câu rồi biến mất)
     private func startGameLoading() {
-        // Haptic phản hồi khi ấn
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
         loadProgress = 0.0
-        loadingStep = "Khởi tạo nhân 3105 Kernel Bypass..."
-        ringRotation1 = 0
-        ringRotation2 = 360
-        pulseScale = 1.0
-        glowOpacity = 0.4
+        currentStepIndex = 0
+        isFinalReady = false
+        stepCardOpacity = 1.0
+        stepCardOffsetY = 0.0
 
         withAnimation(.easeInOut(duration: 0.25)) {
             isLoading = true
         }
 
-        // Bắt đầu vòng quay liên tục
-        withAnimation(.linear(duration: 2.2).repeatForever(autoreverses: false)) {
-            ringRotation1 = 360
-        }
-        withAnimation(.linear(duration: 3.0).repeatForever(autoreverses: false)) {
-            ringRotation2 = 0
-        }
-        withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
-            pulseScale = 1.08
-            glowOpacity = 0.80
-        }
-
         // Thực thi nạp file ngầm
         BundledPatchInjector.autoImportBundledPatches(into: patchStore)
 
-        // Giai đoạn 1: 0% -> 28%
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            withAnimation(.easeOut(duration: 0.35)) {
-                self.loadProgress = 0.28
-            }
-        }
+        // Bắt đầu chuỗi bước
+        animateStep(index: 0)
+    }
 
-        // Giai đoạn 2: 28% -> 58%
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            self.loadingStep = "Bảo mật chứng chỉ & giải mã sandbox..."
-            withAnimation(.easeOut(duration: 0.40)) {
-                self.loadProgress = 0.58
-            }
-        }
+    private func animateStep(index: Int) {
+        guard isLoading else { return }
 
-        // Giai đoạn 3: 58% -> 88%
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.00) {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            self.loadingStep = "Nạp module Định Vị 50m Chống Văng & AimNeck..."
-            withAnimation(.easeOut(duration: 0.35)) {
-                self.loadProgress = 0.88
-            }
-        }
-
-        // Giai đoạn 4: 88% -> 100%
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.40) {
-            self.loadingStep = "Đồng bộ Free Fire an toàn • Sẵn sàng!"
-            withAnimation(.easeOut(duration: 0.25)) {
-                self.loadProgress = 1.0
+        if index >= loadingSteps.count {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                isFinalReady = true
+                loadProgress = 1.0
+                stepCardOpacity = 1.0
+                stepCardOffsetY = 0
             }
             UINotificationFeedbackGenerator().notificationOccurred(.success)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                finishImmediately()
+            }
+            return
         }
 
-        // Hoàn tất và chuyển sang Dashboard
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.80) {
-            withAnimation(.easeInOut(duration: 0.35)) {
-                self.isLoading = false
-                self.onSelectFreeFire()
+        currentStepIndex = index
+        let targetProgress = Double(index + 1) / Double(loadingSteps.count)
+
+        // 1. Enter: Trượt vào mượt mà
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
+            stepCardOpacity = 1.0
+            stepCardOffsetY = 0
+            loadProgress = targetProgress
+        }
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+
+        // 2. Dừng hiển thị ~0.65s, sau đó bay lên biến mất để nhường cho câu tiếp theo
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+            guard isLoading else { return }
+            if index < loadingSteps.count - 1 {
+                withAnimation(.easeIn(duration: 0.32)) {
+                    stepCardOpacity = 0.0
+                    stepCardOffsetY = -26
+                }
+                // Chuyển sang bước tiếp theo
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                    animateStep(index: index + 1)
+                }
+            } else {
+                animateStep(index: index + 1)
             }
+        }
+    }
+
+    private func finishImmediately() {
+        guard isLoading else { return }
+        withAnimation(.easeInOut(duration: 0.3)) {
+            isLoading = false
+            onSelectFreeFire()
         }
     }
 
