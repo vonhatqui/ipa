@@ -289,56 +289,61 @@ struct GameSelectionView: View {
 
                 Spacer()
 
-                // CENTER SPOTLIGHT: Từng câu hiện lên trung tâm kèm dấu tích xanh, xong thì biến mất
-                VStack(spacing: 16) {
-                    // Dấu tích xanh neon phát sáng
+                // CENTER SPOTLIGHT: Thanh ngang nằm ngang đúng dáng thanh ngang như ban đầu
+                HStack(spacing: 12) {
+                    // Dấu tích xanh neon
                     ZStack {
                         Circle()
-                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35))
-                            .frame(width: 54, height: 54)
-                            .blur(radius: 12)
+                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3))
+                            .frame(width: 32, height: 32)
+                            .blur(radius: 6)
 
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 38, weight: .bold))
+                            .font(.system(size: 20, weight: .bold))
                             .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                            .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.95), radius: 14)
+                            .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.9), radius: 8)
                     }
 
-                    // Dòng chữ chính to rõ (không kèm chữ nhỏ)
+                    // Dòng chữ chính to rõ
                     Text(currentStepTitle)
-                        .font(.system(size: 20, weight: .black, design: .rounded))
+                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
-                        .multilineTextAlignment(.center)
-                        .shadow(color: BlossomTheme.sakura.opacity(0.8), radius: 16)
-                        .padding(.horizontal, 20)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
-                    // Huy hiệu bước
-                    Text("BƯỚC \(min(currentStepIndex + 1, loadingSteps.count)) / \(loadingSteps.count)")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .tracking(2)
-                        .foregroundStyle(Color.white.opacity(0.55))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(Capsule())
+                    Spacer()
+
+                    // Badge OK / READY
+                    Text(isFinalReady ? "READY" : "OK")
+                        .font(.system(size: 10, weight: .black, design: .monospaced))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 3.5)
+                        .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35), lineWidth: 1)
+                        )
                 }
-                .padding(.vertical, 28)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
                 .frame(maxWidth: .infinity)
                 .background(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(Color(red: 0.08, green: 0.04, blue: 0.14).opacity(0.88))
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color(red: 0.08, green: 0.04, blue: 0.14).opacity(0.92))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(
                             isFinalReady
                                 ? LinearGradient(colors: [Color(red: 0.20, green: 0.88, blue: 0.45), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                : LinearGradient(colors: [BlossomTheme.sakura.opacity(0.4), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing),
+                                : LinearGradient(colors: [BlossomTheme.sakura.opacity(0.45), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing),
                             lineWidth: 1.2
                         )
                 )
-                .shadow(color: isFinalReady ? Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3) : BlossomTheme.sakura.opacity(0.25), radius: 30)
-                .padding(.horizontal, 24)
+                .shadow(color: isFinalReady ? Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3) : BlossomTheme.sakura.opacity(0.25), radius: 20)
+                .padding(.horizontal, 22)
                 .opacity(stepCardOpacity)
                 .offset(y: stepCardOffsetY)
 
