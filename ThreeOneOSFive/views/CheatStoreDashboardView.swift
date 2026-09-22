@@ -579,7 +579,7 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    private var emptyEspStateView: some View    private var emptyEspStateView: some View {
+    private var emptyEspStateView: some View {
         VStack(spacing: 20) {
             Spacer()
 
@@ -739,7 +739,7 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    private func featureBullet    private func featureBullet(text: String) -> some View {
+    private func featureBullet(text: String) -> some View {
         HStack(alignment: .top, spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 11))
