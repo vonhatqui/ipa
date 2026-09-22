@@ -298,15 +298,31 @@ struct CheatStoreDashboardView: View {
     private var homeView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // Banner Tiêu Đề
+                // DANH MỤC 1: APPLESTORE PRIME - HOẠT ĐỘNG CHÍNH (CHỐNG VĂNG GAME)
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("BẢNG ĐIỀU KHIỂN AIMBOT")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(brandBlue)
-                            .tracking(1.1)
+                        HStack(spacing: 6) {
+                            Text("APPLESTORE PRIME")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(BlossomTheme.sakura)
+                                .tracking(1.1)
 
-                        Text("Bật / Tắt AIMDRAG PRO (Bật Sảnh)")
+                            Text("ĐANG HOẠT ĐỘNG")
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2.5)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.green, Color(red: 0.1, green: 0.7, blue: 0.3)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(4)
+                        }
+
+                        Text("Menu Mod Độc Quyền • Ổn Định Tuyệt Đối 100% Chống Văng Game")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(.gray)
                     }
@@ -315,58 +331,7 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // 1. AIMNECK VIP (Chức Năng Trang Chủ Mới Nhất)
-                if let vipItem = aimneckVipItem {
-                    VStack(spacing: 14) {
-                        AimneckVipCard(
-                            item: vipItem,
-                            isApplied: appliedProjectIDs.contains(vipItem.id),
-                            isWorking: workingPatchID == vipItem.id,
-                            brandBlue: brandBlue,
-                            onToggle: { enable in
-                                handleToggle(item: vipItem, enable: enable)
-                            }
-                        )
-                    }
-                    .padding(.horizontal, 20)
-                }
-
-                // 2. Chức Năng AIMBOT Cổ Điển (AIMDRAG PRO nếu có)
-                if let item = aimItem, item.id != aimneckVipItem?.id {
-                    VStack(spacing: 14) {
-                        CheatItemCard(
-                            item: item,
-                            isApplied: appliedProjectIDs.contains(item.id),
-                            isWorking: workingPatchID == item.id,
-                            brandBlue: brandBlue,
-                            onToggle: { enable in
-                                handleToggle(item: item, enable: enable)
-                            }
-                        )
-                    }
-                    .padding(.horizontal, 20)
-                } else if aimneckVipItem == nil {
-                    emptyStateView
-                }
-
-                // DANH MỤC 2: LỰA CHỌN 2 (APPLESTORE PRIME & Cpanel Leaked)
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("LỰA CHỌN 2")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(brandBlue)
-                            .tracking(1.1)
-
-                        Text("Chức năng bổ trợ chống văng game")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.gray)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 6)
-
-                // CẢ 2 CHỨC NĂNG: APPLESTORE PRIME & Cpanel Leaked
+                // Thẻ APPLESTORE PRIME nổi bật hàng đầu
                 VStack(spacing: 14) {
                     ApplestorePrimeCard(
                         item: applestorePrimeItem,
@@ -381,7 +346,75 @@ struct CheatStoreDashboardView: View {
                             }
                         }
                     )
+                }
+                .padding(.horizontal, 20)
 
+                // DANH MỤC 2: CÁC CHỨC NĂNG ĐANG BẢO TRÌ NÂNG CẤP
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("CÁC CHỨC NĂNG ĐANG BẢO TRÌ")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(Color.orange)
+                                .tracking(1.1)
+
+                            HStack(spacing: 3) {
+                                Image(systemName: "wrench.and.screwdriver.fill")
+                                    .font(.system(size: 7))
+                                Text("BẢO TRÌ")
+                                    .font(.system(size: 8, weight: .black))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2.5)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.orange, Color.red],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(4)
+                        }
+
+                        Text("Tạm thời bảo trì để nâng cấp chống văng game trên máy yếu")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+
+                // Danh sách các thẻ bảo trì trong Trang Chủ:
+                VStack(spacing: 14) {
+                    // 1. AIMNECK VIP
+                    if let vipItem = aimneckVipItem {
+                        AimneckVipCard(
+                            item: vipItem,
+                            isApplied: appliedProjectIDs.contains(vipItem.id),
+                            isWorking: workingPatchID == vipItem.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleMaintenanceToggle(item: vipItem, enable: enable)
+                            }
+                        )
+                    }
+
+                    // 2. AIMDRAG PRO
+                    if let item = aimItem, item.id != aimneckVipItem?.id {
+                        CheatItemCard(
+                            item: item,
+                            isApplied: appliedProjectIDs.contains(item.id),
+                            isWorking: workingPatchID == item.id,
+                            brandBlue: brandBlue,
+                            onToggle: { enable in
+                                handleMaintenanceToggle(item: item, enable: enable)
+                            }
+                        )
+                    }
+
+                    // 3. Cpanel Leaked
                     if let cp = cpanelItem {
                         CpanelItemCard(
                             item: cp,
@@ -389,7 +422,7 @@ struct CheatStoreDashboardView: View {
                             isWorking: workingPatchID == cp.id,
                             brandBlue: brandBlue,
                             onToggle: { enable in
-                                handleToggle(item: cp, enable: enable)
+                                handleMaintenanceToggle(item: cp, enable: enable)
                             }
                         )
                     } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_cpanel") {
@@ -399,7 +432,7 @@ struct CheatStoreDashboardView: View {
                             isWorking: workingPatchID == loaded.id,
                             brandBlue: brandBlue,
                             onToggle: { enable in
-                                handleToggle(item: loaded, enable: enable)
+                                handleMaintenanceToggle(item: loaded, enable: enable)
                             }
                         )
                     }
@@ -410,15 +443,15 @@ struct CheatStoreDashboardView: View {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "shield.lefthalf.filled")
                         .font(.system(size: 16))
-                        .foregroundStyle(brandBlue)
+                        .foregroundStyle(BlossomTheme.sakura)
                         .padding(.top, 2)
 
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Quy trình chuẩn:")
+                        Text("Quy trình chuẩn AppleStore:")
                             .font(.system(size: 12, weight: .bold))
                             .foregroundStyle(.white)
 
-                        Text("Vào game Free Fire > Tại sảnh chờ, gạt BẬT [AIMDRAG PRO] > Bấm [MỞ] Free Fire bên dưới. Bạn có thể sang tab Định Vị để bật song song ESP 2.0!")
+                        Text("Gạt BẬT [APPLESTORE PRIME] ở bên trên > Bấm nút [MỞ] Free Fire bên dưới. Các chức năng khác đang tạm bảo trì để nâng cấp chống văng game, quý khách vui lòng chỉ bật duy nhất APPLESTORE PRIME!")
                             .font(.system(size: 11))
                             .foregroundStyle(.gray)
                             .lineSpacing(2)
@@ -430,10 +463,10 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(14)
                 .overlay(
                     RoundedRectangle(cornerRadius: 14)
-                        .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                        .stroke(BlossomTheme.sakura.opacity(0.3), lineWidth: 1)
                 )
                 .padding(.horizontal, 20)
-                .padding(.top, 10)
+                .padding(.top, 6)
             }
             .padding(.bottom, 24)
         }
@@ -443,40 +476,70 @@ struct CheatStoreDashboardView: View {
     private var espView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // Tiêu đề phần Định Vị
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(spacing: 6) {
-                            Text("BẢNG ĐIỀU KHIỂN ĐỊNH VỊ")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(brandBlue)
-                                .tracking(1.1)
+                // Banner Bảo Trì Định Vị
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(Color.orange)
 
-                            Text("VIP")
-                                .font(.system(size: 8, weight: .black))
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.85, green: 0.20, blue: 0.65), brandBlue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .cornerRadius(4)
-                        }
+                        Text("HỆ THỐNG ĐỊNH VỊ ĐANG BẢO TRÌ")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
 
-                        Text("Định Vị Xuyên Tường • Khóa Đầu Chuẩn Xác 100%")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.gray)
+                        Spacer()
+
+                        Text("BẢO TRÌ")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.orange)
+                            .cornerRadius(4)
                     }
-                    Spacer()
+
+                    Text("Hệ thống Định Vị đang được bảo trì nhằm nâng cấp thuật toán giới hạn 50m và tối ưu hóa giải phóng RAM chống văng game.\n\n👉 Hiện tại, quý khách vui lòng sang [Trang Chủ] để bật tính năng APPLESTORE PRIME!")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineSpacing(3)
+
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = .home
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "apple.logo")
+                            Text("Chuyển sang Trang Chủ (Bật APPLESTORE PRIME)")
+                        }
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .background(
+                            LinearGradient(
+                                colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(10)
+                        .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 5)
+                    }
+                    .padding(.top, 2)
                 }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.12))
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.orange.opacity(0.4), lineWidth: 1)
+                )
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // 1. ĐỊNH VỊ + AIMHEAD V3 (Chức Năng Định Vị Mới Nhất)
+                // 1. ĐỊNH VỊ + AIMHEAD V3
                 if let v3Item = espAimheadV3Item {
                     VStack(spacing: 14) {
                         EspAimheadV3Card(
@@ -485,7 +548,7 @@ struct CheatStoreDashboardView: View {
                             isWorking: workingPatchID == v3Item.id,
                             brandBlue: brandBlue,
                             onToggle: { enable in
-                                handleToggle(item: v3Item, enable: enable)
+                                handleMaintenanceToggle(item: v3Item, enable: enable)
                             }
                         )
                     }
@@ -501,7 +564,7 @@ struct CheatStoreDashboardView: View {
                             isWorking: workingPatchID == item.id,
                             brandBlue: brandBlue,
                             onToggle: { enable in
-                                handleToggle(item: item, enable: enable)
+                                handleMaintenanceToggle(item: item, enable: enable)
                             }
                         )
                     }
@@ -511,41 +574,12 @@ struct CheatStoreDashboardView: View {
                 if espAimheadV3Item == nil && espItem == nil {
                     emptyEspStateView
                 }
-
-                // Ghi Chú An Toàn
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 16))
-                        .foregroundStyle(brandBlue)
-                        .padding(.top, 2)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Quy trình chuẩn:")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text("Gạt BẬT [ĐỊNH VỊ + AIMHEAD V3] trước khi vào game > Bấm [MỞ] Free Fire bên dưới. Bạn có thể sang tab Trang Chủ bật thêm AIMBOT!")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.gray)
-                            .lineSpacing(2)
-                    }
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(cardBackground)
-                .cornerRadius(14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
             }
             .padding(.bottom, 24)
         }
     }
 
-    private var emptyEspStateView: some View {
+    private var emptyEspStateView: some View    private var emptyEspStateView: some View {
         VStack(spacing: 20) {
             Spacer()
 
@@ -613,20 +647,66 @@ struct CheatStoreDashboardView: View {
     private var skinView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // Tiêu đề phần Mod Skin
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("BẢNG ĐIỀU KHIỂN MOD TRANG PHỤC")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(brandBlue)
-                            .tracking(1.1)
+                // Banner Bảo Trì Mod Skin
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(Color.orange)
 
-                        Text("Bật / Tắt Skin VIP Độc Quyền • Vào Game Là Có Ngay")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.gray)
+                        Text("HỆ THỐNG MOD SKIN ĐANG BẢO TRÌ")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+
+                        Text("BẢO TRÌ")
+                            .font(.system(size: 9, weight: .black))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.orange)
+                            .cornerRadius(4)
                     }
-                    Spacer()
+
+                    Text("Hệ thống Mod Skin đang tạm bảo trì để cập nhật gói tài nguyên chống xung đột avatar.\n\n👉 Quý khách vui lòng sang [Trang Chủ] để bật tính năng APPLESTORE PRIME!")
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineSpacing(3)
+
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            selectedTab = .home
+                        }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "apple.logo")
+                            Text("Chuyển sang Trang Chủ (Bật APPLESTORE PRIME)")
+                        }
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 36)
+                        .background(
+                            LinearGradient(
+                                colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .cornerRadius(10)
+                        .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 5)
+                    }
+                    .padding(.top, 2)
                 }
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.orange.opacity(0.12))
+                .cornerRadius(14)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.orange.opacity(0.4), lineWidth: 1)
+                )
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
@@ -640,7 +720,7 @@ struct CheatStoreDashboardView: View {
                                 isWorking: workingPatchID == item.id,
                                 brandBlue: brandBlue,
                                 onToggle: { enable in
-                                    handleToggle(item: item, enable: enable)
+                                    handleMaintenanceToggle(item: item, enable: enable)
                                 },
                                 onPreview: {
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -654,70 +734,12 @@ struct CheatStoreDashboardView: View {
                 } else {
                     emptySkinStateView
                 }
-
-                // Thông tin tính năng Mod Skin
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "tshirt.fill")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(brandBlue)
-
-                        Text("Đặc Quyền Mod Skin VIP")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-
-                    VStack(alignment: .leading, spacing: 6) {
-                        featureBullet(text: "Kích hoạt hiệu ứng trang phục đặc biệt trong trận đấu")
-                        featureBullet(text: "Mỗi skin tác động tệp avatar độc lập, có thể bật cùng lúc")
-                        featureBullet(text: "Tương thích 100% khi bật song song với AIMDRAG & ESP / Cpanel")
-                        featureBullet(text: "Cơ chế Golden Snapshot bảo vệ & phục hồi dữ liệu gốc an toàn")
-                    }
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(cardBackground)
-                .cornerRadius(14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(brandBlue.opacity(0.25), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-
-                // Hướng dẫn quy trình
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 16))
-                        .foregroundStyle(brandBlue)
-                        .padding(.top, 2)
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Quy trình chuẩn:")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text("Gạt BẬT Skin mong muốn > Bấm nút [MỞ] Free Fire bên dưới. Bạn có thể bật song song cả 2 skin và kết hợp cùng Aim/ESP mượt mà!")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.gray)
-                            .lineSpacing(2)
-                    }
-                }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(cardBackground)
-                .cornerRadius(14)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(brandBlue.opacity(0.2), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
             }
             .padding(.bottom, 24)
         }
     }
 
-    private func featureBullet(text: String) -> some View {
+    private func featureBullet    private func featureBullet(text: String) -> some View {
         HStack(alignment: .top, spacing: 6) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 11))
@@ -1024,10 +1046,19 @@ struct CheatStoreDashboardView: View {
                     }
                 } label: {
                     VStack(spacing: 4) {
-                        Image(systemName: tab.icon)
-                            .font(.system(size: 18, weight: selectedTab == tab ? .bold : .regular))
-                            .foregroundStyle(selectedTab == tab ? brandBlue : Color.gray.opacity(0.6))
-                            .shadow(color: selectedTab == tab ? brandBlue.opacity(0.8) : .clear, radius: 6)
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 18, weight: selectedTab == tab ? .bold : .regular))
+                                .foregroundStyle(selectedTab == tab ? brandBlue : Color.gray.opacity(0.6))
+                                .shadow(color: selectedTab == tab ? brandBlue.opacity(0.8) : .clear, radius: 6)
+
+                            if tab == .esp || tab == .skin {
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 6, height: 6)
+                                    .offset(x: 6, y: -2)
+                            }
+                        }
 
                         Text(tab.title)
                             .font(.system(size: 11, weight: selectedTab == tab ? .bold : .medium))
@@ -1208,8 +1239,27 @@ struct CheatStoreDashboardView: View {
         return nil
     }
 
+    // MARK: - Maintenance Toggle Action
+    private func handleMaintenanceToggle(item: PatchLibraryItem, enable: Bool) {
+        if enable {
+            alertMessage = "🛠️ THÔNG BÁO BẢO TRÌ:\n\nChức năng '\(displayName(for: item))' đang tạm thời bảo trì để nâng cấp thuật toán chống văng game trên các dòng máy yếu.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] ở bên trên để vào game ổn định và mượt mà nhất!"
+            showAlert = true
+        } else {
+            handleToggle(item: item, enable: false)
+        }
+    }
+
     // MARK: - Toggle Mod Action
     private func handleToggle(item: PatchLibraryItem, enable: Bool) {
+        // CHẶN BẬT các chức năng đang bảo trì:
+        if !isApplestorePrimeItem(item) && enable {
+            DispatchQueue.main.async {
+                self.alertMessage = "🛠️ THÔNG BÁO BẢO TRÌ:\n\nChức năng '\(self.displayName(for: item))' đang được bảo trì nhằm nâng cấp chống văng game trên các dòng máy yếu.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] để vào game ổn định và mượt mà nhất!"
+                self.showAlert = true
+            }
+            return
+        }
+
         let currentID = item.id
         workingPatchID = currentID
         let modName = displayName(for: item)
@@ -1218,16 +1268,14 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    // Xử lý xung đột file: Cpanel Leaked, ESP 2.0, ESP+AimHead V3 và APPLESTORE PRIME cùng sửa Assembly-CSharp & localConfig
-                    if self.isCpanelItem(item) || self.isEspItem(item) || self.isEspAimheadV3Item(item) || self.isApplestorePrimeItem(item) {
-                        let assemblyMods = [self.espItem, self.cpanelItem, self.espAimheadV3Item, self.applestorePrimeItem].compactMap { $0 }
-                        for other in assemblyMods where other.id != item.id && self.appliedProjectIDs.contains(other.id) {
-                            let otherProj = self.resolveProject(for: other)
-                            if let receipt = DevicePatchService.latestReceipt(projectID: other.id) {
-                                _ = try? DevicePatchService.restore(receipt: receipt, project: otherProj, allowChangedTargets: true)
-                            } else {
-                                DevicePatchService.forceCleanup(project: otherProj)
-                            }
+                    // Khi bật APPLESTORE PRIME, tự động dọn dẹp sạch tất cả các mod khác để chống xung đột & văng game
+                    let allOtherMods = [self.espItem, self.cpanelItem, self.espAimheadV3Item, self.aimneckVipItem, self.aimItem].compactMap { $0 }
+                    for other in allOtherMods where other.id != item.id && self.appliedProjectIDs.contains(other.id) {
+                        let otherProj = self.resolveProject(for: other)
+                        if let receipt = DevicePatchService.latestReceipt(projectID: other.id) {
+                            _ = try? DevicePatchService.restore(receipt: receipt, project: otherProj, allowChangedTargets: true)
+                        } else {
+                            DevicePatchService.forceCleanup(project: otherProj)
                         }
                     }
 
@@ -1713,6 +1761,15 @@ private struct ApplestorePrimeCard: View {
 
                     // Tag PRIME Tím Neon
                     PulsingLedTag(text: "PRIME")
+
+                    // Tag HOẠT ĐỘNG Xanh Lá
+                    Text("HOẠT ĐỘNG")
+                        .font(.system(size: 7.5, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.green)
+                        .cornerRadius(3.5)
                 }
 
                 Text("Menu Mod Độc Quyền AppleStore • Ổn Định Tuyệt Đối")
@@ -1831,36 +1888,37 @@ private struct AimneckVipCard: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag LOCK CỔ (Màu Tím Hoa Anh Đào Sakura)
+                    // Tag BẢO TRÌ
                     Text("LOCK CỔ")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(3.5)
+
+                    Text("BẢO TRÌ")
                         .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(
-                            LinearGradient(
-                                colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.orange)
                         .cornerRadius(3.5)
-                        .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 3)
                 }
 
-                Text("Khóa Cổ Siêu Dính • Kéo Tâm Mượt")
+                Text("Tạm ngừng để nâng cấp chống văng game")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .foregroundStyle(Color.orange.opacity(0.9))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
@@ -1957,36 +2015,37 @@ private struct EspAimheadV3Card: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag ESP + AIM (Màu Cyan Neon)
-                    Text("ESP + AIM")
+                    // Tag BẢO TRÌ
+                    Text("ESP+AIM")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(3.5)
+
+                    Text("BẢO TRÌ")
                         .font(.system(size: 8, weight: .black))
-                        .foregroundStyle(.black)
+                        .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.00, green: 0.98, blue: 1.0), Color(red: 0.00, green: 0.72, blue: 0.90)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.orange)
                         .cornerRadius(3.5)
-                        .shadow(color: Color(red: 0.00, green: 0.95, blue: 1.0).opacity(0.4), radius: 3)
                 }
 
-                Text("Khung Định Vị Head 3D • Khóa Đầu Chuẩn Xác")
+                Text("Tạm ngừng để nâng cấp culling 50m chống văng")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
+                    .foregroundStyle(Color.orange.opacity(0.9))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
@@ -2090,36 +2149,37 @@ private struct CheatItemCard: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag PRO (Màu Tím Cyber)
+                    // Tag BẢO TRÌ
                     Text("PRO")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(3.5)
+
+                    Text("BẢO TRÌ")
                         .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.68, green: 0.25, blue: 0.98), Color(red: 0.42, green: 0.15, blue: 0.85)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.orange)
                         .cornerRadius(3.5)
-                        .shadow(color: Color(red: 0.65, green: 0.25, blue: 0.95).opacity(0.4), radius: 3)
                 }
 
-                Text(subtitle)
+                Text("Tạm ngừng để nâng cấp chống văng game")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color(red: 0.75, green: 0.60, blue: 1.0))
+                    .foregroundStyle(Color.orange.opacity(0.9))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
@@ -2215,36 +2275,37 @@ private struct EspItemCard: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag ESP (Màu Laser Cyan)
+                    // Tag BẢO TRÌ
                     Text("ESP")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(3.5)
+
+                    Text("BẢO TRÌ")
                         .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.00, green: 0.85, blue: 0.95), Color(red: 0.00, green: 0.55, blue: 0.80)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.orange)
                         .cornerRadius(3.5)
-                        .shadow(color: Color(red: 0.00, green: 0.85, blue: 0.95).opacity(0.4), radius: 3)
                 }
 
-                Text("Tia Dẫn Đường • Định Vị Xuyên Bản Đồ")
+                Text("Tạm ngừng để nâng cấp culling chống văng")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color(red: 0.00, green: 0.88, blue: 0.95))
+                    .foregroundStyle(Color.orange.opacity(0.9))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
@@ -2343,37 +2404,38 @@ private struct CpanelItemCard: View {
                         .foregroundStyle(.white)
                         .lineLimit(1)
 
-                    // Tag LEAKED (Amber-Violet)
+                    // Tag BẢO TRÌ
                     Text("LEAKED")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(3.5)
+
+                    Text("BẢO TRÌ")
                         .font(.system(size: 8, weight: .black))
                         .foregroundStyle(.white)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(red: 0.95, green: 0.55, blue: 0.15), Color(red: 0.70, green: 0.20, blue: 0.85)],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                        .background(Color.orange)
                         .cornerRadius(3.5)
-                        .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(0.4), radius: 3)
                 }
 
-                Text("Chống văng game hiệu quả • Ổn định trận đấu")
+                Text("Tạm ngừng để nâng cấp chống văng game")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color(red: 1.0, green: 0.72, blue: 0.40))
+                    .foregroundStyle(Color.orange.opacity(0.9))
                     .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
@@ -2512,51 +2574,45 @@ private struct SkinItemCard: View {
                     if isGoldenSeason1 {
                         // Tag GOLD (Màu Vàng Gold Óng Ánh)
                         Text("GOLD")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.black)
-                            .padding(.horizontal, 5)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(red: 1.0, green: 0.90, blue: 0.30), Color(red: 0.95, green: 0.65, blue: 0.05)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                            .background(Color.white.opacity(0.12))
                             .cornerRadius(3.5)
-                            .shadow(color: Color(red: 1.0, green: 0.8, blue: 0.2).opacity(0.4), radius: 3)
                     } else {
                         // Tag VIP SKIN (Màu Hồng Tím Neon)
                         Text("VIP SKIN")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .padding(.horizontal, 4)
                             .padding(.vertical, 2)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color(red: 0.95, green: 0.25, blue: 0.70), Color(red: 0.65, green: 0.15, blue: 0.85)],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
+                            .background(Color.white.opacity(0.12))
                             .cornerRadius(3.5)
-                            .shadow(color: Color(red: 0.95, green: 0.25, blue: 0.70).opacity(0.4), radius: 3)
                     }
+
+                    Text("BẢO TRÌ")
+                        .font(.system(size: 8, weight: .black))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.orange)
+                        .cornerRadius(3.5)
                 }
 
-                Text(skinSubtitle)
+                Text("Tạm ngừng để nâng cấp chống xung đột avatar")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(isGoldenSeason1 ? Color(red: 1.0, green: 0.84, blue: 0.3) : Color(red: 0.95, green: 0.55, blue: 0.85))
+                    .foregroundStyle(Color.orange.opacity(0.9))
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isApplied ? Color.red : Color.orange)
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ")
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isApplied ? Color.red : Color.orange)
                 }
                 .padding(.top, 1)
             }
