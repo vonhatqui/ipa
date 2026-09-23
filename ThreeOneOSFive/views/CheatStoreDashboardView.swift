@@ -1361,20 +1361,6 @@ struct CheatStoreDashboardView: View {
         .padding(.horizontal, 20)
         .padding(.bottom, 4)
     }
-
-    // MARK: - Footer: Thông Tin Thiết Bị & Phiên Bản iOS & Trạng Thái Hỗ Trợ
-    private var isDeviceSupported: Bool {
-        let v = AppInfo.versionTuple
-        return ExploitSupportPolicy.isSupported(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-    }
-
-
-
     // MARK: - Empty State
     private var emptyStateView: some View {
         VStack(spacing: 12) {
