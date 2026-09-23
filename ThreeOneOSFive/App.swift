@@ -17,6 +17,7 @@ struct ThreeOneOSFiveApp: App {
     @State private var isSplashActive = true
     @State private var mainUIAppeared = false
     @State private var showPostSplashNotice = false
+    @State private var isGameLoaded = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -40,7 +41,12 @@ struct ThreeOneOSFiveApp: App {
     private var mainContentView: some View {
         Group {
             if licenseManager.isActivated {
-                CheatStoreDashboardView(onBackToGames: nil)
+                if isGameLoaded {
+                    CheatStoreDashboardView(onBackToGames: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isGameLoaded = false
+                        }
+                    })
                     .environmentObject(appState)
                     .environmentObject(patchDraftCoordinator)
                     .environmentObject(fileOperationCoordinator)
@@ -48,7 +54,28 @@ struct ThreeOneOSFiveApp: App {
                     .environmentObject(repositoryStore)
                     .environment(\.appLanguage, language)
                     .environment(\.locale, language.locale)
-                    .transition(.opacity)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .trailing).combined(with: .opacity),
+                        removal: .move(edge: .trailing).combined(with: .opacity)
+                    ))
+                } else {
+                    GameSelectionView(onSelectFreeFire: {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            isGameLoaded = true
+                        }
+                    })
+                    .environmentObject(appState)
+                    .environmentObject(patchDraftCoordinator)
+                    .environmentObject(fileOperationCoordinator)
+                    .environmentObject(patchStore)
+                    .environmentObject(repositoryStore)
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .transition(.asymmetric(
+                        insertion: .move(edge: .leading).combined(with: .opacity),
+                        removal: .move(edge: .leading).combined(with: .opacity)
+                    ))
+                }
             } else {
                 CheatStoreLoginView(licenseManager: licenseManager)
                     .zIndex(2)
@@ -138,6 +165,11 @@ struct ThreeOneOSFiveApp: App {
                 guard phase == .active, !showOnboarding else { return }
                 appState.detectSupport()
                 checkForUpdate()
+            }
+            .onChange(of: licenseManager.isActivated) { activated in
+                if !activated {
+                    isGameLoaded = false
+                }
             }
             .onOpenURL { url in
                 patchDraftCoordinator.presentImport(url)

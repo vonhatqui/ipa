@@ -223,6 +223,10 @@ struct CheatStoreDashboardView: View {
 
                 // Thanh Dashboard điều hướng phía dưới
                 bottomTabBar
+                    .padding(.bottom, 4)
+
+                // Footer trạng thái thiết bị & iOS (to hơn 15%)
+                deviceStatusFooterView
                     .padding(.bottom, 6)
             }
 
@@ -275,7 +279,31 @@ struct CheatStoreDashboardView: View {
 
     // MARK: - Top Header
     private var topHeaderView: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
+            if let onBack = onBackToGames {
+                Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    onBack()
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Ứng Dụng")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(brandBlue)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                    .background(brandBlue.opacity(0.12))
+                    .cornerRadius(7)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(brandBlue.opacity(0.25), lineWidth: 0.8)
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+            }
+
             CheatStoreLogoView(size: 34, cornerRadius: 9)
 
             VStack(alignment: .leading, spacing: 2) {
@@ -547,6 +575,33 @@ struct CheatStoreDashboardView: View {
     private var espView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
+                // Tiêu đề danh mục: ĐỊNH VỊ (ESP)
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("ĐỊNH VỊ (ESP)")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(BlossomTheme.sakura)
+                                .tracking(1.0)
+
+                            Text(licenseManager.featureConfig.esp ? "HOẠT ĐỘNG" : "BẢO TRÌ")
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2.5)
+                                .background(licenseManager.featureConfig.esp ? Color.blue : Color.orange)
+                                .cornerRadius(4)
+                        }
+
+                        Text("Quét tọa độ 3D • Hỗ trợ tâm ngắm & cảnh báo kẻ địch")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+
                 // Banner Bảo Trì Định Vị (Chỉ hiển thị khi hệ thống định vị đang tạm bảo trì)
                 if !licenseManager.featureConfig.esp {
                     VStack(alignment: .leading, spacing: 10) {
@@ -722,6 +777,33 @@ struct CheatStoreDashboardView: View {
     private var skinView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
+                // Tiêu đề danh mục: MOD SKIN VIP
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("MOD SKIN VIP")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(BlossomTheme.sakura)
+                                .tracking(1.0)
+
+                            Text(licenseManager.featureConfig.skin ? "HOẠT ĐỘNG" : "BẢO TRÌ")
+                                .font(.system(size: 8, weight: .black))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2.5)
+                                .background(licenseManager.featureConfig.skin ? Color.purple : Color.orange)
+                                .cornerRadius(4)
+                        }
+
+                        Text("Gói trang phục bản quyền • Hiệu ứng súng & nhân vật")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundStyle(.gray)
+                    }
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 14)
+
                 // Banner Bảo Trì Mod Skin (Chỉ hiển thị khi hệ thống skin đang tạm bảo trì)
                 if !licenseManager.featureConfig.skin {
                     VStack(alignment: .leading, spacing: 10) {
@@ -1112,6 +1194,90 @@ struct CheatStoreDashboardView: View {
             }
             .padding(.bottom, 24)
         }
+    }
+
+    // MARK: - Footer thông tin thiết bị & iOS (To hơn 15%)
+    private var isDeviceSupported: Bool {
+        let v = AppInfo.versionTuple
+        return ExploitSupportPolicy.isSupported(
+            major: v.major,
+            minor: v.minor,
+            patch: v.patch,
+            build: AppInfo.osBuild
+        )
+    }
+
+    private var deviceStatusFooterView: some View {
+        HStack(spacing: 9) {
+            HStack(spacing: 5) {
+                Image(systemName: "iphone.gen3")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(brandBlue)
+
+                Text(AppInfo.hardwareDisplayName)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
+
+            Text("•")
+                .font(.system(size: 11))
+                .foregroundStyle(Color.gray.opacity(0.45))
+
+            HStack(spacing: 5) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.9))
+
+                Text("iOS \(AppInfo.osVersion)")
+                    .font(.system(size: 12.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.white.opacity(0.95))
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            if isDeviceSupported {
+                HStack(spacing: 5) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+
+                    Text("Có hỗ trợ")
+                        .font(.system(size: 11.5, weight: .bold))
+                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                }
+                .padding(.horizontal, 8.5)
+                .padding(.vertical, 3.8)
+                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.14))
+                .cornerRadius(7)
+            } else {
+                HStack(spacing: 5) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
+
+                    Text("Không hỗ trợ")
+                        .font(.system(size: 11.5, weight: .bold))
+                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
+                }
+                .padding(.horizontal, 8.5)
+                .padding(.vertical, 3.8)
+                .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.14))
+                .cornerRadius(7)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 7.5)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(red: 0.05, green: 0.08, blue: 0.14).opacity(0.94))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(brandBlue.opacity(0.22), lineWidth: 0.9)
+        )
+        .padding(.horizontal, 20)
     }
 
     // MARK: - Thanh Dashboard Dưới (Bottom Navigation Bar)
@@ -1692,38 +1858,153 @@ private struct PulsingLedTag: View {
     }
 }
 
-// MARK: - FeatureLogoView (Fallback hỗ trợ tương thích)
-private struct FeatureLogoView: View {
-    let name: String
-    var size: CGFloat = 50
-    var cornerRadius: CGFloat = 13
+// MARK: - ElectricAppLogoTile (Logo App với Hiệu Ứng Điện Quanh App & Phóng Sét Xuyên Qua App)
+private struct ElectricAppLogoTile: View {
+    var size: CGFloat = 42
+    var cornerRadius: CGFloat = 11
     var isApplied: Bool = false
+    var isUnderMaintenance: Bool = false
+    var customGlowColor: Color? = nil
+
+    @State private var electricAngle1: Double = 0
+    @State private var electricAngle2: Double = 0
+    @State private var lightningSweep: CGFloat = -1.2
+    @State private var auraPulse: CGFloat = 1.0
+    @State private var sparkFlash: Double = 0.8
+
+    // Bảng màu xung điện tương tác thông minh
+    private var coreGlow: Color {
+        if let custom = customGlowColor { return custom }
+        if isUnderMaintenance { return Color.orange }
+        if isApplied { return Color(red: 0.15, green: 0.95, blue: 0.55) } // High-voltage Overclock Green
+        return BlossomTheme.sakura
+    }
+
+    private var electricCyan: Color {
+        Color(red: 0.20, green: 0.90, blue: 1.0)
+    }
 
     var body: some View {
         ZStack {
+            // 1. Quầng hào quang xung điện Tesla tỏa nền (Electric Plasma Halo)
+            RoundedRectangle(cornerRadius: cornerRadius + 2, style: .continuous)
+                .fill(coreGlow.opacity(isApplied ? 0.38 : (isUnderMaintenance ? 0.25 : 0.20)))
+                .frame(width: size + 6, height: size + 6)
+                .blur(radius: isApplied ? 8 : 4.5)
+                .scaleEffect(auraPulse)
+
+            // 2. Vòng tia điện ngoài xoay quanh viền Squircle (Outer Clockwise Electric Arc Ring)
+            RoundedRectangle(cornerRadius: cornerRadius + 1.5, style: .continuous)
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(colors: [
+                            coreGlow.opacity(0.95),
+                            Color.white,
+                            electricCyan.opacity(0.9),
+                            Color.clear,
+                            Color.clear,
+                            coreGlow.opacity(0.7)
+                        ]),
+                        center: .center,
+                        startAngle: .degrees(electricAngle1),
+                        endAngle: .degrees(electricAngle1 + 360)
+                    ),
+                    lineWidth: isApplied ? 2.2 : 1.5
+                )
+                .frame(width: size + 3, height: size + 3)
+                .blur(radius: 0.4)
+
+            // 3. Vòng tia điện thứ 2 xoay ngược chiều tạo hiệu ứng cộng hưởng hồ quang (Counter-Clockwise Tesla Arc)
+            RoundedRectangle(cornerRadius: cornerRadius + 1, style: .continuous)
+                .stroke(
+                    AngularGradient(
+                        gradient: Gradient(colors: [
+                            Color.clear,
+                            Color.white.opacity(0.95),
+                            isUnderMaintenance ? Color.yellow : electricCyan,
+                            Color.clear,
+                            coreGlow.opacity(0.6)
+                        ]),
+                        center: .center,
+                        startAngle: .degrees(electricAngle2),
+                        endAngle: .degrees(electricAngle2 + 360)
+                    ),
+                    lineWidth: 1.2
+                )
+                .frame(width: size + 1.5, height: size + 1.5)
+
+            // 4. Logo CheatStore gốc bên trong (App Core Identity)
+            CheatStoreLogoView(size: size, cornerRadius: cornerRadius)
+                .overlay(
+                    // 5. Tia điện & Chùm Laser cắt chéo xuyên qua app (Lightning Discharge Cutting Across App)
+                    GeometryReader { geo in
+                        let w = geo.size.width
+                        let h = geo.size.height
+                        ZStack {
+                            // Chùm tia điện cắt chéo 45 độ xuyên tâm app
+                            Rectangle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color.clear,
+                                            Color.white.opacity(0.95),
+                                            isUnderMaintenance ? Color.yellow.opacity(0.9) : (isApplied ? Color(red: 0.20, green: 0.98, blue: 0.65).opacity(0.9) : electricCyan.opacity(0.9)),
+                                            Color.white.opacity(0.95),
+                                            Color.clear
+                                        ],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .frame(width: 5, height: h * 1.6)
+                                .rotationEffect(.degrees(45))
+                                .offset(x: lightningSweep * (w * 1.35))
+                                .blur(radius: 1.0)
+                                .blendMode(.screen)
+
+                            // Hạt vi chớp sáng điện tích phóng ngang tâm
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 3, height: 3)
+                                .blur(radius: 0.8)
+                                .offset(x: lightningSweep * (w * 0.7), y: lightningSweep * (h * 0.7))
+                                .opacity(sparkFlash)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+                )
+
+            // 6. Viền vòm kính phản chiếu trong suốt chống lóa
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(
+                .stroke(
                     LinearGradient(
                         colors: [
-                            Color(red: 0.16, green: 0.08, blue: 0.25),
-                            Color(red: 0.08, green: 0.04, blue: 0.14)
+                            Color.white.opacity(0.5),
+                            Color.white.opacity(0.08),
+                            coreGlow.opacity(0.35)
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
-                    )
+                    ),
+                    lineWidth: 0.8
                 )
                 .frame(width: size, height: size)
-
-            Image(systemName: "bolt.shield.fill")
-                .font(.system(size: size * 0.45))
-                .foregroundStyle(BlossomTheme.sakura)
-
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .stroke(
-                    isApplied ? BlossomTheme.sakuraLight : Color.white.opacity(0.12),
-                    lineWidth: isApplied ? 1.8 : 1
-                )
-                .frame(width: size, height: size)
+        }
+        .frame(width: size + 8, height: size + 8)
+        .onAppear {
+            withAnimation(.linear(duration: isApplied ? 2.2 : 3.6).repeatForever(autoreverses: false)) {
+                electricAngle1 = 360
+            }
+            withAnimation(.linear(duration: isApplied ? 2.8 : 4.6).repeatForever(autoreverses: false)) {
+                electricAngle2 = -360
+            }
+            withAnimation(.easeInOut(duration: isApplied ? 1.4 : 2.2).repeatForever(autoreverses: false)) {
+                lightningSweep = 1.2
+            }
+            withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: true)) {
+                auraPulse = isApplied ? 1.08 : 1.03
+                sparkFlash = 0.25
+            }
         }
     }
 }
@@ -1736,65 +2017,16 @@ private struct ApplestorePrimeCard: View {
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
-    @State private var isLedActive: Bool = false
-
     var body: some View {
         HStack(spacing: 11) {
-            // Icon code AppleStore Prime vector quả táo phát sáng LED tím pulsing neon
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.26, green: 0.08, blue: 0.44),
-                                Color(red: 0.12, green: 0.03, blue: 0.22)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "apple.logo")
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color.white,
-                                BlossomTheme.sakuraLight
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.95 : 0.6), radius: isApplied ? 7 : 3.5)
-
-                // Viền LED tím pulsing neon hoàng gia đổi màu nhấp nháy phát sáng
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: isLedActive ? [
-                                BlossomTheme.sakuraLight,
-                                BlossomTheme.sakura,
-                                BlossomTheme.sakuraDeep
-                            ] : [
-                                BlossomTheme.sakuraDeep,
-                                BlossomTheme.branch,
-                                BlossomTheme.sakura
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.60 : (isLedActive ? 0.40 : 0.20)), radius: isLedActive ? 7 : 3.5)
-            .onAppear {
-                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
-                    isLedActive = true
-                }
-            }
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: false,
+                customGlowColor: BlossomTheme.sakuraLight
+            )
 
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -1874,49 +2106,14 @@ private struct AimneckVipCard: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Icon Code Vector: Tâm ngắm scope với viền hoa anh đào tím Sakura rực rỡ
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.25, green: 0.08, blue: 0.38),
-                                Color(red: 0.12, green: 0.04, blue: 0.20)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "scope")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [BlossomTheme.sakuraLight, Color.white],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
-
-                // Viền hoa anh đào tím Sakura rực rỡ
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                BlossomTheme.sakuraLight,
-                                BlossomTheme.sakura,
-                                BlossomTheme.sakuraDeep
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: BlossomTheme.sakura.opacity(isApplied ? 0.5 : 0.25), radius: 5)
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.orange : BlossomTheme.sakura
+            )
 
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -2006,48 +2203,14 @@ private struct EspAimheadV3Card: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Icon Code Vector: Kính ngắm 3D viewfinder với viền xanh Cyan Neon
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.02, green: 0.28, blue: 0.40),
-                                Color(red: 0.01, green: 0.12, blue: 0.22)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "viewfinder")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(red: 0.00, green: 0.95, blue: 1.0), Color.white],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: Color(red: 0.0, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
-
-                // Viền xanh Cyan Neon rực rỡ
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.00, green: 0.98, blue: 1.0),
-                                Color(red: 0.00, green: 0.68, blue: 0.90)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 5)
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.orange : Color(red: 0.00, green: 0.90, blue: 1.0)
+            )
 
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -2144,48 +2307,14 @@ private struct CheatItemCard: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Icon code vector: Tâm kéo cross.fill với viền tím Cyber
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.20, green: 0.10, blue: 0.42),
-                                Color(red: 0.08, green: 0.04, blue: 0.20)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "cross.fill")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(red: 0.75, green: 0.50, blue: 1.0), Color.white],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: Color(red: 0.60, green: 0.35, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
-
-                // Viền tím Cyber
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.75, green: 0.35, blue: 1.0),
-                                Color(red: 0.45, green: 0.15, blue: 0.85)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: Color(red: 0.65, green: 0.30, blue: 1.0).opacity(isApplied ? 0.5 : 0.25), radius: 5)
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.orange : BlossomTheme.sakuraDeep
+            )
 
             // Tên và thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -2274,48 +2403,14 @@ private struct EspItemCard: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Radar Icon Code: Biểu tượng radar location.viewfinder Laser Cyan
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.02, green: 0.25, blue: 0.35),
-                                Color(red: 0.01, green: 0.10, blue: 0.20)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "location.viewfinder")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(red: 0.00, green: 0.95, blue: 1.0), Color.white],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .shadow(color: Color(red: 0.00, green: 0.90, blue: 1.0).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
-
-                // Viền Laser Cyan
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.00, green: 0.95, blue: 1.0),
-                                Color(red: 0.00, green: 0.60, blue: 0.85)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: Color(red: 0.00, green: 0.88, blue: 0.95).opacity(isApplied ? 0.5 : 0.25), radius: 5)
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.orange : Color(red: 0.00, green: 0.85, blue: 0.95)
+            )
 
             // Tên và thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -2404,51 +2499,14 @@ private struct CpanelItemCard: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Icon Code Vector: Biểu tượng slider.horizontal.3 Amber-Violet
-            ZStack {
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.30, green: 0.15, blue: 0.10),
-                                Color(red: 0.18, green: 0.07, blue: 0.28)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .frame(width: 42, height: 42)
-
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.72, blue: 0.25),
-                                Color(red: 0.88, green: 0.45, blue: 1.0)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.95 : 0.5), radius: isApplied ? 7 : 3.5)
-
-                // Viền Amber-Violet
-                RoundedRectangle(cornerRadius: 11, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.98, green: 0.62, blue: 0.18),
-                                Color(red: 0.78, green: 0.28, blue: 0.92)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: isApplied ? 1.8 : 1.2
-                    )
-                    .frame(width: 42, height: 42)
-            }
-            .shadow(color: Color(red: 0.95, green: 0.55, blue: 0.15).opacity(isApplied ? 0.5 : 0.25), radius: 5)
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.orange : Color(red: 0.95, green: 0.55, blue: 0.15)
+            )
 
             // Tên và thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
@@ -2558,60 +2616,16 @@ private struct SkinItemCard: View {
 
     var body: some View {
         HStack(spacing: 11) {
-            // Icon Code Vector: Vương miện Hoàng Gia Gold hoặc Trang phục hồng tím Neon
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
             Button {
                 onPreview()
             } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: isGoldenSeason1
-                                    ? [Color(red: 0.35, green: 0.25, blue: 0.05), Color(red: 0.15, green: 0.10, blue: 0.02)]
-                                    : [Color(red: 0.32, green: 0.08, blue: 0.28), Color(red: 0.14, green: 0.03, blue: 0.12)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 42, height: 42)
-
-                    Image(systemName: isGoldenSeason1 ? "crown.fill" : "tshirt.fill")
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: isGoldenSeason1
-                                    ? [Color(red: 1.0, green: 0.90, blue: 0.35), Color(red: 0.95, green: 0.68, blue: 0.10)]
-                                    : [Color(red: 1.0, green: 0.40, blue: 0.85), Color(red: 0.75, green: 0.25, blue: 0.95)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .shadow(
-                            color: isGoldenSeason1
-                                ? Color(red: 1.0, green: 0.8, blue: 0.2).opacity(isApplied ? 0.95 : 0.5)
-                                : Color(red: 0.95, green: 0.30, blue: 0.80).opacity(isApplied ? 0.95 : 0.5),
-                            radius: isApplied ? 7 : 3.5
-                        )
-
-                    // Viền vàng Gold óng ánh hoặc hồng tím Neon
-                    RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: isGoldenSeason1
-                                    ? [Color(red: 1.0, green: 0.88, blue: 0.30), Color(red: 0.88, green: 0.62, blue: 0.10)]
-                                    : [Color(red: 1.0, green: 0.38, blue: 0.88), Color(red: 0.65, green: 0.18, blue: 0.88)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: isApplied ? 1.8 : 1.2
-                        )
-                        .frame(width: 42, height: 42)
-                }
-                .shadow(
-                    color: isGoldenSeason1
-                        ? Color(red: 1.0, green: 0.8, blue: 0.2).opacity(isApplied ? 0.5 : 0.25)
-                        : Color(red: 0.95, green: 0.30, blue: 0.80).opacity(isApplied ? 0.5 : 0.25),
-                    radius: 5
+                ElectricAppLogoTile(
+                    size: 42,
+                    cornerRadius: 11,
+                    isApplied: isApplied,
+                    isUnderMaintenance: isUnderMaintenance,
+                    customGlowColor: isGoldenSeason1 ? Color(red: 1.0, green: 0.85, blue: 0.25) : BlossomTheme.sakura
                 )
             }
             .buttonStyle(ScaleButtonStyle())

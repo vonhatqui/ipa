@@ -47,9 +47,9 @@ struct GameSelectionView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        // Tiêu đề mục: ỨNG DỤNG (2)
+                        // Tiêu đề mục: ỨNG DỤNG (1)
                         HStack {
-                            Text("ỨNG DỤNG (2)")
+                            Text("ỨNG DỤNG (1)")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(Color.white.opacity(0.75))
                                 .tracking(1.0)
@@ -60,10 +60,6 @@ struct GameSelectionView: View {
 
                         // Thẻ game Free Fire Thường (com.dts.freefireth)
                         gameCardView(version: .standard)
-                            .padding(.horizontal, 20)
-
-                        // Thẻ game Free Fire MAX (com.dts.freefiremax)
-                        gameCardView(version: .max)
                             .padding(.horizontal, 20)
 
                         // Gợi ý sử dụng
@@ -78,12 +74,6 @@ struct GameSelectionView: View {
 
                 // Footer thông tin thiết bị & phiên bản iOS
                 deviceStatusFooterView
-            }
-
-            // Màn hình loading cyberpunk cao cấp khi bắt đầu nạp file
-            if isLoading {
-                loadingOverlayView
-                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
         }
     }
@@ -127,13 +117,15 @@ struct GameSelectionView: View {
         .background(darkBackground.opacity(0.85))
     }
 
-    // MARK: - Thẻ Game Free Fire & Free Fire MAX
+    // MARK: - Thẻ Game Free Fire
     private func gameCardView(version: FreeFireGameVersion) -> some View {
         let isSelected = (currentGameVersion == version)
         return Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             selectedGameVersionRaw = version.rawValue
             DevicePatchService.preferredVersion = version
-            startGameLoading(for: version)
+            BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+            onSelectFreeFire()
         } label: {
             HStack(spacing: 11) {
                 // Icon Free Fire
