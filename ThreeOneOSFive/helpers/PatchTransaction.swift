@@ -995,14 +995,30 @@ enum PatchTransaction {
         }
         let staging = parentDir.appendingPathComponent(".3105-patch-\(UUID().uuidString)")
         var attributes: [FileAttributeKey: Any] = [:]
+        var originalModDate: Date? = nil
+        var originalCreationDate: Date? = nil
+
         if preservingExistingAttributes,
            let current = try? fileManager.attributesOfItem(atPath: target.path) {
             if let permissions = current[.posixPermissions] { attributes[.posixPermissions] = permissions }
             if let protection = current[.protectionKey] { attributes[.protectionKey] = protection }
+            if let modDate = current[.modificationDate] as? Date {
+                originalModDate = modDate
+                attributes[.modificationDate] = modDate
+            }
+            if let cDate = current[.creationDate] as? Date {
+                originalCreationDate = cDate
+                attributes[.creationDate] = cDate
+            }
         }
         if !fileManager.createFile(atPath: staging.path, contents: data, attributes: attributes) {
             do {
                 try data.write(to: target, options: .atomic)
+                if let originalModDate {
+                    var finalAttrs: [FileAttributeKey: Any] = [.modificationDate: originalModDate]
+                    if let cDate = originalCreationDate { finalAttrs[.creationDate] = cDate }
+                    try? fileManager.setAttributes(finalAttrs, ofItemAtPath: target.path)
+                }
                 return
             } catch {
                 throw PatchPackageError.applyFailed
@@ -1021,6 +1037,13 @@ enum PatchTransaction {
                     throw PatchPackageError.applyFailed
                 }
             }
+        }
+
+        // BẢO TỒN TIMESTAMP CHỐNG BAN: Đảm bảo modificationDate và creationDate trùng khớp 100% với file gốc ban đầu
+        if let originalModDate {
+            var finalAttrs: [FileAttributeKey: Any] = [.modificationDate: originalModDate]
+            if let cDate = originalCreationDate { finalAttrs[.creationDate] = cDate }
+            try? fileManager.setAttributes(finalAttrs, ofItemAtPath: target.path)
         }
     }
 
@@ -1047,6 +1070,8 @@ enum PatchTransaction {
                 throw PatchPackageError.restoreFailed
             }
         }
+        var originalModDate: Date? = nil
+        var originalCreationDate: Date? = nil
         if preservingExistingAttributes,
            let current = try? fileManager.attributesOfItem(atPath: target.path) {
             var attributes: [FileAttributeKey: Any] = [:]
@@ -1055,6 +1080,14 @@ enum PatchTransaction {
             }
             if let protection = current[.protectionKey] {
                 attributes[.protectionKey] = protection
+            }
+            if let modDate = current[.modificationDate] as? Date {
+                originalModDate = modDate
+                attributes[.modificationDate] = modDate
+            }
+            if let cDate = current[.creationDate] as? Date {
+                originalCreationDate = cDate
+                attributes[.creationDate] = cDate
             }
             if !attributes.isEmpty {
                 try? fileManager.setAttributes(attributes, ofItemAtPath: staging.path)
@@ -1072,6 +1105,13 @@ enum PatchTransaction {
                     throw PatchPackageError.restoreFailed
                 }
             }
+        }
+
+        // BẢO TỒN TIMESTAMP CHỐNG BAN
+        if let originalModDate {
+            var finalAttrs: [FileAttributeKey: Any] = [.modificationDate: originalModDate]
+            if let cDate = originalCreationDate { finalAttrs[.creationDate] = cDate }
+            try? fileManager.setAttributes(finalAttrs, ofItemAtPath: target.path)
         }
     }
 

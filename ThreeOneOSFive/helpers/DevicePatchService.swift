@@ -87,6 +87,10 @@ enum DevicePatchService {
             try? fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
             do {
                 try fileManager.copyItem(at: goldenFileURL, to: targetURL)
+                if let goldenAttrs = try? fileManager.attributesOfItem(atPath: goldenFileURL.path),
+                   let modDate = goldenAttrs[.modificationDate] as? Date {
+                    try? fileManager.setAttributes([.modificationDate: modDate], ofItemAtPath: targetURL.path)
+                }
                 log("patch: [GoldenSnapshot] Đã phục hồi 100% file gốc: \(relativePath)")
                 return true
             } catch {
@@ -260,16 +264,33 @@ enum DevicePatchService {
                     ) {
                         let parent = maxTarget.deletingLastPathComponent()
                         try? fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+                        
+                        // BẢO TỒN TIMESTAMP CHỐNG BAN CHO BẢN MAX
+                        let origAttrs = try? fileManager.attributesOfItem(atPath: maxTarget.path)
+                        let origModDate = origAttrs?[.modificationDate] as? Date
+                        let origCreationDate = origAttrs?[.creationDate] as? Date
+
                         try? rule.replacementData.write(to: maxTarget, options: .atomic)
+
+                        if let origModDate {
+                            var attrs: [FileAttributeKey: Any] = [.modificationDate: origModDate]
+                            if let cDate = origCreationDate { attrs[.creationDate] = cDate }
+                            try? fileManager.setAttributes(attrs, ofItemAtPath: maxTarget.path)
+                        }
                     }
                 }
-                // Đồng bộ plist
+                // Đồng bộ plist kèm bảo tồn timestamp
                 if let thRoot = roots["com.dts.freefireth"] {
                     let thPlist = thRoot.appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
                     let maxPlist = maxRoot.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
                     if fileManager.fileExists(atPath: thPlist.path) {
+                        let origPlistAttrs = try? fileManager.attributesOfItem(atPath: maxPlist.path)
+                        let origModDate = origPlistAttrs?[.modificationDate] as? Date
                         try? fileManager.removeItem(at: maxPlist)
                         try? fileManager.copyItem(at: thPlist, to: maxPlist)
+                        if let origModDate {
+                            try? fileManager.setAttributes([.modificationDate: origModDate], ofItemAtPath: maxPlist.path)
+                        }
                     }
                 }
             }

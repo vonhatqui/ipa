@@ -1,6 +1,30 @@
 import Foundation
 import Security
 import UIKit
+import CommonCrypto
+
+/// Cấu hình quản lý bảo trì & mở khoá tính năng từ xa qua Server API
+public struct FeatureMaintenanceConfig: Codable {
+    public var aimneck: Bool = false           // Mặc định tạm bảo trì cho đến khi Server mở
+    public var esp: Bool = false               // Mặc định tạm bảo trì cho đến khi Server mở
+    public var skin: Bool = false              // Mặc định tạm bảo trì cho đến khi Server mở
+    public var applestore_prime: Bool = true   // APPLESTORE PRIME luôn mở ổn định
+    public var maintenance_message: String? = nil
+
+    public init(
+        aimneck: Bool = false,
+        esp: Bool = false,
+        skin: Bool = false,
+        applestore_prime: Bool = true,
+        maintenance_message: String? = nil
+    ) {
+        self.aimneck = aimneck
+        self.esp = esp
+        self.skin = skin
+        self.applestore_prime = applestore_prime
+        self.maintenance_message = maintenance_message
+    }
+}
 
 /// Cấu trúc phản hồi chuẩn từ API Server CheatStore
 struct LicenseAPIResponse: Codable {
@@ -39,9 +63,13 @@ final class CheatStoreLicenseManager: ObservableObject {
     @Published var isMaintenanceActive: Bool = false
     @Published var maintenanceInfo: AppMaintenanceInfo?
 
+    // QUẢN LÝ BẢO TRÌ TÍNH NĂNG TỪ XA QUA SERVER API
+    @Published var featureConfig: FeatureMaintenanceConfig
+
     // 1. THÔNG TIN KẾT NỐI API
     private let apiBaseURL = "https://cheatingenginexyz.online/api.php"
     private let fixedAction = "verify"
+    private let hmacSecret = "CheatStoreVN_Secret_2026"
 
     // Các key lưu trữ trong UserDefaults
     private let storageKeyActivation = "cheatstore_is_activated"
@@ -53,6 +81,7 @@ final class CheatStoreLicenseManager: ObservableObject {
     private let storageKeySecondsLeft = "cheatstore_seconds_left"
     private let storageKeyDeviceID = "cheatstore_device_id"
     private let storageKeyRememberKey = "cheatstore_remember_key"
+    private let storageKeyFeatureConfig = "cheatstore_remote_feature_config"
 
     /// Tùy chọn Ghi Nhớ Key: Khi bật sẽ điền sẵn key vào ô đăng nhập, người dùng bấm Login để vào
     @Published var rememberKey: Bool {
@@ -187,6 +216,12 @@ final class CheatStoreLicenseManager: ObservableObject {
 
     init() {
         self.rememberKey = UserDefaults.standard.object(forKey: storageKeyRememberKey) as? Bool ?? true
+        if let data = UserDefaults.standard.data(forKey: "cheatstore_remote_feature_config"),
+           let saved = try? JSONDecoder().decode(FeatureMaintenanceConfig.self, from: data) {
+            self.featureConfig = saved
+        } else {
+            self.featureConfig = FeatureMaintenanceConfig()
+        }
         loadSavedStateAndAutoLogin()
     }
 
@@ -301,18 +336,32 @@ final class CheatStoreLicenseManager: ObservableObject {
             return false
         }
 
+        // 1. Kiểm tra chống Proxy Bypass nếu có proxy đang nghe lén
+        if Self.isSystemProxyDetected() {
+            print("[CheatStoreLicense] Cảnh báo: Phát hiện System Proxy đang hoạt động trên máy.")
+        }
+
+        // 2. Chữ ký HMAC-SHA256
+        let timestamp = Int64(Date().timeIntervalSince1970)
+        let signature = Self.generateHMACSignature(key: trimmedKey, deviceID: deviceID, timestamp: timestamp, secret: hmacSecret)
+
         var request = URLRequest(url: requestURL)
         request.httpMethod = "GET"
         request.timeoutInterval = 12
         request.setValue("CheatStore/\(AppUpdateChecker.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
+        request.setValue(signature, forHTTPHeaderField: "X-Signature")
+        request.setValue("\(timestamp)", forHTTPHeaderField: "X-Timestamp")
+        request.setValue(deviceID, forHTTPHeaderField: "X-Device-Id")
 
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await secureURLSession.data(for: request)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
 
             // Giải mã JSON từ phản hồi server (kể cả khi statusCode = 400, 403, 404, 426)
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                // Tự động đồng bộ trạng thái mở khoá / bảo trì tính năng từ server
+                self.updateFeatureConfig(from: json)
                 let status = (json["status"] as? String ?? "").lowercased()
                 let code = json["code"] as? String ?? ""
                 let message = json["message"] as? String
@@ -537,5 +586,128 @@ final class CheatStoreLicenseManager: ObservableObject {
         UserDefaults.standard.removeObject(forKey: storageKeyExpiryStr)
         UserDefaults.standard.removeObject(forKey: storageKeyDaysLeft)
         UserDefaults.standard.removeObject(forKey: storageKeySecondsLeft)
+    }
+
+    // MARK: - BẢO MẬT API (Chống Proxy Bypass & Chữ Ký HMAC-SHA256)
+    /// URLSession Ephemeral vô hiệu hoá Proxy hệ thống (Chống can thiệp gói tin bằng Charles, HTTP Toolkit, Mitmproxy)
+    private var secureURLSession: URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.connectionProxyDictionary = [:] // Tắt hoàn toàn Proxy cấp OS
+        config.timeoutIntervalForRequest = 12
+        config.timeoutIntervalForResource = 15
+        config.requestCachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        return URLSession(configuration: config)
+    }
+
+    /// Phát hiện xem thiết bị có đang bị can thiệp bởi Proxy hệ thống không
+    static func isSystemProxyDetected() -> Bool {
+        guard let proxySettings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() as? [String: Any] else {
+            return false
+        }
+        if let httpEnable = proxySettings["HTTPEnable"] as? Int, httpEnable == 1 { return true }
+        if let httpProxy = proxySettings["HTTPProxy"] as? String, !httpProxy.isEmpty { return true }
+        if let httpsProxy = proxySettings["HTTPSProxy"] as? String, !httpsProxy.isEmpty { return true }
+        if let pacEnable = proxySettings["ProxyAutoConfigEnable"] as? Int, pacEnable == 1 { return true }
+        if let scoped = proxySettings["__SCOPED__"] as? [String: Any] {
+            for (_, v) in scoped {
+                if let dict = v as? [String: Any] {
+                    if (dict["HTTPEnable"] as? Int == 1) || (dict["HTTPProxy"] != nil) || (dict["HTTPSProxy"] != nil) {
+                        return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    /// Tạo chữ ký bảo mật HMAC-SHA256 chống giả mạo request và chống Replay Attack
+    static func generateHMACSignature(key: String, deviceID: String, timestamp: Int64, secret: String = "CheatStoreVN_Secret_2026") -> String {
+        let payload = "\(key)|\(deviceID)|\(timestamp)"
+        let keyData = secret.data(using: .utf8) ?? Data()
+        let msgData = payload.data(using: .utf8) ?? Data()
+        var hmac = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
+        keyData.withUnsafeBytes { keyBytes in
+            msgData.withUnsafeBytes { msgBytes in
+                CCHmac(CCHmacAlgorithm(kCCHmacAlgSHA256),
+                       keyBytes.baseAddress, keyData.count,
+                       msgBytes.baseAddress, msgData.count,
+                       &hmac)
+            }
+        }
+        return hmac.map { String(format: "%02hhx", $0) }.joined()
+    }
+
+    /// Cập nhật cấu hình tính năng & bảo trì từ phản hồi của máy chủ
+    func updateFeatureConfig(from json: [String: Any]) {
+        var updated = self.featureConfig
+        var didChange = false
+
+        if let features = json["features"] as? [String: Any] {
+            if let v = features["aimneck"] as? Bool ?? features["aim"] as? Bool {
+                updated.aimneck = v
+                didChange = true
+            }
+            if let v = features["esp"] as? Bool {
+                updated.esp = v
+                didChange = true
+            }
+            if let v = features["skin"] as? Bool {
+                updated.skin = v
+                didChange = true
+            }
+            if let v = features["applestore_prime"] as? Bool ?? features["prime"] as? Bool {
+                updated.applestore_prime = v
+                didChange = true
+            }
+            if let msg = json["maintenance_message"] as? String {
+                updated.maintenance_message = msg
+                didChange = true
+            }
+        } else if let maint = json["maintenance"] as? [String: Any] {
+            if let v = maint["aimneck"] as? Bool ?? maint["aim"] as? Bool {
+                updated.aimneck = !v
+                didChange = true
+            }
+            if let v = maint["esp"] as? Bool {
+                updated.esp = !v
+                didChange = true
+            }
+            if let v = maint["skin"] as? Bool {
+                updated.skin = !v
+                didChange = true
+            }
+            if let v = maint["applestore_prime"] as? Bool ?? maint["prime"] as? Bool {
+                updated.applestore_prime = !v
+                didChange = true
+            }
+            if let msg = json["maintenance_message"] as? String {
+                updated.maintenance_message = msg
+                didChange = true
+            }
+        }
+
+        if didChange {
+            Task { @MainActor in
+                self.featureConfig = updated
+                if let encoded = try? JSONEncoder().encode(updated) {
+                    UserDefaults.standard.set(encoded, forKey: self.storageKeyFeatureConfig)
+                }
+            }
+        }
+    }
+
+    /// Lấy cấu hình tính năng từ xa từ Server
+    func fetchRemoteFeatureConfig() async {
+        guard let url = URL(string: "\(apiBaseURL)?action=config&device_id=\(deviceID)") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.timeoutInterval = 8
+        req.setValue("CheatStore/\(AppUpdateChecker.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
+        req.setValue("application/json", forHTTPHeaderField: "Accept")
+
+        if let (data, _) = try? await secureURLSession.data(for: req),
+           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            self.updateFeatureConfig(from: json)
+        }
     }
 }

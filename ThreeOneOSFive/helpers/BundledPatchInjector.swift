@@ -106,18 +106,18 @@ enum BundledPatchInjector {
                 }
             }
 
-            // Dọn dẹp sạch mọi file mod cũ không còn dùng và các file có tên lộ liễu
+            // Chỉ dọn dẹp các file rác tạm thời (.tmp, .bak), TUYỆT ĐỐI KHÔNG xóa file .3105 và .dat hợp lệ của người dùng
             let staleFileKeywords: [String] = [
-                "aimlock", "enginecore", "only aim", "dragantena", "esp-20ffth",
-                "dinhvi", "lib_app_runtime", "lib_app_resources", "lib_app_3in1", "3in1", "cmenu"
+                "enginecore.bak", "lib_app_runtime.bak", "cmenu.bak"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
                     let lower = file.lowercased()
-                    let isStale = staleFileKeywords.contains { lower.contains($0) }
-                    if lower.hasSuffix(".3105") || isStale {
+                    let isTempOrBak = lower.hasSuffix(".tmp") || lower.hasSuffix(".bak") || lower.hasSuffix(".download")
+                    let isExplicitStale = staleFileKeywords.contains { lower == $0 }
+                    if isTempOrBak || isExplicitStale {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
-                        print("[BundledPatchInjector] Đã loại bỏ file mod cũ: \(file)")
+                        print("[BundledPatchInjector] Đã loại bỏ file rác tạm thời: \(file)")
                     }
                 }
             }
