@@ -52,6 +52,13 @@ struct CheatStoreDashboardView: View {
     @State private var copiedKey = false
     @State private var copiedDeviceID = false
     @State private var previewSkinInfo: SkinPreviewInfo? = nil
+    @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
+    @State private var showCleanRestoreConfirm = false
+    @State private var isRestoringClean = false
+
+    private var currentGameVersion: FreeFireGameVersion {
+        FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
+    }
 
 
 
@@ -191,11 +198,14 @@ struct CheatStoreDashboardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Nút Mở Game Free Fire Nằm Ngay Trên Thanh Dashboard Điều Hướng
+                // Cụm Nút Điều Khiển Bản FF/MAX, 1-Chạm Khôi Phục Sạch & Nút Mở Game
                 if selectedTab == .home || selectedTab == .esp || selectedTab == .skin {
-                    quickLaunchCardView
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, 8)
+                    VStack(spacing: 8) {
+                        gameVersionAndRestoreControlBar
+                        quickLaunchCardView
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
                 }
 
                 // Thanh Dashboard điều hướng phía dưới
@@ -227,10 +237,23 @@ struct CheatStoreDashboardView: View {
                 dismissButton: .default(Text("Đã hiểu"))
             )
         }
+        .confirmationDialog(
+            "Khôi phục sạch dữ liệu game?",
+            isPresented: $showCleanRestoreConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Khôi phục sạch 100% file gốc", role: .destructive) {
+                performCleanRestore()
+            }
+            Button("Hủy", role: .cancel) { }
+        } message: {
+            Text("Toàn bộ file mod sẽ được dọn sạch và hoàn nguyên 100% về file gốc ban đầu từ Golden Snapshot cho cả Free Fire và Free Fire MAX.")
+        }
         .sheet(item: $patchStore.passwordRequest, onDismiss: patchStore.cancelUnlock) { request in
             PatchUnlockView(store: patchStore, request: request)
         }
         .onAppear {
+            DevicePatchService.preferredVersion = currentGameVersion
             appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
         }
@@ -1418,6 +1441,145 @@ struct CheatStoreDashboardView: View {
         return formatter.string(from: date)
     }
 
+    // MARK: - Cụm Điều Khiển: Chọn Bản FF/MAX & 1-Chạm Khôi Phục Sạch
+    private var gameVersionAndRestoreControlBar: some View {
+        HStack(spacing: 8) {
+            // Bộ chọn Segmented FF Thường / FF MAX
+            HStack(spacing: 3) {
+                ForEach(FreeFireGameVersion.allCases) { version in
+                    let isSelected = (currentGameVersion == version)
+                    Button {
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                            selectedGameVersionRaw = version.rawValue
+                            DevicePatchService.preferredVersion = version
+                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: version.iconSystemName)
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundStyle(isSelected ? .white : Color.white.opacity(0.55))
+
+                            Text(version.shortName)
+                                .font(.system(size: 11, weight: isSelected ? .bold : .medium, design: .rounded))
+                                .foregroundStyle(isSelected ? .white : Color.white.opacity(0.65))
+                        }
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 6)
+                        .background(
+                            Group {
+                                if isSelected {
+                                    LinearGradient(
+                                        colors: [BlossomTheme.sakuraDeep, brandBlue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                } else {
+                                    Color.clear
+                                }
+                            }
+                        )
+                        .clipShape(Capsule())
+                        .overlay(
+                            Capsule()
+                                .stroke(isSelected ? Color.white.opacity(0.35) : Color.clear, lineWidth: 0.8)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(3)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.45))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(brandBlue.opacity(0.3), lineWidth: 1)
+            )
+
+            Spacer(minLength: 4)
+
+            // Nút 1-Chạm Khôi Phục Sạch
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showCleanRestoreConfirm = true
+            } label: {
+                HStack(spacing: 5) {
+                    if isRestoringClean {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.65)
+                    } else {
+                        Image(systemName: "arrow.counterclockwise.shield.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color(red: 1.0, green: 0.38, blue: 0.45))
+                    }
+
+                    Text("Khôi phục sạch")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 0.70, green: 0.10, blue: 0.25).opacity(0.40),
+                                    Color(red: 0.45, green: 0.08, blue: 0.20).opacity(0.50)
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 1.0, green: 0.35, blue: 0.45).opacity(0.7),
+                                    Color(red: 0.8, green: 0.15, blue: 0.3).opacity(0.35)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: Color.red.opacity(0.25), radius: 4, x: 0, y: 1)
+            }
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(isRestoringClean)
+        }
+    }
+
+    // MARK: - Thực Thi 1-Chạm Khôi Phục Sạch
+    private func performCleanRestore() {
+        guard !isRestoringClean else { return }
+        isRestoringClean = true
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Phục hồi 100% file gốc từ Golden Snapshot và dọn sạch receipts
+            DevicePatchService.cleanRestoreAllModifications()
+
+            DispatchQueue.main.async {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    self.appliedProjectIDs.removeAll()
+                    self.workingPatchID = nil
+                    self.isRestoringClean = false
+                }
+
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                self.alertMessage = "✅ ĐÃ KHÔI PHỤC SẠCH 100%!\n\nToàn bộ file gốc của \(self.currentGameVersion.fullTitle) đã được phục hồi nguyên bản an toàn. Đã gỡ bỏ toàn bộ trạng thái mod."
+                self.showAlert = true
+            }
+        }
+    }
+
     // MARK: - Khởi Chạy Nhanh Game Free Fire
     private var isAnyModActive: Bool {
         !appliedProjectIDs.isEmpty
@@ -1449,9 +1611,19 @@ struct CheatStoreDashboardView: View {
 
                 VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
-                        Text("Free Fire")
+                        Text(currentGameVersion.fullTitle)
                             .font(.system(size: 15, weight: .bold))
                             .foregroundStyle(.white)
+
+                        Text(currentGameVersion.shortName.uppercased())
+                            .font(.system(size: 8.5, weight: .black, design: .rounded))
+                            .foregroundStyle(currentGameVersion == .max ? Color.yellow : brandBlue)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(
+                                (currentGameVersion == .max ? Color.yellow : brandBlue).opacity(0.12)
+                            )
+                            .cornerRadius(4)
 
                         if isAnyModActive {
                             Text("SẴN SÀNG")
@@ -1472,7 +1644,7 @@ struct CheatStoreDashboardView: View {
                         }
                     }
 
-                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chưa nạp dữ liệu mod • Vào game thường")
+                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Đang chọn \(currentGameVersion.fullTitle) • Vào game thường")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(isAnyModActive ? BlossomTheme.sakuraLight : Color.gray)
                         .lineLimit(1)
@@ -1531,38 +1703,43 @@ struct CheatStoreDashboardView: View {
     private func launchFreeFire() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
-        let targetSchemes = [
-            "freefire://",
-            "freefireth://",
-            "freefiremax://",
-            "dtsfreefire://"
-        ]
+        var targetSchemes = currentGameVersion.schemes
+        let fallbackSchemes = ["freefireth://", "freefire://", "freefiremax://", "dtsfreefire://"]
+        for s in fallbackSchemes where !targetSchemes.contains(s) {
+            targetSchemes.append(s)
+        }
 
         for scheme in targetSchemes {
             if let url = URL(string: scheme), UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url, options: [:]) { success in
                     if success {
-                        print("[CheatStore VN] Đã mở Free Fire qua: \(scheme)")
+                        print("[CheatStore VN] Đã mở \(currentGameVersion.fullTitle) qua: \(scheme)")
                     }
                 }
                 return
             }
         }
 
-        // Nếu canOpenURL chưa bắt được do policy iOS, thử mở trực tiếp freefire://
-        if let defaultURL = URL(string: "freefire://") {
-            UIApplication.shared.open(defaultURL, options: [:]) { success in
+        // Nếu canOpenURL chưa bắt được do policy iOS, thử mở trực tiếp scheme chính của bản đã chọn
+        if let primaryScheme = currentGameVersion.schemes.first, let primaryURL = URL(string: primaryScheme) {
+            UIApplication.shared.open(primaryURL, options: [:]) { success in
                 if success { return }
 
-                // Thử mở Free Fire MAX
-                if let maxURL = URL(string: "freefiremax://") {
-                    UIApplication.shared.open(maxURL, options: [:]) { maxSuccess in
-                        if !maxSuccess {
+                // Fallback thử mở bản còn lại
+                let otherVersion = (currentGameVersion == .standard ? FreeFireGameVersion.max : FreeFireGameVersion.standard)
+                if let fallbackScheme = otherVersion.schemes.first, let fallbackURL = URL(string: fallbackScheme) {
+                    UIApplication.shared.open(fallbackURL, options: [:]) { fallbackSuccess in
+                        if !fallbackSuccess {
                             DispatchQueue.main.async {
-                                self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở Free Fire từ màn hình chính."
+                                self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở \(self.currentGameVersion.fullTitle) từ màn hình chính."
                                 self.showAlert = true
                             }
                         }
+                    }
+                } else {
+                    DispatchQueue.main.async {
+                        self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở \(self.currentGameVersion.fullTitle) từ màn hình chính."
+                        self.showAlert = true
                     }
                 }
             }

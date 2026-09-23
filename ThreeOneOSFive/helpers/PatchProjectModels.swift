@@ -345,3 +345,54 @@ enum PatchPathValidator {
         return URL(fileURLWithPath: path, isDirectory: url.hasDirectoryPath).standardizedFileURL
     }
 }
+
+// MARK: - Free Fire Version Support
+public enum FreeFireGameVersion: String, CaseIterable, Identifiable, Codable {
+    case standard = "standard"
+    case max = "max"
+
+    public var id: String { rawValue }
+
+    public var shortName: String {
+        switch self {
+        case .standard: return "FF Thường"
+        case .max: return "FF MAX"
+        }
+    }
+
+    public var fullTitle: String {
+        switch self {
+        case .standard: return "Free Fire"
+        case .max: return "Free Fire MAX"
+        }
+    }
+
+    public var primaryBundleID: String {
+        switch self {
+        case .standard: return "com.dts.freefireth"
+        case .max: return "com.dts.freefiremax"
+        }
+    }
+
+    public var candidateBundleIDs: [String] {
+        switch self {
+        case .standard: return ["com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire"]
+        case .max: return ["com.dts.freefiremax"]
+        }
+    }
+
+    public var schemes: [String] {
+        switch self {
+        case .standard: return ["freefireth://", "freefire://", "dtsfreefire://"]
+        case .max: return ["freefiremax://"]
+        }
+    }
+
+    public var iconSystemName: String {
+        switch self {
+        case .standard: return "flame.fill"
+        case .max: return "bolt.fill"
+        }
+    }
+}
+

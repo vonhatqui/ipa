@@ -422,6 +422,31 @@ enum DevicePatchService {
         }
     }
 
+    /// 1-Chạm Khôi phục sạch toàn bộ dữ liệu game Free Fire & Free Fire MAX từ Golden Snapshots
+    @discardableResult
+    static func cleanRestoreAllModifications() -> Bool {
+        serialQueue.sync {
+            let fileManager = FileManager.default
+
+            // 1. Phục hồi 100% tất cả các file từ Golden Snapshot cho toàn bộ container
+            restoreAllGoldenSnapshots(for: nil)
+
+            // 2. Dọn sạch toàn bộ receipts và journal trong thư mục backup
+            if let backupRoot = try? PatchProjectLibrary.backupRootURL(),
+               let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
+                for entry in entries {
+                    let dir = backupRoot.appendingPathComponent(entry)
+                    try? fileManager.removeItem(at: dir)
+                }
+            }
+
+            // 3. Reset in-memory cache
+            invalidateAppliedCache()
+            log("patch: Đã hoàn tất 1-Chạm Khôi phục sạch toàn bộ dữ liệu game.")
+            return true
+        }
+    }
+
     static func inspectRestore(receipt: PatchTransactionReceipt) throws -> PatchRestoreInspection {
         let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
         return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
@@ -535,6 +560,9 @@ enum DevicePatchService {
         project.allBundleIdentifiers
     }
 
+    // MARK: - Quản lý Phiên bản Free Fire Ưu tiên
+    static var preferredVersion: FreeFireGameVersion = .standard
+
     static func resolveContainers(bundleIDs: [String]) throws -> [String: URL] {
         var roots: [String: URL] = [:]
 
@@ -545,7 +573,9 @@ enum DevicePatchService {
         }
 
         if detectedFreeFireURL == nil {
-            let ffCandidates = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+            let ffCandidates: [String] = preferredVersion == .max
+                ? ["com.dts.freefiremax", "com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire"]
+                : ["com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire", "com.dts.freefiremax"]
             for c in ffCandidates {
                 if let p = ContainerStore.resolveAppContainerPath(bundleID: c) {
                     detectedFreeFireURL = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: p, isDirectory: true))

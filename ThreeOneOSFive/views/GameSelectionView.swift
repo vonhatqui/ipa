@@ -13,14 +13,22 @@ struct GameSelectionView: View {
     @State private var stepCardOpacity: Double = 1.0
     @State private var stepCardOffsetY: CGFloat = 0.0
     @State private var isFinalReady: Bool = false
+    @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
+    @State private var activeVersion: FreeFireGameVersion = .standard
 
-    private let loadingSteps: [String] = [
-        "Loading Free Fire",
-        "Bypass Anti-cheat",
-        "Inject 3105 Kernel Driver",
-        "Sync AimAssist & Memory ESP",
-        "All Systems Ready • Launching..."
-    ]
+    private var currentGameVersion: FreeFireGameVersion {
+        FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
+    }
+
+    private var loadingSteps: [String] {
+        [
+            "Loading \(activeVersion.fullTitle)",
+            "Bypass Anti-cheat",
+            "Inject 3105 Kernel Driver",
+            "Sync AimAssist & Memory ESP",
+            "All Systems Ready • Launching..."
+        ]
+    }
 
     // Theme: Blossom Dark Sakura (blossom.re)
     private let brandBlue = BlossomTheme.sakura
@@ -39,9 +47,9 @@ struct GameSelectionView: View {
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        // Tiêu đề mục: ỨNG DỤNG (1) theo đúng ảnh mẫu
+                        // Tiêu đề mục: ỨNG DỤNG (2)
                         HStack {
-                            Text("ỨNG DỤNG (1)")
+                            Text("ỨNG DỤNG (2)")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(Color.white.opacity(0.75))
                                 .tracking(1.0)
@@ -50,8 +58,12 @@ struct GameSelectionView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 18)
 
-                        // Thẻ game Free Fire (com.dts.freefireth)
-                        freeFireCardView
+                        // Thẻ game Free Fire Thường (com.dts.freefireth)
+                        gameCardView(version: .standard)
+                            .padding(.horizontal, 20)
+
+                        // Thẻ game Free Fire MAX (com.dts.freefiremax)
+                        gameCardView(version: .max)
                             .padding(.horizontal, 20)
 
                         // Gợi ý sử dụng
@@ -115,10 +127,13 @@ struct GameSelectionView: View {
         .background(darkBackground.opacity(0.85))
     }
 
-    // MARK: - Thẻ Game Free Fire (Khớp 100% ảnh mẫu)
-    private var freeFireCardView: some View {
-        Button {
-            startGameLoading()
+    // MARK: - Thẻ Game Free Fire & Free Fire MAX
+    private func gameCardView(version: FreeFireGameVersion) -> some View {
+        let isSelected = (currentGameVersion == version)
+        return Button {
+            selectedGameVersionRaw = version.rawValue
+            DevicePatchService.preferredVersion = version
+            startGameLoading(for: version)
         } label: {
             HStack(spacing: 11) {
                 // Icon Free Fire
@@ -126,11 +141,23 @@ struct GameSelectionView: View {
 
                 // Thông tin Game
                 VStack(alignment: .leading, spacing: 2.5) {
-                    Text("Free Fire")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
+                    HStack(spacing: 6) {
+                        Text(version.fullTitle)
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
 
-                    Text("com.dts.freefireth")
+                        if isSelected {
+                            Text("ĐANG CHỌN")
+                                .font(.system(size: 8, weight: .black, design: .rounded))
+                                .foregroundStyle(brandCyan)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(brandCyan.opacity(0.12))
+                                .cornerRadius(3)
+                        }
+                    }
+
+                    Text(version.primaryBundleID)
                         .font(.system(size: 10.5, weight: .medium, design: .monospaced))
                         .foregroundStyle(Color.white.opacity(0.65))
                 }
@@ -162,7 +189,7 @@ struct GameSelectionView: View {
             .cornerRadius(13)
             .overlay(
                 RoundedRectangle(cornerRadius: 13)
-                    .stroke(brandBlue.opacity(0.25), lineWidth: 1)
+                    .stroke(isSelected ? brandBlue.opacity(0.5) : brandBlue.opacity(0.2), lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.35), radius: 6, x: 0, y: 3)
         }
@@ -408,7 +435,12 @@ struct GameSelectionView: View {
     }
 
     // MARK: - Bắt đầu quá trình nạp file Mẫu 1 (Hiện từng câu rồi biến mất)
-    private func startGameLoading() {
+    private func startGameLoading(for version: FreeFireGameVersion? = nil) {
+        if let v = version {
+            activeVersion = v
+        } else {
+            activeVersion = currentGameVersion
+        }
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
         loadProgress = 0.0
