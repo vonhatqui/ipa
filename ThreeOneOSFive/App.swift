@@ -111,11 +111,6 @@ struct ThreeOneOSFiveApp: App {
                 splashOverlayView
                 noticeOverlayView
             }
-            .onChange(of: licenseManager.isActivated) { activated in
-                if !activated {
-                    isGameLoaded = false
-                }
-            }
             .tint(AppTheme.accent)
             .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
             .sheet(isPresented: $showAttribution) {
