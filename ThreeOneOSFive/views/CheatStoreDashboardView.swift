@@ -84,14 +84,21 @@ struct CheatStoreDashboardView: View {
         return name.contains("định vị") || name.contains("dinh vi") || name.contains("dinhvi") || name.contains("esp") || name.contains("blue") || filename.contains("network")
     }
 
+    private func isAppleIpaV2Item(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("apple ipa") || name.contains("apple_ipa") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2")
+    }
+
     private func isApplestorePrimeItem(_ item: PatchLibraryItem) -> Bool {
+        if isAppleIpaV2Item(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("applestore") || name.contains("prime") || filename.contains("applestore")
     }
 
     private func isCpanelItem(_ item: PatchLibraryItem) -> Bool {
-        if isApplestorePrimeItem(item) { return false }
+        if isAppleIpaV2Item(item) || isApplestorePrimeItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("cpanel") || name.contains("leaked") || filename.contains("cpanel")
@@ -104,7 +111,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        if isAimneckVipItem(item) || isEspAimheadV3Item(item) || isEspItem(item) || isCpanelItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) { return false }
+        if isAimneckVipItem(item) || isEspAimheadV3Item(item) || isEspItem(item) || isCpanelItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) || isAppleIpaV2Item(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("aim") || name.contains("drag") || filename.contains("system")
@@ -113,6 +120,9 @@ struct CheatStoreDashboardView: View {
     /// Kiểm tra tính năng có đang bị khoá bảo trì từ xa từ Server API không
     private func isItemUnderMaintenance(_ item: PatchLibraryItem) -> Bool {
         let cfg = licenseManager.featureConfig
+        if isAppleIpaV2Item(item) {
+            return !cfg.applestore_prime
+        }
         if isApplestorePrimeItem(item) {
             return !cfg.applestore_prime
         }
@@ -150,6 +160,13 @@ struct CheatStoreDashboardView: View {
             return found
         }
         return PatchProjectLibrary.loadBundledItem(named: "lib_app_system")
+    }
+
+    private var appleIpaV2Item: PatchLibraryItem? {
+        if let found = patchStore.items.first(where: { isAppleIpaV2Item($0) }) {
+            return found
+        }
+        return PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
     }
 
     private var applestorePrimeItem: PatchLibraryItem? {
@@ -426,8 +443,22 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 10)
 
-                // Thẻ APPLESTORE PRIME nổi bật hàng đầu
+                // Thẻ APPLE IPA V2 & APPLESTORE PRIME nổi bật hàng đầu
                 VStack(spacing: 14) {
+                    AppleIpaV2Card(
+                        item: appleIpaV2Item,
+                        isApplied: appleIpaV2Item != nil && appliedProjectIDs.contains(appleIpaV2Item!.id),
+                        isWorking: appleIpaV2Item != nil && workingPatchID == appleIpaV2Item!.id,
+                        brandBlue: brandBlue,
+                        onToggle: { enable in
+                            if let item = appleIpaV2Item {
+                                handleToggle(item: item, enable: enable)
+                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2") {
+                                handleToggle(item: loaded, enable: enable)
+                            }
+                        }
+                    )
+
                     ApplestorePrimeCard(
                         item: applestorePrimeItem,
                         isApplied: applestorePrimeItem != nil && appliedProjectIDs.contains(applestorePrimeItem!.id),
@@ -1462,9 +1493,9 @@ struct CheatStoreDashboardView: View {
             do {
                 if enable {
                     // BẬT chức năng (Apply)
-                    // Khi bật APPLESTORE PRIME, tự động dọn dẹp sạch tất cả các mod khác để chống xung đột & văng game
-                    if self.isApplestorePrimeItem(item) {
-                        let allOtherMods = [self.espItem, self.cpanelItem, self.espAimheadV3Item, self.aimneckVipItem, self.aimItem].compactMap { $0 }
+                    // Khi bật APPLE IPA V2 hoặc APPLESTORE PRIME, tự động dọn dẹp sạch tất cả các mod khác để chống xung đột & văng game
+                    if self.isAppleIpaV2Item(item) || self.isApplestorePrimeItem(item) {
+                        let allOtherMods = [self.appleIpaV2Item, self.applestorePrimeItem, self.espItem, self.cpanelItem, self.espAimheadV3Item, self.aimneckVipItem, self.aimItem].compactMap { $0 }
                         for other in allOtherMods where other.id != item.id && self.appliedProjectIDs.contains(other.id) {
                             let otherProj = self.resolveProject(for: other)
                             if let receipt = DevicePatchService.latestReceipt(projectID: other.id) {
@@ -1565,6 +1596,9 @@ struct CheatStoreDashboardView: View {
     }
 
     private func displayName(for item: PatchLibraryItem) -> String {
+        if isAppleIpaV2Item(item) {
+            return "APPLE IPA V2"
+        }
         if isApplestorePrimeItem(item) {
             return "APPLESTORE PRIME"
         }
@@ -2006,6 +2040,109 @@ private struct ElectricAppLogoTile: View {
                 sparkFlash = 0.25
             }
         }
+    }
+}
+
+// MARK: - AppleIpaV2Card (Chức Năng SIÊU CẤP: APPLE IPA V2 - Menu Tím Độc Quyền)
+private struct AppleIpaV2Card: View {
+    let item: PatchLibraryItem?
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: 11) {
+            // Icon Logo App với hiệu ứng điện quanh app & phóng sét xuyên qua app
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: false,
+                customGlowColor: BlossomTheme.sakura
+            )
+
+            // Thông tin chức năng
+            VStack(alignment: .leading, spacing: 2.5) {
+                HStack(spacing: 5) {
+                    Text("APPLE IPA V2")
+                        .font(.system(size: 13.5, weight: .black))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    // Tag V2 Tím Neon
+                    PulsingLedTag(text: "V2 PRO")
+                }
+
+                Text("Menu Mod Tím Độc Quyền • ESP & Aim Siêu Dính")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .lineLimit(1)
+
+                // Trạng thái Bật / Tắt
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 5.5, height: 5.5)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+
+                    Text("•")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.gray.opacity(0.6))
+
+                    Text("Menu Tím CheatStore")
+                        .font(.system(size: 8.5, weight: .semibold))
+                        .foregroundStyle(BlossomTheme.sakura)
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            // Nút Switch Bật / Tắt (thu gọn 15-20%)
+            if isWorking {
+                ProgressView()
+                    .tint(BlossomTheme.sakura)
+                    .frame(width: 44)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(BlossomTheme.sakura)
+                .scaleEffect(0.85)
+            }
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.12, green: 0.05, blue: 0.22).opacity(0.92),
+                    Color(red: 0.07, green: 0.03, blue: 0.14).opacity(0.88)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(13)
+        .overlay(
+            RoundedRectangle(cornerRadius: 13)
+                .stroke(
+                    isApplied
+                        ? BlossomTheme.sakura.opacity(0.95)
+                        : BlossomTheme.sakura.opacity(0.25),
+                    lineWidth: isApplied ? 1.5 : 1
+                )
+        )
+        .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.45) : BlossomTheme.sakura.opacity(0.12), radius: 8)
     }
 }
 
