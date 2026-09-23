@@ -14,7 +14,6 @@ struct ThreeOneOSFiveApp: App {
     @State private var showOnboarding = false
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
-    @State private var isGameLoaded = false
     @State private var isSplashActive = true
     @State private var mainUIAppeared = false
     @State private var showPostSplashNotice = false
@@ -41,12 +40,7 @@ struct ThreeOneOSFiveApp: App {
     private var mainContentView: some View {
         Group {
             if licenseManager.isActivated {
-                if isGameLoaded {
-                    CheatStoreDashboardView(onBackToGames: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isGameLoaded = false
-                        }
-                    })
+                CheatStoreDashboardView(onBackToGames: nil)
                     .environmentObject(appState)
                     .environmentObject(patchDraftCoordinator)
                     .environmentObject(fileOperationCoordinator)
@@ -54,16 +48,7 @@ struct ThreeOneOSFiveApp: App {
                     .environmentObject(repositoryStore)
                     .environment(\.appLanguage, language)
                     .environment(\.locale, language.locale)
-                    .transition(.asymmetric(insertion: .move(edge: .trailing).combined(with: .opacity), removal: .opacity))
-                } else {
-                    GameSelectionView(onSelectFreeFire: {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            isGameLoaded = true
-                        }
-                    })
-                    .environmentObject(patchStore)
-                    .transition(.asymmetric(insertion: .opacity, removal: .move(edge: .leading).combined(with: .opacity)))
-                }
+                    .transition(.opacity)
             } else {
                 CheatStoreLoginView(licenseManager: licenseManager)
                     .zIndex(2)

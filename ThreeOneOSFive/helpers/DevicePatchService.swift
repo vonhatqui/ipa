@@ -452,10 +452,11 @@ enum DevicePatchService {
             // 1. Phục hồi 100% tất cả các file từ Golden Snapshot cho toàn bộ container
             restoreAllGoldenSnapshots(for: nil)
 
-            // 2. Dọn sạch toàn bộ receipts và journal trong thư mục backup
+            // 2. Dọn sạch toàn bộ receipts và journal trong thư mục backup (Bảo tồn Golden Snapshots vĩnh viễn)
             if let backupRoot = try? PatchProjectLibrary.backupRootURL(),
                let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
                 for entry in entries {
+                    if entry == "GoldenSnapshots" { continue } // Không bao giờ xóa bản sao lưu gốc sạch
                     let dir = backupRoot.appendingPathComponent(entry)
                     try? fileManager.removeItem(at: dir)
                 }

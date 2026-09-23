@@ -52,13 +52,8 @@ struct CheatStoreDashboardView: View {
     @State private var copiedKey = false
     @State private var copiedDeviceID = false
     @State private var previewSkinInfo: SkinPreviewInfo? = nil
-    @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
     @State private var showCleanRestoreConfirm = false
     @State private var isRestoringClean = false
-
-    private var currentGameVersion: FreeFireGameVersion {
-        FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
-    }
 
 
 
@@ -219,21 +214,16 @@ struct CheatStoreDashboardView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                // Cụm Nút Điều Khiển Bản FF/MAX, 1-Chạm Khôi Phục Sạch & Nút Mở Game
-                if selectedTab == .home || selectedTab == .esp || selectedTab == .skin {
-                    VStack(spacing: 8) {
-                        gameVersionAndRestoreControlBar
-                        quickLaunchCardView
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
+                // Dock Mở Game Nhanh (Chuyên biệt Free Fire)
+                if selectedTab != .profile {
+                    quickLaunchCardView
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 8)
                 }
 
                 // Thanh Dashboard điều hướng phía dưới
                 bottomTabBar
-
-                // Footer thông tin thiết bị & phiên bản iOS & trạng thái hỗ trợ
-                deviceStatusFooterView
+                    .padding(.bottom, 6)
             }
 
             // Modal xem trước ảnh Skin
@@ -259,7 +249,7 @@ struct CheatStoreDashboardView: View {
             )
         }
         .confirmationDialog(
-            "Khôi phục sạch dữ liệu game?",
+            "Khôi phục sạch dữ liệu Free Fire?",
             isPresented: $showCleanRestoreConfirm,
             titleVisibility: .visible
         ) {
@@ -268,13 +258,13 @@ struct CheatStoreDashboardView: View {
             }
             Button("Hủy", role: .cancel) { }
         } message: {
-            Text("Toàn bộ file mod sẽ được dọn sạch và hoàn nguyên 100% về file gốc ban đầu từ Golden Snapshot cho cả Free Fire và Free Fire MAX.")
+            Text("Toàn bộ file mod sẽ được dọn sạch và hoàn nguyên 100% về file gốc ban đầu từ Golden Snapshot cho Free Fire.")
         }
         .sheet(item: $patchStore.passwordRequest, onDismiss: patchStore.cancelUnlock) { request in
             PatchUnlockView(store: patchStore, request: request)
         }
         .onAppear {
-            DevicePatchService.preferredVersion = currentGameVersion
+            DevicePatchService.preferredVersion = .standard
             appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
             Task {
@@ -285,63 +275,96 @@ struct CheatStoreDashboardView: View {
 
     // MARK: - Top Header
     private var topHeaderView: some View {
-        HStack(spacing: 12) {
-            if let onBackToGames {
-                Button {
-                    onBackToGames()
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 13, weight: .bold))
-                        Text("Ứng Dụng")
-                            .font(.system(size: 12, weight: .bold))
-                    }
-                    .foregroundStyle(brandBlue)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(brandBlue.opacity(0.12))
-                    .cornerRadius(12)
-                }
-            } else {
-                CheatStoreLogoView(size: 34, cornerRadius: 9)
-            }
+        HStack(spacing: 10) {
+            CheatStoreLogoView(size: 34, cornerRadius: 9)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("CheatStore VN")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .font(.system(size: 15.5, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
                 HStack(spacing: 4) {
                     Circle()
                         .fill(brandBlue)
-                        .frame(width: 6, height: 6)
+                        .frame(width: 5.5, height: 5.5)
+                        .shadow(color: brandBlue.opacity(0.8), radius: 3)
                     Text("VIP ĐÃ KÍCH HOẠT")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(brandBlue)
                 }
             }
 
             Spacer()
 
-            if selectedTab == .home || selectedTab == .esp || selectedTab == .skin {
-                Button {
-                    BundledPatchInjector.autoImportBundledPatches(into: patchStore)
-                    Task {
-                        await licenseManager.fetchRemoteFeatureConfig()
+            // Nút Khôi Phục Sạch trên Header
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showCleanRestoreConfirm = true
+            } label: {
+                HStack(spacing: 4) {
+                    if isRestoringClean {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.65)
+                    } else {
+                        Image(systemName: "arrow.counterclockwise.shield.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(Color(red: 1.0, green: 0.40, blue: 0.50))
                     }
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundStyle(brandBlue)
-                        .padding(8)
-                        .background(brandBlue.opacity(0.12))
-                        .clipShape(Circle())
+
+                    Text("Khôi phục")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
                 }
+                .padding(.horizontal, 9)
+                .padding(.vertical, 6)
+                .background(
+                    Capsule()
+                        .fill(Color(red: 0.65, green: 0.08, blue: 0.22).opacity(0.35))
+                )
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color(red: 1.0, green: 0.35, blue: 0.50).opacity(0.7),
+                                    Color(red: 0.8, green: 0.15, blue: 0.3).opacity(0.35)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: Color.red.opacity(0.2), radius: 4)
             }
+            .buttonStyle(ScaleButtonStyle())
+            .disabled(isRestoringClean)
+
+            // Nút Làm mới
+            Button {
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+                Task {
+                    await licenseManager.fetchRemoteFeatureConfig()
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 12.5, weight: .bold))
+                    .foregroundStyle(brandBlue)
+                    .frame(width: 30, height: 30)
+                    .background(brandBlue.opacity(0.12))
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(brandBlue.opacity(0.3), lineWidth: 0.8)
+                    )
+            }
+            .buttonStyle(ScaleButtonStyle())
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(darkBackground.opacity(0.85))
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
+        .background(darkBackground.opacity(0.92))
     }
 
     // MARK: - Tab 1: Trang Chủ (Hiện Aim & Mod)
@@ -350,30 +373,24 @@ struct CheatStoreDashboardView: View {
             VStack(spacing: 16) {
                 // DANH MỤC 1: APPLESTORE PRIME - HOẠT ĐỘNG CHÍNH (CHỐNG VĂNG GAME)
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
                             Text("APPLESTORE PRIME")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(BlossomTheme.sakura)
-                                .tracking(1.1)
+                                .tracking(1.0)
 
                             Text("ĐANG HOẠT ĐỘNG")
                                 .font(.system(size: 8, weight: .black))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2.5)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.green, Color(red: 0.1, green: 0.7, blue: 0.3)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
+                                .background(Color.green)
                                 .cornerRadius(4)
                         }
 
-                        Text("Menu Mod Độc Quyền • Ổn Định Tuyệt Đối 100% Chống Văng Game")
-                            .font(.system(size: 12, weight: .medium))
+                        Text("Menu Mod Độc Quyền • Ổn định tuyệt đối chống văng")
+                            .font(.system(size: 11.5, weight: .medium))
                             .foregroundStyle(.gray)
                     }
                     Spacer()
@@ -401,12 +418,12 @@ struct CheatStoreDashboardView: View {
 
                 // DANH MỤC 2: CÁC CHỨC NĂNG BỔ TRỢ / BẢO TRÌ NÂNG CẤP
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text(licenseManager.featureConfig.aimneck ? "CÁC CHỨC NĂNG BỔ TRỢ" : "CÁC CHỨC NĂNG ĐANG BẢO TRÌ")
+                            Text(licenseManager.featureConfig.aimneck ? "CHỨC NĂNG BỔ TRỢ" : "CHỨC NĂNG ĐANG BẢO TRÌ")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(licenseManager.featureConfig.aimneck ? BlossomTheme.sakura : Color.orange)
-                                .tracking(1.1)
+                                .tracking(1.0)
 
                             if licenseManager.featureConfig.aimneck {
                                 Text("ĐÃ MỞ KHÓA")
@@ -426,19 +443,13 @@ struct CheatStoreDashboardView: View {
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2.5)
-                                .background(
-                                    LinearGradient(
-                                        colors: [Color.orange, Color.red],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
+                                .background(Color.orange)
                                 .cornerRadius(4)
                             }
                         }
 
-                        Text(licenseManager.featureConfig.aimneck ? "Các chức năng bổ trợ ngắm bắn chính xác" : "Tạm thời bảo trì để nâng cấp chống văng game trên máy yếu")
-                            .font(.system(size: 12, weight: .medium))
+                        Text(licenseManager.featureConfig.aimneck ? "Hỗ trợ ngắm bắn và cảm ứng độ nhạy" : "Tạm thời bảo trì để nâng cấp chống văng")
+                            .font(.system(size: 11.5, weight: .medium))
                             .foregroundStyle(.gray)
                     }
                     Spacer()
@@ -503,34 +514,30 @@ struct CheatStoreDashboardView: View {
                 }
                 .padding(.horizontal, 20)
 
-                // Ghi Chú An Toàn
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "shield.lefthalf.filled")
-                        .font(.system(size: 16))
+                // Gợi Ý Nhanh
+                HStack(spacing: 8) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(BlossomTheme.sakura)
-                        .padding(.top, 2)
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Quy trình chuẩn AppleStore:")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.white)
+                    Text("Mẹo: Bật [AppleStore Prime] trước khi vào game để chống văng 100%.")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.75))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
-                        Text("Gạt BẬT [APPLESTORE PRIME] ở bên trên > Bấm nút [MỞ] Free Fire bên dưới. Các chức năng khác đang tạm bảo trì để nâng cấp chống văng game, quý khách vui lòng chỉ bật duy nhất APPLESTORE PRIME!")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.gray)
-                            .lineSpacing(2)
-                    }
+                    Spacer(minLength: 0)
                 }
-                .padding(14)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(cardBackground)
-                .cornerRadius(14)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(cardBackground.opacity(0.85))
+                .cornerRadius(10)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14)
-                        .stroke(BlossomTheme.sakura.opacity(0.3), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(BlossomTheme.sakura.opacity(0.2), lineWidth: 0.8)
                 )
                 .padding(.horizontal, 20)
-                .padding(.top, 6)
+                .padding(.top, 4)
             }
             .padding(.bottom, 24)
         }
@@ -1169,69 +1176,7 @@ struct CheatStoreDashboardView: View {
         )
     }
 
-        private var deviceStatusFooterView: some View {
-        HStack(spacing: 8) {
-            // Tên máy hiện tại (Ví dụ: iPhone 13 Pro Max)
-            HStack(spacing: 4) {
-                Image(systemName: "iphone.gen3")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(brandBlue)
 
-                Text(AppInfo.hardwareDisplayName)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-            }
-
-            Spacer()
-
-            if isDeviceSupported {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                    Text("Có hỗ trợ")
-                }
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
-                .cornerRadius(6)
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "xmark.circle.fill")
-                    Text("Không hỗ trợ")
-                }
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.12))
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.3), lineWidth: 0.8)
-                )
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(cardBackground.opacity(0.92))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [brandBlue.opacity(0.25), Color.white.opacity(0.06)],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    ),
-                    lineWidth: 0.8
-                )
-        )
-        .padding(.horizontal, 20)
-        .padding(.bottom, 6)
-    }
 
     // MARK: - Empty State
     private var emptyStateView: some View {
@@ -1503,122 +1448,6 @@ struct CheatStoreDashboardView: View {
         return formatter.string(from: date)
     }
 
-    // MARK: - Cụm Điều Khiển: Chọn Bản FF/MAX & 1-Chạm Khôi Phục Sạch
-    private var gameVersionAndRestoreControlBar: some View {
-        HStack(spacing: 8) {
-            // Bộ chọn Segmented FF Thường / FF MAX
-            HStack(spacing: 3) {
-                ForEach(FreeFireGameVersion.allCases) { version in
-                    let isSelected = (currentGameVersion == version)
-                    Button {
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
-                            selectedGameVersionRaw = version.rawValue
-                            DevicePatchService.preferredVersion = version
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: version.iconSystemName)
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundStyle(isSelected ? .white : Color.white.opacity(0.55))
-
-                            Text(version.shortName)
-                                .font(.system(size: 11, weight: isSelected ? .bold : .medium, design: .rounded))
-                                .foregroundStyle(isSelected ? .white : Color.white.opacity(0.65))
-                        }
-                        .padding(.horizontal, 9)
-                        .padding(.vertical, 6)
-                        .background(
-                            Group {
-                                if isSelected {
-                                    LinearGradient(
-                                        colors: [BlossomTheme.sakuraDeep, brandBlue],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                } else {
-                                    Color.clear
-                                }
-                            }
-                        )
-                        .clipShape(Capsule())
-                        .overlay(
-                            Capsule()
-                                .stroke(isSelected ? Color.white.opacity(0.35) : Color.clear, lineWidth: 0.8)
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(3)
-            .background(
-                Capsule()
-                    .fill(Color.black.opacity(0.45))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(brandBlue.opacity(0.3), lineWidth: 1)
-            )
-
-            Spacer(minLength: 4)
-
-            // Nút 1-Chạm Khôi Phục Sạch
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                showCleanRestoreConfirm = true
-            } label: {
-                HStack(spacing: 5) {
-                    if isRestoringClean {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.65)
-                    } else {
-                        Image(systemName: "arrow.counterclockwise.shield.fill")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(Color(red: 1.0, green: 0.38, blue: 0.45))
-                    }
-
-                    Text("Khôi phục sạch")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(
-                    Capsule()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.70, green: 0.10, blue: 0.25).opacity(0.40),
-                                    Color(red: 0.45, green: 0.08, blue: 0.20).opacity(0.50)
-                                ],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                )
-                .clipShape(Capsule())
-                .overlay(
-                    Capsule()
-                        .stroke(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 1.0, green: 0.35, blue: 0.45).opacity(0.7),
-                                    Color(red: 0.8, green: 0.15, blue: 0.3).opacity(0.35)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1
-                        )
-                )
-                .shadow(color: Color.red.opacity(0.25), radius: 4, x: 0, y: 1)
-            }
-            .buttonStyle(ScaleButtonStyle())
-            .disabled(isRestoringClean)
-        }
-    }
-
     // MARK: - Thực Thi 1-Chạm Khôi Phục Sạch
     private func performCleanRestore() {
         guard !isRestoringClean else { return }
@@ -1636,7 +1465,7 @@ struct CheatStoreDashboardView: View {
                 }
 
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                self.alertMessage = "✅ ĐÃ KHÔI PHỤC SẠCH 100%!\n\nToàn bộ file gốc của \(self.currentGameVersion.fullTitle) đã được phục hồi nguyên bản an toàn. Đã gỡ bỏ toàn bộ trạng thái mod."
+                self.alertMessage = "✅ ĐÃ KHÔI PHỤC SẠCH 100%!\n\nToàn bộ file gốc của Free Fire đã được phục hồi nguyên bản an toàn. Đã gỡ bỏ toàn bộ trạng thái mod."
                 self.showAlert = true
             }
         }
@@ -1651,62 +1480,52 @@ struct CheatStoreDashboardView: View {
         Button {
             launchFreeFire()
         } label: {
-            HStack(spacing: 14) {
-                // Icon Free Fire với hiệu ứng viền phát sáng
+            HStack(spacing: 12) {
+                // Icon Free Fire bo góc có viền LED sáng
                 ZStack {
-                    FreeFireAppIconView(size: 48, cornerRadius: 12)
+                    FreeFireAppIconView(size: 38, cornerRadius: 10)
 
                     if isAnyModActive {
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
                             .stroke(
                                 LinearGradient(
                                     colors: [BlossomTheme.sakuraLight, brandBlue],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
                                 ),
-                                lineWidth: 2
+                                lineWidth: 1.8
                             )
-                            .frame(width: 48, height: 48)
+                            .frame(width: 38, height: 38)
                     }
                 }
-                .shadow(color: isAnyModActive ? brandBlue.opacity(0.6) : Color.clear, radius: 8)
+                .shadow(color: isAnyModActive ? brandBlue.opacity(0.6) : Color.clear, radius: 6)
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 2) {
                     HStack(spacing: 6) {
-                        Text(currentGameVersion.fullTitle)
-                            .font(.system(size: 15, weight: .bold))
+                        Text("Free Fire")
+                            .font(.system(size: 14.5, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
-
-                        Text(currentGameVersion.shortName.uppercased())
-                            .font(.system(size: 8.5, weight: .black, design: .rounded))
-                            .foregroundStyle(currentGameVersion == .max ? Color.yellow : brandBlue)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(
-                                (currentGameVersion == .max ? Color.yellow : brandBlue).opacity(0.12)
-                            )
-                            .cornerRadius(4)
 
                         if isAnyModActive {
                             Text("SẴN SÀNG")
-                                .font(.system(size: 9, weight: .black, design: .rounded))
+                                .font(.system(size: 8.5, weight: .black, design: .rounded))
                                 .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
                                 .background(Color.green)
-                                .cornerRadius(4)
+                                .cornerRadius(3.5)
                         } else {
-                            Text("OFFLINE")
-                                .font(.system(size: 9, weight: .black, design: .rounded))
+                            Text("GỐC")
+                                .font(.system(size: 8.5, weight: .bold, design: .rounded))
                                 .foregroundStyle(Color.gray)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
                                 .background(Color.white.opacity(0.08))
-                                .cornerRadius(4)
+                                .cornerRadius(3.5)
                         }
                     }
 
-                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Đang chọn \(currentGameVersion.fullTitle) • Vào game thường")
+                    Text(isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chạm để vào Free Fire ngay")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(isAnyModActive ? BlossomTheme.sakuraLight : Color.gray)
                         .lineLimit(1)
@@ -1714,33 +1533,38 @@ struct CheatStoreDashboardView: View {
 
                 Spacer()
 
-                // Nút MỞ thay thế cho mũi tên theo yêu cầu
-                Text("MỞ")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background(
-                        LinearGradient(
-                            colors: [BlossomTheme.sakuraDeep, brandBlue],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                // Nút VÀO GAME nổi bật
+                HStack(spacing: 4) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("VÀO GAME")
+                        .font(.system(size: 12, weight: .black, design: .rounded))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(
+                    LinearGradient(
+                        colors: [BlossomTheme.sakuraDeep, brandBlue],
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
-                    )
-                    .shadow(color: brandBlue.opacity(0.55), radius: 6, x: 0, y: 2)
+                )
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.35), lineWidth: 0.8)
+                )
+                .shadow(color: brandBlue.opacity(0.55), radius: 6, x: 0, y: 2)
             }
-            .padding(14)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.14, green: 0.07, blue: 0.23),
+                                Color(red: 0.13, green: 0.06, blue: 0.22),
                                 cardBackground
                             ],
                             startPoint: .topLeading,
@@ -1749,15 +1573,15 @@ struct CheatStoreDashboardView: View {
                     )
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(
                         isAnyModActive
-                            ? BlossomTheme.sakuraLight.opacity(0.7)
-                            : brandBlue.opacity(0.25),
-                        lineWidth: isAnyModActive ? 1.5 : 1
+                            ? BlossomTheme.sakuraLight.opacity(0.65)
+                            : brandBlue.opacity(0.2),
+                        lineWidth: isAnyModActive ? 1.4 : 0.8
                     )
             )
-            .shadow(color: isAnyModActive ? brandBlue.opacity(0.3) : Color.black.opacity(0.3), radius: 10, y: 4)
+            .shadow(color: isAnyModActive ? brandBlue.opacity(0.25) : Color.black.opacity(0.25), radius: 8, y: 3)
         }
         .buttonStyle(ScaleButtonStyle())
     }
@@ -1765,42 +1589,24 @@ struct CheatStoreDashboardView: View {
     private func launchFreeFire() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
-        var targetSchemes = currentGameVersion.schemes
-        let fallbackSchemes = ["freefireth://", "freefire://", "freefiremax://", "dtsfreefire://"]
-        for s in fallbackSchemes where !targetSchemes.contains(s) {
-            targetSchemes.append(s)
-        }
+        let targetSchemes = ["freefireth://", "freefire://", "dtsfreefire://"]
 
         for scheme in targetSchemes {
             if let url = URL(string: scheme), UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url, options: [:]) { success in
                     if success {
-                        print("[CheatStore VN] Đã mở \(currentGameVersion.fullTitle) qua: \(scheme)")
+                        print("[CheatStore VN] Đã mở Free Fire qua: \(scheme)")
                     }
                 }
                 return
             }
         }
 
-        // Nếu canOpenURL chưa bắt được do policy iOS, thử mở trực tiếp scheme chính của bản đã chọn
-        if let primaryScheme = currentGameVersion.schemes.first, let primaryURL = URL(string: primaryScheme) {
+        if let primaryURL = URL(string: "freefireth://") {
             UIApplication.shared.open(primaryURL, options: [:]) { success in
-                if success { return }
-
-                // Fallback thử mở bản còn lại
-                let otherVersion = (currentGameVersion == .standard ? FreeFireGameVersion.max : FreeFireGameVersion.standard)
-                if let fallbackScheme = otherVersion.schemes.first, let fallbackURL = URL(string: fallbackScheme) {
-                    UIApplication.shared.open(fallbackURL, options: [:]) { fallbackSuccess in
-                        if !fallbackSuccess {
-                            DispatchQueue.main.async {
-                                self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở \(self.currentGameVersion.fullTitle) từ màn hình chính."
-                                self.showAlert = true
-                            }
-                        }
-                    }
-                } else {
+                if !success {
                     DispatchQueue.main.async {
-                        self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng bấm mở \(self.currentGameVersion.fullTitle) từ màn hình chính."
+                        self.alertMessage = "Đã nạp mod thành công! Thiết bị không hỗ trợ chuyển tiếp tự động, bạn vui lòng mở game Free Fire từ màn hình chính."
                         self.showAlert = true
                     }
                 }
@@ -1993,25 +1799,17 @@ private struct ApplestorePrimeCard: View {
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
-                    Text("APPLESTORE PRIME")
+                    Text("AppleStore Prime")
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
                     // Tag PRIME Tím Neon
                     PulsingLedTag(text: "PRIME")
-
-                    // Tag HOẠT ĐỘNG Xanh Lá
-                    Text("HOẠT ĐỘNG")
-                        .font(.system(size: 7.5, weight: .black))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.green)
-                        .cornerRadius(3.5)
                 }
 
-                Text("Menu Mod Độc Quyền AppleStore • Ổn Định Tuyệt Đối")
+                Text("Bypass chống văng 100% • Ổn định tối đa")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(BlossomTheme.sakuraLight)
                     .lineLimit(1)
@@ -2123,19 +1921,11 @@ private struct AimneckVipCard: View {
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
-                    Text("AIMNECK VIP")
+                    Text("Aimneck VIP")
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    // Tag BẢO TRÌ / HOẠT ĐỘNG
-                    Text("LOCK CỔ")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(3.5)
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2146,19 +1936,20 @@ private struct AimneckVipCard: View {
                             .background(Color.orange)
                             .cornerRadius(3.5)
                     } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("LOCK CỔ")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(BlossomTheme.sakuraDeep.opacity(0.4))
                             .cornerRadius(3.5)
                     }
                 }
 
-                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống văng game" : "Lock tâm cổ mục tiêu chuẩn xác 100%")
+                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống văng game" : "Khóa tâm vào cổ địch • Tăng tỉ lệ headshot")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : BlossomTheme.sakuraLight)
+                    .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
@@ -2261,19 +2052,11 @@ private struct EspAimheadV3Card: View {
             // Thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
-                    Text("ĐỊNH VỊ + AIMHEAD V3")
+                    Text("Định Vị 3D & Aimhead")
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    // Tag Phụ
-                    Text("ESP+AIM")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(3.5)
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2284,19 +2067,20 @@ private struct EspAimheadV3Card: View {
                             .background(Color.orange)
                             .cornerRadius(3.5)
                     } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("ESP 3D")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(Color(red: 0.00, green: 0.65, blue: 0.85).opacity(0.35))
                             .cornerRadius(3.5)
                     }
                 }
 
-                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp culling 50m chống văng" : "Định vị 3D vị trí địch & Aimhead mượt mà")
+                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp culling 50m chống văng" : "Hiện vị trí 3D, tên, khoảng cách & aimhead")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : Color(red: 0.00, green: 0.85, blue: 0.95))
+                    .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
@@ -2351,11 +2135,11 @@ private struct CheatItemCard: View {
     let onToggle: (Bool) -> Void
 
     private var displayName: String {
-        "AIMDRAG PRO"
+        "Aimdrag Pro"
     }
 
     private var subtitle: String {
-        "Kéo Tâm Siêu Chuẩn • Bật Ngay Tại Sảnh"
+        "Hỗ trợ kéo tâm mượt • Tối ưu độ nhạy súng"
     }
 
     var body: some View {
@@ -2410,15 +2194,7 @@ private struct CheatItemCard: View {
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    // Tag Phụ
-                    Text("PRO")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(3.5)
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2429,12 +2205,12 @@ private struct CheatItemCard: View {
                             .background(Color.orange)
                             .cornerRadius(3.5)
                     } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("KÉO TÂM")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(Color(red: 0.55, green: 0.25, blue: 0.85).opacity(0.4))
                             .cornerRadius(3.5)
                     }
                 }
@@ -2442,6 +2218,7 @@ private struct CheatItemCard: View {
                 Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống văng game" : subtitle)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : BlossomTheme.sakuraLight)
+                    .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
@@ -2543,19 +2320,11 @@ private struct EspItemCard: View {
             // Tên và thông tin chức năng
             VStack(alignment: .leading, spacing: 2.5) {
                 HStack(spacing: 5) {
-                    Text("ESP 2.0")
+                    Text("ESP 2.0 Toàn Bản Đồ")
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    // Tag Phụ
-                    Text("ESP")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(3.5)
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2566,19 +2335,20 @@ private struct EspItemCard: View {
                             .background(Color.orange)
                             .cornerRadius(3.5)
                     } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("RADAR")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(Color(red: 0.00, green: 0.65, blue: 0.85).opacity(0.35))
                             .cornerRadius(3.5)
                     }
                 }
 
-                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp culling chống văng" : "Định vị vị trí địch toàn bản đồ")
+                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp culling chống văng" : "Định vị radar vị trí địch trên bản đồ")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : Color(red: 0.00, green: 0.85, blue: 0.95))
+                    .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
@@ -2687,15 +2457,7 @@ private struct CpanelItemCard: View {
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    // Tag Phụ
-                    Text("LEAKED")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(3.5)
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2706,17 +2468,17 @@ private struct CpanelItemCard: View {
                             .background(Color.orange)
                             .cornerRadius(3.5)
                     } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                        Text("CPANEL")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(Color(red: 0.85, green: 0.50, blue: 0.15).opacity(0.35))
                             .cornerRadius(3.5)
                     }
                 }
 
-                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống văng game" : "Bảng điều khiển thông số độ nhạy")
+                Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống văng game" : "Bảng tinh chỉnh thông số cảm ứng iOS")
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : Color.white.opacity(0.8))
                     .lineLimit(1)
@@ -2780,21 +2542,17 @@ private struct SkinItemCard: View {
     }
 
     private var skinTitle: String {
-        let raw = item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
         if isGoldenSeason1 {
-            return "Skin Thẻ Vô Cực Vàng Mùa 1"
+            return "Skin Thẻ Vô Cực Vàng"
         }
-        if raw.lowercased().contains("alock") || raw.lowercased().contains("naco") {
-            return "Mod Skin Alock Thất Tỉnh"
-        }
-        return raw
+        return "Skin Alok Thất Tỉnh"
     }
 
     private var skinSubtitle: String {
         if isGoldenSeason1 {
-            return "Trang phục Thẻ Vô Cực Vàng Mùa 1 Hoàng Kim"
+            return "Bộ Thẻ Vô Cực Mùa 1 Hoàng Kim"
         } else {
-            return "Bộ trang phục Alock Thất Tỉnh (Nạ Cỏ - Áo Đá Bóng)"
+            return "Nạ Cỏ & Áo Đá Bóng huyền thoại"
         }
     }
 
@@ -2865,26 +2623,7 @@ private struct SkinItemCard: View {
                         .font(.system(size: 13.5, weight: .bold))
                         .foregroundStyle(.white)
                         .lineLimit(1)
-
-                    if isGoldenSeason1 {
-                        // Tag GOLD (Màu Vàng Gold Óng Ánh)
-                        Text("GOLD")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(3.5)
-                    } else {
-                        // Tag VIP SKIN (Màu Hồng Tím Neon)
-                        Text("VIP SKIN")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .padding(.horizontal, 4)
-                            .padding(.vertical, 2)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(3.5)
-                    }
+                        .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
                         Text("BẢO TRÌ")
@@ -2894,13 +2633,21 @@ private struct SkinItemCard: View {
                             .padding(.vertical, 2)
                             .background(Color.orange)
                             .cornerRadius(3.5)
-                    } else {
-                        Text("HOẠT ĐỘNG")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
+                    } else if isGoldenSeason1 {
+                        Text("VÔ CỰC")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.green)
+                            .background(Color(red: 0.85, green: 0.65, blue: 0.1).opacity(0.35))
+                            .cornerRadius(3.5)
+                    } else {
+                        Text("ALOK")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.9))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color(red: 0.85, green: 0.25, blue: 0.65).opacity(0.35))
                             .cornerRadius(3.5)
                     }
                 }
@@ -2908,6 +2655,7 @@ private struct SkinItemCard: View {
                 Text(isUnderMaintenance ? "Tạm ngừng để nâng cấp chống xung đột avatar" : skinSubtitle)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(isUnderMaintenance ? Color.orange.opacity(0.9) : BlossomTheme.sakuraLight)
+                    .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
