@@ -90,6 +90,13 @@ struct CheatStoreDashboardView: View {
         return name.contains("apple ipa") || name.contains("apple_ipa") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2")
     }
 
+    private func isInternalItem(_ item: PatchLibraryItem) -> Bool {
+        if isAppleIpaV2Item(item) { return false }
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("internal") || filename.contains("internal")
+    }
+
     private func isApplestorePrimeItem(_ item: PatchLibraryItem) -> Bool {
         if isAppleIpaV2Item(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
@@ -111,7 +118,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        if isAimneckVipItem(item) || isEspAimheadV3Item(item) || isEspItem(item) || isCpanelItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) || isAppleIpaV2Item(item) { return false }
+        if isAimneckVipItem(item) || isEspAimheadV3Item(item) || isEspItem(item) || isCpanelItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) || isAppleIpaV2Item(item) || isInternalItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("aim") || name.contains("drag") || filename.contains("system")
@@ -137,6 +144,9 @@ struct CheatStoreDashboardView: View {
         }
         if isCpanelItem(item) {
             return !cfg.aimneck
+        }
+        if isInternalItem(item) {
+            return !cfg.applestore_prime
         }
         return false
     }
@@ -167,6 +177,13 @@ struct CheatStoreDashboardView: View {
             return found
         }
         return PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
+    }
+
+    private var internalItem: PatchLibraryItem? {
+        if let found = patchStore.items.first(where: { isInternalItem($0) }) {
+            return found
+        }
+        return PatchProjectLibrary.loadBundledItem(named: "lib_app_internal")
     }
 
     private var applestorePrimeItem: PatchLibraryItem? {
@@ -468,6 +485,20 @@ struct CheatStoreDashboardView: View {
                             if let item = applestorePrimeItem {
                                 handleToggle(item: item, enable: enable)
                             } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime") {
+                                handleToggle(item: loaded, enable: enable)
+                            }
+                        }
+                    )
+
+                    InternalCard(
+                        item: internalItem,
+                        isApplied: internalItem != nil && appliedProjectIDs.contains(internalItem!.id),
+                        isWorking: internalItem != nil && workingPatchID == internalItem!.id,
+                        brandBlue: brandBlue,
+                        onToggle: { enable in
+                            if let item = internalItem {
+                                handleToggle(item: item, enable: enable)
+                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_internal") {
                                 handleToggle(item: loaded, enable: enable)
                             }
                         }
@@ -2129,6 +2160,106 @@ private struct AppleIpaV2Card: View {
                 )
         )
         .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.45) : BlossomTheme.sakura.opacity(0.12), radius: 8)
+    }
+}
+
+// MARK: - InternalCard (Chức Năng INTERNAL: ESP + Aim + License Key)
+private struct InternalCard: View {
+    let item: PatchLibraryItem?
+    let isApplied: Bool
+    let isWorking: Bool
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        HStack(spacing: 11) {
+            // Icon Logo App
+            ElectricAppLogoTile(
+                size: 42,
+                cornerRadius: 11,
+                isApplied: isApplied,
+                isUnderMaintenance: false,
+                customGlowColor: Color(red: 0.0, green: 0.85, blue: 0.65)
+            )
+
+            // Thông tin chức năng
+            VStack(alignment: .leading, spacing: 2.5) {
+                HStack(spacing: 5) {
+                    Text("INTERNAL")
+                        .font(.system(size: 13.5, weight: .black))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
+
+                    PulsingLedTag(text: "KEY")
+                }
+
+                Text("ESP + Silent Aim + FOV Circle • License Key")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(Color(red: 0.55, green: 0.95, blue: 0.78))
+                    .lineLimit(1)
+
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .frame(width: 5.5, height: 5.5)
+
+                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                        .font(.system(size: 9.5, weight: .bold))
+                        .foregroundStyle(isApplied ? Color.green : .gray)
+
+                    Text("•")
+                        .font(.system(size: 8))
+                        .foregroundStyle(.gray.opacity(0.6))
+
+                    Text("Zynox Server")
+                        .font(.system(size: 8.5, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.0, green: 0.85, blue: 0.65))
+                }
+                .padding(.top, 1)
+            }
+
+            Spacer()
+
+            if isWorking {
+                ProgressView()
+                    .tint(Color(red: 0.0, green: 0.85, blue: 0.65))
+                    .frame(width: 44)
+            } else {
+                Toggle("", isOn: Binding(
+                    get: { isApplied },
+                    set: { newValue in
+                        onToggle(newValue)
+                    }
+                ))
+                .labelsHidden()
+                .tint(Color(red: 0.0, green: 0.85, blue: 0.65))
+                .scaleEffect(0.85)
+            }
+        }
+        .padding(.horizontal, 13)
+        .padding(.vertical, 10)
+        .background(
+            LinearGradient(
+                colors: [
+                    Color(red: 0.03, green: 0.14, blue: 0.10).opacity(0.92),
+                    Color(red: 0.02, green: 0.08, blue: 0.06).opacity(0.88)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .cornerRadius(13)
+        .overlay(
+            RoundedRectangle(cornerRadius: 13)
+                .stroke(
+                    isApplied
+                        ? Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.95)
+                        : Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.25),
+                    lineWidth: isApplied ? 1.5 : 1
+                )
+        )
+        .shadow(color: isApplied ? Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.45) : Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.12), radius: 8)
     }
 }
 
