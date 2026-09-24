@@ -2160,6 +2160,12 @@ private struct AppleIpaV2Card: View {
                 )
         )
         .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.45) : BlossomTheme.sakura.opacity(0.12), radius: 8)
+        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .onTapGesture {
+            if !isWorking {
+                onToggle(!isApplied)
+            }
+        }
     }
 }
 
@@ -2260,6 +2266,12 @@ private struct InternalCard: View {
                 )
         )
         .shadow(color: isApplied ? Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.45) : Color(red: 0.0, green: 0.85, blue: 0.65).opacity(0.12), radius: 8)
+        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .onTapGesture {
+            if !isWorking {
+                onToggle(!isApplied)
+            }
+        }
     }
 }
 
@@ -2346,6 +2358,12 @@ private struct ApplestorePrimeCard: View {
                 )
         )
         .shadow(color: isApplied ? BlossomTheme.sakura.opacity(0.35) : Color.clear, radius: 7)
+        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .onTapGesture {
+            if !isWorking {
+                onToggle(!isApplied)
+            }
+        }
     }
 }
 
