@@ -2045,10 +2045,11 @@ private struct ElectricAppLogoTile: View {
     }
 }
 
-// MARK: - ModernCleanCardRow (Thẻ Chức Năng Gọn Gàng, Chuyên Nghiệp & Mượt Mà 60-90 FPS)
+// MARK: - ModernCleanCardRow (Thẻ Chức Năng Gọn Gàng, Chuyên Nghiệp, Nhỏ Lại 10% & Mượt Mà 60-90 FPS)
 private struct ModernCleanCardRow: View {
     let title: String
-    var imageName: String? = nil
+    var subtitle: String? = nil
+    var imageName: String? = "CheatLogo"
     var glowColor: Color = BlossomTheme.sakura
     let isApplied: Bool
     let isWorking: Bool
@@ -2058,19 +2059,19 @@ private struct ModernCleanCardRow: View {
     var onIconTap: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            // 1. Icon Logo App với hiệu ứng điện quanh app & chùm laser
+        HStack(spacing: 10) {
+            // 1. Icon Logo App đồng bộ với hiệu ứng điện quanh app & chùm laser (-10% nhỏ gọn 38pt)
             Button {
                 if let onIconTap = onIconTap {
                     onIconTap()
-                } else if !isWorking {
+                } else if !isWorking && !isUnderMaintenance {
                     onToggle(!isApplied)
                 }
             } label: {
                 ElectricAppLogoTile(
-                    imageName: imageName,
-                    size: 42,
-                    cornerRadius: 11,
+                    imageName: imageName ?? "CheatLogo",
+                    size: 38,
+                    cornerRadius: 10,
                     isApplied: isApplied,
                     isUnderMaintenance: isUnderMaintenance,
                     customGlowColor: isUnderMaintenance ? Color.red : glowColor
@@ -2078,33 +2079,45 @@ private struct ModernCleanCardRow: View {
             }
             .buttonStyle(ScaleButtonStyle())
 
-            // 2. Tên chức năng gọn gàng, tinh tế, không kèm mô tả dài hay tag thừa
-            HStack(spacing: 6) {
+            // 2. Nội dung: Tên ở trên, mô tả nhỏ ở dưới
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
 
-                if isUnderMaintenance {
-                    Text("KHÔNG AN TOÀN")
-                        .font(.system(size: 8, weight: .black))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.red)
-                        .cornerRadius(3.5)
+                if let sub = subtitle, !sub.isEmpty {
+                    Text(sub)
+                        .font(.system(size: 9.8, weight: .medium, design: .rounded))
+                        .foregroundStyle(Color.white.opacity(0.65))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
                 }
             }
 
-            Spacer()
+            Spacer(minLength: 8)
 
-            // 3. Nút Switch Bật/Tắt chuẩn iOS mượt mà
+            // 3. Vị trí nút bật/tắt: Khi KHÔNG AN TOÀN thì thay thế hoàn toàn công tắc bằng nhãn "KHÔNG AN TOÀN"
             if isWorking {
                 ProgressView()
                     .tint(brandBlue)
-                    .scaleEffect(0.85)
-                    .frame(width: 48, height: 30)
+                    .scaleEffect(0.8)
+                    .frame(width: 44, height: 26)
+            } else if isUnderMaintenance {
+                // Nhãn KHÔNG AN TOÀN thay thế hoàn toàn vị trí nút bật tắt
+                Text("KHÔNG AN TOÀN")
+                    .font(.system(size: 8.5, weight: .black, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 4.5)
+                    .background(Color.red.opacity(0.92))
+                    .cornerRadius(5.5)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5.5)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 0.8)
+                    )
+                    .shadow(color: Color.red.opacity(0.4), radius: 4)
             } else {
                 Toggle("", isOn: Binding(
                     get: { isApplied },
@@ -2114,10 +2127,11 @@ private struct ModernCleanCardRow: View {
                 ))
                 .labelsHidden()
                 .tint(brandBlue)
+                .scaleEffect(0.9) // Tối ưu nhỏ lại 10%
             }
         }
-        .padding(.horizontal, 13)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 11)
+        .padding(.vertical, 8) // Tối ưu nhỏ lại 10%
         .background(
             LinearGradient(
                 colors: [
@@ -2128,23 +2142,23 @@ private struct ModernCleanCardRow: View {
                 endPoint: .bottomTrailing
             )
         )
-        .cornerRadius(13)
+        .cornerRadius(11)
         .overlay(
-            RoundedRectangle(cornerRadius: 13)
+            RoundedRectangle(cornerRadius: 11)
                 .stroke(
                     isApplied
                         ? glowColor.opacity(0.9)
                         : (isUnderMaintenance ? Color.red.opacity(0.3) : Color.white.opacity(0.08)),
-                    lineWidth: isApplied ? 1.5 : 1.0
+                    lineWidth: isApplied ? 1.4 : 0.9
                 )
         )
         .shadow(
-            color: isApplied ? glowColor.opacity(0.35) : Color.clear,
-            radius: 7
+            color: isApplied ? glowColor.opacity(0.32) : Color.clear,
+            radius: 6
         )
-        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .contentShape(RoundedRectangle(cornerRadius: 11))
         .onTapGesture {
-            if !isWorking {
+            if !isWorking && !isUnderMaintenance {
                 onToggle(!isApplied)
             }
         }
@@ -2163,6 +2177,7 @@ private struct AppleIpaV2Card: View {
     var body: some View {
         ModernCleanCardRow(
             title: "APPLE IPA V2",
+            subtitle: "Menu iOS V2",
             imageName: "CheatLogo",
             glowColor: BlossomTheme.sakura,
             isApplied: isApplied,
@@ -2186,6 +2201,7 @@ private struct InternalCard: View {
     var body: some View {
         ModernCleanCardRow(
             title: "INTERNAL",
+            subtitle: "Menu internal",
             imageName: "CheatLogo",
             glowColor: Color(red: 0.20, green: 0.90, blue: 1.0),
             isApplied: isApplied,
@@ -2208,7 +2224,8 @@ private struct ApplestorePrimeCard: View {
 
     var body: some View {
         ModernCleanCardRow(
-            title: "APPLESTORE PRIME",
+            title: "AppleStore PRIME",
+            subtitle: "Menu CheatStoreVN",
             imageName: "CheatLogo",
             glowColor: Color(red: 0.95, green: 0.25, blue: 0.45),
             isApplied: isApplied,
@@ -2231,8 +2248,9 @@ private struct AimneckVipCard: View {
 
     var body: some View {
         ModernCleanCardRow(
-            title: "AIMNECK VIP",
-            imageName: "aimneck_vip",
+            title: "AimNeck VIP",
+            subtitle: "Ghim cổ chống soi",
+            imageName: "CheatLogo",
             glowColor: Color(red: 0.70, green: 0.40, blue: 1.0),
             isApplied: isApplied,
             isWorking: isWorking,
@@ -2254,7 +2272,8 @@ private struct CheatItemCard: View {
 
     var body: some View {
         ModernCleanCardRow(
-            title: "AIM DRAG (BẬT SẢNH)",
+            title: "Aim Drag",
+            subtitle: "Trợ lực ghì tâm sảnh",
             imageName: "CheatLogo",
             glowColor: Color(red: 0.98, green: 0.55, blue: 0.20),
             isApplied: isApplied,
@@ -2277,8 +2296,9 @@ private struct EspItemCard: View {
 
     var body: some View {
         ModernCleanCardRow(
-            title: "ĐỊNH VỊ NGƯỜI (ESP)",
-            imageName: "esp_aimhead_v3",
+            title: "Định Vị ESP",
+            subtitle: "Hiện khung & khoảng cách",
+            imageName: "CheatLogo",
             glowColor: Color(red: 0.20, green: 0.85, blue: 0.45),
             isApplied: isApplied,
             isWorking: isWorking,
@@ -2301,8 +2321,9 @@ private struct SkinItemCard: View {
 
     var body: some View {
         ModernCleanCardRow(
-            title: "MOD SKIN IGNIS",
-            imageName: "SkinIgnis",
+            title: "Mod Skin IGNIS",
+            subtitle: "Trang phục VIP & Hiệu ứng sảnh",
+            imageName: "CheatLogo",
             glowColor: Color(red: 1.0, green: 0.85, blue: 0.25),
             isApplied: isApplied,
             isWorking: isWorking,

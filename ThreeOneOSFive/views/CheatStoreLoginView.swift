@@ -114,35 +114,6 @@ struct CheatStoreLoginView: View {
                                 .tracking(1.2)
 
                             Spacer()
-
-                            // Hiển thị trạng thái hỗ trợ iOS
-                            if isDeviceSupported {
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(Color(red: 0.15, green: 0.95, blue: 0.55))
-                                        .frame(width: 6, height: 6)
-                                    Text("iOS \(AppInfo.osVersion) • CÓ HỖ TRỢ")
-                                        .font(.system(size: 9.5, weight: .bold))
-                                        .foregroundStyle(Color(red: 0.15, green: 0.95, blue: 0.55))
-                                }
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3.5)
-                                .background(Color(red: 0.15, green: 0.95, blue: 0.55).opacity(0.12))
-                                .cornerRadius(6)
-                            } else {
-                                HStack(spacing: 4) {
-                                    Circle()
-                                        .fill(Color(red: 1.0, green: 0.3, blue: 0.3))
-                                        .frame(width: 6, height: 6)
-                                    Text("iOS \(AppInfo.osVersion) • KHÔNG HỖ TRỢ")
-                                        .font(.system(size: 9.5, weight: .bold))
-                                        .foregroundStyle(Color(red: 1.0, green: 0.3, blue: 0.3))
-                                }
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3.5)
-                                .background(Color.red.opacity(0.12))
-                                .cornerRadius(6)
-                            }
                         }
 
                         // Ô Nhập Key
@@ -187,33 +158,6 @@ struct CheatStoreLoginView: View {
                         .overlay(
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(brandBlue.opacity(0.3), lineWidth: 1)
-                        )
-
-                        // Chi tiết hỗ trợ iOS thiết bị
-                        HStack(spacing: 7) {
-                            Image(systemName: isDeviceSupported ? "checkmark.seal.fill" : "exclamationmark.octagon.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundStyle(isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color(red: 1.0, green: 0.3, blue: 0.3))
-
-                            Text(
-                                isDeviceSupported
-                                    ? "\(AppInfo.hardwareDisplayName) (iOS \(AppInfo.osVersion)) được hỗ trợ đầy đủ."
-                                    : "\(AppInfo.hardwareDisplayName) (iOS \(AppInfo.osVersion)) chưa được hỗ trợ phiên bản này."
-                            )
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55).opacity(0.9) : Color.red.opacity(0.9))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
-
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background((isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red).opacity(0.08))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke((isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red).opacity(0.2), lineWidth: 0.8)
                         )
 
                         // Tùy chọn Ghi Nhớ Mã Key trên thiết bị
@@ -310,11 +254,33 @@ struct CheatStoreLoginView: View {
                     )
                     .padding(.horizontal, 20)
 
-                    // Thông tin thiết bị (Device ID)
+                    // Thông tin thiết bị (Device ID) & 1 chỉ báo hỗ trợ iOS duy nhất
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("MÃ THIẾT BỊ (DEVICE ID)")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundStyle(.gray)
+                        HStack {
+                            Text("MÃ THIẾT BỊ (DEVICE ID)")
+                                .font(.system(size: 11.5, weight: .bold))
+                                .foregroundStyle(.gray)
+
+                            Spacer()
+
+                            // Duy nhất 1 chỉ báo hỗ trợ iOS ở trên/cạnh mã thiết bị
+                            HStack(spacing: 5) {
+                                Circle()
+                                    .fill(isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red)
+                                    .frame(width: 5.5, height: 5.5)
+                                Text(isDeviceSupported ? "iOS \(AppInfo.osVersion) Có Hỗ Trợ" : "iOS \(AppInfo.osVersion) Không Hỗ Trợ")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundStyle(isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3.5)
+                            .background((isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red).opacity(0.12))
+                            .cornerRadius(6)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .stroke((isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red).opacity(0.3), lineWidth: 0.8)
+                            )
+                        }
 
                         HStack {
                             Text(licenseManager.deviceID)
