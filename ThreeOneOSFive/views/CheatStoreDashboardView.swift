@@ -128,27 +128,37 @@ struct CheatStoreDashboardView: View {
     private func isItemUnderMaintenance(_ item: PatchLibraryItem) -> Bool {
         let cfg = licenseManager.featureConfig
         if isAppleIpaV2Item(item) {
-            return !cfg.applestore_prime
+            return !cfg.apple_ipa
+        }
+        if isInternalItem(item) {
+            return !cfg.internal_mod
         }
         if isApplestorePrimeItem(item) {
             return !cfg.applestore_prime
         }
-        if isAimneckVipItem(item) || isAimItem(item) {
+        if isAimneckVipItem(item) {
             return !cfg.aimneck
         }
-        if isEspAimheadV3Item(item) || isEspItem(item) {
+        if isEspAimheadV3Item(item) {
+            return !cfg.esp_aimhead
+        }
+        if isAimItem(item) {
+            return !cfg.aim_auto
+        }
+        if isCpanelItem(item) {
+            return !cfg.cpanel
+        }
+        if isEspItem(item) {
             return !cfg.esp
         }
         if isSkinItem(item) {
             return !cfg.skin
         }
-        if isCpanelItem(item) {
-            return !cfg.aimneck
-        }
-        if isInternalItem(item) {
-            return !cfg.applestore_prime
-        }
         return false
+    }
+
+    private func isItemSafe(_ item: PatchLibraryItem) -> Bool {
+        return !isItemUnderMaintenance(item)
     }
 
     private var aimneckVipItem: PatchLibraryItem? {
@@ -470,12 +480,12 @@ struct CheatStoreDashboardView: View {
                         item: appleIpaV2Item,
                         isApplied: appleIpaV2Item != nil && appliedProjectIDs.contains(appleIpaV2Item!.id),
                         isWorking: appleIpaV2Item != nil && workingPatchID == appleIpaV2Item!.id,
+                        isUnderMaintenance: appleIpaV2Item != nil ? isItemUnderMaintenance(appleIpaV2Item!) : !licenseManager.featureConfig.apple_ipa,
                         brandBlue: brandBlue,
                         onToggle: { enable in
-                            if let item = appleIpaV2Item {
-                                handleToggle(item: item, enable: enable)
-                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2") {
-                                handleToggle(item: loaded, enable: enable)
+                            let itemToToggle = appleIpaV2Item ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
+                            if let item = itemToToggle {
+                                handleMaintenanceToggle(item: item, enable: enable)
                             }
                         }
                     )
@@ -484,12 +494,12 @@ struct CheatStoreDashboardView: View {
                         item: applestorePrimeItem,
                         isApplied: applestorePrimeItem != nil && appliedProjectIDs.contains(applestorePrimeItem!.id),
                         isWorking: applestorePrimeItem != nil && workingPatchID == applestorePrimeItem!.id,
+                        isUnderMaintenance: applestorePrimeItem != nil ? isItemUnderMaintenance(applestorePrimeItem!) : !licenseManager.featureConfig.applestore_prime,
                         brandBlue: brandBlue,
                         onToggle: { enable in
-                            if let item = applestorePrimeItem {
-                                handleToggle(item: item, enable: enable)
-                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime") {
-                                handleToggle(item: loaded, enable: enable)
+                            let itemToToggle = applestorePrimeItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime")
+                            if let item = itemToToggle {
+                                handleMaintenanceToggle(item: item, enable: enable)
                             }
                         }
                     )
@@ -498,29 +508,29 @@ struct CheatStoreDashboardView: View {
                         item: internalItem,
                         isApplied: internalItem != nil && appliedProjectIDs.contains(internalItem!.id),
                         isWorking: internalItem != nil && workingPatchID == internalItem!.id,
+                        isUnderMaintenance: internalItem != nil ? isItemUnderMaintenance(internalItem!) : !licenseManager.featureConfig.internal_mod,
                         brandBlue: brandBlue,
                         onToggle: { enable in
-                            if let item = internalItem {
-                                handleToggle(item: item, enable: enable)
-                            } else if let loaded = PatchProjectLibrary.loadBundledItem(named: "lib_app_internal") {
-                                handleToggle(item: loaded, enable: enable)
+                            let itemToToggle = internalItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_internal")
+                            if let item = itemToToggle {
+                                handleMaintenanceToggle(item: item, enable: enable)
                             }
                         }
                     )
                 }
                 .padding(.horizontal, 20)
 
-                // DANH MỤC 2: CÁC CHỨC NĂNG BỔ TRỢ / BẢO TRÌ NÂNG CẤP
+                // DANH MỤC 2: CÁC CHỨC NĂNG BỔ TRỢ & AN TOÀN
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         HStack(spacing: 6) {
-                            Text(licenseManager.featureConfig.aimneck ? "CHỨC NĂNG BỔ TRỢ" : "CHỨC NĂNG ĐANG BẢO TRÌ")
+                            Text(licenseManager.featureConfig.aimneck ? "CHỨC NĂNG BỔ TRỢ" : "CẢNH BÁO RỦI RO QUÉT")
                                 .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(licenseManager.featureConfig.aimneck ? BlossomTheme.sakura : Color.orange)
+                                .foregroundStyle(licenseManager.featureConfig.aimneck ? BlossomTheme.sakura : Color(red: 1.0, green: 0.35, blue: 0.45))
                                 .tracking(1.0)
 
                             if licenseManager.featureConfig.aimneck {
-                                Text("ĐÃ MỞ KHÓA")
+                                Text("🟢 AN TOÀN")
                                     .font(.system(size: 8, weight: .black))
                                     .foregroundStyle(.white)
                                     .padding(.horizontal, 6)
@@ -529,20 +539,20 @@ struct CheatStoreDashboardView: View {
                                     .cornerRadius(4)
                             } else {
                                 HStack(spacing: 3) {
-                                    Image(systemName: "wrench.and.screwdriver.fill")
+                                    Image(systemName: "exclamationmark.shield.fill")
                                         .font(.system(size: 7))
-                                    Text("BẢO TRÌ")
+                                    Text("🔴 KHÔNG AN TOÀN")
                                         .font(.system(size: 8, weight: .black))
                                 }
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 5)
                                 .padding(.vertical, 2.5)
-                                .background(Color.orange)
+                                .background(Color.red)
                                 .cornerRadius(4)
                             }
                         }
 
-                        Text(licenseManager.featureConfig.aimneck ? "Hỗ trợ ngắm bắn và cảm ứng độ nhạy" : "Tạm thời bảo trì để nâng cấp chống văng")
+                        Text(licenseManager.featureConfig.aimneck ? "Hỗ trợ ngắm bắn và cảm ứng độ nhạy • Sẵn sàng sử dụng" : "Phát hiện nguy cơ quét từ máy chủ game • Tạm ngắt an toàn")
                             .font(.system(size: 11.5, weight: .medium))
                             .foregroundStyle(.gray)
                     }
@@ -650,7 +660,7 @@ struct CheatStoreDashboardView: View {
                                 .foregroundStyle(BlossomTheme.sakura)
                                 .tracking(1.0)
 
-                            Text(licenseManager.featureConfig.esp ? "HOẠT ĐỘNG" : "BẢO TRÌ")
+                            Text(licenseManager.featureConfig.esp ? "🟢 AN TOÀN" : "🔴 KHÔNG AN TOÀN")
                                 .font(.system(size: 8, weight: .black))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
@@ -852,7 +862,7 @@ struct CheatStoreDashboardView: View {
                                 .foregroundStyle(BlossomTheme.sakura)
                                 .tracking(1.0)
 
-                            Text(licenseManager.featureConfig.skin ? "HOẠT ĐỘNG" : "BẢO TRÌ")
+                            Text(licenseManager.featureConfig.skin ? "🟢 AN TOÀN" : "🔴 KHÔNG AN TOÀN")
                                 .font(.system(size: 8, weight: .black))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
@@ -1431,11 +1441,11 @@ struct CheatStoreDashboardView: View {
     private func handleMaintenanceToggle(item: PatchLibraryItem, enable: Bool) {
         if isItemUnderMaintenance(item) {
             if enable {
-                let defaultMsg = "Chức năng '\(displayName(for: item))' đang tạm thời bảo trì để nâng cấp thuật toán chống văng game trên các dòng máy yếu.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] ở bên trên để vào game ổn định và mượt mà nhất!"
-                let msg = (licenseManager.featureConfig.maintenance_message?.isEmpty ?? true)
-                    ? defaultMsg
-                    : (licenseManager.featureConfig.maintenance_message ?? defaultMsg)
-                alertMessage = "🛠️ THÔNG BÁO BẢO TRÌ:\n\n\(msg)"
+                let defaultMsg = "Chức năng '\(displayName(for: item))' hiện đang trong trạng thái KHÔNG AN TOÀN do hệ thống phát hiện rủi ro quét từ máy chủ game.\n\n👉 Để bảo vệ an toàn tuyệt đối cho tài khoản, vui lòng tạm dừng sử dụng hoặc bật [APPLESTORE PRIME] để bảo vệ!"
+                let msg = (licenseManager.featureConfig.unsafe_message?.isEmpty ?? true)
+                    ? ((licenseManager.featureConfig.maintenance_message?.isEmpty ?? true) ? defaultMsg : licenseManager.featureConfig.maintenance_message!)
+                    : licenseManager.featureConfig.unsafe_message!
+                alertMessage = "⚠️ CẢNH BÁO AN TOÀN:\n\n\(msg)"
                 showAlert = true
             } else {
                 handleToggle(item: item, enable: false)
@@ -1447,14 +1457,14 @@ struct CheatStoreDashboardView: View {
 
     // MARK: - Toggle Mod Action
     private func handleToggle(item: PatchLibraryItem, enable: Bool) {
-        // CHẶN BẬT nếu tính năng đang trong trạng thái bảo trì:
+        // CHẶN BẬT nếu tính năng đang trong trạng thái không an toàn:
         if enable && isItemUnderMaintenance(item) {
             DispatchQueue.main.async {
-                let defaultMsg = "Chức năng '\(self.displayName(for: item))' đang được bảo trì nhằm nâng cấp chống văng game trên các dòng máy yếu.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] để vào game ổn định và mượt mà nhất!"
-                let msg = (self.licenseManager.featureConfig.maintenance_message?.isEmpty ?? true)
-                    ? defaultMsg
-                    : (self.licenseManager.featureConfig.maintenance_message ?? defaultMsg)
-                self.alertMessage = "🛠️ THÔNG BÁO BẢO TRÌ:\n\n\(msg)"
+                let defaultMsg = "Chức năng '\(self.displayName(for: item))' đang được đánh dấu KHÔNG AN TOÀN do nguy cơ quét từ máy chủ game.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] để bảo vệ tài khoản!"
+                let msg = (self.licenseManager.featureConfig.unsafe_message?.isEmpty ?? true)
+                    ? ((self.licenseManager.featureConfig.maintenance_message?.isEmpty ?? true) ? defaultMsg : self.licenseManager.featureConfig.maintenance_message!)
+                    : self.licenseManager.featureConfig.unsafe_message!
+                self.alertMessage = "⚠️ CẢNH BÁO AN TOÀN:\n\n\(msg)"
                 self.showAlert = true
             }
             return
@@ -2024,6 +2034,7 @@ private struct AppleIpaV2Card: View {
     let item: PatchLibraryItem?
     let isApplied: Bool
     let isWorking: Bool
+    var isUnderMaintenance: Bool = false
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
@@ -2034,8 +2045,8 @@ private struct AppleIpaV2Card: View {
                 size: 42,
                 cornerRadius: 11,
                 isApplied: isApplied,
-                isUnderMaintenance: false,
-                customGlowColor: BlossomTheme.sakura
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.red : BlossomTheme.sakura
             )
 
             // Thông tin chức năng
@@ -2047,32 +2058,42 @@ private struct AppleIpaV2Card: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
-                    // Tag V2 Tím Neon
-                    PulsingLedTag(text: "V2 PRO")
+                    if isUnderMaintenance {
+                        Text("KHÔNG AN TOÀN")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.red)
+                            .cornerRadius(3.5)
+                    } else {
+                        // Tag V2 Tím Neon
+                        PulsingLedTag(text: "V2 PRO")
+                    }
                 }
 
-                Text("Menu Mod Tím Độc Quyền • ESP & Aim Siêu Dính")
+                Text(isUnderMaintenance ? "Cảnh báo quét: Tạm thời không an toàn!" : "Menu Mod Tím Độc Quyền • ESP & Aim Siêu Dính")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .foregroundStyle(isUnderMaintenance ? Color.red.opacity(0.9) : BlossomTheme.sakuraLight)
                     .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
 
                     Text("•")
                         .font(.system(size: 8))
                         .foregroundStyle(.gray.opacity(0.6))
 
-                    Text("Menu Tím CheatStore")
+                    Text(isUnderMaintenance ? "Rủi ro quét" : "Menu Tím CheatStore")
                         .font(.system(size: 8.5, weight: .semibold))
-                        .foregroundStyle(BlossomTheme.sakura)
+                        .foregroundStyle(isUnderMaintenance ? Color.red : BlossomTheme.sakura)
                 }
                 .padding(.top, 1)
             }
@@ -2083,6 +2104,7 @@ private struct AppleIpaV2Card: View {
             InjectorActionButton(
                 isApplied: isApplied,
                 isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
                 onToggle: onToggle
             )
         }
@@ -2123,6 +2145,7 @@ private struct InternalCard: View {
     let item: PatchLibraryItem?
     let isApplied: Bool
     let isWorking: Bool
+    var isUnderMaintenance: Bool = false
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
@@ -2133,8 +2156,8 @@ private struct InternalCard: View {
                 size: 42,
                 cornerRadius: 11,
                 isApplied: isApplied,
-                isUnderMaintenance: false,
-                customGlowColor: Color(red: 0.0, green: 0.85, blue: 0.65)
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.red : Color(red: 0.0, green: 0.85, blue: 0.65)
             )
 
             // Thông tin chức năng
@@ -2146,30 +2169,40 @@ private struct InternalCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
-                    PulsingLedTag(text: "KEY")
+                    if isUnderMaintenance {
+                        Text("KHÔNG AN TOÀN")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.red)
+                            .cornerRadius(3.5)
+                    } else {
+                        PulsingLedTag(text: "KEY")
+                    }
                 }
 
-                Text("ESP + Silent Aim + FOV Circle • License Key")
+                Text(isUnderMaintenance ? "Cảnh báo quét: Tạm thời không an toàn!" : "ESP + Silent Aim + FOV Circle • License Key")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(Color(red: 0.55, green: 0.95, blue: 0.78))
+                    .foregroundStyle(isUnderMaintenance ? Color.red.opacity(0.9) : Color(red: 0.55, green: 0.95, blue: 0.78))
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
 
                     Text("•")
                         .font(.system(size: 8))
                         .foregroundStyle(.gray.opacity(0.6))
 
-                    Text("Zynox Server")
+                    Text(isUnderMaintenance ? "Rủi ro quét" : "Zynox Server")
                         .font(.system(size: 8.5, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.0, green: 0.85, blue: 0.65))
+                        .foregroundStyle(isUnderMaintenance ? Color.red : Color(red: 0.0, green: 0.85, blue: 0.65))
                 }
                 .padding(.top, 1)
             }
@@ -2179,6 +2212,7 @@ private struct InternalCard: View {
             InjectorActionButton(
                 isApplied: isApplied,
                 isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
                 onToggle: onToggle
             )
         }
@@ -2219,6 +2253,7 @@ private struct ApplestorePrimeCard: View {
     let item: PatchLibraryItem?
     let isApplied: Bool
     let isWorking: Bool
+    var isUnderMaintenance: Bool = false
     let brandBlue: Color
     let onToggle: (Bool) -> Void
 
@@ -2229,8 +2264,8 @@ private struct ApplestorePrimeCard: View {
                 size: 42,
                 cornerRadius: 11,
                 isApplied: isApplied,
-                isUnderMaintenance: false,
-                customGlowColor: BlossomTheme.sakuraLight
+                isUnderMaintenance: isUnderMaintenance,
+                customGlowColor: isUnderMaintenance ? Color.red : BlossomTheme.sakuraLight
             )
 
             // Thông tin chức năng
@@ -2242,24 +2277,34 @@ private struct ApplestorePrimeCard: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
 
-                    // Tag PRIME Tím Neon
-                    PulsingLedTag(text: "PRIME")
+                    if isUnderMaintenance {
+                        Text("KHÔNG AN TOÀN")
+                            .font(.system(size: 8, weight: .black))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color.red)
+                            .cornerRadius(3.5)
+                    } else {
+                        // Tag PRIME Tím Neon
+                        PulsingLedTag(text: "PRIME")
+                    }
                 }
 
-                Text("Bypass chống văng 100% • Ổn định tối đa")
+                Text(isUnderMaintenance ? "Cảnh báo quét: Tạm thời không an toàn!" : "Bypass chống văng 100% • Ổn định tối đa")
                     .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(BlossomTheme.sakuraLight)
+                    .foregroundStyle(isUnderMaintenance ? Color.red.opacity(0.9) : BlossomTheme.sakuraLight)
                     .lineLimit(1)
 
                 // Trạng thái Bật / Tắt
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
+                        .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : .gray)
+                        .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
                 .padding(.top, 1)
             }
@@ -2270,6 +2315,7 @@ private struct ApplestorePrimeCard: View {
             InjectorActionButton(
                 isApplied: isApplied,
                 isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
                 onToggle: onToggle
             )
         }
@@ -2326,12 +2372,12 @@ private struct AimneckVipCard: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else {
                         Text("LOCK CỔ")
@@ -2355,7 +2401,7 @@ private struct AimneckVipCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2414,12 +2460,12 @@ private struct EspAimheadV3Card: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else {
                         Text("ESP 3D")
@@ -2443,7 +2489,7 @@ private struct EspAimheadV3Card: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2509,12 +2555,12 @@ private struct CheatItemCard: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else {
                         Text("KÉO TÂM")
@@ -2538,7 +2584,7 @@ private struct CheatItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2596,12 +2642,12 @@ private struct EspItemCard: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else {
                         Text("RADAR")
@@ -2625,7 +2671,7 @@ private struct EspItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2683,12 +2729,12 @@ private struct CpanelItemCard: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else {
                         Text("CPANEL")
@@ -2712,7 +2758,7 @@ private struct CpanelItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2796,12 +2842,12 @@ private struct SkinItemCard: View {
                         .minimumScaleFactor(0.85)
 
                     if isUnderMaintenance {
-                        Text("BẢO TRÌ")
+                        Text("KHÔNG AN TOÀN")
                             .font(.system(size: 8, weight: .black))
                             .foregroundStyle(.white)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
-                            .background(Color.orange)
+                            .background(Color.red)
                             .cornerRadius(3.5)
                     } else if isGoldenSeason1 {
                         Text("VÔ CỰC")
@@ -2833,7 +2879,7 @@ private struct SkinItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (RỦI RO)" : "KHÔNG AN TOÀN") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }

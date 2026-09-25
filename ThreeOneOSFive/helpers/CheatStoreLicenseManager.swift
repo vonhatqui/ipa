@@ -3,25 +3,47 @@ import Security
 import UIKit
 import CommonCrypto
 
-/// Cấu hình quản lý bảo trì & mở khoá tính năng từ xa qua Server API
+/// Cấu hình quản lý an toàn & trạng thái tính năng từ xa qua Server API
 public struct FeatureMaintenanceConfig: Codable {
-    public var aimneck: Bool = false           // Mặc định tạm bảo trì cho đến khi Server mở
-    public var esp: Bool = false               // Mặc định tạm bảo trì cho đến khi Server mở
-    public var skin: Bool = false              // Mặc định tạm bảo trì cho đến khi Server mở
-    public var applestore_prime: Bool = true   // APPLESTORE PRIME luôn mở ổn định
+    public var aimneck: Bool = true             // Aimneck VIP (Ghim cổ)
+    public var esp_aimhead: Bool = true         // ESP & AimHead V3
+    public var aim_auto: Bool = true            // Aim Tự Động / Kéo Tâm
+    public var apple_ipa: Bool = true           // Apple IPA V2 VIP
+    public var internal_mod: Bool = true        // Internal Mod Menu
+    public var applestore_prime: Bool = true    // AppleStore Prime 2.3
+    public var cpanel: Bool = true              // CPanel VIP Leaked
+    public var esp: Bool = true                 // ESP Blue Xuyên Tường
+    public var skin: Bool = true                // Mod Skin VIP
+
+    public var is_app_safe: Bool = true         // Trạng thái an toàn toàn bộ app
+    public var unsafe_message: String? = nil
     public var maintenance_message: String? = nil
 
     public init(
-        aimneck: Bool = false,
-        esp: Bool = false,
-        skin: Bool = false,
+        aimneck: Bool = true,
+        esp_aimhead: Bool = true,
+        aim_auto: Bool = true,
+        apple_ipa: Bool = true,
+        internal_mod: Bool = true,
         applestore_prime: Bool = true,
+        cpanel: Bool = true,
+        esp: Bool = true,
+        skin: Bool = true,
+        is_app_safe: Bool = true,
+        unsafe_message: String? = nil,
         maintenance_message: String? = nil
     ) {
         self.aimneck = aimneck
+        self.esp_aimhead = esp_aimhead
+        self.aim_auto = aim_auto
+        self.apple_ipa = apple_ipa
+        self.internal_mod = internal_mod
+        self.applestore_prime = applestore_prime
+        self.cpanel = cpanel
         self.esp = esp
         self.skin = skin
-        self.applestore_prime = applestore_prime
+        self.is_app_safe = is_app_safe
+        self.unsafe_message = unsafe_message
         self.maintenance_message = maintenance_message
     }
 }
@@ -637,51 +659,83 @@ final class CheatStoreLicenseManager: ObservableObject {
         return hmac.map { String(format: "%02hhx", $0) }.joined()
     }
 
-    /// Cập nhật cấu hình tính năng & bảo trì từ phản hồi của máy chủ
+    /// Cập nhật cấu hình tính năng & an toàn từ phản hồi của máy chủ
     func updateFeatureConfig(from json: [String: Any]) {
         var updated = self.featureConfig
         var didChange = false
 
-        if let features = json["features"] as? [String: Any] {
+        if let features = (json["features"] as? [String: Any]) ?? (json["safety"] as? [String: Any]) {
             if let v = features["aimneck"] as? Bool ?? features["aim"] as? Bool {
-                updated.aimneck = v
-                didChange = true
+                updated.aimneck = v; didChange = true
             }
-            if let v = features["esp"] as? Bool {
-                updated.esp = v
-                didChange = true
+            if let v = features["esp_aimhead"] as? Bool {
+                updated.esp_aimhead = v; didChange = true
             }
-            if let v = features["skin"] as? Bool {
-                updated.skin = v
-                didChange = true
+            if let v = features["aim_auto"] as? Bool {
+                updated.aim_auto = v; didChange = true
+            }
+            if let v = features["apple_ipa"] as? Bool ?? features["apple_ipa_v2"] as? Bool {
+                updated.apple_ipa = v; didChange = true
+            }
+            if let v = features["internal"] as? Bool ?? features["internal_mod"] as? Bool {
+                updated.internal_mod = v; didChange = true
             }
             if let v = features["applestore_prime"] as? Bool ?? features["prime"] as? Bool {
-                updated.applestore_prime = v
+                updated.applestore_prime = v; didChange = true
+            }
+            if let v = features["cpanel"] as? Bool {
+                updated.cpanel = v; didChange = true
+            }
+            if let v = features["esp"] as? Bool {
+                updated.esp = v; didChange = true
+            }
+            if let v = features["skin"] as? Bool {
+                updated.skin = v; didChange = true
+            }
+            if let msg = json["unsafe_message"] as? String ?? json["maintenance_message"] as? String {
+                updated.unsafe_message = msg
+                updated.maintenance_message = msg
                 didChange = true
             }
-            if let msg = json["maintenance_message"] as? String {
-                updated.maintenance_message = msg
+            if let safe = json["is_app_safe"] as? Bool {
+                updated.is_app_safe = safe
                 didChange = true
             }
         } else if let maint = json["maintenance"] as? [String: Any] {
             if let v = maint["aimneck"] as? Bool ?? maint["aim"] as? Bool {
-                updated.aimneck = !v
-                didChange = true
+                updated.aimneck = !v; didChange = true
             }
-            if let v = maint["esp"] as? Bool {
-                updated.esp = !v
-                didChange = true
+            if let v = maint["esp_aimhead"] as? Bool {
+                updated.esp_aimhead = !v; didChange = true
             }
-            if let v = maint["skin"] as? Bool {
-                updated.skin = !v
-                didChange = true
+            if let v = maint["aim_auto"] as? Bool {
+                updated.aim_auto = !v; didChange = true
+            }
+            if let v = maint["apple_ipa"] as? Bool ?? maint["apple_ipa_v2"] as? Bool {
+                updated.apple_ipa = !v; didChange = true
+            }
+            if let v = maint["internal"] as? Bool ?? maint["internal_mod"] as? Bool {
+                updated.internal_mod = !v; didChange = true
             }
             if let v = maint["applestore_prime"] as? Bool ?? maint["prime"] as? Bool {
-                updated.applestore_prime = !v
+                updated.applestore_prime = !v; didChange = true
+            }
+            if let v = maint["cpanel"] as? Bool {
+                updated.cpanel = !v; didChange = true
+            }
+            if let v = maint["esp"] as? Bool {
+                updated.esp = !v; didChange = true
+            }
+            if let v = maint["skin"] as? Bool {
+                updated.skin = !v; didChange = true
+            }
+            if let msg = json["unsafe_message"] as? String ?? json["maintenance_message"] as? String {
+                updated.unsafe_message = msg
+                updated.maintenance_message = msg
                 didChange = true
             }
-            if let msg = json["maintenance_message"] as? String {
-                updated.maintenance_message = msg
+            if let safe = json["is_app_safe"] as? Bool {
+                updated.is_app_safe = safe
                 didChange = true
             }
         }

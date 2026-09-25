@@ -34,7 +34,7 @@ struct InjectorActionButton: View {
             .clipShape(Capsule())
         } else if isUnderMaintenance {
             if isApplied {
-                // Nếu đang bảo trì mà trước đó đã lỡ Inject -> Cho phép Un-inject để cứu an toàn
+                // Nếu đang không an toàn mà trước đó đã lỡ Inject -> Nút gỡ bỏ khẩn cấp
                 Button {
                     CheatStoreSoundManager.shared.playTabSwitchHaptic()
                     onToggle(false)
@@ -42,29 +42,38 @@ struct InjectorActionButton: View {
                     HStack(spacing: 4) {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 9.5))
-                        Text("GỠ BỎ")
+                        Text("GỠ RỦI RO")
                             .font(.system(size: 10.5, weight: .black, design: .rounded))
                     }
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.orange.opacity(0.85))
+                    .background(Color.red.opacity(0.85))
                     .clipShape(Capsule())
                 }
                 .buttonStyle(InjectorScaleButtonStyle())
             } else {
-                // Đang bảo trì
-                HStack(spacing: 4) {
-                    Image(systemName: "wrench.and.screwdriver.fill")
-                        .font(.system(size: 9))
-                    Text("BẢO TRÌ")
-                        .font(.system(size: 10, weight: .bold))
+                // Trạng thái Không an toàn -> Hiển thị huy hiệu cảnh báo
+                Button {
+                    CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                    onToggle(true)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.shield.fill")
+                            .font(.system(size: 9.5))
+                        Text("KHÔNG AN TOÀN")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                    }
+                    .foregroundStyle(Color(red: 1.0, green: 0.35, blue: 0.45))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5.5)
+                    .background(Color.red.opacity(0.12))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color.red.opacity(0.4), lineWidth: 0.8)
+                    )
                 }
-                .foregroundStyle(.gray.opacity(0.8))
-                .padding(.horizontal, 9)
-                .padding(.vertical, 5)
-                .background(Color.white.opacity(0.06))
-                .clipShape(Capsule())
+                .buttonStyle(InjectorScaleButtonStyle())
             }
         } else if isApplied {
             // ĐÃ INJECT -> Nút UN-INJECT (Khôi phục / Gỡ bỏ)
