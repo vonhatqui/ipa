@@ -2062,7 +2062,7 @@ private struct AppleIpaV2Card: View {
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
 
@@ -2079,22 +2079,12 @@ private struct AppleIpaV2Card: View {
 
             Spacer()
 
-            // Nút Switch Bật / Tắt (thu gọn 15-20%)
-            if isWorking {
-                ProgressView()
-                    .tint(BlossomTheme.sakura)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(BlossomTheme.sakura)
-                .scaleEffect(0.85)
-            }
+            // Nút bấm Inject / Un-inject phong cách Gaming Tool
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2169,7 +2159,7 @@ private struct InternalCard: View {
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
 
@@ -2186,21 +2176,11 @@ private struct InternalCard: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(Color(red: 0.0, green: 0.85, blue: 0.65))
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.0, green: 0.85, blue: 0.65))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2277,7 +2257,7 @@ private struct ApplestorePrimeCard: View {
                         .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isApplied ? "ĐANG BẬT" : "ĐANG TẮT")
+                    Text(isApplied ? "ĐÃ INJECT" : "CHƯA INJECT")
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isApplied ? Color.green : .gray)
                 }
@@ -2286,22 +2266,12 @@ private struct ApplestorePrimeCard: View {
 
             Spacer()
 
-            // Nút Switch Bật / Tắt (thu gọn 15-20%)
-            if isWorking {
-                ProgressView()
-                    .tint(BlossomTheme.sakura)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(BlossomTheme.sakura)
-                .scaleEffect(0.85)
-            }
+            // Nút bấm Inject / Un-inject phong cách Gaming Tool
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2385,7 +2355,7 @@ private struct AimneckVipCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2395,21 +2365,12 @@ private struct AimneckVipCard: View {
             Spacer()
 
             // Nút Bật / Tắt Switch (thu gọn 15-20%)
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(brandBlue)
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2482,7 +2443,7 @@ private struct EspAimheadV3Card: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2491,21 +2452,12 @@ private struct EspAimheadV3Card: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.00, green: 0.85, blue: 0.95))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2586,7 +2538,7 @@ private struct CheatItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2595,21 +2547,12 @@ private struct CheatItemCard: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.65, green: 0.35, blue: 1.0))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2682,7 +2625,7 @@ private struct EspItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2691,21 +2634,12 @@ private struct EspItemCard: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.00, green: 0.85, blue: 0.95))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2778,7 +2712,7 @@ private struct CpanelItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2787,21 +2721,12 @@ private struct CpanelItemCard: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(Color.orange)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(Color(red: 0.95, green: 0.55, blue: 0.15))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)
@@ -2908,7 +2833,7 @@ private struct SkinItemCard: View {
                         .fill(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : Color.gray.opacity(0.6)))
                         .frame(width: 5.5, height: 5.5)
 
-                    Text(isUnderMaintenance ? (isApplied ? "ĐANG BẬT (CẦN TẮT)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐANG BẬT" : "ĐANG TẮT"))
+                    Text(isUnderMaintenance ? (isApplied ? "ĐÃ INJECT (CẦN GỠ)" : "ĐANG BẢO TRÌ") : (isApplied ? "ĐÃ INJECT" : "CHƯA INJECT"))
                         .font(.system(size: 9.5, weight: .bold))
                         .foregroundStyle(isUnderMaintenance ? (isApplied ? Color.red : Color.orange) : (isApplied ? Color.green : .gray))
                 }
@@ -2917,21 +2842,12 @@ private struct SkinItemCard: View {
 
             Spacer()
 
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .frame(width: 44)
-            } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newValue in
-                        onToggle(newValue)
-                    }
-                ))
-                .labelsHidden()
-                .tint(isGoldenSeason1 ? Color(red: 1.0, green: 0.75, blue: 0.1) : Color(red: 0.90, green: 0.25, blue: 0.65))
-                .scaleEffect(0.85)
-            }
+            InjectorActionButton(
+                isApplied: isApplied,
+                isWorking: isWorking,
+                isUnderMaintenance: isUnderMaintenance,
+                onToggle: onToggle
+            )
         }
         .padding(.horizontal, 13)
         .padding(.vertical, 10)

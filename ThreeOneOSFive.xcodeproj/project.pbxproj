@@ -87,6 +87,7 @@
 		3105M209 /* ShinyTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M109; };
 		3105M210 /* CheatStoreSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M110; };
 		3105M211 /* applepay.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3105M111; };
+		3105M212 /* InjectorActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -188,6 +189,7 @@
 		3105M109 /* ShinyTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyTextView.swift; sourceTree = "<group>"; };
 		3105M110 /* CheatStoreSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreSoundManager.swift; sourceTree = "<group>"; };
 		3105M111 /* applepay.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = applepay.mp3; sourceTree = "<group>"; };
+		3105M112 /* InjectorActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorActionButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -275,6 +277,7 @@
 				3105M106 /* BlossomSplashView.swift */,
 				3105M108 /* LimelightDockBar.swift */,
 				3105M109 /* ShinyTextView.swift */,
+				3105M112 /* InjectorActionButton.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -485,6 +488,7 @@
 				3105M208,
 				3105M209,
 				3105M210,
+				3105M212,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
