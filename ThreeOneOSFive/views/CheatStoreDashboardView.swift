@@ -350,9 +350,13 @@ struct CheatStoreDashboardView: View {
                         .fill(brandBlue)
                         .frame(width: 5.5, height: 5.5)
                         .shadow(color: brandBlue.opacity(0.8), radius: 3)
-                    Text("VIP ĐÃ KÍCH HOẠT")
-                        .font(.system(size: 9.5, weight: .bold))
-                        .foregroundStyle(brandBlue)
+                    ShinyTextView(
+                        text: "VIP ĐÃ KÍCH HOẠT",
+                        font: .system(size: 9.5, weight: .bold, design: .rounded),
+                        baseColor: brandBlue,
+                        shineColor: BlossomTheme.sakuraLight,
+                        duration: 2.5
+                    )
                 }
             }
 
@@ -1342,55 +1346,9 @@ struct CheatStoreDashboardView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Thanh Dashboard Dưới (Bottom Navigation Bar)
+    // MARK: - Thanh Dashboard Dưới (Limelight Nav Dock Bar Chuẩn IPA)
     private var bottomTabBar: some View {
-        HStack {
-            ForEach(CheatStoreTab.allCases, id: \.self) { tab in
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        selectedTab = tab
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        ZStack(alignment: .topTrailing) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 18, weight: selectedTab == tab ? .bold : .regular))
-                                .foregroundStyle(selectedTab == tab ? brandBlue : Color.gray.opacity(0.6))
-                                .shadow(color: selectedTab == tab ? brandBlue.opacity(0.8) : .clear, radius: 6)
-
-                            if (tab == .esp && !licenseManager.featureConfig.esp) || (tab == .skin && !licenseManager.featureConfig.skin) {
-                                Circle()
-                                    .fill(Color.orange)
-                                    .frame(width: 6, height: 6)
-                                    .offset(x: 6, y: -2)
-                            }
-                        }
-
-                        Text(tab.title)
-                            .font(.system(size: 11, weight: selectedTab == tab ? .bold : .medium))
-                            .foregroundStyle(selectedTab == tab ? .white : Color.gray.opacity(0.6))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(
-                        selectedTab == tab
-                            ? brandBlue.opacity(0.12)
-                            : Color.clear
-                    )
-                    .cornerRadius(12)
-                }
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(cardBackground.opacity(0.96))
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(brandBlue.opacity(0.25), lineWidth: 1)
-        )
-        .padding(.horizontal, 20)
-        .padding(.bottom, 4)
+        LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
     }
     // MARK: - Empty State
     private var emptyStateView: some View {
@@ -1537,6 +1495,7 @@ struct CheatStoreDashboardView: View {
                         self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
                         self.patchStore.reload()
                         self.workingPatchID = nil
+                        CheatStoreSoundManager.shared.playSuccessSound()
                         self.alertMessage = "Đã BẬT thành công: \(modName)\n\n⚠️ LƯU Ý: Hãy vuốt tắt hẳn game Free Fire trong đa nhiệm rồi mở lại để vào trận mượt mà không văng game!"
                         self.showAlert = true
                     }

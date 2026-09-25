@@ -83,6 +83,10 @@
 		3105M205 /* BlossomTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M105; };
 		3105M206 /* BlossomSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M106; };
 		3105M207 /* AppCore in Resources */ = {isa = PBXBuildFile; fileRef = 3105M107; };
+		3105M208 /* LimelightDockBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M108; };
+		3105M209 /* ShinyTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M109; };
+		3105M210 /* CheatStoreSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M110; };
+		3105M211 /* applepay.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3105M111; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -180,6 +184,10 @@
 		3105M105 /* BlossomTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomTheme.swift; sourceTree = "<group>"; };
 		3105M106 /* BlossomSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomSplashView.swift; sourceTree = "<group>"; };
 		3105M107 /* AppCore */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppCore; sourceTree = "<group>"; };
+		3105M108 /* LimelightDockBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimelightDockBar.swift; sourceTree = "<group>"; };
+		3105M109 /* ShinyTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyTextView.swift; sourceTree = "<group>"; };
+		3105M110 /* CheatStoreSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreSoundManager.swift; sourceTree = "<group>"; };
+		3105M111 /* applepay.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = applepay.mp3; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -264,6 +272,8 @@
 				3105M104 /* GameSelectionView.swift */,
 				3105M105 /* BlossomTheme.swift */,
 				3105M106 /* BlossomSplashView.swift */,
+				3105M108 /* LimelightDockBar.swift */,
+				3105M109 /* ShinyTextView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -272,6 +282,7 @@
 			isa = PBXGroup;
 			children = (
 				3105M100 /* CheatStoreLicenseManager.swift */,
+				3105M110 /* CheatStoreSoundManager.swift */,
 				3105M101 /* BundledPatchInjector.swift */,
 				3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
@@ -397,6 +408,7 @@
 				3105A211,
 				3105A228,
 				3105M207,
+				3105M211,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -469,6 +481,9 @@
 				3105M204,
 				3105M205,
 				3105M206,
+				3105M208,
+				3105M209,
+				3105M210,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

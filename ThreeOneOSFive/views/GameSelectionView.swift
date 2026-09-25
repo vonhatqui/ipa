@@ -92,9 +92,14 @@ struct GameSelectionView: View {
                     Circle()
                         .fill(brandBlue)
                         .frame(width: 6, height: 6)
-                    Text("VIP ĐÃ KÍCH HOẠT")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(brandBlue)
+                        .shadow(color: brandBlue.opacity(0.8), radius: 3)
+                    ShinyTextView(
+                        text: "VIP ĐÃ KÍCH HOẠT",
+                        font: .system(size: 10, weight: .bold, design: .rounded),
+                        baseColor: brandBlue,
+                        shineColor: BlossomTheme.sakuraLight,
+                        duration: 2.5
+                    )
                 }
             }
 

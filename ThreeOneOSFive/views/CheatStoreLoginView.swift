@@ -186,8 +186,7 @@ struct CheatStoreLoginView: View {
                                 let success = await licenseManager.activateKey(inputKey)
                                 await MainActor.run {
                                     if success {
-                                        let generator = UINotificationFeedbackGenerator()
-                                        generator.notificationOccurred(.success)
+                                        CheatStoreSoundManager.shared.playSuccessSound()
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             showLoginSuccessSplash = true
                                         }
