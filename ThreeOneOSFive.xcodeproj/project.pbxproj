@@ -223,6 +223,7 @@
 				3105A120 /* Localizable.strings */,
 				3105A031 /* Assets.xcassets */,
 				3105M107 /* AppCore */,
+				3105M111 /* applepay.mp3 */,
 			);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
