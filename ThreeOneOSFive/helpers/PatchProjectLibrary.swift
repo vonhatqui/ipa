@@ -137,34 +137,48 @@ enum PatchProjectLibrary {
                 bundleCandidates.append(contentsOf: files)
             }
         }
-        for ext in ["dat", "bin", "3105"] {
+        for ext in ["dat", "bin", "3105", "plist"] {
             if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
                 bundleCandidates.append(contentsOf: matches)
             }
         }
 
-        for fileURL in bundleCandidates where ["dat", "bin", "3105"].contains(fileURL.pathExtension.lowercased()) {
+        for fileURL in bundleCandidates where ["dat", "bin", "3105", "plist"].contains(fileURL.pathExtension.lowercased()) {
             do {
                 let data = try readPackage(at: fileURL)
-                let summary = try PatchPackageCodec.inspect(data)
-                if byID[summary.packageID] == nil {
-                    let decoded = decodePackageSafely(data: data, summary: summary)
-                    let item = PatchLibraryItem(
-                        summary: summary,
-                        project: decoded?.project,
-                        contentKey: decoded?.contentKey,
-                        packageURL: fileURL,
-                        isAuthorCopy: false,
-                        origin: nil
-                    )
-                    byID[summary.packageID] = item
+                if let summary = try? PatchPackageCodec.inspect(data) {
+                    if byID[summary.packageID] == nil {
+                        let decoded = decodePackageSafely(data: data, summary: summary)
+                        let item = PatchLibraryItem(
+                            summary: summary,
+                            project: decoded?.project,
+                            contentKey: decoded?.contentKey,
+                            packageURL: fileURL,
+                            isAuthorCopy: false,
+                            origin: nil
+                        )
+                        byID[summary.packageID] = item
 
-                    // Tự động lưu vào local sandbox để các lần sau có sẵn
-                    if let root = try? packageRootURL(fileManager: fileManager) {
-                        let dest = root.appendingPathComponent(fileURL.lastPathComponent)
-                        if !fileManager.fileExists(atPath: dest.path) {
-                            try? data.write(to: dest, options: .atomic)
+                        // Tự động lưu vào local sandbox để các lần sau có sẵn
+                        if let root = try? packageRootURL(fileManager: fileManager) {
+                            let dest = root.appendingPathComponent(fileURL.lastPathComponent)
+                            if !fileManager.fileExists(atPath: dest.path) {
+                                try? data.write(to: dest, options: .atomic)
+                            }
                         }
+                    }
+                } else if let payload = try? PropertyListDecoder().decode(PatchProjectPayload.self, from: data) {
+                    let summary = PatchPackageSummary(packageID: payload.project.id, schemaVersion: 2, isPasswordProtected: false, keyFingerprint: Data())
+                    if byID[summary.packageID] == nil {
+                        let item = PatchLibraryItem(
+                            summary: summary,
+                            project: payload.project,
+                            contentKey: Data(count: 32),
+                            packageURL: fileURL,
+                            isAuthorCopy: false,
+                            origin: nil
+                        )
+                        byID[summary.packageID] = item
                     }
                 }
             } catch {
@@ -184,22 +198,36 @@ enum PatchProjectLibrary {
         let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
         let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore")
         for dir in [coreDir1, resURL].compactMap({ $0 }) {
-            for ext in ["dat", "bin", "3105"] {
+            for ext in ["dat", "bin", "3105", "plist"] {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
+            }
+            if name.contains("applestore") || name.contains("prime") {
+                candidateURLs.append(dir.appendingPathComponent("decrypted_payload.plist"))
             }
         }
         for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
-            if let data = try? readPackage(at: url),
-               let summary = try? PatchPackageCodec.inspect(data) {
-                let decoded = decodePackageSafely(data: data, summary: summary)
-                return PatchLibraryItem(
-                    summary: summary,
-                    project: decoded?.project,
-                    contentKey: decoded?.contentKey,
-                    packageURL: url,
-                    isAuthorCopy: false,
-                    origin: nil
-                )
+            if let data = try? readPackage(at: url) {
+                if let summary = try? PatchPackageCodec.inspect(data) {
+                    let decoded = decodePackageSafely(data: data, summary: summary)
+                    return PatchLibraryItem(
+                        summary: summary,
+                        project: decoded?.project,
+                        contentKey: decoded?.contentKey,
+                        packageURL: url,
+                        isAuthorCopy: false,
+                        origin: nil
+                    )
+                } else if let payload = try? PropertyListDecoder().decode(PatchProjectPayload.self, from: data) {
+                    let summary = PatchPackageSummary(packageID: payload.project.id, schemaVersion: 2, isPasswordProtected: false, keyFingerprint: Data())
+                    return PatchLibraryItem(
+                        summary: summary,
+                        project: payload.project,
+                        contentKey: Data(count: 32),
+                        packageURL: url,
+                        isAuthorCopy: false,
+                        origin: nil
+                    )
+                }
             }
         }
         return nil
