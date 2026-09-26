@@ -123,10 +123,9 @@ jobs:
           # Tuyệt đối KHÔNG copy .dat ra ngoài root
           mkdir -p "$TARGET_APP/AppCore"
           if [ -d "ThreeOneOSFive/AppCore" ]; then
-            echo "📂 Đang copy AppCore/*.dat, *.3105 và *.plist vào $TARGET_APP/AppCore/..."
+            echo "📂 Đang copy AppCore/*.dat và *.3105 vào $TARGET_APP/AppCore/..."
             cp -v ThreeOneOSFive/AppCore/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
             cp -v ThreeOneOSFive/AppCore/*.3105 "$TARGET_APP/AppCore/" 2>/dev/null || true
-            cp -v ThreeOneOSFive/AppCore/*.plist "$TARGET_APP/AppCore/" 2>/dev/null || true
           fi
           if [ -d "ThreeOneOSFive/EngineData" ]; then
             cp -v ThreeOneOSFive/EngineData/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true

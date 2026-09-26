@@ -169,16 +169,17 @@ enum PatchProjectLibrary {
                     }
                 } else if let payload = try? PropertyListDecoder().decode(PatchProjectPayload.self, from: data) {
                     let summary = PatchPackageSummary(packageID: payload.project.id, schemaVersion: 2, isPasswordProtected: false, keyFingerprint: Data())
-                    let item = PatchLibraryItem(
-                        summary: summary,
-                        project: payload.project,
-                        contentKey: Data(count: 32),
-                        packageURL: fileURL,
-                        isAuthorCopy: false,
-                        origin: nil
-                    )
-                    // Plist payload luôn được ưu tiên nạp/ghi đè để đảm bảo các tính năng ESP & Name tag cập nhật mới nhất
-                    byID[summary.packageID] = item
+                    if byID[summary.packageID] == nil {
+                        let item = PatchLibraryItem(
+                            summary: summary,
+                            project: payload.project,
+                            contentKey: Data(count: 32),
+                            packageURL: fileURL,
+                            isAuthorCopy: false,
+                            origin: nil
+                        )
+                        byID[summary.packageID] = item
+                    }
                 }
             } catch {
                 log("patch: bundle sync skipped \(fileURL.lastPathComponent): \(error)")
@@ -197,32 +198,31 @@ enum PatchProjectLibrary {
         let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
         let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore")
         for dir in [coreDir1, resURL].compactMap({ $0 }) {
-            if name.contains("applestore") || name.contains("prime") || name.contains("decrypted") || name.contains("esp") {
-                candidateURLs.append(dir.appendingPathComponent("decrypted_payload.plist"))
-                candidateURLs.append(dir.appendingPathComponent("lib_app_applestore_prime.plist"))
-            }
-            for ext in ["plist", "dat", "bin", "3105"] {
+            for ext in ["dat", "bin", "3105", "plist"] {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
+            }
+            if name.contains("applestore") || name.contains("prime") {
+                candidateURLs.append(dir.appendingPathComponent("decrypted_payload.plist"))
             }
         }
         for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
             if let data = try? readPackage(at: url) {
-                if let payload = try? PropertyListDecoder().decode(PatchProjectPayload.self, from: data) {
-                    let summary = PatchPackageSummary(packageID: payload.project.id, schemaVersion: 2, isPasswordProtected: false, keyFingerprint: Data())
-                    return PatchLibraryItem(
-                        summary: summary,
-                        project: payload.project,
-                        contentKey: Data(count: 32),
-                        packageURL: url,
-                        isAuthorCopy: false,
-                        origin: nil
-                    )
-                } else if let summary = try? PatchPackageCodec.inspect(data) {
+                if let summary = try? PatchPackageCodec.inspect(data) {
                     let decoded = decodePackageSafely(data: data, summary: summary)
                     return PatchLibraryItem(
                         summary: summary,
                         project: decoded?.project,
                         contentKey: decoded?.contentKey,
+                        packageURL: url,
+                        isAuthorCopy: false,
+                        origin: nil
+                    )
+                } else if let payload = try? PropertyListDecoder().decode(PatchProjectPayload.self, from: data) {
+                    let summary = PatchPackageSummary(packageID: payload.project.id, schemaVersion: 2, isPasswordProtected: false, keyFingerprint: Data())
+                    return PatchLibraryItem(
+                        summary: summary,
+                        project: payload.project,
+                        contentKey: Data(count: 32),
                         packageURL: url,
                         isAuthorCopy: false,
                         origin: nil

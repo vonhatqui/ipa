@@ -175,9 +175,6 @@ struct CheatStoreDashboardView: View {
     }
 
     private var applestorePrimeItem: PatchLibraryItem? {
-        if let bundled = PatchProjectLibrary.loadBundledItem(named: "decrypted_payload") {
-            return bundled
-        }
         if let found = patchStore.items.first(where: { isApplestorePrimeItem($0) }) {
             return found
         }
@@ -599,9 +596,6 @@ struct CheatStoreDashboardView: View {
     private var espView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                let itemToToggle = applestorePrimeItem ?? PatchProjectLibrary.loadBundledItem(named: "decrypted_payload") ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime")
-                let isEspApplied = (itemToToggle != nil && appliedProjectIDs.contains(itemToToggle!.id))
-
                 // Tiêu đề danh mục: ĐỊNH VỊ (ESP)
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -611,16 +605,16 @@ struct CheatStoreDashboardView: View {
                                 .foregroundStyle(BlossomTheme.sakura)
                                 .tracking(1.0)
 
-                            Text(isEspApplied ? "🟢 ĐANG BẬT" : "🟢 AN TOÀN 100%")
+                            Text(licenseManager.featureConfig.esp ? "🟢 AN TOÀN" : "🔴 KHÔNG AN TOÀN")
                                 .font(.system(size: 8, weight: .black))
                                 .foregroundStyle(.white)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2.5)
-                                .background(isEspApplied ? Color.green : Color.blue)
+                                .background(licenseManager.featureConfig.esp ? Color.blue : Color.orange)
                                 .cornerRadius(4)
                         }
 
-                        Text("Quét tọa độ 3D • Hỗ trợ Line Player & Name Tag đối thủ")
+                        Text("Quét tọa độ 3D • Hỗ trợ tâm ngắm & cảnh báo kẻ địch")
                             .font(.system(size: 11.5, weight: .medium))
                             .foregroundStyle(.gray)
                     }
@@ -629,59 +623,74 @@ struct CheatStoreDashboardView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 14)
 
-                // 1. Chức Năng Định Vị Riêng Chuyên Dụng: AppleStore Prime VIP
-                VStack(spacing: 14) {
-                    AppleStoreEspVipCard(
-                        item: itemToToggle,
-                        isApplied: isEspApplied,
-                        isWorking: (itemToToggle != nil && workingPatchID == itemToToggle!.id),
-                        brandBlue: brandBlue,
-                        onToggle: { enable in
-                            let target = applestorePrimeItem ?? PatchProjectLibrary.loadBundledItem(named: "decrypted_payload") ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime")
-                            if let target {
-                                handleToggle(item: target, enable: enable)
-                            }
-                        }
-                    )
-                }
-                .padding(.horizontal, 20)
+                // Banner Bảo Trì Định Vị (Chỉ hiển thị khi hệ thống định vị đang tạm bảo trì)
+                if !licenseManager.featureConfig.esp {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "wrench.and.screwdriver.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundStyle(Color.orange)
 
-                // 2. Banner Thông Báo Tối Ưu An Toàn
-                HStack(spacing: 10) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Color.green)
+                            Text("HỆ THỐNG ĐỊNH VỊ ĐANG BẢO TRÌ")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.white)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("BẢN ĐỊNH VỊ CHUẨN CHỈ VIP PRO")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text("Đã nâng cấp thuật toán: Name Tag đổi màu Neon, tia Line đếm số Player và bảo vệ Anti-ban không văng game.")
-                            .font(.system(size: 10.5))
-                            .foregroundStyle(.white.opacity(0.85))
-                    }
-                    Spacer()
-                }
-                .padding(12)
-                .background(Color.green.opacity(0.12))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green.opacity(0.35), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-
-                // 3. Chức Năng Định Vị Người Phụ (nếu có item)
-                if let item = espItem {
-                    VStack(spacing: 10) {
-                        HStack {
-                            Text("CHẾ ĐỘ ĐỊNH VỊ PHỤ (NETWORK ESP)")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.gray)
                             Spacer()
+
+                            Text("BẢO TRÌ")
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color.orange)
+                                .cornerRadius(4)
                         }
 
+                        Text("Hệ thống Định Vị đang được bảo trì nhằm nâng cấp thuật toán giới hạn 50m và tối ưu hóa giải phóng RAM chống văng game.\n\n👉 Hiện tại, quý khách vui lòng sang [Trang Chủ] để bật tính năng APPLESTORE PRIME!")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .lineSpacing(3)
+
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedTab = .home
+                            }
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "apple.logo")
+                                Text("Chuyển sang Trang Chủ (Bật APPLESTORE PRIME)")
+                            }
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 36)
+                            .background(
+                                LinearGradient(
+                                    colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(10)
+                            .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 5)
+                        }
+                        .padding(.top, 2)
+                    }
+                    .padding(14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.orange.opacity(0.12))
+                    .cornerRadius(14)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.orange.opacity(0.4), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                }
+
+                // Chức Năng Định Vị Người (ESP)
+                if let item = espItem {
+                    VStack(spacing: 14) {
                         EspItemCard(
                             item: item,
                             isApplied: appliedProjectIDs.contains(item.id),
@@ -694,7 +703,10 @@ struct CheatStoreDashboardView: View {
                         )
                     }
                     .padding(.horizontal, 20)
-                    .padding(.top, 4)
+                }
+
+                if espItem == nil {
+                    emptyEspStateView
                 }
             }
             .padding(.bottom, 24)
@@ -1495,7 +1507,7 @@ struct CheatStoreDashboardView: View {
             return "APPLE IPA V2"
         }
         if isApplestorePrimeItem(item) {
-            return "ĐỊNH VỊ APPLESTORE PRIME"
+            return "APPLESTORE PRIME"
         }
         if isInternalItem(item) {
             return "INTERNAL"
@@ -2270,179 +2282,6 @@ private struct CheatItemCard: View {
             brandBlue: brandBlue,
             onToggle: onToggle
         )
-    }
-}
-
-// MARK: - AppleStoreEspVipCard (ĐỊNH VỊ SIÊU CẤP APPLESTORE PRIME)
-private struct AppleStoreEspVipCard: View {
-    let item: PatchLibraryItem?
-    let isApplied: Bool
-    let isWorking: Bool
-    let brandBlue: Color
-    let onToggle: (Bool) -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header Card
-            HStack(alignment: .top, spacing: 14) {
-                // Icon radar / crosshair with gradient
-                ZStack {
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: isApplied ? [Color.green.opacity(0.3), Color.cyan.opacity(0.3)] : [BlossomTheme.sakuraDeep.opacity(0.25), BlossomTheme.sakura.opacity(0.15)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .frame(width: 52, height: 52)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(isApplied ? Color.green.opacity(0.6) : BlossomTheme.sakura.opacity(0.4), lineWidth: 1.5)
-                        )
-
-                    Image(systemName: isApplied ? "scope" : "dot.radiowaves.left.and.right")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : BlossomTheme.sakura)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Text("Định Vị AppleStore VIP")
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundStyle(.white)
-
-                        Text("PRO")
-                            .font(.system(size: 8, weight: .black))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(
-                                LinearGradient(
-                                    colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                            .cornerRadius(4)
-
-                        Text("🟢 AN TOÀN")
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(Color.green)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.15))
-                            .cornerRadius(4)
-                    }
-
-                    Text("Line Player + Name Tag Đổi Màu 3D")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(BlossomTheme.sakura.opacity(0.9))
-                }
-
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-
-            // Danh sách tính năng chi tiết dạng Pill Tags
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    EspFeatureTag(icon: "point.topleft.down.curvedto.point.bottomright.up", text: "Tia Line + Đếm Player")
-                    EspFeatureTag(icon: "person.text.rectangle.fill", text: "Name Tag Vàng / Đỏ 3D")
-                }
-                HStack(spacing: 8) {
-                    EspFeatureTag(icon: "shippingbox.fill", text: "Khung ESP & Met")
-                    EspFeatureTag(icon: "shield.checkered", text: "Bypass Anti-Ban")
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-
-            Divider()
-                .background(Color.white.opacity(0.1))
-                .padding(.horizontal, 16)
-                .padding(.top, 14)
-
-            // Bottom Action & Toggle
-            HStack {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(isApplied ? Color.green : Color.gray.opacity(0.6))
-                        .frame(width: 8, height: 8)
-
-                    Text(isApplied ? "ĐANG KÍCH HOẠT (TRONG TRẬN)" : "SẴN SÀNG KÍCH HOẠT")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(isApplied ? Color.green : Color.gray)
-                }
-
-                Spacer()
-
-                Button {
-                    if !isWorking {
-                        onToggle(!isApplied)
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        if isWorking {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: isApplied ? "power" : "bolt.fill")
-                                .font(.system(size: 11, weight: .bold))
-                            Text(isApplied ? "ĐANG BẬT" : "BẬT ĐỊNH VỊ")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(
-                        isApplied
-                            ? LinearGradient(colors: [Color.green, Color(red: 0.1, green: 0.7, blue: 0.3)], startPoint: .leading, endPoint: .trailing)
-                            : LinearGradient(colors: [BlossomTheme.sakuraDeep, BlossomTheme.sakura], startPoint: .leading, endPoint: .trailing)
-                    )
-                    .cornerRadius(8)
-                    .shadow(color: (isApplied ? Color.green : BlossomTheme.sakura).opacity(0.4), radius: 6)
-                }
-                .disabled(isWorking)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-        }
-        .background(Color(red: 0.082, green: 0.043, blue: 0.137))
-        .cornerRadius(16)
-        .overlay(
-            RoundedRectangle(cornerRadius: 16)
-                .stroke(
-                    isApplied
-                        ? LinearGradient(colors: [Color.green.opacity(0.7), Color.cyan.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                        : LinearGradient(colors: [BlossomTheme.sakura.opacity(0.4), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing),
-                    lineWidth: 1.5
-                )
-        )
-        .shadow(color: (isApplied ? Color.green : BlossomTheme.sakura).opacity(isApplied ? 0.25 : 0.1), radius: 10)
-    }
-}
-
-private struct EspFeatureTag: View {
-    let icon: String
-    let text: String
-
-    var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: icon)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(BlossomTheme.sakura)
-            Text(text)
-                .font(.system(size: 10.5, weight: .medium))
-                .foregroundStyle(.white.opacity(0.9))
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(Color.white.opacity(0.06))
-        .cornerRadius(6)
     }
 }
 
