@@ -163,11 +163,6 @@ struct EncodedPatchPackage {
     let contentKey: Data
 }
 
-struct PatchProjectPayload: Codable {
-    var project: PatchProject
-    var replacementDigests: [String: Data]
-}
-
 struct DecodedPatchPackage {
     let project: PatchProject
     let contentKey: Data
