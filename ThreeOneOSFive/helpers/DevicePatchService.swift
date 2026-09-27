@@ -207,21 +207,20 @@ enum DevicePatchService {
             let incomingRelPaths = Set(project.rules.map { $0.relativePath })
             
             // Quét triệt để mọi receipt đang active để tìm các project trùng target file
-            if let dirs = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
-                for d in dirs {
-                    guard let pid = UUID(uuidString: d), pid != project.id else { continue }
-                    if let conflictReceipt = PatchTransaction.latestReceipt(projectID: pid, backupRoot: backupRoot, fileManager: fileManager),
-                       let journal = try? PatchTransaction.readJournal(conflictReceipt.journalURL) {
-                        let hasOverlap = journal.records.contains { incomingRelPaths.contains($0.relativePath) }
-                        if hasOverlap {
-                            try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
-                                roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
-                            })
-                            forceCleanupReceipts(projectID: pid)
-                            setProjectAppliedInMemory(projectID: pid, applied: false)
-                        }
-                    }
+            let conflictingPIDs = PatchTransaction.conflictingProjectIDs(
+                relativePaths: incomingRelPaths,
+                backupRoot: backupRoot,
+                excludingProjectID: project.id,
+                fileManager: fileManager
+            )
+            for conflictPID in conflictingPIDs {
+                if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot, fileManager: fileManager) {
+                    try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
+                        roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
+                    })
                 }
+                forceCleanupReceipts(projectID: conflictPID)
+                setProjectAppliedInMemory(projectID: conflictPID, applied: false)
             }
 
             // Nếu chính project này có receipt cũ, dọn sạch trước khi apply lại

@@ -614,6 +614,41 @@ enum PatchTransaction {
         return conflicting
     }
 
+    static func conflictingProjectIDs(
+        relativePaths: Set<String>,
+        backupRoot: URL,
+        excludingProjectID: UUID? = nil,
+        fileManager: FileManager = .default
+    ) -> Set<UUID> {
+        guard let projectDirectories = try? fileManager.contentsOfDirectory(
+            at: backupRoot,
+            includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles]
+        ) else { return [] }
+
+        var conflicting = Set<UUID>()
+        for directory in projectDirectories {
+            guard let projectID = UUID(uuidString: directory.lastPathComponent),
+                  projectID != excludingProjectID,
+                  let receipt = latestReceipt(
+                    projectID: projectID,
+                    backupRoot: backupRoot,
+                    fileManager: fileManager
+                  ),
+                  let journal = try? readJournal(receipt.journalURL),
+                  journal.status == .applied || journal.status == .prepared
+            else { continue }
+
+            for record in journal.records {
+                if relativePaths.contains(record.relativePath) {
+                    conflicting.insert(projectID)
+                    break
+                }
+            }
+        }
+        return conflicting
+    }
+
     static func requiredBundleIdentifiers(for receipt: PatchTransactionReceipt) throws -> [String] {
         let journal = try readJournal(receipt.journalURL)
         guard (minimumSchemaVersion...schemaVersion).contains(journal.schemaVersion),
@@ -1132,7 +1167,7 @@ enum PatchTransaction {
         try encoder.encode(journal).write(to: url, options: .atomic)
     }
 
-    static func readJournal(_ url: URL) throws -> Journal {
+    private static func readJournal(_ url: URL) throws -> Journal {
         try PropertyListDecoder().decode(Journal.self, from: Data(contentsOf: url))
     }
 
