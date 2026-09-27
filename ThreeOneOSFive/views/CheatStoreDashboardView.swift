@@ -107,11 +107,14 @@ struct CheatStoreDashboardView: View {
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        if name.contains("alock") || name.contains("alok") || filename.contains("alock") || filename.contains("skin_alock") {
-            return true
+        if name.contains("thất tỉnh") || name.contains("that tinh") || filename.contains("naco") {
+            return false
         }
         if name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") {
             return false
+        }
+        if name.contains("alock") || name.contains("alok") || filename.contains("alock") || filename.contains("skin_alock") {
+            return true
         }
         return name.contains("skin") || name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("ignis") || filename.contains("skin")
     }
@@ -209,7 +212,7 @@ struct CheatStoreDashboardView: View {
 
     private var skinItems: [PatchLibraryItem] {
         var list = patchStore.items.filter { isSkinItem($0) }
-        let bundledNames = ["lib_app_skin_alock_v2", "lib_app_skin_ignis", "lib_app_skin_naco"]
+        let bundledNames = ["lib_app_skin_alock_v2", "lib_app_skin_ignis"]
         for bName in bundledNames {
             if let bundled = PatchProjectLibrary.loadBundledItem(named: bName),
                !list.contains(where: { $0.id == bundled.id || $0.project?.name == bundled.project?.name }) {
@@ -236,19 +239,23 @@ struct CheatStoreDashboardView: View {
                 // Header thanh trên
                 topHeaderView
 
-                // Nội dung theo Tab đã chọn
+                // Nội dung theo Tab đã chọn (chuyển đổi mượt 60fps không bị lag giật)
                 ZStack {
-                    switch selectedTab {
-                    case .home:
+                    if selectedTab == .home {
                         homeView
-                    case .esp:
+                            .transition(.opacity)
+                    } else if selectedTab == .esp {
                         espView
-                    case .skin:
+                            .transition(.opacity)
+                    } else if selectedTab == .skin {
                         skinView
-                    case .profile:
+                            .transition(.opacity)
+                    } else if selectedTab == .profile {
                         profileView
+                            .transition(.opacity)
                     }
                 }
+                .animation(.easeInOut(duration: 0.15), value: selectedTab)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // Dock Mở Game Nhanh (Chuyên biệt Free Fire)
@@ -1459,6 +1466,30 @@ struct CheatStoreDashboardView: View {
         workingPatchID = currentID
         let modName = displayName(for: item)
 
+        // Cập nhật trạng thái tức thì 0ms trên UI để công tắc bật/tắt mượt mà không delay
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
+            if enable {
+                if self.isAppleIpaV2Item(item) || self.isApplestorePrimeItem(item) || self.isSwiftIosItem(item) || self.isInternalItem(item) || self.isEspItem(item) {
+                    let assemblyMods = [self.appleIpaV2Item, self.swiftIosItem, self.applestorePrimeItem, self.internalItem, self.espItem].compactMap { $0 }
+                    for other in assemblyMods where other.id != item.id {
+                        self.appliedProjectIDs.remove(other.id)
+                    }
+                } else if self.isAimneckVipItem(item) || self.isAimItem(item) {
+                    let aimMods = [self.aimneckVipItem, self.aimItem].compactMap { $0 }
+                    for other in aimMods where other.id != item.id {
+                        self.appliedProjectIDs.remove(other.id)
+                    }
+                } else if self.isSkinItem(item) {
+                    for other in self.skinItems where other.id != item.id {
+                        self.appliedProjectIDs.remove(other.id)
+                    }
+                }
+                self.appliedProjectIDs.insert(currentID)
+            } else {
+                self.appliedProjectIDs.remove(currentID)
+            }
+        }
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 if enable {
@@ -1507,7 +1538,6 @@ struct CheatStoreDashboardView: View {
                     DispatchQueue.main.async {
                         guard self.workingPatchID == currentID else { return }
                         self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
-                        self.patchStore.reload()
                         self.workingPatchID = nil
                         CheatStoreSoundManager.shared.playSuccessSound()
                         self.alertMessage = "Đã BẬT thành công: \(modName)\n\n⚠️ LƯU Ý: Hãy vuốt tắt hẳn game Free Fire trong đa nhiệm rồi mở lại để vào trận mượt mà không văng game!"
@@ -1533,7 +1563,6 @@ struct CheatStoreDashboardView: View {
                     DispatchQueue.main.async {
                         guard self.workingPatchID == currentID else { return }
                         self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
-                        self.patchStore.reload()
                         self.workingPatchID = nil
                         self.alertMessage = "Đã TẮT và khôi phục an toàn 100%: \(modName)"
                         self.showAlert = true
@@ -1548,8 +1577,9 @@ struct CheatStoreDashboardView: View {
 
                 DispatchQueue.main.async {
                     guard self.workingPatchID == currentID else { return }
-                    self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
-                    self.patchStore.reload()
+                    withAnimation {
+                        self.appliedProjectIDs = DevicePatchService.allAppliedProjectIDs()
+                    }
                     self.workingPatchID = nil
                     let friendlyError = self.userFriendlyErrorMessage(error)
                     self.alertMessage = "Thao tác thất bại: \(friendlyError)"
@@ -1562,33 +1592,19 @@ struct CheatStoreDashboardView: View {
     private func previewSkin(for item: PatchLibraryItem) {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        if name.contains("alock v2") || name.contains("alok v2") || filename.contains("alock_v2") {
+        if name.contains("alock") || name.contains("alok") || filename.contains("alock") {
             previewSkinInfo = SkinPreviewInfo(
                 title: "Skin Alock V2",
                 subtitle: "Trang phục nhân vật Alok cực chất (Bản V2)",
                 imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
                 localImageName: "SkinNaco"
             )
-        } else if name.contains("thất tỉnh") || name.contains("that tinh") || filename.contains("naco") {
-            previewSkinInfo = SkinPreviewInfo(
-                title: "Mod Skin Alock Thất Tỉnh",
-                subtitle: "Trang phục nhân vật Alok Thất Tỉnh VIP",
-                imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
-                localImageName: "SkinNaco"
-            )
-        } else if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("vàng") || filename.contains("ignis") {
+        } else {
             previewSkinInfo = SkinPreviewInfo(
                 title: "Skin thẻ vô cực vàng mùa 1",
                 subtitle: "Trang phục Thẻ Vô Cực Vàng Mùa 1 Huyền Thoại",
                 imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
                 localImageName: "skin_vocuc"
-            )
-        } else {
-            previewSkinInfo = SkinPreviewInfo(
-                title: item.project?.name ?? "Mod Skin VIP",
-                subtitle: "Trang phục VIP Độc Quyền",
-                imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
-                localImageName: "skin_ignis"
             )
         }
     }
@@ -1615,17 +1631,11 @@ struct CheatStoreDashboardView: View {
         if isSkinItem(item) {
             let n = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
             let fn = item.packageURL.lastPathComponent.lowercased()
-            if n.contains("alock v2") || n.contains("alok v2") || fn.contains("alock_v2") {
+            if n.contains("alock") || n.contains("alok") || fn.contains("alock") {
                 return "Skin Alock V2"
-            }
-            if n.contains("thất tỉnh") || n.contains("that tinh") || fn.contains("naco") {
-                return "Mod Skin Alock Thất Tỉnh"
             }
             if n.contains("vô cực") || n.contains("vo cuc") || n.contains("mùa 1") || n.contains("mua 1") || fn.contains("ignis") {
                 return "Skin thẻ vô cực vàng mùa 1"
-            }
-            if n.contains("alock") || n.contains("alok") {
-                return "Skin Alock V2"
             }
             return item.project?.name ?? "Mod Skin VIP"
         }
@@ -1696,6 +1706,7 @@ struct CheatStoreDashboardView: View {
         if !licenseManager.featureConfig.is_app_safe {
             return true
         }
+        guard !appliedProjectIDs.isEmpty else { return false }
         let allMods = [
             appleIpaV2Item,
             swiftIosItem,
@@ -1714,7 +1725,10 @@ struct CheatStoreDashboardView: View {
     }
 
     private var quickLaunchCardView: some View {
-        Button {
+        let unsafe = isAppOrAnyActiveModUnsafe
+        let active = isAnyModActive
+
+        return Button {
             launchFreeFire()
         } label: {
             HStack(spacing: 13) {
@@ -1722,11 +1736,11 @@ struct CheatStoreDashboardView: View {
                 ZStack {
                     FreeFireAppIconView(size: 42, cornerRadius: 11)
 
-                    if isAnyModActive {
+                    if active {
                         RoundedRectangle(cornerRadius: 11, style: .continuous)
                             .stroke(
                                 LinearGradient(
-                                    colors: isAppOrAnyActiveModUnsafe
+                                    colors: unsafe
                                         ? [Color.red, Color.orange]
                                         : [BlossomTheme.sakuraLight, brandBlue],
                                     startPoint: .topLeading,
@@ -1737,7 +1751,7 @@ struct CheatStoreDashboardView: View {
                             .frame(width: 42, height: 42)
                     }
                 }
-                .shadow(color: isAnyModActive ? (isAppOrAnyActiveModUnsafe ? Color.red.opacity(0.6) : brandBlue.opacity(0.6)) : Color.clear, radius: 6)
+                .shadow(color: active ? (unsafe ? Color.red.opacity(0.6) : brandBlue.opacity(0.6)) : Color.clear, radius: 6)
 
                 VStack(alignment: .leading, spacing: 2.5) {
                     HStack(spacing: 6) {
@@ -1745,7 +1759,7 @@ struct CheatStoreDashboardView: View {
                             .font(.system(size: 15.5, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
 
-                        if isAppOrAnyActiveModUnsafe {
+                        if unsafe {
                             Text("KHÔNG AN TOÀN")
                                 .font(.system(size: 8.5, weight: .black, design: .rounded))
                                 .foregroundStyle(.white)
@@ -1753,7 +1767,7 @@ struct CheatStoreDashboardView: View {
                                 .padding(.vertical, 1.5)
                                 .background(Color.red)
                                 .cornerRadius(3.5)
-                        } else if isAnyModActive {
+                        } else if active {
                             Text("SẴN SÀNG")
                                 .font(.system(size: 8.5, weight: .black, design: .rounded))
                                 .foregroundStyle(.white)
@@ -1773,15 +1787,15 @@ struct CheatStoreDashboardView: View {
                     }
 
                     Text(
-                        isAppOrAnyActiveModUnsafe
+                        unsafe
                             ? "Cảnh báo quét: Tạm thời không an toàn"
-                            : (isAnyModActive ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chạm để vào Free Fire ngay")
+                            : (active ? "Dữ liệu mod đã nạp • Sẵn sàng chiến" : "Chạm để vào Free Fire ngay")
                     )
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(
-                        isAppOrAnyActiveModUnsafe
+                        unsafe
                             ? Color.red.opacity(0.9)
-                            : (isAnyModActive ? BlossomTheme.sakuraLight : Color.gray)
+                            : (active ? BlossomTheme.sakuraLight : Color.gray)
                     )
                     .lineLimit(1)
                 }
@@ -1790,7 +1804,7 @@ struct CheatStoreDashboardView: View {
 
                 // Nút VÀO GAME / KHÔNG AN TOÀN (thiết kế vuông bo góc nhẹ 9px)
                 HStack(spacing: 5) {
-                    if isAppOrAnyActiveModUnsafe {
+                    if unsafe {
                         Image(systemName: "exclamationmark.triangle.fill")
                             .font(.system(size: 11, weight: .bold))
                         Text("KHÔNG AN TOÀN")
@@ -1807,7 +1821,7 @@ struct CheatStoreDashboardView: View {
                 .padding(.vertical, 9)
                 .background(
                     LinearGradient(
-                        colors: isAppOrAnyActiveModUnsafe
+                        colors: unsafe
                             ? [Color.red, Color(red: 0.82, green: 0.12, blue: 0.15)]
                             : [BlossomTheme.sakuraDeep, brandBlue],
                         startPoint: .leading,
@@ -1820,7 +1834,7 @@ struct CheatStoreDashboardView: View {
                         .stroke(Color.white.opacity(0.35), lineWidth: 0.8)
                 )
                 .shadow(
-                    color: isAppOrAnyActiveModUnsafe
+                    color: unsafe
                         ? Color.red.opacity(0.55)
                         : brandBlue.opacity(0.55),
                     radius: 6,
@@ -1846,16 +1860,16 @@ struct CheatStoreDashboardView: View {
             .overlay(
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .stroke(
-                        isAppOrAnyActiveModUnsafe
+                        unsafe
                             ? Color.red.opacity(0.7)
-                            : (isAnyModActive ? BlossomTheme.sakuraLight.opacity(0.65) : brandBlue.opacity(0.2)),
-                        lineWidth: (isAppOrAnyActiveModUnsafe || isAnyModActive) ? 1.4 : 0.8
+                            : (active ? BlossomTheme.sakuraLight.opacity(0.65) : brandBlue.opacity(0.2)),
+                        lineWidth: (unsafe || active) ? 1.4 : 0.8
                     )
             )
             .shadow(
-                color: isAppOrAnyActiveModUnsafe
+                color: unsafe
                     ? Color.red.opacity(0.3)
-                    : (isAnyModActive ? brandBlue.opacity(0.25) : Color.black.opacity(0.25)),
+                    : (active ? brandBlue.opacity(0.25) : Color.black.opacity(0.25)),
                 radius: 8,
                 y: 3
             )
@@ -1996,11 +2010,20 @@ private struct ElectricAppLogoTile: View {
         Color(red: 0.20, green: 0.90, blue: 1.0)
     }
 
+    private static var imageCache: [String: UIImage] = [:]
+    private static let imgCacheLock = NSLock()
+
     private var resolvedImage: UIImage? {
-        if let name = imageName {
-            if let img = UIImage(named: name) {
-                return img
-            }
+        guard let name = imageName else { return nil }
+        Self.imgCacheLock.lock()
+        if let cached = Self.imageCache[name] {
+            Self.imgCacheLock.unlock()
+            return cached
+        }
+        Self.imgCacheLock.unlock()
+
+        let found: UIImage? = {
+            if let img = UIImage(named: name) { return img }
             if let resPath = Bundle.main.resourcePath {
                 let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
                 let candidates = [name, "\(name).jpg", "\(name).png", "\(name).jpeg"]
@@ -2011,12 +2034,18 @@ private struct ElectricAppLogoTile: View {
             }
             if let path = Bundle.main.path(forResource: name, ofType: "jpg") ??
                           Bundle.main.path(forResource: name, ofType: "png") ??
-                          Bundle.main.path(forResource: name, ofType: "jpeg"),
-               let img = UIImage(contentsOfFile: path) {
-                return img
+                          Bundle.main.path(forResource: name, ofType: "jpeg") {
+                return UIImage(contentsOfFile: path)
             }
+            return nil
+        }()
+
+        if let img = found {
+            Self.imgCacheLock.lock()
+            Self.imageCache[name] = img
+            Self.imgCacheLock.unlock()
         }
-        return nil
+        return found
     }
 
     var body: some View {
@@ -2084,40 +2113,36 @@ private struct ElectricAppLogoTile: View {
                 }
             }
             .overlay(
-                // 5. Tia điện & Chùm Laser cắt chéo xuyên qua app
-                GeometryReader { geo in
-                    let w = geo.size.width
-                    let h = geo.size.height
-                    ZStack {
-                        // Chùm tia điện cắt chéo 45 độ xuyên tâm app
-                        Rectangle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.clear,
-                                        Color.white.opacity(0.95),
-                                        isUnderMaintenance ? Color.yellow.opacity(0.9) : (isApplied ? Color(red: 0.20, green: 0.98, blue: 0.65).opacity(0.9) : electricCyan.opacity(0.9)),
-                                        Color.white.opacity(0.95),
-                                        Color.clear
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
+                // 5. Tia điện & Chùm Laser cắt chéo xuyên qua app (dùng size trực tiếp, không dùng GeometryReader)
+                ZStack {
+                    // Chùm tia điện cắt chéo 45 độ xuyên tâm app
+                    Rectangle()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.clear,
+                                    Color.white.opacity(0.95),
+                                    isUnderMaintenance ? Color.yellow.opacity(0.9) : (isApplied ? Color(red: 0.20, green: 0.98, blue: 0.65).opacity(0.9) : electricCyan.opacity(0.9)),
+                                    Color.white.opacity(0.95),
+                                    Color.clear
+                                ],
+                                startPoint: .leading,
+                                endPoint: .trailing
                             )
-                            .frame(width: 5, height: h * 1.6)
-                            .rotationEffect(.degrees(45))
-                            .offset(x: lightningSweep * (w * 1.35))
-                            .blur(radius: 0.8)
-                            .blendMode(.screen)
+                        )
+                        .frame(width: 5, height: size * 1.6)
+                        .rotationEffect(.degrees(45))
+                        .offset(x: lightningSweep * (size * 1.35))
+                        .blur(radius: 0.8)
+                        .blendMode(.screen)
 
-                        // Hạt vi chớp sáng điện tích phóng ngang tâm
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 2.8, height: 2.8)
-                            .blur(radius: 0.6)
-                            .offset(x: lightningSweep * (w * 0.7), y: lightningSweep * (h * 0.7))
-                            .opacity(sparkFlash)
-                    }
+                    // Hạt vi chớp sáng điện tích phóng ngang tâm
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 2.8, height: 2.8)
+                        .blur(radius: 0.6)
+                        .offset(x: lightningSweep * (size * 0.7), y: lightningSweep * (size * 0.7))
+                        .opacity(sparkFlash)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             )
@@ -2211,13 +2236,8 @@ private struct ModernCleanCardRow: View {
 
             Spacer(minLength: 8)
 
-            // 3. Vị trí nút bật/tắt: Khi KHÔNG AN TOÀN thì thay thế hoàn toàn công tắc bằng nhãn "KHÔNG AN TOÀN"
-            if isWorking {
-                ProgressView()
-                    .tint(brandBlue)
-                    .scaleEffect(0.8)
-                    .frame(width: 44, height: 26)
-            } else if isUnderMaintenance {
+            // 3. Vị trí nút bật/tắt: Giữ công tắc ổn định trên màn hình, không bị giật lag hay biến mất nút
+            if isUnderMaintenance {
                 // Nhãn KHÔNG AN TOÀN thay thế hoàn toàn vị trí nút bật tắt
                 Text("KHÔNG AN TOÀN")
                     .font(.system(size: 8.5, weight: .black, design: .rounded))
@@ -2232,15 +2252,26 @@ private struct ModernCleanCardRow: View {
                     )
                     .shadow(color: Color.red.opacity(0.4), radius: 4)
             } else {
-                Toggle("", isOn: Binding(
-                    get: { isApplied },
-                    set: { newVal in
-                        onToggle(newVal)
+                HStack(spacing: 6) {
+                    if isWorking {
+                        ProgressView()
+                            .tint(brandBlue)
+                            .scaleEffect(0.75)
                     }
-                ))
-                .labelsHidden()
-                .tint(brandBlue)
-                .scaleEffect(0.9) // Tối ưu nhỏ lại 10%
+
+                    Toggle("", isOn: Binding(
+                        get: { isApplied },
+                        set: { newVal in
+                            guard !isWorking else { return }
+                            onToggle(newVal)
+                        }
+                    ))
+                    .labelsHidden()
+                    .tint(brandBlue)
+                    .scaleEffect(0.9) // Tối ưu nhỏ lại 10%
+                    .disabled(isWorking)
+                    .allowsHitTesting(false) // Tránh xung đột sự kiện chạm giữa Toggle và hàng, phản hồi 0ms tức thì
+                }
             }
         }
         .padding(.horizontal, 11)
@@ -2271,9 +2302,8 @@ private struct ModernCleanCardRow: View {
         )
         .contentShape(RoundedRectangle(cornerRadius: 11))
         .onTapGesture {
-            if !isWorking && !isUnderMaintenance {
-                onToggle(!isApplied)
-            }
+            guard !isWorking && !isUnderMaintenance else { return }
+            onToggle(!isApplied)
         }
     }
 }
@@ -2459,34 +2489,19 @@ private struct SkinItemCard: View {
     private var skinTitle: String {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        if name.contains("alock v2") || name.contains("alok v2") || filename.contains("alock_v2") {
+        if name.contains("alock") || name.contains("alok") || filename.contains("alock") {
             return "Skin Alock V2"
         }
-        if name.contains("thất tỉnh") || name.contains("that tinh") || filename.contains("naco") {
-            return "Mod Skin Alock Thất Tỉnh"
-        }
-        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || filename.contains("ignis") {
-            return "Skin thẻ vô cực vàng mùa 1"
-        }
-        if name.contains("alock") || name.contains("alok") {
-            return "Skin Alock V2"
-        }
-        return item.project?.name ?? "Mod Skin VIP"
+        return "Skin thẻ vô cực vàng mùa 1"
     }
 
     private var skinSubtitle: String {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        if name.contains("alock v2") || name.contains("alok v2") || filename.contains("alock_v2") {
+        if name.contains("alock") || name.contains("alok") || filename.contains("alock") {
             return "Trang phục nhân vật Alok cực chất (Bản V2)"
         }
-        if name.contains("thất tỉnh") || name.contains("that tinh") || filename.contains("naco") {
-            return "Trang phục nhân vật Alok Thất Tỉnh VIP"
-        }
-        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || filename.contains("ignis") {
-            return "Trang phục Thẻ Vô Cực Vàng Mùa 1"
-        }
-        return "Trang phục VIP & Hiệu ứng sảnh"
+        return "Trang phục Thẻ Vô Cực Vàng Mùa 1"
     }
 
     var body: some View {

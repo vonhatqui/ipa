@@ -108,7 +108,7 @@ enum BundledPatchInjector {
 
             // Chỉ dọn dẹp các file rác tạm thời (.tmp, .bak), TUYỆT ĐỐI KHÔNG xóa file .3105 và .dat hợp lệ của người dùng
             let staleFileKeywords: [String] = [
-                "enginecore.bak", "lib_app_runtime.bak", "cmenu.bak"
+                "enginecore.bak", "lib_app_runtime.bak", "cmenu.bak", "lib_app_skin_naco.dat", "lib_app_skin_naco"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {

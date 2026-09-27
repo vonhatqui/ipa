@@ -192,8 +192,17 @@ enum PatchProjectLibrary {
         }
     }
 
-    
+    private static var bundledItemCache: [String: PatchLibraryItem] = [:]
+    private static let bundledCacheLock = NSLock()
+
     static func loadBundledItem(named name: String) -> PatchLibraryItem? {
+        bundledCacheLock.lock()
+        if let cached = bundledItemCache[name] {
+            bundledCacheLock.unlock()
+            return cached
+        }
+        bundledCacheLock.unlock()
+
         let fileManager = FileManager.default
         var candidateURLs: [URL] = []
         let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
@@ -207,7 +216,7 @@ enum PatchProjectLibrary {
             if let data = try? readPackage(at: url),
                let summary = try? PatchPackageCodec.inspect(data) {
                 let decoded = decodePackageSafely(data: data, summary: summary)
-                return PatchLibraryItem(
+                let item = PatchLibraryItem(
                     summary: summary,
                     project: decoded?.project,
                     contentKey: decoded?.contentKey,
@@ -215,6 +224,10 @@ enum PatchProjectLibrary {
                     isAuthorCopy: false,
                     origin: nil
                 )
+                bundledCacheLock.lock()
+                bundledItemCache[name] = item
+                bundledCacheLock.unlock()
+                return item
             }
         }
         return nil

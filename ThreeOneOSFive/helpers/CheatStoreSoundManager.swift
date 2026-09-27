@@ -44,13 +44,8 @@ final class CheatStoreSoundManager: ObservableObject {
         }
     }
 
-    /// Phát âm thanh Apple Pay thành công cùng phản hồi rung xúc giác (Haptic)
+    /// Phát âm thanh Apple Pay thành công (Đã tắt rung theo yêu cầu)
     func playSuccessSound() {
-        // Rung Haptic phản hồi cao cấp chuẩn Apple
-        let generator = UINotificationFeedbackGenerator()
-        generator.prepare()
-        generator.notificationOccurred(.success)
-
         // Phát âm thanh
         if audioPlayer == nil {
             prepareAudioPlayer()
@@ -66,10 +61,8 @@ final class CheatStoreSoundManager: ObservableObject {
         }
     }
 
-    /// Rung nhẹ khi chuyển tab (Tương tự Limelight Dock haptic)
+    /// Chuyển tab (Đã tắt rung hoàn toàn để chuyển tab mượt mà, không bị delay)
     func playTabSwitchHaptic() {
-        let impact = UIImpactFeedbackGenerator(style: .light)
-        impact.prepare()
-        impact.impactOccurred()
+        // Đã tắt rung phản hồi theo yêu cầu
     }
 }
