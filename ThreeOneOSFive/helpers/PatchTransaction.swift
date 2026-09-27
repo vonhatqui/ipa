@@ -177,7 +177,8 @@ enum PatchTransaction {
             )
             let targetKey = target.path
             guard targetKeys.insert(targetKey).inserted else {
-                throw PatchPackageError.duplicateTarget
+                // If a target is already resolved in this transaction, skip duplicate rule safely
+                continue
             }
             try validateFileTarget(
                 target,
@@ -197,9 +198,19 @@ enum PatchTransaction {
         for resolved in resolvedRules {
             let occupancyKey = resolved.rule.bundleID + "\0" + resolved.rule.relativePath
             if occupied.contains(occupancyKey) {
-                throw PatchPackageError.targetOccupied(
-                    resolved.rule.bundleID + "/" + resolved.rule.relativePath
+                // Tự động dọn dẹp và khôi phục an toàn project cũ đang chiếm dụng file đích
+                let conflictPIDs = PatchTransaction.projectIDs(
+                    occupyingKeys: [occupancyKey],
+                    backupRoot: backupRoot,
+                    excludingProjectID: project.id,
+                    fileManager: fileManager
                 )
+                for conflictPID in conflictPIDs {
+                    if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot, fileManager: fileManager) {
+                        try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, fileManager: fileManager, containerResolver: resolvedRoot)
+                    }
+                    try? fileManager.removeItem(at: backupRoot.appendingPathComponent(conflictPID.uuidString))
+                }
             }
         }
 

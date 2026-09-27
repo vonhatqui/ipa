@@ -202,31 +202,21 @@ enum DevicePatchService {
                 )
             }
 
-            // 2. Tự động chuyển đổi thông minh: Chỉ tự động khôi phục project nào có target file TRÙNG LẶP trực tiếp
+            // 2. Tự động chuyển đổi thông minh: Khôi phục project nào có target file TRÙNG LẶP trực tiếp
             let backupRoot = try PatchProjectLibrary.backupRootURL()
-            let projectTargetKeys = Set(project.rules.map { $0.bundleID + "\0" + $0.relativePath })
-            let conflictingPIDs = PatchTransaction.projectIDs(
-                occupyingKeys: projectTargetKeys,
-                backupRoot: backupRoot,
-                excludingProjectID: project.id,
-                fileManager: fileManager
-            )
-            for conflictPID in conflictingPIDs {
-                if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot) {
-                    try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
-                        roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
-                    })
-                }
-                forceCleanupReceipts(projectID: conflictPID)
-                setProjectAppliedInMemory(projectID: conflictPID, applied: false)
-            }
-
-            // Dọn dẹp triệt để mọi receipt chiếm dụng cùng target keys (tránh hoàn toàn lỗi targetOccupied từ bản build cũ)
-            let occupiedKeys = PatchTransaction.appliedTargetKeys(backupRoot: backupRoot, excludingProjectID: project.id, fileManager: fileManager)
-            if !occupiedKeys.isDisjoint(with: projectTargetKeys) {
-                if let dirs = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
-                    for d in dirs {
-                        if let pid = UUID(uuidString: d), pid != project.id {
+            let incomingRelPaths = Set(project.rules.map { $0.relativePath })
+            
+            // Quét triệt để mọi receipt đang active để tìm các project trùng target file
+            if let dirs = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
+                for d in dirs {
+                    guard let pid = UUID(uuidString: d), pid != project.id else { continue }
+                    if let conflictReceipt = PatchTransaction.latestReceipt(projectID: pid, backupRoot: backupRoot, fileManager: fileManager),
+                       let journal = try? PatchTransaction.readJournal(conflictReceipt.journalURL) {
+                        let hasOverlap = journal.records.contains { incomingRelPaths.contains($0.relativePath) }
+                        if hasOverlap {
+                            try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
+                                roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
+                            })
                             forceCleanupReceipts(projectID: pid)
                             setProjectAppliedInMemory(projectID: pid, applied: false)
                         }
@@ -240,12 +230,23 @@ enum DevicePatchService {
                     roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
                 })
             }
-            // Dọn dẹp receipt cũ
+            // Dọn dẹp receipt cũ của chính project này
             forceCleanupReceipts(projectID: project.id)
+
+            // Khử trùng lặp rule theo relativePath trước khi apply (phòng thủ tuyệt đối chống lỗi duplicateTarget)
+            var sanitizedRules: [PatchRule] = []
+            var seenRelPaths = Set<String>()
+            for rule in project.rules {
+                if seenRelPaths.insert(rule.relativePath).inserted {
+                    sanitizedRules.append(rule)
+                }
+            }
+            var sanitizedProject = project
+            sanitizedProject.rules = sanitizedRules
 
             // 3. Thực hiện Apply chuẩn qua PatchTransaction
             let receipt = try PatchTransaction.apply(
-                project: project,
+                project: sanitizedProject,
                 backupRoot: backupRoot,
                 containerResolver: { bundleID in
                     guard let root = roots[bundleID] else {
