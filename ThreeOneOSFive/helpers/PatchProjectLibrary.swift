@@ -57,17 +57,32 @@ enum PatchProjectLibrary {
         return root
     }
 
-    private static let knownPasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin", "OG", "og"]
+    private static let knownPasswords: [String?] = [nil, "OG", "Canhcupin", "og", "canhcupin"]
+    private static var decodedCache: [UUID: DecodedPatchPackage] = [:]
+    private static let cacheLock = NSLock()
 
     static func decodePackageSafely(data: Data, summary: PatchPackageSummary) -> DecodedPatchPackage? {
+        cacheLock.lock()
+        if let cached = decodedCache[summary.packageID] {
+            cacheLock.unlock()
+            return cached
+        }
+        cacheLock.unlock()
+
         if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
             if let decoded = try? PatchPackageCodec.decode(data, contentKey: contentKey) {
+                cacheLock.lock()
+                decodedCache[summary.packageID] = decoded
+                cacheLock.unlock()
                 return decoded
             }
         }
         for pwd in knownPasswords {
             if let decoded = try? PatchPackageCodec.decode(data, password: pwd) {
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
+                cacheLock.lock()
+                decodedCache[summary.packageID] = decoded
+                cacheLock.unlock()
                 return decoded
             }
         }

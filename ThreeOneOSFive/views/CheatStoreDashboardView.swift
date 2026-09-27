@@ -81,7 +81,7 @@ struct CheatStoreDashboardView: View {
     private func isAppleIpaV2Item(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("apple ipa") || name.contains("apple_ipa") || name.contains("applestorevn") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2")
+        return name.contains("apple ipa") || name.contains("apple_ipa") || name.contains("applestorevn") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2") || name.contains("@applestorevn")
     }
 
     private func isSwiftIosItem(_ item: PatchLibraryItem) -> Bool {
@@ -107,10 +107,10 @@ struct CheatStoreDashboardView: View {
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        if name.contains("alock v2") || name.contains("alok v2") || filename.contains("skin_alock_v2") {
+        if name.contains("alock") || name.contains("alok") || filename.contains("alock") || filename.contains("alok") || filename.contains("skin_alock") {
             return true
         }
-        if name.contains("alock") || name.contains("alok") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("naco") {
+        if name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("naco") {
             return false
         }
         return name.contains("skin") || name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("ignis") || filename.contains("skin")
@@ -127,7 +127,10 @@ struct CheatStoreDashboardView: View {
     private func isItemUnderMaintenance(_ item: PatchLibraryItem) -> Bool {
         let cfg = licenseManager.featureConfig
         if !cfg.is_app_safe { return true }
-        if isAppleIpaV2Item(item) || isSwiftIosItem(item) {
+        if isSwiftIosItem(item) {
+            return !cfg.swift_ios
+        }
+        if isAppleIpaV2Item(item) {
             return !cfg.apple_ipa
         }
         if isInternalItem(item) {
@@ -484,7 +487,7 @@ struct CheatStoreDashboardView: View {
                         item: swiftIosItem,
                         isApplied: swiftIosItem != nil && appliedProjectIDs.contains(swiftIosItem!.id),
                         isWorking: swiftIosItem != nil && workingPatchID == swiftIosItem!.id,
-                        isUnderMaintenance: swiftIosItem != nil ? isItemUnderMaintenance(swiftIosItem!) : !licenseManager.featureConfig.apple_ipa,
+                        isUnderMaintenance: swiftIosItem != nil ? isItemUnderMaintenance(swiftIosItem!) : !licenseManager.featureConfig.swift_ios,
                         brandBlue: brandBlue,
                         onToggle: { enable in
                             let itemToToggle = swiftIosItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_swift_ios")
@@ -1358,17 +1361,34 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    // Cache giải mã PatchProject trong RAM để chuyển đổi trạng thái cực mượt 60fps, không bao giờ bị đơ nút
+    private static var projectResolutionCache: [UUID: PatchProject] = [:]
+    private static let cacheLock = NSLock()
+
     private func resolveProject(for item: PatchLibraryItem) -> PatchProject? {
         if let project = item.project {
+            Self.cacheLock.lock()
+            Self.projectResolutionCache[item.id] = project
+            Self.cacheLock.unlock()
             return project
         }
-        let candidatePasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin", "OG", "og"]
+        Self.cacheLock.lock()
+        if let cached = Self.projectResolutionCache[item.id] {
+            Self.cacheLock.unlock()
+            return cached
+        }
+        Self.cacheLock.unlock()
+
+        let candidatePasswords: [String?] = [nil, "OG", "Canhcupin", "og", "canhcupin"]
 
         // 1. Thử giải mã từ packageURL của item
         if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL) {
             for pwd in candidatePasswords {
                 if let decoded = try? PatchPackageCodec.decode(data, password: pwd) {
                     try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                    Self.cacheLock.lock()
+                    Self.projectResolutionCache[item.id] = decoded.project
+                    Self.cacheLock.unlock()
                     return decoded.project
                 }
             }
@@ -1391,6 +1411,9 @@ struct CheatStoreDashboardView: View {
                     if let decoded = try? PatchPackageCodec.decode(data, password: pwd),
                        decoded.project.id == item.id || decoded.project.name.lowercased().contains(item.id.uuidString.lowercased()) {
                         try? PatchKeyStore.store(decoded.contentKey, for: item.summary)
+                        Self.cacheLock.lock()
+                        Self.projectResolutionCache[item.id] = decoded.project
+                        Self.cacheLock.unlock()
                         return decoded.project
                     }
                 }
@@ -1563,7 +1586,14 @@ struct CheatStoreDashboardView: View {
             return "ĐỊNH VỊ NGƯỜI (ESP)"
         }
         if isSkinItem(item) {
-            return item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent
+            let n = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+            if n.contains("alock") || n.contains("alok") {
+                return "Skin Alock V2"
+            }
+            if n.contains("vô cực") || n.contains("vo cuc") || n.contains("mùa 1") || n.contains("mua 1") {
+                return "Skin thẻ vô cực vàng mùa 1"
+            }
+            return item.project?.name ?? "Mod Skin IGNIS"
         }
         return "AIM DRAG (BẬT SẢNH)"
     }
@@ -2388,10 +2418,32 @@ private struct SkinItemCard: View {
     let onToggle: (Bool) -> Void
     let onPreview: () -> Void
 
+    private var skinTitle: String {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        if name.contains("alock") || name.contains("alok") {
+            return "Skin Alock V2"
+        }
+        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") {
+            return "Skin thẻ vô cực vàng mùa 1"
+        }
+        return item.project?.name ?? "Mod Skin IGNIS"
+    }
+
+    private var skinSubtitle: String {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        if name.contains("alock") || name.contains("alok") {
+            return "Trang phục nhân vật Alok cực chất"
+        }
+        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") {
+            return "Trang phục Thẻ Vô Cực Vàng Mùa 1"
+        }
+        return "Trang phục VIP & Hiệu ứng sảnh"
+    }
+
     var body: some View {
         ModernCleanCardRow(
-            title: "Mod Skin IGNIS",
-            subtitle: "Trang phục VIP & Hiệu ứng sảnh",
+            title: skinTitle,
+            subtitle: skinSubtitle,
             imageName: "CheatLogo",
             glowColor: Color(red: 1.0, green: 0.85, blue: 0.25),
             isApplied: isApplied,

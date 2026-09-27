@@ -14,6 +14,7 @@ public struct FeatureMaintenanceConfig: Codable {
     public var cpanel: Bool = true              // CPanel VIP Leaked
     public var esp: Bool = true                 // ESP Blue Xuyên Tường
     public var skin: Bool = true                // Mod Skin VIP
+    public var swift_ios: Bool = true           // Swift iOS VIP
 
     public var is_app_safe: Bool = true         // Trạng thái an toàn toàn bộ app
     public var unsafe_message: String? = nil
@@ -29,6 +30,7 @@ public struct FeatureMaintenanceConfig: Codable {
         cpanel: Bool = true,
         esp: Bool = true,
         skin: Bool = true,
+        swift_ios: Bool = true,
         is_app_safe: Bool = true,
         unsafe_message: String? = nil,
         maintenance_message: String? = nil
@@ -42,6 +44,7 @@ public struct FeatureMaintenanceConfig: Codable {
         self.cpanel = cpanel
         self.esp = esp
         self.skin = skin
+        self.swift_ios = swift_ios
         self.is_app_safe = is_app_safe
         self.unsafe_message = unsafe_message
         self.maintenance_message = maintenance_message
@@ -692,6 +695,9 @@ final class CheatStoreLicenseManager: ObservableObject {
             if let v = features["skin"] as? Bool {
                 updated.skin = v; didChange = true
             }
+            if let v = features["swift_ios"] as? Bool ?? features["swift"] as? Bool {
+                updated.swift_ios = v; didChange = true
+            }
             if let msg = json["unsafe_message"] as? String ?? json["maintenance_message"] as? String {
                 updated.unsafe_message = msg
                 updated.maintenance_message = msg
@@ -728,6 +734,9 @@ final class CheatStoreLicenseManager: ObservableObject {
             }
             if let v = maint["skin"] as? Bool {
                 updated.skin = !v; didChange = true
+            }
+            if let v = maint["swift_ios"] as? Bool ?? maint["swift"] as? Bool {
+                updated.swift_ios = !v; didChange = true
             }
             if let msg = json["unsafe_message"] as? String ?? json["maintenance_message"] as? String {
                 updated.unsafe_message = msg
