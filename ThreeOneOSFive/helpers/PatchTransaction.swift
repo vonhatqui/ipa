@@ -207,7 +207,7 @@ enum PatchTransaction {
                 )
                 for conflictPID in conflictPIDs {
                     if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot, fileManager: fileManager) {
-                        try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, fileManager: fileManager, containerResolver: resolvedRoot)
+                        try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: resolvedRoot, fileManager: fileManager)
                     }
                     try? fileManager.removeItem(at: backupRoot.appendingPathComponent(conflictPID.uuidString))
                 }
@@ -1132,7 +1132,7 @@ enum PatchTransaction {
         try encoder.encode(journal).write(to: url, options: .atomic)
     }
 
-    private static func readJournal(_ url: URL) throws -> Journal {
+    static func readJournal(_ url: URL) throws -> Journal {
         try PropertyListDecoder().decode(Journal.self, from: Data(contentsOf: url))
     }
 
