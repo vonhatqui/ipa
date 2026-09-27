@@ -81,18 +81,24 @@ struct CheatStoreDashboardView: View {
     private func isAppleIpaV2Item(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("apple ipa") || name.contains("apple_ipa") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2")
+        return name.contains("apple ipa") || name.contains("apple_ipa") || name.contains("applestorevn") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2")
+    }
+
+    private func isSwiftIosItem(_ item: PatchLibraryItem) -> Bool {
+        let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
+        let filename = item.packageURL.lastPathComponent.lowercased()
+        return name.contains("swift") || filename.contains("swift") || filename.contains("lib_app_swift_ios") || filename.contains("newoff") || name.contains("aimbot fix") || name.contains("fix văng") || name.contains("fix vang")
     }
 
     private func isInternalItem(_ item: PatchLibraryItem) -> Bool {
-        if isAppleIpaV2Item(item) { return false }
+        if isAppleIpaV2Item(item) || isSwiftIosItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("internal") || filename.contains("internal")
     }
 
     private func isApplestorePrimeItem(_ item: PatchLibraryItem) -> Bool {
-        if isAppleIpaV2Item(item) { return false }
+        if isAppleIpaV2Item(item) || isSwiftIosItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("applestore") || name.contains("prime") || filename.contains("applestore")
@@ -101,6 +107,9 @@ struct CheatStoreDashboardView: View {
     private func isSkinItem(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
+        if name.contains("alock v2") || name.contains("alok v2") || filename.contains("skin_alock_v2") {
+            return true
+        }
         if name.contains("alock") || name.contains("alok") || name.contains("nạ cỏ") || name.contains("na co") || name.contains("đá bóng") || name.contains("da bong") || filename.contains("naco") {
             return false
         }
@@ -108,7 +117,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private func isAimItem(_ item: PatchLibraryItem) -> Bool {
-        if isAimneckVipItem(item) || isEspItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) || isAppleIpaV2Item(item) || isInternalItem(item) { return false }
+        if isAimneckVipItem(item) || isEspItem(item) || isSkinItem(item) || isApplestorePrimeItem(item) || isAppleIpaV2Item(item) || isInternalItem(item) || isSwiftIosItem(item) { return false }
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
         return name.contains("aim") || name.contains("drag") || filename.contains("system")
@@ -118,7 +127,7 @@ struct CheatStoreDashboardView: View {
     private func isItemUnderMaintenance(_ item: PatchLibraryItem) -> Bool {
         let cfg = licenseManager.featureConfig
         if !cfg.is_app_safe { return true }
-        if isAppleIpaV2Item(item) {
+        if isAppleIpaV2Item(item) || isSwiftIosItem(item) {
             return !cfg.apple_ipa
         }
         if isInternalItem(item) {
@@ -167,6 +176,13 @@ struct CheatStoreDashboardView: View {
         return PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
     }
 
+    private var swiftIosItem: PatchLibraryItem? {
+        if let found = patchStore.items.first(where: { isSwiftIosItem($0) }) {
+            return found
+        }
+        return PatchProjectLibrary.loadBundledItem(named: "lib_app_swift_ios")
+    }
+
     private var internalItem: PatchLibraryItem? {
         if let found = patchStore.items.first(where: { isInternalItem($0) }) {
             return found
@@ -189,11 +205,15 @@ struct CheatStoreDashboardView: View {
     }
 
     private var skinItems: [PatchLibraryItem] {
-        let list = patchStore.items.filter { isSkinItem($0) }
-        if !list.isEmpty { return list }
-        return [
-            PatchProjectLibrary.loadBundledItem(named: "lib_app_skin_ignis")
-        ].compactMap { $0 }
+        var list = patchStore.items.filter { isSkinItem($0) }
+        let bundledNames = ["lib_app_skin_ignis", "lib_app_skin_alock_v2"]
+        for bName in bundledNames {
+            if let bundled = PatchProjectLibrary.loadBundledItem(named: bName),
+               !list.contains(where: { $0.id == bundled.id || $0.project?.name == bundled.project?.name }) {
+                list.append(bundled)
+            }
+        }
+        return list
     }
 
     private var aimItems: [PatchLibraryItem] {
@@ -454,6 +474,20 @@ struct CheatStoreDashboardView: View {
                         brandBlue: brandBlue,
                         onToggle: { enable in
                             let itemToToggle = appleIpaV2Item ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
+                            if let item = itemToToggle {
+                                handleMaintenanceToggle(item: item, enable: enable)
+                            }
+                        }
+                    )
+
+                    SwiftIosCard(
+                        item: swiftIosItem,
+                        isApplied: swiftIosItem != nil && appliedProjectIDs.contains(swiftIosItem!.id),
+                        isWorking: swiftIosItem != nil && workingPatchID == swiftIosItem!.id,
+                        isUnderMaintenance: swiftIosItem != nil ? isItemUnderMaintenance(swiftIosItem!) : !licenseManager.featureConfig.apple_ipa,
+                        brandBlue: brandBlue,
+                        onToggle: { enable in
+                            let itemToToggle = swiftIosItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_swift_ios")
                             if let item = itemToToggle {
                                 handleMaintenanceToggle(item: item, enable: enable)
                             }
@@ -1328,7 +1362,7 @@ struct CheatStoreDashboardView: View {
         if let project = item.project {
             return project
         }
-        let candidatePasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin"]
+        let candidatePasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin", "OG", "og"]
 
         // 1. Thử giải mã từ packageURL của item
         if let data = try? PatchProjectLibrary.readPackage(at: item.packageURL) {
@@ -1407,8 +1441,8 @@ struct CheatStoreDashboardView: View {
                 if enable {
                     // BẬT chức năng (Apply)
                     // Khi bật APPLE IPA V2 hoặc APPLESTORE PRIME, tự động dọn dẹp sạch tất cả các mod khác để chống xung đột & văng game
-                    if self.isAppleIpaV2Item(item) || self.isApplestorePrimeItem(item) {
-                        let allOtherMods = [self.appleIpaV2Item, self.applestorePrimeItem, self.internalItem, self.espItem, self.aimneckVipItem, self.aimItem].compactMap { $0 } + self.skinItems
+                    if self.isAppleIpaV2Item(item) || self.isApplestorePrimeItem(item) || self.isSwiftIosItem(item) {
+                        let allOtherMods = [self.appleIpaV2Item, self.swiftIosItem, self.applestorePrimeItem, self.internalItem, self.espItem, self.aimneckVipItem, self.aimItem].compactMap { $0 } + self.skinItems
                         for other in allOtherMods where other.id != item.id && self.appliedProjectIDs.contains(other.id) {
                             let otherProj = self.resolveProject(for: other)
                             if let receipt = DevicePatchService.latestReceipt(projectID: other.id) {
@@ -1485,7 +1519,14 @@ struct CheatStoreDashboardView: View {
 
     private func previewSkin(for item: PatchLibraryItem) {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
-        if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("vàng") {
+        if name.contains("alock") || name.contains("alok") {
+            previewSkinInfo = SkinPreviewInfo(
+                title: "Skin Alock V2",
+                subtitle: "Trang phục nhân vật Alok cực chất",
+                imageURL: "https://files.catbox.moe/0kjz3x.jpeg",
+                localImageName: "SkinNaco"
+            )
+        } else if name.contains("vô cực") || name.contains("vo cuc") || name.contains("mùa 1") || name.contains("mua 1") || name.contains("vàng") {
             previewSkinInfo = SkinPreviewInfo(
                 title: "Skin thẻ vô cực vàng mùa 1",
                 subtitle: "Trang phục Thẻ Vô Cực Vàng Mùa 1 Huyền Thoại",
@@ -1503,6 +1544,9 @@ struct CheatStoreDashboardView: View {
     }
 
     private func displayName(for item: PatchLibraryItem) -> String {
+        if isSwiftIosItem(item) {
+            return "Swift iOS"
+        }
         if isAppleIpaV2Item(item) {
             return "APPLE IPA V2"
         }
@@ -1586,6 +1630,7 @@ struct CheatStoreDashboardView: View {
         }
         let allMods = [
             appleIpaV2Item,
+            swiftIosItem,
             applestorePrimeItem,
             internalItem,
             aimneckVipItem,
@@ -2180,6 +2225,30 @@ private struct AppleIpaV2Card: View {
             subtitle: "Menu iOS V2",
             imageName: "CheatLogo",
             glowColor: BlossomTheme.sakura,
+            isApplied: isApplied,
+            isWorking: isWorking,
+            isUnderMaintenance: isUnderMaintenance,
+            brandBlue: brandBlue,
+            onToggle: onToggle
+        )
+    }
+}
+
+// MARK: - SwiftIosCard
+private struct SwiftIosCard: View {
+    let item: PatchLibraryItem?
+    let isApplied: Bool
+    let isWorking: Bool
+    var isUnderMaintenance: Bool = false
+    let brandBlue: Color
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        ModernCleanCardRow(
+            title: "SWIFT iOS",
+            subtitle: "Aimbot Fix Văng",
+            imageName: "CheatLogo",
+            glowColor: Color(red: 0.95, green: 0.50, blue: 0.15),
             isApplied: isApplied,
             isWorking: isWorking,
             isUnderMaintenance: isUnderMaintenance,

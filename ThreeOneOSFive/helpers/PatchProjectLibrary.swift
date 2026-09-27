@@ -57,7 +57,7 @@ enum PatchProjectLibrary {
         return root
     }
 
-    private static let knownPasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin"]
+    private static let knownPasswords: [String?] = [nil, "Canhcupin", "Canhcubin", "canhcupin", "canhcubin", "CanhCuPin", "CanhCuBin", "OG", "og"]
 
     static func decodePackageSafely(data: Data, summary: PatchPackageSummary) -> DecodedPatchPackage? {
         if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
