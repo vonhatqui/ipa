@@ -81,6 +81,15 @@ struct LimelightDockBar: View {
                                         .shadow(color: Color.orange.opacity(0.8), radius: 3)
                                         .offset(x: 6, y: -2)
                                 }
+
+                                // Badge trạng thái Antiban đang bật
+                                if tab == .antiban && AntibanProfileService.shared.isAntibanEnabled {
+                                    Circle()
+                                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                        .frame(width: 6, height: 6)
+                                        .shadow(color: Color.green.opacity(0.9), radius: 3)
+                                        .offset(x: 6, y: -2)
+                                }
                             }
                             .frame(height: 20)
 

@@ -5,13 +5,15 @@ enum CheatStoreTab: Int, CaseIterable {
     case home = 0
     case esp = 1
     case skin = 2
-    case profile = 3
+    case antiban = 3
+    case profile = 4
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
         case .esp: return "Định Vị"
         case .skin: return "Mod Skin"
+        case .antiban: return "Antiban"
         case .profile: return "Cá Nhân"
         }
     }
@@ -21,6 +23,7 @@ enum CheatStoreTab: Int, CaseIterable {
         case .home: return "house.fill"
         case .esp: return "location.viewfinder"
         case .skin: return "tshirt.fill"
+        case .antiban: return "checkmark.shield.fill"
         case .profile: return "person.crop.circle.fill"
         }
     }
@@ -42,6 +45,7 @@ struct CheatStoreDashboardView: View {
     @EnvironmentObject private var repositoryStore: PackageRepositoryStore
     @EnvironmentObject private var appState: AppState
     @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
+    @ObservedObject private var antibanService = AntibanProfileService.shared
     var onBackToGames: (() -> Void)? = nil
 
     @State private var selectedTab: CheatStoreTab = .home
@@ -250,6 +254,9 @@ struct CheatStoreDashboardView: View {
                     } else if selectedTab == .skin {
                         skinView
                             .transition(.opacity)
+                    } else if selectedTab == .antiban {
+                        antibanView
+                            .transition(.opacity)
                     } else if selectedTab == .profile {
                         profileView
                             .transition(.opacity)
@@ -259,7 +266,7 @@ struct CheatStoreDashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 // Dock Mở Game Nhanh (Chuyên biệt Free Fire)
-                if selectedTab != .profile {
+                if selectedTab != .profile && selectedTab != .antiban {
                     quickLaunchCardView
                         .padding(.horizontal, 20)
                         .padding(.bottom, 8)
@@ -1326,6 +1333,353 @@ struct CheatStoreDashboardView: View {
                 .stroke(brandBlue.opacity(0.22), lineWidth: 0.9)
         )
         .padding(.horizontal, 20)
+    }
+
+    // MARK: - Tab: Antiban (AppleStoreVN Antiban & Setup MobileConfig)
+    private var antibanView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(spacing: 16) {
+                // Header Hero Shield
+                VStack(spacing: 10) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                RadialGradient(
+                                    colors: [
+                                        (antibanService.isAntibanEnabled ? Color.green : brandBlue).opacity(0.35),
+                                        Color.clear
+                                    ],
+                                    center: .center,
+                                    startRadius: 8,
+                                    endRadius: 55
+                                )
+                            )
+                            .frame(width: 90, height: 90)
+
+                        Image(systemName: antibanService.isAntibanEnabled ? "checkmark.shield.fill" : "shield.checkered")
+                            .font(.system(size: 46, weight: .bold))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: antibanService.isAntibanEnabled
+                                        ? [Color(red: 0.35, green: 1.0, blue: 0.65), Color(red: 0.10, green: 0.85, blue: 0.45)]
+                                        : [Color.white, brandBlue],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .shadow(color: (antibanService.isAntibanEnabled ? Color.green : brandBlue).opacity(0.85), radius: 14)
+                    }
+                    .padding(.top, 4)
+
+                    Text("AppleStoreVN Antiban Engine")
+                        .font(.system(size: 19, weight: .black, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Text("Hệ thống bảo vệ tài khoản chuyên sâu - Mã hoá DNS và vô hiệu hoá máy chủ phát hiện gian lận của game.")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.72))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+
+                    // Badge trạng thái hiện tại
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(antibanService.isAntibanEnabled ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: (antibanService.isAntibanEnabled ? Color.green : Color.orange).opacity(0.9), radius: 4)
+
+                        Text(antibanService.isAntibanEnabled ? "HỆ THỐNG ĐANG BẢO VỆ (ACTIVE)" : "CHƯA BẬT BẢO VỆ (INACTIVE)")
+                            .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                            .foregroundStyle(antibanService.isAntibanEnabled ? Color(red: 0.35, green: 1.0, blue: 0.65) : Color.orange)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 5)
+                    .background(
+                        (antibanService.isAntibanEnabled ? Color.green : Color.orange).opacity(0.12)
+                    )
+                    .cornerRadius(18)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke((antibanService.isAntibanEnabled ? Color.green : Color.orange).opacity(0.28), lineWidth: 0.9)
+                    )
+                }
+                .padding(.vertical, 10)
+
+                // Thông báo trạng thái nếu có
+                if let notice = antibanService.statusNotice {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(brandBlue)
+
+                        Text(notice)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+
+                        Button {
+                            withAnimation { antibanService.statusNotice = nil }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(.white.opacity(0.6))
+                        }
+                    }
+                    .padding(12)
+                    .background(cardBackground.opacity(0.92))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(brandBlue.opacity(0.35), lineWidth: 0.9)
+                    )
+                    .padding(.horizontal, 20)
+                }
+
+                // Card Bật/Tắt Trạng thái Antiban
+                VStack(spacing: 12) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("TRẠNG THÁI ANTIBAN")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(brandBlue)
+
+                            Text(antibanService.isAntibanEnabled ? "Đang bật chế độ Antiban an toàn" : "Đang tắt Antiban")
+                                .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
+
+                        Spacer()
+
+                        // Nút Bật/Tắt Trạng thái Antiban
+                        Button {
+                            antibanService.toggleAntiban()
+                        } label: {
+                            ZStack(alignment: antibanService.isAntibanEnabled ? .trailing : .leading) {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(
+                                        antibanService.isAntibanEnabled
+                                            ? LinearGradient(colors: [Color.green, Color(red: 0.10, green: 0.82, blue: 0.42)], startPoint: .leading, endPoint: .trailing)
+                                            : LinearGradient(colors: [Color.white.opacity(0.18), Color.white.opacity(0.12)], startPoint: .leading, endPoint: .trailing)
+                                    )
+                                    .frame(width: 58, height: 32)
+                                    .shadow(color: antibanService.isAntibanEnabled ? Color.green.opacity(0.5) : .clear, radius: 6)
+
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 26, height: 26)
+                                    .shadow(radius: 3)
+                                    .padding(.horizontal, 3)
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+
+                    Divider()
+                        .background(Color.white.opacity(0.1))
+
+                    // Lưới thông số vận hành
+                    VStack(spacing: 8) {
+                        antibanMetricRow(icon: "lock.shield.fill", title: "Giao thức", value: "DNS-over-HTTPS (DoH)", color: .cyan)
+                        antibanMetricRow(icon: "server.rack", title: "Cổng Server", value: "AppleStoreVN Secure Gate", color: brandBlue)
+                        antibanMetricRow(icon: "bolt.fill", title: "Độ trễ phản hồi", value: "~10ms (Không giật lag)", color: .green)
+                        antibanMetricRow(icon: "checkmark.seal.fill", title: "Độ an toàn", value: "100% Kháng Phát Hiện", color: .yellow)
+                    }
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(cardBackground.opacity(0.85))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(
+                            (antibanService.isAntibanEnabled ? Color.green : brandBlue).opacity(0.28),
+                            lineWidth: 1
+                        )
+                )
+                .padding(.horizontal, 20)
+
+                // Card Setup Antiban Profile
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wrench.and.screwdriver.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundStyle(brandBlue)
+
+                        Text("CÀI ĐẶT HỒ SƠ (SETUP ANTIBAN)")
+                            .font(.system(size: 13.5, weight: .black, design: .rounded))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+
+                        Text("Local Server")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.green)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.green.opacity(0.15))
+                            .cornerRadius(6)
+                    }
+
+                    Text("Kích hoạt file cấu hình antiban.mobileconfig vào hệ thống qua Safari và Local Server nội bộ:")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.white.opacity(0.70))
+
+                    // Bước 1: Setup Antiban (kích hoạt local server & mở Safari)
+                    Button {
+                        antibanService.setupAntiban()
+                    } label: {
+                        HStack(spacing: 10) {
+                            if antibanService.isSettingUp {
+                                ProgressView()
+                                    .tint(.white)
+                                    .scaleEffect(0.9)
+                            } else {
+                                Image(systemName: "arrow.down.doc.fill")
+                                    .font(.system(size: 15, weight: .bold))
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Bước 1: Setup Antiban (Cài Profile DNS)")
+                                    .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                                Text("Khởi chạy Local Server & tải hồ sơ qua Safari")
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(Color.white.opacity(0.75))
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "safari.fill")
+                                .font(.system(size: 16))
+                                .foregroundStyle(Color.white.opacity(0.85))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(
+                            LinearGradient(
+                                colors: [brandBlue, brandBlueDark],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .foregroundStyle(.white)
+                        .cornerRadius(13)
+                        .shadow(color: brandBlue.opacity(0.4), radius: 6, y: 2)
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                    .disabled(antibanService.isSettingUp)
+
+                    // Bước 2: Mở Cài Đặt iPhone
+                    Button {
+                        antibanService.openIOSSettings()
+                    } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: "gearshape.fill")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundStyle(Color.white)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Bước 2: Mở Cài Đặt iPhone Để Kích Hoạt")
+                                    .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                                Text("Vào Cài đặt > Hồ sơ đã tải về > Nhấn 'Cài đặt'")
+                                    .font(.system(size: 10.5, weight: .medium))
+                                    .foregroundStyle(Color.white.opacity(0.65))
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right.square")
+                                .font(.system(size: 15))
+                                .foregroundStyle(Color.white.opacity(0.6))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(Color.white.opacity(0.08))
+                        .foregroundStyle(.white)
+                        .cornerRadius(13)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 13)
+                                .stroke(Color.white.opacity(0.18), lineWidth: 0.9)
+                        )
+                    }
+                    .buttonStyle(ScaleButtonStyle())
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(cardBackground.opacity(0.85))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(brandBlue.opacity(0.28), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+
+                // Card Chi Tiết Bảo Mật & Quy Định
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "shield.lefthalf.filled")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(brandBlue)
+
+                        Text("TÍNH NĂNG BẢO MẬT APPLESTOREVN")
+                            .font(.system(size: 11.5, weight: .bold))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                    }
+
+                    antibanFeatureBullet(text: "Chặn 100% tên miền Telemetry & gửi log phát hiện gian lận.")
+                    antibanFeatureBullet(text: "Mã hoá truy vấn DoH qua cổng riêng biệt bảo mật AppleStoreVN.")
+                    antibanFeatureBullet(text: "Không ghi nhật ký truy cập (Zero-Log), bảo vệ danh tính tối đa.")
+                    antibanFeatureBullet(text: "Tương thích mượt mà Free Fire và mọi ứng dụng game iOS.")
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(cardBackground.opacity(0.85))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(brandBlue.opacity(0.20), lineWidth: 1)
+                )
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+        }
+    }
+
+    private func antibanMetricRow(icon: String, title: String, value: String, color: Color) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(color)
+                .frame(width: 20)
+
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.7))
+
+            Spacer()
+
+            Text(value)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+                .foregroundStyle(Color.white)
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func antibanFeatureBullet(text: String) -> some View {
+        HStack(alignment: .top, spacing: 7) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
+                .padding(.top, 1)
+
+            Text(text)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.68))
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     // MARK: - Thanh Dashboard Dưới (Limelight Nav Dock Bar Chuẩn IPA)

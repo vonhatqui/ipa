@@ -88,6 +88,8 @@
 		3105M210 /* CheatStoreSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M110; };
 		3105M211 /* applepay.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3105M111; };
 		3105M212 /* InjectorActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
+		3105M213 /* AntibanProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M113; };
+		3105M214 /* antiban.mobileconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3105M114; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -190,6 +192,8 @@
 		3105M110 /* CheatStoreSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreSoundManager.swift; sourceTree = "<group>"; };
 		3105M111 /* applepay.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = applepay.mp3; sourceTree = "<group>"; };
 		3105M112 /* InjectorActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorActionButton.swift; sourceTree = "<group>"; };
+		3105M113 /* AntibanProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanProfileService.swift; sourceTree = "<group>"; };
+		3105M114 /* antiban.mobileconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = antiban.mobileconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -226,6 +230,7 @@
 				3105A031 /* Assets.xcassets */,
 				3105M107 /* AppCore */,
 				3105M111 /* applepay.mp3 */,
+				3105M114 /* antiban.mobileconfig */,
 			);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
@@ -285,6 +290,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105M113 /* AntibanProfileService.swift */,
 				3105M100 /* CheatStoreLicenseManager.swift */,
 				3105M110 /* CheatStoreSoundManager.swift */,
 				3105M101 /* BundledPatchInjector.swift */,
@@ -413,6 +419,7 @@
 				3105A228,
 				3105M207,
 				3105M211,
+				3105M214,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -489,6 +496,7 @@
 				3105M209,
 				3105M210,
 				3105M212,
+				3105M213,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
