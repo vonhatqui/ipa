@@ -170,37 +170,28 @@ final class AppleIpaV2Injector: ObservableObject {
                 )
                 let localConfigData = "{\"testCodePatch\":true}".data(using: .utf8)!
 
-                // 3. Tạo Project Patch tiêu chuẩn
-                let project = PatchProject(
-                    id: Self.projectUUID,
-                    name: "Apple IPA V2",
-                    author: "@AppleStoreVN",
-                    summary: "Direct Injector (Không Menu Trong Game)",
-                    bundleIdentifiers: ["com.dts.freefireth"],
-                    isPrivate: false,
-                    rules: [
-                        PatchRule(
-                            id: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
-                            bundleID: "com.dts.freefireth",
-                            relativePath: "Documents/Assembly-CSharp-patch.bytes",
-                            replacementFilename: "Assembly-CSharp-patch.bytes",
-                            replacementData: customizedData,
-                            sha256: "",
-                            fileSize: customizedData.count,
-                            action: .replace
-                        ),
-                        PatchRule(
-                            id: UUID(uuidString: "66666666-7777-8888-9999-000000000000")!,
-                            bundleID: "com.dts.freefireth",
-                            relativePath: "Documents/localConfig.json",
-                            replacementFilename: "localConfig.json",
-                            replacementData: localConfigData,
-                            sha256: "",
-                            fileSize: localConfigData.count,
-                            action: .replace
-                        )
-                    ]
-                )
+                // 3. Cập nhật Project Patch tiêu chuẩn
+                var project = baseProject
+                project.id = Self.projectUUID
+                project.name = "Apple IPA V2"
+                project.author = "@AppleStoreVN"
+                project.bundleIdentifiers = ["com.dts.freefireth"]
+                project.rules = [
+                    PatchRule(
+                        id: UUID(uuidString: "11111111-2222-3333-4444-555555555555")!,
+                        bundleID: "com.dts.freefireth",
+                        relativePath: "Documents/Assembly-CSharp-patch.bytes",
+                        replacementFilename: "Assembly-CSharp-patch.bytes",
+                        replacementData: customizedData
+                    ),
+                    PatchRule(
+                        id: UUID(uuidString: "66666666-7777-8888-9999-000000000000")!,
+                        bundleID: "com.dts.freefireth",
+                        relativePath: "Documents/localConfig.json",
+                        replacementFilename: "localConfig.json",
+                        replacementData: localConfigData
+                    )
+                ]
 
                 // 4. Áp dụng patch qua DevicePatchService (Tự động chụp Golden Snapshot và đồng bộ Free Fire MAX)
                 _ = try DevicePatchService.apply(project: project)
@@ -238,7 +229,7 @@ final class AppleIpaV2Injector: ObservableObject {
                 if let bundledItem = PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2"),
                    let project = bundledItem.project {
                     if let receipt = DevicePatchService.latestReceipt(projectID: Self.projectUUID) {
-                        _ = try? DevicePatchService.restore(receipt: receipt, project: project, allowChangedTargets: true)
+                        try DevicePatchService.restore(receipt: receipt, project: project, allowChangedTargets: true)
                     } else {
                         DevicePatchService.forceCleanup(project: project)
                     }
