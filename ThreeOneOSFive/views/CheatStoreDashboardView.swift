@@ -137,7 +137,7 @@ struct CheatStoreDashboardView: View {
                         .cornerRadius(4)
                 }
 
-                Text("Direct Injector • 0% Menu Trong Game")
+                Text("Apple IPA V2 • Giao Diện Menu Mới Đậm Nét")
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.gray)
             }
@@ -196,7 +196,7 @@ struct CheatStoreDashboardView: View {
                     }
                 }
 
-                Text("Đã triệt tiêu hoàn toàn menu trôi nổi. Chọn tính năng bên dưới rồi bấm nạp.")
+                Text("Menu nổi trong game đã vẽ lại UI mới: màu sắc tương phản cao, chữ +20%, dễ bấm.")
                     .font(.system(size: 11))
                     .foregroundColor(.gray)
                     .lineLimit(2)
@@ -219,14 +219,14 @@ struct CheatStoreDashboardView: View {
         VStack(spacing: 11) {
             // Tiêu đề danh mục
             HStack {
-                Text("DANH SÁCH CHỨC NĂNG INJECTOR")
+                Text("CÁC CHỨC NĂNG MENU NỔI TRONG GAME")
                     .font(.system(size: 11.5, weight: .bold))
                     .foregroundColor(brandSakura)
                     .tracking(0.8)
 
                 Spacer()
 
-                Text("Tùy biến độc lập")
+                Text("Tùy biến trong trận")
                     .font(.system(size: 10.5, weight: .medium))
                     .foregroundColor(.gray)
             }

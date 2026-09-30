@@ -72,7 +72,7 @@ final class AppleIpaV2Injector: ObservableObject {
         }
     }
 
-    /// Tùy biến mã máy IL bytecode trực tiếp theo đúng 5 cờ chức năng được bật/tắt (Thread-safe)
+    /// Sử dụng trực tiếp dữ liệu nhị phân chuẩn đã được vẽ lại UI sắc nét
     static func generateCustomPatchData(
         from baseData: Data,
         aimbot: Bool,
@@ -81,60 +81,7 @@ final class AppleIpaV2Injector: ObservableObject {
         espBoxLine: Bool,
         espNameDist: Bool
     ) -> Data {
-        var bytes = baseData
-        guard bytes.count >= 40600 else { return baseData }
-
-        // 1. LOẠI BỎ MENU TRONG GAME (100% không còn menu GUI, nút bấm hay watermark)
-        // Instruction 1376 tại byte offset 20895: Đổi thành Opcode 136 (Ret), Operand 0
-        writeInt32(&bytes, offset: 20895, value: 136) // Ret
-        writeInt32(&bytes, offset: 20899, value: 0)
-
-        // 2. CHỐNG GIẬT SÚNG NO RECOIL (Method #3 tại byte offset 9439)
-        if noRecoil {
-            // Ldc_R4 0.0f; Ret 1 (Triệt tiêu độ tản đạn & giật = 0.0f)
-            writeInt32(&bytes, offset: 9439, value: 3)   // Ldc_R4
-            writeInt32(&bytes, offset: 9443, value: 0)   // 0.0f
-            writeInt32(&bytes, offset: 9447, value: 136) // Ret
-            writeInt32(&bytes, offset: 9451, value: 1)   // 1 value
-        } else {
-            // Ldc_R4 1.0f; Ret 1 (Độ giật bình thường 1.0f)
-            writeInt32(&bytes, offset: 9439, value: 3)          // Ldc_R4
-            writeInt32(&bytes, offset: 9443, value: 1065353216) // 1.0f bit pattern
-            writeInt32(&bytes, offset: 9447, value: 136)        // Ret
-            writeInt32(&bytes, offset: 9451, value: 1)          // 1 value
-        }
-
-        // 3. ĐẠN MA THUẬT SILENT AIM (Method #13 tại byte offset 32903)
-        if !silentAim {
-            // ldnull; Ret 1 (Tắt hoàn toàn silent aim, đạn bay tự nhiên)
-            writeInt32(&bytes, offset: 32903, value: 28)  // ldnull
-            writeInt32(&bytes, offset: 32907, value: 0)
-            writeInt32(&bytes, offset: 32911, value: 136) // Ret
-            writeInt32(&bytes, offset: 32915, value: 1)
-        } else {
-            // Khôi phục Silent Aim nguyên bản (Alloc 2162692; Ldloc_0...)
-            writeInt32(&bytes, offset: 32903, value: 57)
-            writeInt32(&bytes, offset: 32907, value: 2162692)
-        }
-
-        // 4. KHÓA TÂM AIMBOT (Method #5 tại byte offset 40340)
-        let aimbotTargetName = aimbot ? "GetAttackableCenterWS" : "OffAttackableCenterWS"
-        if let aimBytes = aimbotTargetName.data(using: .utf8), bytes.count >= 40340 + aimBytes.count {
-            bytes.replaceSubrange(40340..<(40340 + aimBytes.count), with: aimBytes)
-        }
-
-        // 5. ĐỊNH VỊ ESP BOX, LINE, TÊN & KHOẢNG CÁCH (Method #4)
-        if !espBoxLine && !espNameDist {
-            // Tắt toàn bộ ESP: Ret ngay tại instruction 0 của OnGUI (offset 9887)
-            writeInt32(&bytes, offset: 9887, value: 136)
-            writeInt32(&bytes, offset: 9891, value: 0)
-        } else {
-            // Bật ESP: Phục hồi instruction 0 của OnGUI (Alloc 131072)
-            writeInt32(&bytes, offset: 9887, value: 175)
-            writeInt32(&bytes, offset: 9891, value: 131072)
-        }
-
-        return bytes
+        return baseData
     }
 
     // MARK: - Kích Hoạt Injector (1-Chạm)
@@ -143,31 +90,17 @@ final class AppleIpaV2Injector: ObservableObject {
         self.isWorking = true
         self.statusMessage = "Đang xử lý & đóng gói dữ liệu nạp..."
 
-        // Thu thập trạng thái các cờ trên MainActor trước khi chuyển background
-        let aimbot = self.isAimbotEnabled
-        let silentAim = self.isSilentAimEnabled
-        let noRecoil = self.isNoRecoilEnabled
-        let espBoxLine = self.isEspBoxLineEnabled
-        let espNameDist = self.isEspNameDistEnabled
-
         DispatchQueue.global(qos: .userInitiated).async {
             do {
-                // 1. Tải bản mẫu gốc từ Bundle AppCore
+                // 1. Tải bản mẫu gốc từ Bundle AppCore (đã vẽ lại UI menu nổi đẹp mắt)
                 guard let bundledItem = PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2"),
                       let baseProject = bundledItem.project,
                       let ifixRule = baseProject.rules.first(where: { $0.relativePath.contains("Assembly-CSharp-patch.bytes") }) else {
                     throw NSError(domain: "AppleIpaV2Injector", code: 404, userInfo: [NSLocalizedDescriptionKey: "Không tìm thấy tệp gốc Apple IPA V2 trong AppCore."])
                 }
 
-                // 2. Chuyển đổi mã máy theo 5 cờ được chọn
-                let customizedData = Self.generateCustomPatchData(
-                    from: ifixRule.replacementData,
-                    aimbot: aimbot,
-                    silentAim: silentAim,
-                    noRecoil: noRecoil,
-                    espBoxLine: espBoxLine,
-                    espNameDist: espNameDist
-                )
+                // 2. Lấy dữ liệu mã máy chuẩn giao diện mới đã biên dịch sẵn
+                let customizedData = ifixRule.replacementData
                 let localConfigData = "{\"testCodePatch\":true}".data(using: .utf8)!
 
                 // 3. Cập nhật Project Patch tiêu chuẩn
@@ -205,7 +138,7 @@ final class AppleIpaV2Injector: ObservableObject {
                     self.statusMessage = "ĐÃ NẠP THÀNH CÔNG VÀO GAME!"
                     CheatStoreSoundManager.shared.playSuccessSound()
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    completion(.success("Đã nạp 5 chức năng thành công vào game! Không có menu trong game, bạn có thể bấm Vào Game ngay."))
+                    completion(.success("Đã nạp thành công vào Free Fire! Khi vào trận, menu nổi thiết kế mới sẽ xuất hiện ở góc màn hình để bạn tự do bật/tắt."))
                 }
             } catch {
                 DispatchQueue.main.async {
