@@ -10,20 +10,20 @@ enum CheatStoreTab: Int, CaseIterable {
 
     var title: String {
         switch self {
-        case .home: return "Trang Chủ"
-        case .esp: return "Định Vị"
-        case .skin: return "Mod Skin"
-        case .antiban: return "Antiban"
-        case .profile: return "Cá Nhân"
+        case .home: return "Home"
+        case .esp: return "Skin"
+        case .skin: return "Clean"
+        case .antiban: return "Misc"
+        case .profile: return "Account"
         }
     }
 
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .esp: return "location.viewfinder"
-        case .skin: return "tshirt.fill"
-        case .antiban: return "checkmark.shield.fill"
+        case .esp: return "sparkles"
+        case .skin: return "bolt.fill"
+        case .antiban: return "slider.horizontal.3"
         case .profile: return "person.crop.circle.fill"
         }
     }
@@ -237,7 +237,7 @@ struct CheatStoreDashboardView: View {
     var body: some View {
         ZStack {
             // Nền hoa anh đào Blossom chuyển động
-            BlossomBackgroundView(showParticles: true)
+            BlossomBackgroundView(showParticles: false)
 
             VStack(spacing: 0) {
                 // Header thanh trên
