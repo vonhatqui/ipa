@@ -1,0 +1,4597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="theme-color" content="#000000">
+  <title>Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #000000;
+      --panel: #161618;
+      --ink: #f4f1ea;
+      --mute: #8d8880;
+      --line: rgba(244, 241, 234, 0.08);
+      --surface: #1d1d20;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --safe-top: max(54px, env(safe-area-inset-top));
+      --safe-bot: max(12px, env(safe-area-inset-bottom));
+      --color-1: hsl(0 100% 63%);
+      --color-2: hsl(270 100% 63%);
+      --color-3: hsl(210 100% 63%);
+      --color-4: hsl(195 100% 63%);
+      --color-5: hsl(90 100% 63%);
+      --rainbow-speed: 2s;
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-bg-strong: rgba(255, 255, 255, 0.09);
+      --glass-border: rgba(255, 255, 255, 0.14);
+      --glass-blur: blur(22px) saturate(1.55);
+      --glass-radius: 22px;
+      --accent-red: rgba(255, 48, 48, 0.22);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    html { -webkit-text-size-adjust: 100%; color-scheme: dark; overflow-x: hidden; }
+
+    body {
+      display: grid;
+      place-items: center;
+      min-height: 100dvh;
+      padding: 18px 12px;
+      color: var(--ink);
+      font-family: "Outfit", sans-serif;
+      background: #000000;
+      overflow-x: hidden;
+      overscroll-behavior-x: none;
+      -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button { font-family: inherit; touch-action: manipulation; }
+
+    .phone {
+      width: 390px;
+      max-width: 100%;
+      height: 844px;
+      position: relative;
+      overflow: hidden;
+      border-radius: 44px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: var(--void);
+      contain: layout paint style;
+      transform: translateZ(0);
+      box-shadow: 0 0 0 10px #070707, 0 40px 90px rgba(0, 0, 0, 0.55);
+    }
+
+    .island {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      z-index: 30;
+      width: 118px;
+      height: 34px;
+      pointer-events: none;
+      border-radius: 20px;
+      background: #000;
+      transform: translateX(-50%);
+    }
+
+    .status {
+      position: relative;
+      z-index: 20;
+      height: var(--safe-top);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding: 0 28px 10px;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .status-right { display: flex; align-items: flex-end; gap: 6px; }
+    .sig { display: flex; align-items: flex-end; gap: 2px; height: 11px; }
+    .sig i { width: 3px; border-radius: 1px; background: var(--ink); }
+    .sig i:nth-child(1) { height: 4px; }
+    .sig i:nth-child(2) { height: 6px; }
+    .sig i:nth-child(3) { height: 8px; }
+    .sig i:nth-child(4) { height: 11px; opacity: 0.35; }
+    .batt {
+      width: 22px;
+      height: 11px;
+      position: relative;
+      border: 1.4px solid var(--ink);
+      border-radius: 3px;
+    }
+    .batt::before {
+      content: "";
+      position: absolute;
+      inset: 1.6px;
+      width: 70%;
+      border-radius: 1px;
+      background: var(--ink);
+    }
+    .batt::after {
+      content: "";
+      position: absolute;
+      right: -3px;
+      top: 3px;
+      width: 2px;
+      height: 4px;
+      background: var(--ink);
+    }
+
+    .stage { height: calc(100% - var(--safe-top)); position: relative; z-index: 2; }
+    .stage-ferro {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      background: #03010a;
+      pointer-events: auto;
+      touch-action: none;
+    }
+    html.native .stage-ferro {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      min-height: 100dvh;
+    }
+    .screen {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      display: none;
+      flex-direction: column;
+    }
+    .screen.is-on { display: flex; }
+
+    html.native #intro { display: none !important; }
+    html.native #auth { display: none; opacity: 1; }
+    html.native #auth.is-on { display: flex !important; }
+    html.native.app-on #auth,
+    html.native.app-on #auth.is-on {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    html.native.resume-main #auth,
+    html.native.resume-main #auth.is-on {
+      display: none !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    html.native.resume-main #main { display: flex !important; }
+    html.native.resume-main .dock { display: block !important; }
+    #boot-veil {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.18s ease, visibility 0.18s ease;
+    }
+    #boot-veil img {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 18px rgba(0,0,0,0.55));
+    }
+    html.native:not(.ui-settled) #boot-veil {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    html.native:not(.ui-settled) #app {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    html.native:not(.ui-settled) #auth,
+    html.native:not(.ui-settled) #main,
+    html.native:not(.ui-settled) .dock,
+    html.native:not(.ui-settled) #intro,
+    html.native:not(.ui-settled) .maint-layer {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    html.native:not(.ui-settled) .stage-ferro {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    html.native.ui-settled #app {
+      opacity: 1;
+      visibility: visible;
+    }
+    html.native.ui-settled #boot-veil {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    html:not(.native) #boot-veil { display: none !important; }
+
+    html, body, #app, .phone {
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
+    }
+    input, textarea {
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .maint-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 28px;
+      pointer-events: none;
+      background: transparent;
+    }
+    html.native .maint-layer {
+      position: fixed;
+      z-index: 60;
+    }
+    .maint-layer.is-on { display: flex; }
+    .maint-layer h2 {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.75);
+    }
+    .maint-layer p {
+      font-size: 14px;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      max-width: 280px;
+      text-shadow: 0 1px 12px rgba(0,0,0,0.65);
+    }
+    html.native.maint-on #auth,
+    html.native.maint-on #main,
+    html.native.maint-on .dock {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+    html.native.maint-on #app,
+    html.native.maint-on .stage,
+    html.native.maint-on .stage-ferro {
+      opacity: 1 !important;
+      visibility: visible !important;
+    }
+    html.native.maint-on #boot-veil {
+      opacity: 0 !important;
+      visibility: hidden !important;
+      pointer-events: none !important;
+    }
+    html.native .auth-reveal {
+      opacity: 1 !important;
+      transform: none !important;
+      filter: none !important;
+      animation: none !important;
+    }
+    html.native body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
+    }
+
+    .intro {
+      z-index: 40;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+    .intro.is-leaving {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .intro.is-crossfading,
+    .auth.is-crossfading {
+      will-change: opacity;
+    }
+
+    .intro-logo-wrap {
+      position: relative;
+      width: min(80vw, 300px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      opacity: 0;
+      transform: translate3d(0, 0, 0) scale(0.48);
+      transform-origin: center center;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .intro-logo {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: transparent;
+      pointer-events: none;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+
+    .auth {
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      overflow: hidden;
+    }
+    .auth.is-on.from-intro {
+      opacity: 0;
+      display: flex;
+    }
+
+    .ferrofluid-container {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    .ferrofluid-container canvas {
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .auth-panel {
+      position: relative;
+      z-index: 2;
+      pointer-events: none;
+      width: min(100%, 320px);
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .auth-reveal {
+      opacity: 0;
+      transform: translate3d(0, 14px, 0);
+      filter: blur(8px);
+    }
+    .auth.is-ready .auth-reveal {
+      animation: authReveal 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation-delay: calc(0.12s + (var(--d, 0) * 0.1s));
+    }
+    @keyframes authReveal {
+      to { opacity: 1; transform: translate3d(0, 0, 0); filter: blur(0); }
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .auth-brand-mark-wrap {
+      width: 48px;
+      height: 48px;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      overflow: visible;
+    }
+    .auth-brand-mark {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      background: transparent;
+      mix-blend-mode: screen;
+      pointer-events: none;
+      -webkit-backface-visibility: hidden;
+      backface-visibility: hidden;
+    }
+    .auth-brand-name {
+      font-family: "Unbounded", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+    }
+
+    .shiny-text {
+      display: inline-block;
+    }
+
+    .auth-title {
+      font-family: "Unbounded", sans-serif;
+      font-size: clamp(28px, 7vw, 34px);
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .auth-sub {
+      margin: 8px 0 28px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--mute);
+      text-align: center;
+    }
+
+    .auth-form {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      pointer-events: auto;
+    }
+    .auth-brand,
+    .auth-title,
+    .auth-sub {
+      pointer-events: none;
+    }
+
+    .glass-input-wrap {
+      position: relative;
+      width: 100%;
+      margin-bottom: 14px;
+      border-radius: 999px;
+    }
+    .glass-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 54px;
+      padding: 4px 6px 4px 16px;
+      border-radius: 999px;
+      background: linear-gradient(-75deg, rgba(255,255,255,0.04), rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.06),
+        0 8px 24px rgba(0,0,0,0.28);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: border-color 280ms ease, box-shadow 280ms ease;
+    }
+    .glass-input-wrap:focus-within .glass-input {
+      border-color: rgba(244, 241, 234, 0.22);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.08),
+        0 0 0 1px rgba(244, 241, 234, 0.08),
+        0 10px 28px rgba(0,0,0,0.32);
+    }
+    .glass-icon {
+      flex-shrink: 0;
+      display: flex;
+      color: rgba(244, 241, 234, 0.65);
+    }
+    .field {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: 500 16px/1 "Outfit", sans-serif;
+      outline: none;
+    }
+    .field::placeholder { color: rgba(141, 136, 128, 0.85); }
+    .eye {
+      position: relative;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      border-radius: 50%;
+      background: none;
+      color: var(--mute);
+      cursor: pointer;
+      transition: color 160ms ease;
+    }
+    .eye:hover { color: var(--ink); }
+    .eye.is-revealed { color: var(--ink); }
+    .eye-icon {
+      width: 20px;
+      height: 20px;
+      display: block;
+      pointer-events: none;
+    }
+    .eye::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 17px;
+      height: 1.75px;
+      margin-top: -0.875px;
+      margin-left: -8.5px;
+      border-radius: 1px;
+      background: currentColor;
+      transform: rotate(-45deg) scaleX(0);
+      opacity: 0;
+      transition: transform 160ms ease, opacity 160ms ease;
+      pointer-events: none;
+    }
+    .eye.is-revealed::after {
+      transform: rotate(-45deg) scaleX(1);
+      opacity: 1;
+    }
+
+    .auth-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 2px 0 18px;
+      font-size: 13px;
+      color: var(--mute);
+    }
+    .remember { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .remember input { accent-color: var(--ink); }
+    .linkish {
+      border: 0;
+      background: none;
+      color: var(--ink);
+      font: 600 13px inherit;
+      cursor: pointer;
+      opacity: 0.88;
+    }
+    .linkish:active { opacity: 0.65; }
+
+    .rainbow-btn {
+      position: relative;
+      width: 100%;
+      min-height: 54px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 24px;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%);
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 10px 28px rgba(0, 0, 0, 0.14);
+      color: #121213;
+      font: 600 16px "Outfit", sans-serif;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      transition: transform 180ms ease, opacity 180ms ease, box-shadow 180ms ease;
+      overflow: visible;
+      isolation: isolate;
+    }
+    .rainbow-btn:hover {
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset, 0 12px 32px rgba(0, 0, 0, 0.18);
+    }
+    .rainbow-btn > span {
+      position: relative;
+      z-index: 1;
+      font: inherit;
+    }
+    .rainbow-btn-arrow {
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      opacity: 0.6;
+      transition: transform 200ms ease, opacity 200ms ease;
+    }
+    .rainbow-btn:hover .rainbow-btn-arrow {
+      opacity: 1;
+      transform: translateX(2px);
+    }
+    .rainbow-btn:active { transform: scale(0.98); }
+    .auth.is-launching .rainbow-btn {
+      opacity: 0.72;
+      pointer-events: none;
+    }
+
+    .auth-status {
+      min-height: 20px;
+      margin-top: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--mute);
+    }
+    .auth-status.is-error { color: #eb4545; }
+
+    .spin-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 0 8px;
+    }
+    .spin-ring {
+      position: relative;
+      width: 88px;
+      height: 88px;
+      overflow: hidden;
+      border-radius: 28px;
+    }
+    .spin-ring::before {
+      content: "";
+      position: absolute;
+      left: -50%;
+      top: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent 0%, #f4f1ea 12%, #9a958c 28%, transparent 38%);
+      animation: spin 1.25s linear infinite;
+    }
+    .spin-inner {
+      position: absolute;
+      inset: 3px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 25px;
+      background: #141416;
+    }
+    .spin-inner span {
+      display: flex;
+      width: 64px;
+      height: 64px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 18px;
+      background: var(--surface);
+      color: var(--ink);
+    }
+
+    .toast {
+      position: absolute; left: 50%; bottom: 28px; z-index: 40;
+      padding: 11px 18px; pointer-events: none; opacity: 0;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      color: var(--ink); font-size: 13px; font-weight: 600;
+      transform: translate3d(-50%, 8px, 0);
+      transition: opacity 180ms var(--ease), transform 200ms var(--ease);
+    }
+    .toast.show { opacity: 1; transform: translate3d(-50%, 0, 0); }
+    .app-on .toast { bottom: 108px; }
+
+    .main { background: transparent; }
+    .main.from-auth {
+      display: flex;
+    }
+    .auth.is-leaving-main {
+      z-index: 3;
+      pointer-events: none;
+      will-change: opacity;
+    }
+    .auth.is-leaving-main .auth-panel {
+      opacity: 0;
+      transform: translate3d(0, -10px, 0);
+      filter: blur(8px);
+      transition: opacity 700ms cubic-bezier(0.22, 1, 0.36, 1),
+                  transform 700ms cubic-bezier(0.22, 1, 0.36, 1),
+                  filter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .main.from-auth .main-head,
+    .main.from-auth .page {
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
+      filter: blur(8px);
+    }
+    .main.is-revealed .main-head,
+    .main.is-revealed .page {
+      opacity: 1;
+      transform: none;
+      filter: none;
+      transition: opacity 900ms cubic-bezier(0.22, 1, 0.36, 1) 180ms,
+                  transform 900ms cubic-bezier(0.22, 1, 0.36, 1) 180ms,
+                  filter 900ms cubic-bezier(0.22, 1, 0.36, 1) 180ms;
+    }
+    .main.is-on:not(.from-auth) { animation: rise 400ms var(--ease); }
+    .main-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 4px 14px 0;
+      padding: 14px 16px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .kicker {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.45);
+    }
+    .kicker.is-off { display: none; }
+    .main-head.is-off { display: none !important; }
+    .main-head.is-solo h2 { margin-top: 0; }
+    .main-head h2 {
+      margin-top: 3px;
+      font-family: "Unbounded", sans-serif;
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.7);
+    }
+    .pill i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #4ade80;
+      box-shadow: 0 0 10px rgba(74, 222, 128, 0.65);
+      animation: pulse-live 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse-live {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.65; transform: scale(0.88); }
+    }
+
+    .page {
+      flex: 1;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 12px 14px 100px;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .page::-webkit-scrollbar { display: none; width: 0; height: 0; }
+
+    .glass-panel {
+      position: relative;
+      margin-bottom: 12px;
+      padding: 14px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .glass-panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 42%);
+    }
+    .control-deck { display: flex; flex-direction: column; gap: 12px; }
+    .control-row { display: flex; flex-direction: column; gap: 8px; }
+    .control-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.42);
+    }
+    .tab-page { display: none; }
+    .tab-page.is-on { display: block; }
+    .tab-page.is-on.tab-slide-forward {
+      animation: tabSlideFromRight 340ms var(--ease) both;
+    }
+    .tab-page.is-on.tab-slide-back {
+      animation: tabSlideFromLeft 340ms var(--ease) both;
+    }
+    @keyframes tabSlideFromRight {
+      from { opacity: 0; transform: translate3d(36px, 0, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    @keyframes tabSlideFromLeft {
+      from { opacity: 0; transform: translate3d(-36px, 0, 0); }
+      to { opacity: 1; transform: translate3d(0, 0, 0); }
+    }
+    .tab-page[data-page="exploit"].is-on.has-inject {
+      padding-bottom: 24px;
+    }
+    .tab-page[data-page="skin"].is-on,
+    .tab-page[data-page="clean"].is-on,
+    .tab-page[data-page="account"].is-on {
+      padding-bottom: 100px;
+    }
+
+    .game-switch {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      padding: 3px;
+      gap: 0;
+      margin-bottom: 0;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .game-switch.aim-switch { margin-bottom: 0; }
+    .game-switch button {
+      flex: 1;
+      height: 36px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(244, 241, 234, 0.45);
+      font: 600 12px "Outfit", sans-serif;
+      cursor: pointer;
+      transition: background 220ms var(--ease), color 220ms var(--ease), box-shadow 220ms var(--ease);
+    }
+    .game-switch[data-on="ff"] button[data-game="ff"],
+    .game-switch[data-on="max"] button[data-game="max"],
+    .game-switch[data-on="v1"] button[data-aim="v1"],
+    .game-switch[data-on="v2"] button[data-aim="v2"],
+    .game-switch[data-on="auto"] button[data-imethod="auto"],
+    .game-switch[data-on="2"] button[data-imethod="2"] {
+      background: rgba(244, 241, 234, 0.94);
+      color: #111;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    }
+
+    .aim-set { display: none; }
+    .aim-set.is-on { display: block; }
+
+    .stage-card {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+      padding: 18px 16px 16px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+    .stage-card::before {
+      content: "";
+      position: absolute;
+      top: -30%;
+      right: -15%;
+      width: 55%;
+      height: 90%;
+      background: radial-gradient(circle, var(--accent-red), transparent 68%);
+      pointer-events: none;
+    }
+    .stage-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 45%);
+    }
+    .stage-meta {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.45);
+    }
+    .stage-meta span:last-child {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: rgba(74, 222, 128, 0.12);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      color: #86efac;
+      letter-spacing: 0.12em;
+    }
+    .stage-card h3 {
+      position: relative;
+      z-index: 1;
+      font-family: "Unbounded", sans-serif;
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.08;
+    }
+    .stage-card p {
+      position: relative;
+      z-index: 1;
+      margin-top: 6px;
+      font-size: 13px;
+      color: rgba(244, 241, 234, 0.5);
+    }
+
+    .label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 16px 2px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.42);
+    }
+    .label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(255,255,255,0.14), transparent);
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .chip-scroll {
+      position: relative;
+      max-height: 176px;
+      margin: 0 0 14px;
+      padding: 10px;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .chip-scroll.fade-bot {
+      mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 36px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 36px), transparent 100%);
+    }
+    .chip-scroll.fade-top {
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 36px, #000 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 36px, #000 100%);
+    }
+    .chip-scroll.fade-top.fade-bot {
+      mask-image: linear-gradient(to bottom, transparent 0%, #000 28px, #000 calc(100% - 28px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    }
+    .chip-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-height: 46px;
+      flex-shrink: 0;
+      padding: 0 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: rgba(244, 241, 234, 0.82);
+      font: 600 13px "Outfit", sans-serif;
+      text-align: left;
+      cursor: pointer;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease), transform 160ms var(--ease);
+    }
+    .chip:active { transform: scale(0.97); }
+    .chip.is-off {
+      opacity: 0.45;
+      pointer-events: none;
+      color: var(--mute);
+      transition: none;
+    }
+    .chip.is-off .box {
+      border-color: rgba(244, 241, 234, 0.14);
+      background: transparent;
+    }
+    .chip.is-selected {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(244, 241, 234, 0.28);
+      color: var(--ink);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 24px rgba(0,0,0,0.18);
+    }
+    .sign-out {
+      width: 100%;
+      height: 52px;
+      margin: 22px 0 8px;
+      border: 1px solid rgba(235, 69, 69, 0.35);
+      border-radius: 999px;
+      background: rgba(235, 69, 69, 0.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #ff8a8a;
+      font: 600 14px "Outfit", sans-serif;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 200ms var(--ease), transform 160ms var(--ease);
+    }
+    .sign-out:active { transform: scale(0.98); }
+    .chip .box {
+      width: 18px;
+      height: 18px;
+      position: relative;
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      border: 1.5px solid rgba(244, 241, 234, 0.22);
+      border-radius: 6px;
+      transition: border-color 200ms var(--ease), background 200ms var(--ease);
+    }
+    .chip.is-selected .box {
+      border-color: var(--ink);
+      background: var(--ink);
+    }
+    .chip.is-selected .box::after {
+      content: "";
+      width: 4px;
+      height: 8px;
+      margin-top: -1px;
+      border: solid #111;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+    .chip .swatch {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .clean-grid {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .clean-card {
+      min-height: 96px;
+      padding: 18px 16px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease), transform 160ms var(--ease);
+    }
+    .clean-card:active { transform: scale(0.98); }
+    .clean-card b {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    .clean-card small {
+      display: block;
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--mute);
+    }
+    .clean-card:disabled { opacity: 1; }
+    .clean-card.is-off,
+    .row.is-off,
+    [data-misc].is-off,
+    [data-clean].is-off,
+    .char-card.is-off {
+      opacity: 0.45 !important;
+      pointer-events: none !important;
+      transition: none !important;
+    }
+
+    .sheet {
+      overflow: hidden;
+      margin-bottom: 16px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+    }
+    .bx-menu .sheet,
+    #misc-slots.sheet {
+      background: rgba(0, 0, 0, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      box-shadow: none;
+    }
+    .bx-menu .row.clean-card {
+      min-height: 58px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 0;
+      background: transparent !important;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .row {
+      width: 100%;
+      min-height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 16px;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      font: 500 15px "Outfit", sans-serif;
+      text-align: left;
+    }
+    .sheet .row + .row { box-shadow: inset 0 1px 0 var(--line); }
+
+    .action {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid rgba(244, 241, 234, 0.22);
+      border-radius: 999px;
+      background: rgba(244, 241, 234, 0.92);
+      color: #111;
+      font: 700 12px "Unbounded", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+      transition: transform 160ms var(--ease), box-shadow 200ms var(--ease);
+    }
+    .action:active { transform: scale(0.98); }
+    .action.danger {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--ink);
+      box-shadow: none;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .action.is-busy { pointer-events: none; opacity: 0.55; }
+    .hint { margin-top: 12px; font-size: 12px; color: var(--mute); line-height: 1.45; text-align: center; }
+    .val { color: var(--mute); font-size: 13px; }
+    .val.link { color: var(--ink); text-decoration: none; }
+    .val.ok { color: var(--ink); }
+
+    .profile-card {
+      position: relative;
+      overflow: hidden;
+      display: block;
+      margin-bottom: 16px;
+      padding: 18px 16px 16px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    }
+    .profile-card::before {
+      content: "";
+      position: absolute;
+      top: -20%;
+      left: -10%;
+      width: 50%;
+      height: 70%;
+      background: radial-gradient(circle, rgba(255,255,255,0.08), transparent 70%);
+      pointer-events: none;
+    }
+    .profile-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 40%);
+    }
+    .profile-top {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .profile-card .remain,
+    .profile-card .profile-status,
+    .profile-card .profile-badges {
+      position: relative;
+      z-index: 1;
+    }
+    .profile-mark {
+      flex-shrink: 0;
+      width: 64px;
+      height: 64px;
+      padding: 0;
+      border-radius: 0;
+      background: transparent;
+      object-fit: contain;
+      object-position: 50% 50%;
+    }
+    .profile-brand {
+      margin: 0;
+      font-family: var(--display);
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+    }
+    .profile-kicker {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .profile-card h3:not(.profile-brand) {
+      display: none;
+    }
+    .profile-status {
+      margin: 16px 0 0;
+    }
+    .profile-key {
+      margin-top: 6px;
+      font-size: 13px;
+      letter-spacing: 0.12em;
+      color: var(--mute);
+    }
+    .profile-key-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .profile-key-row .profile-key { margin-top: 0; }
+    .key-copy {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      height: 28px;
+      padding: 0 6px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      font: 600 11px "Outfit", sans-serif;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .key-copy svg { display: block; width: 15px; height: 15px; }
+    .key-copy.is-copied {
+      width: auto;
+      padding: 0 8px;
+      color: var(--ink);
+      font: 600 11px "Outfit", sans-serif;
+      letter-spacing: 0.04em;
+    }
+    .key-copy:active { transform: scale(0.92); }
+    .profile-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.45);
+    }
+    .badge.on {
+      background: rgba(244, 241, 234, 0.92);
+      border-color: transparent;
+      color: #111;
+    }
+    .remain {
+      margin-top: 16px;
+    }
+    .remain-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--mute);
+    }
+    .remain-bar {
+      height: 6px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .remain-bar i {
+      display: block;
+      height: 100%;
+      width: 72%;
+      border-radius: inherit;
+      background: var(--ink);
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      min-height: 80px;
+      padding: 14px 12px;
+      border-radius: 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .stat span {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+    .stat b {
+      display: block;
+      margin-top: 10px;
+      font-family: "Unbounded", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    .meta-list {
+      overflow: hidden;
+      margin-bottom: 16px;
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+    }
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 52px;
+      padding: 0 16px;
+      font-size: 14px;
+    }
+    .meta-row + .meta-row { box-shadow: inset 0 1px 0 var(--line); }
+    .meta-row span { color: var(--mute); }
+    .meta-row b { font-weight: 600; }
+
+    .credit-grid {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .credit-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 76px;
+      padding: 16px;
+      border-radius: 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      color: inherit;
+      text-decoration: none;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease);
+    }
+    .credit-card:active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+    .credit-card b {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .credit-card small {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--mute);
+    }
+    .credit-card em {
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--mute);
+    }
+
+    /* ── Blaze deck (complete main UI layout) ── */
+    .main-head.bx-head {
+      margin: 6px 14px 0;
+      padding: 4px 2px 14px;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .main-head.bx-head h2 {
+      font-size: 28px;
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+    }
+    .main-head.bx-head .kicker {
+      letter-spacing: 0.38em;
+      color: rgba(255, 48, 48, 0.75);
+    }
+    .bx-page { padding-top: 0; }
+
+    .bx-section {
+      margin-bottom: 18px;
+    }
+    .bx-section-title {
+      margin: 0 2px 10px;
+      font-family: "Unbounded", sans-serif;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-shadow:
+        0 0 10px rgba(244, 241, 234, 0.55),
+        0 0 22px rgba(255, 255, 255, 0.22),
+        0 0 36px rgba(255, 48, 48, 0.12);
+    }
+
+    .bx-hero {
+      margin-bottom: 18px;
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .bx-hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .bx-tag {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.62);
+    }
+    .bx-hero-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .bx-stat {
+      min-width: 0;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .bx-stat-label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.42);
+    }
+    .bx-stat-value {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      color: var(--ink);
+      word-break: break-word;
+    }
+    .bx-stat-value.is-empty {
+      font-family: "Outfit", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      color: rgba(244, 241, 234, 0.52);
+    }
+
+    .bx-seg-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 18px;
+      padding: 16px;
+      border-radius: 22px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .bx-seg-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .bx-seg-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(244, 241, 234, 0.42);
+    }
+    .bx-seg-panel .game-switch {
+      display: flex;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 0;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .bx-seg-panel .game-switch button {
+      flex: 1;
+      height: 40px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: rgba(244, 241, 234, 0.42);
+      font: 600 13px "Outfit", sans-serif;
+      text-align: center;
+      padding: 0 8px;
+      cursor: pointer;
+      transition: background 260ms var(--ease), color 260ms var(--ease), box-shadow 260ms var(--ease), transform 160ms var(--ease);
+    }
+    .bx-seg-panel .game-switch button:active {
+      transform: scale(0.97);
+    }
+    .bx-seg-panel .game-switch[data-on="ff"] button[data-game="ff"],
+    .bx-seg-panel .game-switch[data-on="max"] button[data-game="max"],
+    .bx-seg-panel .game-switch[data-on="v1"] button[data-aim="v1"],
+    .bx-seg-panel .game-switch[data-on="v2"] button[data-aim="v2"],
+    .bx-seg-panel .game-switch[data-on="auto"] button[data-imethod="auto"],
+    .bx-seg-panel .game-switch[data-on="2"] button[data-imethod="2"] {
+      background: rgba(244, 241, 234, 0.96);
+      color: #111;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    }
+
+    .bx-inset {
+      overflow: hidden;
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .bx-inset .chips {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      grid-template-columns: none;
+    }
+    .bx-inset .chip.is-off {
+      opacity: 0.45;
+      color: var(--mute);
+      pointer-events: none;
+    }
+    .bx-inset .chip.is-off .box {
+      border-color: rgba(244, 241, 234, 0.14);
+      background: transparent;
+    }
+    .bx-inset .chip {
+      position: relative;
+      min-height: 52px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      flex-direction: row-reverse;
+      justify-content: space-between;
+      font-size: 15px;
+      overflow: hidden;
+    }
+    .bx-inset .chips .chip:first-child {
+      border-radius: 17px 17px 0 0;
+    }
+    .bx-inset .chips .chip:last-child {
+      border-radius: 0 0 17px 17px;
+    }
+    .bx-inset .chips .chip:only-child {
+      border-radius: 17px;
+    }
+    .bx-inset .chip + .chip {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+    .bx-inset .chip.is-selected {
+      background: rgba(255, 255, 255, 0.06);
+      box-shadow: none;
+    }
+    .bx-inset .chip.is-selected::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: rgba(244, 241, 234, 0.9);
+    }
+    .bx-inset .chips .chip:first-child.is-selected::before {
+      border-top-left-radius: 17px;
+    }
+    .bx-inset .chips .chip:last-child.is-selected::before {
+      border-bottom-left-radius: 17px;
+    }
+    .bx-inset .chips .chip:only-child.is-selected::before {
+      border-radius: 17px 0 0 17px;
+    }
+    .bx-inset .chip.is-selected + .chip {
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .bx-colors .chip {
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 0 16px;
+      min-height: 52px;
+      font-size: 15px;
+    }
+    .bx-colors .chip.is-selected {
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: none;
+    }
+
+    .bx-foot {
+      position: sticky;
+      bottom: 0;
+      z-index: 5;
+      padding: 12px 0 6px;
+      background: linear-gradient(to top, rgba(0,0,0,0.72) 35%, transparent);
+    }
+
+    .bx-roster {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .bx-roster .char-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 10px 14px 10px 10px;
+      border-radius: 20px;
+    }
+    .bx-roster .char-card img {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+      border-radius: 16px;
+      mask-image: none;
+      -webkit-mask-image: none;
+      filter: none;
+      object-position: center;
+    }
+    .bx-roster .char-card b { margin: 0; font-size: 16px; }
+    .bx-roster .char-card small { margin: 4px 0 0; }
+
+    .bx-wipe {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .bx-wipe .clean-card {
+      min-height: 110px;
+      border-radius: 22px 22px 22px 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .bx-wipe .clean-card::before {
+      content: attr(data-glyph);
+      display: block;
+      margin-bottom: auto;
+      font-size: 24px;
+      opacity: 0.45;
+    }
+    .bx-clean-pick {
+      margin-bottom: 14px;
+    }
+
+    .bx-menu .sheet { margin-bottom: 0; }
+    .bx-menu .row {
+      min-height: 58px;
+      font-size: 15px;
+    }
+    .bx-menu .row.clean-card {
+      min-height: 58px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+    .bx-menu .row b {
+      font-family: "Unbounded", sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .bx-menu .row small {
+      display: block;
+      margin-top: 2px;
+      font-size: 11px;
+      color: var(--mute);
+      font-weight: 400;
+    }
+    .bx-pass {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 16px;
+      padding: 18px;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255,48,48,0.12) 0%, rgba(0,0,0,0.5) 55%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+    .bx-pass-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .bx-pass-top .profile-mark {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.4);
+      padding: 8px;
+      object-fit: contain;
+    }
+    .bx-pass-top .profile-brand {
+      font-size: 20px;
+    }
+    .bx-pass .profile-key-row { margin-top: 4px; }
+    .bx-pass .remain { margin-top: 14px; }
+
+    .bx-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 16px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.38);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .bx-meta .meta-row {
+      background: transparent;
+      border: none;
+      backdrop-filter: none;
+    }
+
+    .bx-links .credit-card {
+      min-height: 60px;
+      padding: 12px 14px;
+      border-radius: 16px;
+    }
+
+    .bx-page .label { display: none; }
+
+    .dock {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      z-index: 30;
+      display: none;
+      height: 70px;
+      padding: 6px;
+      border-radius: 26px;
+      isolation: isolate;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.18),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+        0 8px 32px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(28px) saturate(1.65);
+      -webkit-backdrop-filter: blur(28px) saturate(1.65);
+    }
+    .dock::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 42%, transparent 100%);
+    }
+    .app-on .dock { display: block; }
+    .char-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .char-card {
+      overflow: hidden;
+      padding: 0 0 12px;
+      border: 1px solid var(--glass-border);
+      border-radius: var(--glass-radius);
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease), transform 160ms var(--ease);
+    }
+    .char-card:active { transform: scale(0.98); }
+    .char-card img {
+      display: block;
+      width: 100%;
+      height: 140px;
+      object-fit: cover;
+      object-position: 50% 20%;
+      filter: grayscale(0.85) contrast(1.05);
+      mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 100%);
+    }
+    .char-card b {
+      display: block;
+      margin: 12px 14px 0;
+      font-family: "Unbounded", sans-serif;
+      font-size: 15px;
+    }
+    .char-card small {
+      display: block;
+      margin: 4px 14px 0;
+      font-size: 12px;
+      color: var(--mute);
+    }
+    .char-card.is-selected {
+      border-color: rgba(244, 241, 234, 0.35);
+      background: rgba(255, 255, 255, 0.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 12px 32px rgba(0,0,0,0.2);
+    }
+    .char-card.is-selected small { color: rgba(244, 241, 234, 0.55); }
+
+    .skin-pop {
+      position: absolute;
+      inset: 0;
+      z-index: 22;
+      display: none;
+    }
+    .skin-pop.is-on { display: block; }
+    .skin-pop-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+    }
+    .skin-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      max-height: 78%;
+      padding: 0 18px calc(18px + var(--safe-bot));
+      border-radius: 32px 32px 0 0;
+      background: rgba(12, 12, 14, 0.72);
+      border-top: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(28px) saturate(1.5);
+      -webkit-backdrop-filter: blur(28px) saturate(1.5);
+      transform: translate3d(0, 110%, 0);
+      transition: transform 420ms var(--ease);
+    }
+    .skin-pop.is-open .skin-sheet { transform: translate3d(0, 0, 0); }
+    html.native .skin-sheet {
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(14, 14, 16, 0.98);
+      transition: none;
+    }
+    html.native .skin-pop.is-open .skin-sheet { transform: translate3d(0, 0, 0); }
+    html.native .skin-item img {
+      content-visibility: auto;
+      contain-intrinsic-size: 56px 56px;
+    }
+    .skin-sheet h3 {
+      padding: 8px 40px 12px;
+      text-align: center;
+      font-family: "Unbounded", sans-serif;
+      font-size: 18px;
+    }
+    .skin-list {
+      max-height: 320px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+    }
+    .skin-list::-webkit-scrollbar { display: none; }
+    .skin-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: background 200ms var(--ease), border-color 200ms var(--ease);
+    }
+    .skin-item img {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      object-position: center;
+      background: #000;
+      border-radius: 14px;
+      flex-shrink: 0;
+    }
+    .skin-item b {
+      display: block;
+      font-family: "Unbounded", sans-serif;
+      font-size: 14px;
+    }
+    .skin-item small { display: block; margin-top: 4px; font-size: 12px; color: var(--mute); }
+    .skin-item.is-selected {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(244, 241, 234, 0.28);
+    }
+    .skin-item.is-selected small { color: rgba(244, 241, 234, 0.55); }
+
+    .page-inject {
+      display: none;
+      width: 100%;
+      height: 52px;
+      margin: 16px 0 10px;
+      padding: 0;
+      border: 1px solid rgba(244, 241, 234, 0.22);
+      border-radius: 999px;
+      background: rgba(244, 241, 234, 0.94);
+      color: #111;
+      font: 700 12px "Unbounded", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.24);
+      transition: transform 160ms var(--ease);
+    }
+    .page-inject:active { transform: scale(0.98); }
+    .page-inject.is-ready { display: block; }
+    .page-inject.is-error { color: #eb4545; }
+    .page-restore {
+      display: none;
+      width: 100%;
+      height: 48px;
+      margin: 0 0 12px;
+      padding: 0;
+      border: 1px solid rgba(235, 69, 69, 0.35);
+      border-radius: 999px;
+      background: rgba(235, 69, 69, 0.16);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: #ff8a8a;
+      font: 700 12px "Unbounded", sans-serif;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: transform 160ms var(--ease);
+    }
+    .page-restore:active { transform: scale(0.98); }
+    .page-restore.is-ready { display: block; }
+    .dock-inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+      height: 100%;
+      overflow: visible;
+      border-radius: 20px;
+    }
+    .dock-limelight {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      width: 44px;
+      height: 5px;
+      pointer-events: none;
+      will-change: transform;
+      transform: translate3d(-999px, 0, 0);
+    }
+    .dock-limelight.is-ready {
+      transition: none;
+    }
+    .dock-limelight-bar {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      background: var(--ink);
+      box-shadow:
+        0 0 10px rgba(244, 241, 234, 0.55),
+        0 50px 18px rgba(244, 241, 234, 0.28);
+    }
+    .dock-limelight-beam {
+      position: absolute;
+      left: -30%;
+      top: 5px;
+      width: 160%;
+      height: 58px;
+      clip-path: polygon(5% 100%, 25% 0, 75% 0, 95% 100%);
+      background: linear-gradient(
+        to bottom,
+        rgba(244, 241, 234, 0.38) 0%,
+        rgba(244, 241, 234, 0.12) 45%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+    .dock button {
+      position: relative;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      border: 0;
+      background: none;
+      color: rgba(244, 241, 234, 0.42);
+      font: 700 11px "Outfit", sans-serif;
+      letter-spacing: 0;
+      cursor: pointer;
+      opacity: 0.4;
+      transition: color 480ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .dock button svg {
+      display: block;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .dock button.is-on {
+      color: var(--ink);
+      opacity: 1;
+    }
+    .dock button.is-off {
+      opacity: 0.28 !important;
+      pointer-events: none !important;
+      transition: none !important;
+    }
+
+    @keyframes rise { from { opacity: 0; transform: translate3d(0, 10px, 0); } to { opacity: 1; transform: translate3d(0, 0, 0); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .intro-logo, .intro, .dock-limelight, .dock button, .auth-panel, .auth-reveal { transition: none !important; animation: none !important; }
+      .auth-reveal { opacity: 1 !important; transform: none !important; filter: none !important; }
+      .intro-logo { opacity: 1 !important; filter: none !important; }
+      .load-fill { width: 100% !important; }
+      .spin-ring::before { animation: none !important; }
+      [data-shiny-text] {
+        background: none !important;
+        -webkit-text-fill-color: currentColor !important;
+      }
+      #auth-brand-label { color: var(--ink); }
+      #signin-label { color: #121213; }
+    }
+
+    html.native,
+    html.native body {
+      height: 100%;
+      min-height: 100dvh;
+    }
+    html.native body {
+      padding: 0;
+      background: #000;
+      display: block;
+      place-items: unset;
+    }
+    html.native .phone {
+      width: 100%;
+      min-height: 100dvh;
+      height: 100%;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    html.native .island,
+    html.native .status { display: none !important; }
+    html.native {
+      --safe-top: max(8px, env(safe-area-inset-top, 0px), var(--safe-top-native, 0px));
+      --safe-bot: max(12px, env(safe-area-inset-bottom, 0px), var(--safe-bot-native, 0px));
+    }
+    html.native .stage {
+      height: 100%;
+      padding-top: 0;
+      box-sizing: border-box;
+    }
+    html.native .screen.main {
+      padding-top: var(--safe-top);
+      box-sizing: border-box;
+    }
+    html.native .screen.auth {
+      padding-top: var(--safe-top);
+      box-sizing: border-box;
+    }
+    html.native .main-head.bx-head {
+      margin-top: 0;
+      padding-top: 6px;
+    }
+    html.native .screen {
+      top: 0;
+      bottom: 0;
+    }
+    html.native .dock {
+      bottom: calc(10px + var(--safe-bot));
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: rgba(22, 22, 24, 0.94);
+    }
+    html.native .app-on .toast { bottom: calc(100px + var(--safe-bot)); }
+    .contact-link {
+      display: none;
+      margin-top: 8px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .contact-link.is-visible { display: block; }
+    .lang-row {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border: 0;
+      border-radius: 18px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+    }
+    .lang-row .lang-val {
+      margin-left: auto;
+      color: var(--mute);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .lang-row em { color: var(--mute); font-style: normal; }
+    .lang-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: grid;
+      place-items: end center;
+      padding: 24px 16px calc(16px + var(--safe-bot));
+    }
+    .lang-sheet-bg {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+    }
+    .lang-sheet-panel {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 360px);
+      border-radius: 22px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .lang-sheet-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--mute);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+    .lang-opt {
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 15px;
+      font-weight: 600;
+      text-align: left;
+    }
+    @media (max-width: 430px) {
+      body { padding: 0; background: #000; }
+      .phone { width: 100%; height: 100dvh; border: 0; border-radius: 0; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div id="boot-veil" aria-hidden="true">
+    <img id="boot-veil-logo" src="" alt="">
+  </div>
+  <div class="phone" id="app">
+    <div class="island" aria-hidden="true"></div>
+    <div class="status">
+      <span id="clock">9:41</span>
+      <div class="status-right" aria-hidden="true">
+        <span class="sig"><i></i><i></i><i></i><i></i></span>
+        <span class="batt"></span>
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-ferro" id="app-ferro-host" aria-hidden="true"></div>
+      <section class="screen intro is-on" id="intro" aria-hidden="false">
+        <div class="intro-logo-wrap">
+          <img class="intro-logo" id="intro-logo" src="" alt="Logo">
+        </div>
+      </section>
+
+      <section class="screen auth" id="auth">
+        <div class="auth-panel">
+          <div class="auth-brand auth-reveal" style="--d:0">
+            <div class="auth-brand-mark-wrap">
+              <img class="auth-brand-mark" id="auth-brand-mark" src="" alt="" aria-hidden="true">
+            </div>
+            <span
+              class="auth-brand-name"
+              id="auth-brand-label"
+              data-shiny-text
+              data-shiny-color="#b5b5b5"
+              data-shiny-shine-color="#ffffff"
+              data-shiny-speed="2.5"
+              data-shiny-spread="120"
+              data-shiny-direction="left"
+            >App</span>
+          </div>
+          <h1 class="auth-title auth-reveal" style="--d:1" data-i18n="sign_in">Sign In</h1>
+          <p class="auth-sub auth-reveal" style="--d:2" data-i18n="external_tag">iOS · External</p>
+          <form class="auth-form auth-reveal" id="auth-form" style="--d:3" autocomplete="on">
+            <div class="glass-input-wrap">
+              <div class="glass-input">
+                <span class="glass-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+                </span>
+                <input class="field" id="pass" type="password" autocomplete="current-password" placeholder="License key" data-i18n="license_key">
+                <button type="button" class="eye" id="eye" aria-label="Show key" aria-pressed="false" data-i18n="show_key" data-i18n-attr="aria-label"></button>
+              </div>
+            </div>
+            <div class="auth-row">
+              <label class="remember"><input type="checkbox" id="remember"> <span data-i18n="remember">Remember</span></label>
+              <button type="button" class="linkish" id="paste-btn" data-i18n="paste_key">Paste key</button>
+            </div>
+            <button type="submit" class="rainbow-btn" id="signin">
+              <span
+                id="signin-label"
+                data-shiny-text
+                data-shiny-color="#121213"
+                data-shiny-shine-color="#ffffff"
+                data-shiny-speed="2"
+                data-shiny-spread="120"
+                data-shiny-direction="left"
+              data-i18n="launch">Launch</span>
+              <svg class="rainbow-btn-arrow" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14"/><path d="m13 5 7 7-7 7"/></svg>
+            </button>
+            <p class="auth-status" id="auth-status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen main" id="main">
+        <div class="main-head bx-head">
+          <div>
+            <p class="kicker" id="kicker" data-i18n="tab_home">Home</p>
+            <h2 id="hello">App</h2>
+          </div>
+        </div>
+        <div class="page bx-page">
+          <div class="tab-page is-on bx-page" data-page="exploit">
+            <section class="bx-hero">
+              <div class="bx-hero-top">
+                <span class="bx-tag" id="game-label">Free Fire · Aim V2</span>
+              </div>
+              <div class="bx-hero-stats">
+                <div class="bx-stat">
+                  <span class="bx-stat-label" data-i18n="aimbot">Aimbot</span>
+                  <strong class="bx-stat-value is-empty" id="aim-hero" data-i18n="not_set">Not set</strong>
+                </div>
+                <div class="bx-stat">
+                  <span class="bx-stat-label" data-i18n="visual">Visual</span>
+                  <strong class="bx-stat-value is-empty" id="esp-hero" data-i18n="not_set">Not set</strong>
+                </div>
+              </div>
+            </section>
+
+            <div class="bx-seg-panel">
+              <div class="bx-seg-row">
+                <span class="bx-seg-label" data-i18n="game">Game</span>
+                <div class="game-switch" data-seg="game" data-on="ff">
+                  <button type="button" data-game="ff" data-i18n="free_fire">Free Fire</button>
+                  <button type="button" data-game="max" data-i18n="ff_max">FF Max</button>
+                </div>
+              </div>
+              <div class="bx-seg-row">
+                <span class="bx-seg-label" data-i18n="aim">Aim</span>
+                <div class="game-switch aim-switch" data-seg="aim" data-on="v2">
+                  <button type="button" data-aim="v1" data-i18n="aim_v1">Aim V1</button>
+                  <button type="button" data-aim="v2" data-i18n="aim_v2">Aim V2</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="bx-section">
+              <p class="bx-section-title" data-i18n="modules">Modules</p>
+              <div class="bx-inset">
+                <div class="aim-set" data-aim-set="v1">
+                  <div class="chips">
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="drag" data-patch="DRAG" data-label="Drag"><span class="box"></span><span data-i18n="patch_drag">Drag</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="neck" data-patch="NECK" data-label="Neck"><span class="box"></span><span data-i18n="patch_neck">Neck</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="body" data-patch="BODY" data-label="Body"><span class="box"></span><span data-i18n="patch_body">Body</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="magic_bullet" data-patch="MAGIC BULLET" data-label="Magic Bullet"><span class="box"></span><span data-i18n="patch_magic_bullet">Magic Bullet</span></button>
+                  </div>
+                </div>
+                <div class="aim-set is-on" data-aim-set="v2">
+                  <div class="chips">
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="aimlock" data-patch="AIMLOCK" data-label="Aimlock"><span class="box"></span><span data-i18n="patch_aimlock">Aimlock</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="neck" data-patch="NECK" data-label="Neck"><span class="box"></span><span data-i18n="patch_neck">Neck</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="head" data-patch="HEAD" data-label="Head"><span class="box"></span><span data-i18n="patch_head">Head</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="body" data-patch="BODY" data-label="Body"><span class="box"></span><span data-i18n="patch_body">Body</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="head_antenna" data-patch="AIM HEAD ANTENNA" data-label="Head Antenna"><span class="box"></span><span data-i18n="patch_head_antenna">Head Antenna</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="drag_antenna" data-patch="AIM DRAG ANTENNA" data-label="Drag Antenna"><span class="box"></span><span data-i18n="patch_drag_antenna">Drag Antenna</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="body_antenna" data-patch="AIM BODY ANTENNA" data-label="Body Antenna"><span class="box"></span><span data-i18n="patch_body_antenna">Body Antenna</span></button>
+                    <button type="button" class="chip patch-btn" data-kind="patch" data-key="magic_bullet" data-patch="MAGIC BULLET" data-label="Magic Bullet"><span class="box"></span><span data-i18n="patch_magic_bullet">Magic Bullet</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bx-section">
+              <p class="bx-section-title" data-i18n="esp_colors">ESP Colors</p>
+              <div class="bx-inset bx-colors">
+                <div class="chips">
+                  <button type="button" class="chip patch-btn" data-kind="esp" data-key="weapon_green" data-patch="WEAPON GREEN" data-label="Weapon Green"><span class="box"></span><span data-i18n="patch_weapon_green">Weapon Green</span></button>
+                  <button type="button" class="chip patch-btn" data-kind="esp" data-key="weapon_cyan" data-patch="WEAPON CYAN" data-label="Weapon Cyan"><span class="box"></span><span data-i18n="patch_weapon_cyan">Weapon Cyan</span></button>
+                  <button type="button" class="chip patch-btn" data-kind="esp" data-key="weapon_pink" data-patch="WEAPON PINK" data-label="Weapon Pink"><span class="box"></span><span data-i18n="patch_weapon_pink">Weapon Pink</span></button>
+                  <button type="button" class="chip patch-btn" data-kind="esp" data-key="full_body" data-patch="FULL BODY ESP" data-label="Full Body ESP"><span class="box"></span><span data-i18n="patch_full_body_esp">Full Body ESP</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div class="bx-foot">
+              <button type="button" class="page-inject" id="inject-btn" data-inject><span data-i18n="inject">Inject</span></button>
+              <button type="button" class="page-restore" id="restore-btn" data-restore><span data-i18n="restore_original">Restore Original</span></button>
+            </div>
+          </div>
+
+          <div class="tab-page bx-page" data-page="skin">
+            <p class="bx-section-title" data-i18n="roster">Roster</p>
+            <div class="bx-roster">
+              <button type="button" class="char-card" data-char="alok">
+                <img src="char-alok.png" alt="" decoding="async" loading="eager">
+                <span>
+                  <b>Alok</b>
+                  <small data-i18n="skins_available">8 skins available</small>
+                </span>
+              </button>
+              <button type="button" class="char-card" data-char="dimitri">
+                <img src="char-dimitri.png" alt="" decoding="async" loading="lazy">
+                <span>
+                  <b>Dimitri</b>
+                  <small data-i18n="skins_available">8 skins available</small>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="tab-page bx-page" data-page="clean">
+            <div class="bx-seg-panel bx-clean-pick">
+              <div class="bx-seg-row">
+                <span class="bx-seg-label" data-i18n="game">Game</span>
+                <div class="game-switch" data-seg="game" data-on="ff">
+                  <button type="button" data-game="ff" data-i18n="free_fire">Free Fire</button>
+                  <button type="button" data-game="max" data-i18n="ff_max">FF Max</button>
+                </div>
+              </div>
+            </div>
+            <div class="bx-wipe">
+              <button type="button" class="clean-card" data-clean="aim" data-glyph="◎">
+                <b class="cat-title" id="clean-aim-title" data-i18n="clean_aim_v1">Clean Aim V1</b>
+                <small data-i18n="strip_aim">Strip aim patches</small>
+              </button>
+              <button type="button" class="clean-card" data-clean="esp" data-glyph="◈">
+                <b class="cat-title" data-i18n="clean_esp">Clean ESP</b>
+                <small data-i18n="remove_visuals">Remove visuals</small>
+              </button>
+            </div>
+            <button type="button" class="action danger" id="reset-btn" data-i18n="reset_all">Reset all</button>
+          </div>
+
+          <div class="tab-page bx-page" data-page="misc">
+            <div class="bx-seg-panel">
+              <div class="bx-seg-row">
+                <span class="bx-seg-label" data-i18n="game">Game</span>
+                <div class="game-switch" data-seg="game" data-on="ff">
+                  <button type="button" data-game="ff" data-i18n="ff_short">FF</button>
+                  <button type="button" data-game="max" data-i18n="ffm_short">FFM</button>
+                </div>
+              </div>
+            </div>
+            <div class="bx-menu bx-section">
+              <p class="bx-section-title" data-i18n="misc_patches">Misc patches</p>
+              <div class="sheet" id="misc-slots">
+                <button type="button" class="row clean-card" data-misc="1">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 1</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="2">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 2</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="3">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 3</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="4">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 4</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="5">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 5</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="6">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 6</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="7">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 7</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="8">
+                  <span><b class="cat-title"><span data-i18n="misc_n">Misc</span> 8</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card danger-row" data-misc="clean">
+                  <span><b class="cat-title" data-i18n="clean_misc">Clean Misc</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="guestReset">
+                  <span><b class="cat-title" data-i18n="reset_guest">Reset Guest</b></span>
+                  <span class="val">›</span>
+                </button>
+                <button type="button" class="row clean-card" data-misc="guestClean">
+                  <span><b class="cat-title" data-i18n="reset_guest_clean">Reset Guest - Clean</b></span>
+                  <span class="val">›</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-page bx-page" data-page="account">
+            <div class="bx-pass">
+              <div class="bx-pass-top">
+                <img class="profile-mark" id="about-mark" src="PhantomBrand.png" alt="Brand">
+                <div>
+                  <h3 class="profile-brand" id="about-brand">App</h3>
+                  <p class="profile-kicker profile-status" id="about-status" data-i18n="active_license">Active license</p>
+                </div>
+              </div>
+              <div class="profile-key-row">
+                <p class="profile-key" id="about-key">••••</p>
+                <button type="button" class="key-copy" id="copy-key" data-i18n="copy">Copy</button>
+              </div>
+              <div class="remain">
+                <div class="remain-row"><span data-i18n="time_left">Time left</span><span id="about-remain-text">30 days</span></div>
+                <div class="remain-bar"><i id="about-remain"></i></div>
+              </div>
+            </div>
+            <div class="bx-meta meta-list">
+              <div class="meta-row"><span data-i18n="issued">Issued</span><b id="about-bought">—</b></div>
+              <div class="meta-row"><span data-i18n="expiry_date">Expires</span><b id="about-expiry">—</b></div>
+              <div class="meta-row"><span data-i18n="session">Session</span><b id="about-session">—</b></div>
+              <div class="meta-row"><span data-i18n="validity">Valid</span><b id="about-validity">30 days</b></div>
+            </div>
+            <div class="bx-section">
+              <p class="bx-section-title" data-i18n="language">Language</p>
+              <button type="button" class="lang-row" id="language-btn">
+                <span data-i18n="language">Language</span>
+                <span class="lang-val" id="language-value">English</span>
+                <em aria-hidden="true">▾</em>
+              </button>
+            </div>
+            <div class="bx-section bx-links">
+              <p class="bx-section-title" data-i18n="community">Community</p>
+              <div class="credit-grid">
+                <a class="credit-card" href="#" rel="noopener">
+                  <span><b>Owner</b><small data-i18n="owner_role">Owner</small></span>
+                  <em>—</em>
+                </a>
+                <a class="credit-card" href="#" rel="noopener">
+                  <span><b>Developer</b><small data-i18n="developer_role">Developer</small></span>
+                  <em>—</em>
+                </a>
+                <a class="credit-card" href="#" rel="noopener">
+                  <span><b>Server</b><small data-i18n="server_role">Official</small></span>
+                  <em>—</em>
+                </a>
+              </div>
+            </div>
+            <button type="button" class="sign-out" id="sign-out-btn" data-i18n="sign_out">Sign Out</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="dock" id="dock">
+      <div class="dock-inner">
+        <div class="dock-limelight" id="dock-limelight" aria-hidden="true">
+          <div class="dock-limelight-bar"></div>
+          <div class="dock-limelight-beam"></div>
+        </div>
+        <button type="button" class="is-on" data-tab="exploit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-7H10v7H5a1 1 0 0 1-1-1v-9.5Z"/></svg>
+          <span data-i18n="tab_home">Home</span>
+        </button>
+        <button type="button" data-tab="skin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3"/><path d="M6 20c1.2-3.2 3.3-5 6-5s4.8 1.8 6 5"/><path d="M16 4.5 19 8"/><path d="M8 4.5 5 8"/></svg>
+          <span data-i18n="tab_skin">Skin</span>
+        </button>
+        <button type="button" data-tab="clean">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M13 3 6 14h5l-1 7 8-12h-5l1-6Z"/></svg>
+          <span data-i18n="tab_clean">Clean</span>
+        </button>
+        <button type="button" data-tab="misc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg>
+          <span data-i18n="tab_misc">Misc</span>
+        </button>
+        <button type="button" data-tab="account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.2"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/></svg>
+          <span data-i18n="tab_account">Account</span>
+        </button>
+      </div>
+    </nav>
+    <div class="skin-pop" id="skin-pop">
+      <div class="skin-pop-bg" id="skin-pop-bg"></div>
+      <div class="skin-sheet">
+        <div class="drawer-handle" aria-hidden="true"></div>
+        <h3 id="skin-pop-title" data-i18n="skins">Skins</h3>
+        <div class="skin-list" id="skin-list"></div>
+        <button type="button" class="action" id="skin-inject"><span data-i18n="inject">Inject</span></button>
+      </div>
+    </div>
+    <div class="toast" id="toast" role="status"></div>
+    <div class="maint-layer" id="maint-layer" aria-live="polite">
+      <h2 id="maint-title" data-i18n="under_update">This is under update</h2>
+      <p id="maint-reason"></p>
+    </div>
+    <audio id="pay-sound" src="applepay.mp3" preload="auto"></audio>
+  </div>
+
+  <script src="panel-i18n.js"></script>
+  <script type="module">
+    import { initShinyTexts } from './shiny-text.js';
+    import { initLimelightNav } from './limelight-nav.js';
+
+    function bootShinyText() {
+      if (document.documentElement.classList.contains('native') &&
+          !document.documentElement.classList.contains('ui-settled')) {
+        document.addEventListener('ui-settled-event', function once() {
+          document.removeEventListener('ui-settled-event', once);
+          window.authShinyInstances = initShinyTexts('[data-shiny-text]');
+        });
+        return;
+      }
+      window.authShinyInstances = initShinyTexts('[data-shiny-text]');
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootShinyText);
+    } else {
+      bootShinyText();
+    }
+
+    var FERRO_OPTS = {
+      colors: ['#ffffff', '#ff0000', '#ffffff'],
+      speed: 0.5,
+      scale: 1,
+      turbulence: 1,
+      fluidity: 0.1,
+      rimWidth: 0.2,
+      sharpness: 3,
+      shimmer: 1,
+      glow: 2,
+      flowDirection: 'down',
+      opacity: 1,
+      mouseInteraction: true,
+      mouseStrength: 1,
+      mouseRadius: 0.3,
+      mouseDampening: 0.15,
+      dpr: Math.min(window.devicePixelRatio || 1, 2)
+    };
+
+    var ferroApi = null;
+    var ferroLoad = null;
+
+    function ensureFerroModule() {
+      if (!ferroLoad) ferroLoad = import('./ferrofluid.js');
+      return ferroLoad;
+    }
+
+    window.startAppFerrofluid = function () {
+      var host = document.getElementById('app-ferro-host');
+      if (!host) return;
+      if (ferroApi && typeof ferroApi.resume === 'function') {
+        ferroApi.resume();
+        return;
+      }
+      if (ferroApi) return;
+      ensureFerroModule().then(function (mod) {
+        if (ferroApi || !host.isConnected) return;
+        ferroApi = mod.createFerrofluid(host, FERRO_OPTS);
+      }).catch(function () {});
+    };
+
+    window.stopAppFerrofluid = function () {
+      if (ferroApi && typeof ferroApi.pause === 'function') ferroApi.pause();
+    };
+
+    window.restartAppFerrofluid = function () {
+      if (ferroApi && typeof ferroApi.destroy === 'function') {
+        ferroApi.destroy();
+        ferroApi = null;
+      }
+      window.startAppFerrofluid();
+    };
+
+    window.startAuthFerrofluid = window.startAppFerrofluid;
+    window.stopAuthFerrofluid = window.stopAppFerrofluid;
+
+    // Native: start ferro as soon as the host exists (boot logo sits on top).
+    if (document.documentElement.classList.contains('native')) {
+      requestAnimationFrame(function () {
+        if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+      });
+    }
+
+    document.addEventListener('selectstart', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      e.preventDefault();
+    }, true);
+    document.addEventListener('contextmenu', function (e) {
+      var t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+    }, true);
+    document.addEventListener('dragstart', function (e) { e.preventDefault(); }, true);
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+      } else if (typeof window.stopAppFerrofluid === 'function') {
+        window.stopAppFerrofluid();
+      }
+    });
+    window.addEventListener('pageshow', function (e) {
+      if (e.persisted && typeof window.startAppFerrofluid === 'function') {
+        window.startAppFerrofluid();
+      }
+    });
+
+    function bootLimelightNav() {
+      var dockEl = document.getElementById('dock');
+      if (!dockEl) return;
+      window.dockLimelight = initLimelightNav(dockEl);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bootLimelightNav);
+    } else {
+      bootLimelightNav();
+    }
+  </script>
+  <script>
+  (function () {
+    var NATIVE = !!(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.bytrix);
+    function nativeSend(payload) {
+      if (!NATIVE) return false;
+      try { window.webkit.messageHandlers.bytrix.postMessage(payload); return true; }
+      catch (err) { return false; }
+    }
+    if (window.BYTRIX_NATIVE) document.documentElement.classList.add('native');
+
+    var intro = document.getElementById('intro');
+    var auth = document.getElementById('auth');
+    var main = document.getElementById('main');
+    var app = document.getElementById('app');
+    var dock = document.getElementById('dock');
+    var clock = document.getElementById('clock');
+    var pass = document.getElementById('pass');
+    var eyeBtn = document.getElementById('eye');
+    var remember = document.getElementById('remember');
+    var toastEl = document.getElementById('toast');
+    var paySound = document.getElementById('pay-sound');
+    var toastTimer = 0;
+    var game = 'ff';
+    var aimVersion = 'v2';
+    var SUCCESS_HOLD_MS = 7000;
+    var hasAimBackup = false;
+    // Mirrors github/status.json → features (edit here to preview remote control)
+    var FEATURES = {
+      all: { enabled: true },
+      aim: { enabled: true },
+      esp: { enabled: true },
+      misc: { enabled: true },
+      skins: {
+        enabled: true,
+        alok: { enabled: true },
+        dimitri: { enabled: true }
+      },
+      v1: {
+        drag: { enabled: true },
+        neck: { enabled: true },
+        body: { enabled: true },
+        neck_antenna: { enabled: true },
+        magic_bullet: { enabled: true }
+      },
+      v2: {
+        aimlock: { enabled: true },
+        neck: { enabled: true },
+        head: { enabled: true },
+        body: { enabled: true },
+        head_antenna: { enabled: true },
+        drag_antenna: { enabled: true },
+        body_antenna: { enabled: true },
+        magic_bullet: { enabled: true }
+      },
+      weapon_green: { enabled: true },
+      weapon_cyan: { enabled: true },
+      weapon_pink: { enabled: true },
+      full_body: { enabled: true },
+      clean: { enabled: true }
+    };
+    var MENUS = {
+      home: { enabled: true },
+      skin: { enabled: true },
+      clean: { enabled: true },
+      misc: { enabled: true },
+      account: { enabled: true }
+    };
+    var REMOTE_FEATURES = null;
+    var REMOTE_MENUS = null;
+    var REMOTE_FEATURES_SYNCED = false;
+    var REMOTE_MENUS_SYNCED = false;
+    var signedName = '';
+    var signedKey = '';
+
+    function brandPayload() {
+      return window.__BOOT_BRAND && typeof window.__BOOT_BRAND === 'object'
+        ? window.__BOOT_BRAND
+        : {};
+    }
+    function brandName() {
+      var b = brandPayload();
+      return b.name || b.app_name || b.hello || 'App';
+    }
+    function brandHello() {
+      var b = brandPayload();
+      return b.hello || b.about || (brandName() + ' - iOS');
+    }
+    function brandAbout() {
+      var b = brandPayload();
+      return b.about || b.hello || (brandName() + ' - iOS');
+    }
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var KEY_STORE = 'blaze-license';
+    var START_STORE = 'oxcheats-license-start';
+    var LICENSE_MS = 30 * 24 * 60 * 60 * 1000;
+    var skinPop = document.getElementById('skin-pop');
+    var skinList = document.getElementById('skin-list');
+    var skinChar = '';
+    var skinPick = '';
+    var SKINS = {
+      alok: [
+        { id: '0xcheats_jersey', name: 'Green Jersey', img: 'skins/alok-0xcheats_jersey.png' },
+        { id: 'body_freestyle', name: 'Body Freestyle', img: 'skins/alok-body_freestyle.png' },
+        { id: 'ruok_ff', name: 'Ruok FF', img: 'skins/alok-ruok_ff.png' },
+        { id: 'white_jersey', name: 'White Jersey', img: 'skins/alok-white_jersey.png' },
+        { id: 'bunny', name: 'Bunny', img: 'skins/alok-bunny.png' },
+        { id: 'tuxedo', name: 'Tuxedo', img: 'skins/alok-tuxedo.png' },
+        { id: 'apelapato', name: 'Apelapato', img: 'skins/alok-apelapato.png' },
+        { id: 'zerox_ff', name: 'Zerox Ff', img: 'skins/alok-zerox_ff.png' }
+      ],
+      dimitri: [
+        { id: 'sakura_bundle', name: 'Sakura Bundle', img: 'skins/dimitri-sakura_bundle.png' },
+        { id: 'freestyle_gear', name: 'Freestyle Gear', img: 'skins/dimitri-freestyle_gear.png' },
+        { id: 'sakura_2', name: 'Sakura 2', img: 'skins/dimitri-sakura_2.png' },
+        { id: 'angelic_gear', name: 'Angelic Gear', img: 'skins/dimitri-angelic_gear.png' },
+        { id: 'sakura_3', name: 'Sakura 3', img: 'skins/dimitri-sakura_3.png' },
+        { id: 'brazil_gear', name: 'Brazil Gear', img: 'skins/dimitri-brazil_gear.png' },
+        { id: 'red_jacket', name: 'Red Jacket', img: 'skins/dimitri-red_jacket.png' },
+        { id: 'freestyle', name: 'Freestyle', img: 'skins/dimitri-freestyle.png' }
+      ]
+    };
+    var CHAR_IMG = { alok: 'char-alok.png', dimitri: 'char-dimitri.png' };
+    var CHAR_NAME = { alok: 'Alok', dimitri: 'Dimitri' };
+
+    try {
+      var saved = localStorage.getItem(KEY_STORE);
+      if (saved) {
+        pass.value = saved;
+        remember.checked = true;
+      }
+    } catch (e) {}
+
+    function setClock() {
+      var d = new Date();
+      clock.textContent = d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    }
+    setClock();
+    setInterval(setClock, 15000);
+
+    function playSuccess() {
+      if (!paySound) return;
+      try {
+        paySound.currentTime = 0;
+        paySound.play().catch(function () {});
+      } catch (e) {}
+    }
+
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1600);
+    }
+
+    function focusAuth() {
+      var wait = (NATIVE || window.__FAST_UI) ? 0 : (reduce ? 0 : 120);
+      setTimeout(function () { pass.focus(); }, wait);
+    }
+
+    function L(key, fallback) {
+      if (window.panelI18n && window.panelI18n.t) {
+        var v = window.panelI18n.t(key);
+        if (v && v !== key) return v;
+      }
+      return fallback || key;
+    }
+
+    var uiSettledSent = false;
+    function markUiSettled() {
+      if (uiSettledSent) return;
+      uiSettledSent = true;
+      if (typeof applyBootBrand === 'function') applyBootBrand();
+      else if (window.__BOOT_BRAND && typeof applyBrand === 'function') applyBrand(window.__BOOT_BRAND);
+      if (window.panelI18n && window.panelI18n.apply) window.panelI18n.apply();
+      // One paint with brand+text together, then reveal (no staggered flash).
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          document.documentElement.classList.add('ui-settled');
+          try { document.dispatchEvent(new Event('ui-settled-event')); } catch (e) {}
+          nativeSend({ type: 'uiSettled' });
+          if (typeof startAuthFerro === 'function') startAuthFerro();
+        });
+      });
+    }
+    window.markUiSettled = markUiSettled;
+
+    function setAuthLaunching(on) {
+      auth.classList.toggle('is-launching', !!on);
+      var launchLabel = document.getElementById('signin-label');
+      if (launchLabel) launchLabel.textContent = on ? L('launching', 'Launching') : L('launch', 'Launch');
+      var instances = window.authShinyInstances;
+      if (instances && launchLabel && instances.has(launchLabel)) {
+        if (on) instances.get(launchLabel).pause();
+        else instances.get(launchLabel).resume();
+      }
+    }
+
+    function startAuthFerro() {
+      var run = function () {
+        if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+      };
+      if (NATIVE || window.__FAST_UI) {
+        requestAnimationFrame(function () { requestAnimationFrame(run); });
+        return;
+      }
+      run();
+    }
+
+    function stopAuthFerro() {
+      if (typeof window.stopAppFerrofluid === 'function') window.stopAppFerrofluid();
+    }
+
+    function playBrandLoop() {
+      var brandMark = document.querySelector('.auth-brand-mark');
+      if (!brandMark || brandMark.tagName !== 'VIDEO') return;
+      brandMark.loop = true;
+      brandMark.muted = true;
+      var brandPlay = brandMark.play();
+      if (brandPlay && brandPlay.catch) brandPlay.catch(function () {});
+    }
+
+    function revealAuthPanel() {
+      auth.classList.add('is-ready');
+      playBrandLoop();
+      focusAuth();
+    }
+
+    function showAuth() {
+      var logo = document.getElementById('intro-logo');
+      var wrap = intro.querySelector('.intro-logo-wrap');
+      var crossfadeMs = reduce ? 0 : 320;
+      var fadeEase = 'cubic-bezier(0.22, 1, 0.36, 1)';
+      stopIntroZoom();
+      if (logo) {
+        try { logo.pause(); } catch (err) {}
+      }
+
+      auth.classList.add('is-on', 'from-intro');
+      startAuthFerro();
+
+      if (reduce) {
+        intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+        auth.classList.remove('from-intro', 'is-crossfading');
+        revealAuthPanel();
+        return;
+      }
+
+      var fadeRule = 'opacity ' + crossfadeMs + 'ms ' + fadeEase;
+      intro.classList.add('is-crossfading');
+      auth.classList.add('is-crossfading');
+      intro.style.transition = fadeRule;
+      auth.style.transition = fadeRule;
+      auth.style.opacity = '0';
+      if (wrap) {
+        wrap.style.transition = fadeRule;
+      }
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          intro.classList.add('is-leaving');
+          intro.style.opacity = '0';
+          auth.style.opacity = '1';
+          if (wrap) wrap.style.opacity = '0';
+        });
+      });
+
+      setTimeout(function () {
+        intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+        intro.style.transition = '';
+        intro.style.opacity = '';
+        auth.classList.remove('from-intro', 'is-crossfading');
+        auth.style.transition = '';
+        auth.style.opacity = '';
+        if (wrap) {
+          wrap.style.transition = '';
+          wrap.style.opacity = '';
+        }
+        revealAuthPanel();
+      }, crossfadeMs + 60);
+    }
+
+    var introZoomAnim = null;
+    var introHoldTimer = 0;
+
+    function stopIntroZoom() {
+      clearTimeout(introHoldTimer);
+      introHoldTimer = 0;
+      if (introZoomAnim) {
+        try { introZoomAnim.cancel(); } catch (err) {}
+        introZoomAnim = null;
+      }
+    }
+
+    function runIntroZoom(wrap, onDone) {
+      if (!wrap) {
+        onDone();
+        return;
+      }
+      var duration = reduce ? 1500 : 3600;
+      var hold = reduce ? 220 : 650;
+      var fromScale = 0.48;
+      var toScale = 1.22;
+      var startTransform = 'translate3d(0, 0, 0) scale(' + fromScale + ')';
+      var endTransform = 'translate3d(0, 0, 0) scale(' + toScale + ')';
+
+      wrap.style.transition = 'none';
+      wrap.style.opacity = '0';
+      wrap.style.transform = startTransform;
+
+      if (wrap.animate) {
+        introZoomAnim = wrap.animate([
+          { opacity: 0, transform: startTransform },
+          { opacity: 1, transform: 'translate3d(0, 0, 0) scale(0.62)', offset: 0.18 },
+          { opacity: 1, transform: endTransform }
+        ], {
+          duration: duration,
+          easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+          fill: 'forwards'
+        });
+        introZoomAnim.onfinish = function () {
+          introZoomAnim = null;
+          wrap.style.opacity = '1';
+          wrap.style.transform = endTransform;
+          introHoldTimer = setTimeout(onDone, hold);
+        };
+        return;
+      }
+
+      var start = 0;
+      function easeOutQuint(t) {
+        return 1 - Math.pow(1 - t, 5);
+      }
+      function frame(now) {
+        if (!start) start = now;
+        var p = Math.min(1, (now - start) / duration);
+        var e = easeOutQuint(p);
+        var scale = fromScale + (toScale - fromScale) * e;
+        var opacity = Math.min(1, p * 3.2);
+        wrap.style.opacity = String(opacity);
+        wrap.style.transform = 'translate3d(0, 0, 0) scale(' + scale + ')';
+        if (p < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+        introHoldTimer = setTimeout(onDone, hold);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function playIntro() {
+      var logo = document.getElementById('intro-logo');
+      var wrap = intro.querySelector('.intro-logo-wrap');
+      var exitTimer = 0;
+      var done = false;
+      startAuthFerro();
+
+      function finishIntro() {
+        if (done) return;
+        done = true;
+        stopIntroZoom();
+        clearTimeout(exitTimer);
+        showAuth();
+      }
+
+      function startLogo() {
+        intro.classList.add('play');
+        if (logo && logo.tagName === 'VIDEO') {
+          var playAttempt = logo.play();
+          if (playAttempt && playAttempt.catch) playAttempt.catch(function () {});
+        }
+        runIntroZoom(wrap, finishIntro);
+        clearTimeout(exitTimer);
+        exitTimer = setTimeout(finishIntro, reduce ? 2800 : 6200);
+      }
+
+      if (!logo) {
+        startLogo();
+        return;
+      }
+
+      if (logo.tagName === 'IMG') {
+        if (logo.complete && logo.naturalWidth) {
+          startLogo();
+        } else {
+          logo.addEventListener('load', startLogo, { once: true });
+          logo.addEventListener('error', startLogo, { once: true });
+          exitTimer = setTimeout(finishIntro, 7000);
+        }
+        return;
+      }
+
+      logo.addEventListener('error', function () {
+        runIntroZoom(wrap, function () { setTimeout(finishIntro, 500); });
+      }, { once: true });
+
+      if (logo.readyState >= 2) {
+        startLogo();
+      } else {
+        logo.addEventListener('canplay', startLogo, { once: true });
+        logo.load();
+        exitTimer = setTimeout(finishIntro, 7000);
+      }
+    }
+    function openNativeAuthShell() {
+      applyBootBrand();
+      intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+      document.documentElement.classList.remove('app-on', 'resume-main');
+      auth.classList.add('is-on', 'is-ready');
+      // Ferro after settle.
+    }
+
+    function bootstrapResumeMainShell() {
+      intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+      auth.classList.remove('is-on', 'is-ready', 'is-launching', 'is-leaving-main');
+      main.classList.add('is-on');
+      document.documentElement.classList.add('app-on', 'resume-main');
+      app.classList.add('app-on');
+      // Ferro starts after markUiSettled so bg+text appear together.
+    }
+
+    if (window.BYTRIX_START === 'main' || window.BYTRIX_RESUME_MAIN) {
+      bootstrapResumeMainShell();
+    } else if (NATIVE) {
+      // Stay on ferro + boot logo until native boot/maintenance arrives (no auth flash).
+      intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+      auth.classList.remove('is-on', 'is-ready', 'is-launching');
+      document.documentElement.classList.remove('app-on', 'resume-main');
+      // Safety: never stay on a black veil if boot message is delayed/lost.
+      setTimeout(function () {
+        if (!document.documentElement.classList.contains('ui-settled')) {
+          if (typeof openNativeAuthShell === 'function') openNativeAuthShell();
+          markUiSettled();
+        }
+      }, 600);
+    } else if (!NATIVE) {
+      playIntro();
+      document.documentElement.classList.add('ui-settled');
+    }
+    // ready is sent after bytrixReceive is installed (avoids lost boot → black screen).
+
+    var EYE_ICON =
+      '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/>' +
+        '<circle cx="12" cy="12" r="3"/>' +
+      '</svg>';
+
+    function resetEyeToggle() {
+      if (!pass || !eyeBtn) return;
+      pass.type = 'password';
+      eyeBtn.classList.remove('is-revealed');
+      eyeBtn.innerHTML = EYE_ICON;
+      eyeBtn.setAttribute('aria-label', 'Show key');
+      eyeBtn.setAttribute('aria-pressed', 'false');
+    }
+
+    function toggleEyeVisibility() {
+      if (!pass || !eyeBtn) return;
+      var isHidden = pass.type === 'password';
+      pass.type = isHidden ? 'text' : 'password';
+      var isVisible = pass.type === 'text';
+      eyeBtn.classList.toggle('is-revealed', isVisible);
+      eyeBtn.setAttribute('aria-label', isVisible ? 'Hide key' : 'Show key');
+      eyeBtn.setAttribute('aria-pressed', isVisible ? 'true' : 'false');
+    }
+
+    resetEyeToggle();
+    if (eyeBtn) eyeBtn.addEventListener('click', toggleEyeVisibility);
+
+    var languageBtn = document.getElementById('language-btn');
+    if (languageBtn) {
+      languageBtn.addEventListener('click', function () {
+        if (!window.panelI18n) return;
+        var opts = window.panelI18n.options || [];
+        var sheet = document.createElement('div');
+        sheet.className = 'lang-sheet';
+        sheet.innerHTML = '<div class="lang-sheet-bg"></div><div class="lang-sheet-panel"><p class="lang-sheet-title">'
+          + L('choose_language', 'Choose language') + '</p></div>';
+        var panel = sheet.querySelector('.lang-sheet-panel');
+        opts.forEach(function (o) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'lang-opt';
+          b.textContent = o.name;
+          b.addEventListener('click', function () {
+            window.panelI18n.setCode(o.code);
+            window.__BOOT_LANG = o.code;
+            nativeSend({ type: 'setLanguage', code: o.code });
+            if (typeof openTab === 'function') openTab(activeTabName(), { force: true, silent: true });
+            if (window.panelI18n && window.panelI18n.apply) window.panelI18n.apply();
+            sheet.remove();
+          });
+          panel.appendChild(b);
+        });
+        sheet.querySelector('.lang-sheet-bg').addEventListener('click', function () { sheet.remove(); });
+        document.body.appendChild(sheet);
+      });
+    }
+
+    document.getElementById('paste-btn').addEventListener('click', function () {
+      if (nativeSend({ type: 'paste' })) return;
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function (t) {
+          if (t) pass.value = t.trim();
+        }).catch(function () {});
+      }
+    });
+
+    function licenseStart(key) {
+      var map = {};
+      try { map = JSON.parse(localStorage.getItem(START_STORE) || '{}'); } catch (err) { map = {}; }
+      if (!map[key]) {
+        map[key] = Date.now();
+        try { localStorage.setItem(START_STORE, JSON.stringify(map)); } catch (err) {}
+      }
+      return map[key];
+    }
+
+    function formatRemain(ms) {
+      if (ms <= 0) return L('expired', 'Expired');
+      var days = Math.floor(ms / 86400000);
+      if (days >= 1) return days + ' ' + (days === 1 ? L('day', 'day') : L('days', 'days'));
+      var hours = Math.floor(ms / 3600000);
+      if (hours >= 1) return hours + (hours === 1 ? ' hour' : ' hours');
+      var mins = Math.max(1, Math.floor(ms / 60000));
+      return mins + (mins === 1 ? ' min' : ' mins');
+    }
+
+    function populateMain(user, key) {
+      signedName = user || brandName();
+      signedKey = key;
+      document.getElementById('hello').textContent = brandHello();
+      document.getElementById('kicker').textContent = L('tab_home', 'Home');
+      document.getElementById('kicker').classList.remove('is-off');
+      var head = document.querySelector('.main-head');
+      if (head) head.classList.remove('is-solo');
+      document.getElementById('about-brand').textContent = brandAbout();
+      document.getElementById('about-key').textContent = key.length > 4
+        ? (L('key_label', 'Key') + '  ••••' + key.slice(-4))
+        : (L('key_label', 'Key') + '  ••••');
+      document.getElementById('about-status').textContent = L('active_license', 'Active license');
+      var start = licenseStart(key);
+      var bought = new Date(start);
+      var end = new Date(start + LICENSE_MS);
+      var left = end.getTime() - Date.now();
+      var pct = Math.max(0, Math.min(100, (left / LICENSE_MS) * 100));
+      var dateOpt = { month: 'short', day: 'numeric' };
+      document.getElementById('about-expiry').textContent = end.toLocaleDateString(undefined, dateOpt);
+      document.getElementById('about-bought').textContent = bought.toLocaleDateString(undefined, dateOpt);
+      document.getElementById('about-remain-text').textContent = formatRemain(left);
+      document.getElementById('about-remain').style.width = pct + '%';
+      document.getElementById('about-status').textContent = left <= 0 ? 'Expired' : 'Active license';
+      document.getElementById('about-session').textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      document.getElementById('about-validity').textContent = Math.round(LICENSE_MS / 86400000) + ' days';
+    }
+
+    function finishShowMain() {
+      document.documentElement.classList.add('app-on');
+      auth.classList.remove('is-on', 'is-ready', 'is-launching', 'is-leaving-main');
+      auth.style.transition = '';
+      auth.style.opacity = '';
+      auth.style.zIndex = '';
+      main.classList.remove('from-auth', 'is-revealed');
+      var mainHead = document.querySelector('.main-head');
+      var mainPage = document.querySelector('.main .page');
+      if (mainHead) {
+        mainHead.style.transition = '';
+        mainHead.style.opacity = '';
+        mainHead.style.transform = '';
+        mainHead.style.filter = '';
+      }
+      if (mainPage) {
+        mainPage.style.transition = '';
+        mainPage.style.opacity = '';
+        mainPage.style.transform = '';
+        mainPage.style.filter = '';
+      }
+      setAuthLaunching(false);
+      app.classList.add('app-on');
+      warmSkinAssets();
+      if (window.dockLimelight) {
+        window.dockLimelight.update(!!reduce);
+      }
+    }
+
+    function showMain(user, key, fast) {
+      populateMain(user, key);
+      if (!fast) startAuthFerro();
+
+      if (reduce || fast) {
+        document.documentElement.classList.add('app-on');
+        auth.classList.remove('is-on', 'is-ready', 'is-launching', 'is-leaving-main');
+        main.classList.add('is-on');
+        setAuthLaunching(false);
+        app.classList.add('app-on');
+        if (window.dockLimelight) window.dockLimelight.update(true);
+        warmSkinAssets();
+        return;
+      }
+
+      var fadeMs = reduce ? 0 : 180;
+      var fadeEase = 'cubic-bezier(0.22, 1, 0.36, 1)';
+      var fadeRule = 'opacity ' + fadeMs + 'ms ' + fadeEase;
+
+      main.classList.remove('is-revealed');
+      main.classList.add('is-on', 'from-auth');
+      auth.classList.add('is-leaving-main');
+
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          auth.style.transition = fadeRule;
+          auth.style.opacity = '0';
+          main.classList.add('is-revealed');
+        });
+      });
+
+      setTimeout(function () {
+        finishShowMain();
+      }, fadeMs + 80);
+    }
+
+    document.getElementById('copy-key').addEventListener('click', function () {
+      if (!signedKey) return;
+      var btn = document.getElementById('copy-key');
+      if (btn.classList.contains('is-copied')) return;
+      function copied() {
+        btn.classList.add('is-copied');
+        btn.textContent = 'Copied';
+        setTimeout(function () {
+          btn.classList.remove('is-copied');
+          btn.textContent = 'Copy';
+        }, 1600);
+      }
+      if (nativeSend({ type: 'copy', text: signedKey })) {
+        copied();
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(signedKey).then(copied).catch(function () {});
+      } else {
+        copied();
+      }
+    });
+
+    function remoteFlagLookup(key, version) {
+      if (!REMOTE_FEATURES || !key) return null;
+      var k = key.toLowerCase();
+      var ver = version || '';
+      if (ver === '1') ver = 'v1';
+      if (ver === '2') ver = 'v2';
+      var candidates = [k];
+      if (ver) {
+        candidates.unshift(ver + '.' + k, ver + '_' + k);
+      }
+      if (k.indexOf('weapon_') === 0 || k === 'full_body') candidates.push('esp');
+      if (k.indexOf('skin_') === 0) candidates.push('skins', 'skin');
+      var aimKeys = {
+        drag: 1, neck: 1, body: 1, neck_antenna: 1, magic_bullet: 1,
+        aimlock: 1, head: 1,
+        body_antenna: 1, drag_antenna: 1, head_antenna: 1
+      };
+      if (aimKeys[k]) candidates.push('aim');
+      if (k.indexOf('misc_') === 0 && k.length > 5) {
+        var miscSlot = k.slice(5);
+        if (/^\d+$/.test(miscSlot)) {
+          if (Object.prototype.hasOwnProperty.call(REMOTE_FEATURES, k))
+            return !!REMOTE_FEATURES[k];
+          return null;
+        }
+        if (miscSlot) candidates.push(miscSlot);
+        candidates.push('misc');
+      }
+      if (k === 'guest_reset') {
+        if (Object.prototype.hasOwnProperty.call(REMOTE_FEATURES, 'guest_reset'))
+          return !!REMOTE_FEATURES.guest_reset;
+        candidates.push('guest', 'misc');
+      }
+      if (k === 'guest_clean') {
+        if (Object.prototype.hasOwnProperty.call(REMOTE_FEATURES, 'guest_clean'))
+          return !!REMOTE_FEATURES.guest_clean;
+        candidates.push('misc');
+      }
+      if (k === 'misc_clean') {
+        if (Object.prototype.hasOwnProperty.call(REMOTE_FEATURES, 'misc_clean'))
+          return !!REMOTE_FEATURES.misc_clean;
+        candidates.push('clean', 'misc');
+      }
+      var i;
+      for (i = 0; i < candidates.length; i++) {
+        var c = candidates[i].toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(REMOTE_FEATURES, c)) {
+          return !!REMOTE_FEATURES[c];
+        }
+      }
+      return null;
+    }
+
+    function applyRemoteConfig(msg) {
+      if (msg.features && typeof msg.features === 'object') {
+        REMOTE_FEATURES = msg.features;
+        REMOTE_FEATURES_SYNCED = true;
+      }
+      if (msg.menus && typeof msg.menus === 'object') {
+        REMOTE_MENUS = msg.menus;
+        REMOTE_MENUS_SYNCED = true;
+      }
+      requestAnimationFrame(function () {
+        scheduleSyncFeatures();
+        syncMenus();
+      });
+    }
+
+    function menuEnabled(name) {
+      var tab = name === 'exploit' ? 'home' : name;
+      if (REMOTE_MENUS_SYNCED && REMOTE_MENUS) {
+        var rk = tab.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(REMOTE_MENUS, rk))
+          return !!REMOTE_MENUS[rk];
+        if (rk === 'home' && Object.prototype.hasOwnProperty.call(REMOTE_MENUS, 'exploit'))
+          return !!REMOTE_MENUS.exploit;
+        return true;
+      }
+      if (REMOTE_MENUS) {
+        var rk = tab.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(REMOTE_MENUS, rk))
+          return !!REMOTE_MENUS[rk];
+        if (rk === 'home' && Object.prototype.hasOwnProperty.call(REMOTE_MENUS, 'exploit'))
+          return !!REMOTE_MENUS.exploit;
+      }
+      var key = name === 'exploit' ? 'home' : name;
+      var entry = MENUS[key] || MENUS[name];
+      return featureFlagOn(entry);
+    }
+    function syncMenus() {
+      var tabs = document.querySelectorAll('#dock [data-tab]');
+      var i;
+      for (i = 0; i < tabs.length; i++) {
+        var tab = tabs[i];
+        var name = tab.getAttribute('data-tab') || '';
+        var on = menuEnabled(name === 'exploit' ? 'home' : name);
+        tab.classList.toggle('is-off', !on);
+        tab.style.opacity = '';
+        tab.style.pointerEvents = on ? '' : 'none';
+      }
+    }
+    function featureFlagOn(entry) {
+      if (entry == null) return true;
+      if (typeof entry === 'boolean' || typeof entry === 'number' || typeof entry === 'string') {
+        var s = String(entry).toLowerCase();
+        return !(s === 'false' || s === '0' || s === 'off' || s === 'no');
+      }
+      if (typeof entry === 'object') {
+        if (Object.prototype.hasOwnProperty.call(entry, 'enabled')) return entry.enabled !== false;
+        if (Object.prototype.hasOwnProperty.call(entry, 'on')) return entry.on !== false;
+        if (Object.prototype.hasOwnProperty.call(entry, 'active')) return entry.active !== false;
+      }
+      return true;
+    }
+    function featureEnabled(key, version) {
+      if (!key) return true;
+      if (REMOTE_FEATURES_SYNCED && REMOTE_FEATURES) {
+        var remoteOnly = remoteFlagLookup(key, version);
+        if (remoteOnly === false) return false;
+        return true;
+      }
+      var remote = remoteFlagLookup(key, version);
+      if (remote === false) return false;
+      if (remote === true) return true;
+      if (FEATURES.all && FEATURES.all.enabled === false) return false;
+      if (FEATURES.everything && FEATURES.everything.enabled === false) return false;
+      if (key.indexOf('skin_') === 0 || key === 'skin' || key === 'skins') {
+        if (FEATURES.skins && FEATURES.skins.enabled === false) return false;
+        if (FEATURES.skin && FEATURES.skin.enabled === false) return false;
+        if (key === 'skin' || key === 'skins') return true;
+        var parts = key.split('_');
+        if (parts.length >= 2) {
+          var who = parts[1];
+          if (FEATURES.skins && FEATURES.skins[who] && FEATURES.skins[who].enabled === false)
+            return false;
+          if (FEATURES['skin_' + who] && FEATURES['skin_' + who].enabled === false)
+            return false;
+        }
+        return featureFlagOn(FEATURES[key]);
+      }
+      var ver = version || '';
+      if (ver === '1') ver = 'v1';
+      if (ver === '2') ver = 'v2';
+      var isEsp = key.indexOf('weapon_') === 0 || key === 'full_body' || key === 'esp';
+      if (isEsp) {
+        if (FEATURES.esp && FEATURES.esp.enabled === false) return false;
+        if (key === 'esp') return true;
+        return featureFlagOn(FEATURES[key]);
+      }
+      if (key === 'guest_reset') {
+        if (FEATURES.guest_reset) return featureFlagOn(FEATURES.guest_reset);
+        if (FEATURES.misc && FEATURES.misc.enabled === false) return false;
+        if (FEATURES.misc && FEATURES.misc.guest_reset)
+          return featureFlagOn(FEATURES.misc.guest_reset);
+        return true;
+      }
+      if (key === 'guest_clean') {
+        if (FEATURES.guest_clean) return featureFlagOn(FEATURES.guest_clean);
+        if (FEATURES.misc && FEATURES.misc.enabled === false) return false;
+        return true;
+      }
+      if (key === 'misc_clean') {
+        if (FEATURES.misc_clean) return featureFlagOn(FEATURES.misc_clean);
+        if (FEATURES.misc && FEATURES.misc.enabled === false) return false;
+        if (FEATURES.misc && FEATURES.misc.clean) return featureFlagOn(FEATURES.misc.clean);
+        return featureFlagOn(FEATURES.clean);
+      }
+      if (key.indexOf('misc_') === 0) {
+        var miscSlotNum = key.slice(5);
+        if (/^\d+$/.test(miscSlotNum)) {
+          if (FEATURES[key]) return featureFlagOn(FEATURES[key]);
+          return true;
+        }
+        if (FEATURES.misc && FEATURES.misc.enabled === false) return false;
+        if (FEATURES[key]) return featureFlagOn(FEATURES[key]);
+        if (FEATURES.misc && Object.prototype.hasOwnProperty.call(FEATURES.misc, miscSlotNum))
+          return featureFlagOn(FEATURES.misc[miscSlotNum]);
+        return true;
+      }
+      if (key === 'clean' || key === 'misc') return featureFlagOn(FEATURES[key]);
+      if (FEATURES.aim && FEATURES.aim.enabled === false) return false;
+      if (!isEsp && (ver === 'v1' || ver === 'v2')) {
+        var bucket = FEATURES[ver];
+        if (bucket && Object.prototype.hasOwnProperty.call(bucket, key))
+          return featureFlagOn(bucket[key]);
+        // Version scoped — never fall back to a shared bare FEATURES.neck / FEATURES.body
+        var aimKeys = {
+          drag: 1, neck: 1, body: 1, neck_antenna: 1, magic_bullet: 1,
+          aimlock: 1, head: 1,
+          body_antenna: 1, drag_antenna: 1, head_antenna: 1
+        };
+        if (aimKeys[key]) return true;
+      }
+      return featureFlagOn(FEATURES[key]);
+    }
+    var syncFeaturesRaf = 0;
+    function scheduleSyncFeatures() {
+      if (syncFeaturesRaf) return;
+      syncFeaturesRaf = requestAnimationFrame(function () {
+        syncFeaturesRaf = 0;
+        syncFeatures();
+      });
+    }
+
+    function syncFeatures() {
+      var chips = document.querySelectorAll('.patch-btn');
+      var i;
+      for (i = 0; i < chips.length; i++) {
+        var chip = chips[i];
+        var key = chip.getAttribute('data-key') || '';
+        var kind = chip.getAttribute('data-kind') || '';
+        var set = chip.closest('[data-aim-set]');
+        var ver = set ? set.getAttribute('data-aim-set') : '';
+        if (kind === 'esp') ver = '';
+        var on = featureEnabled(key, ver);
+        chip.classList.toggle('is-off', !on);
+        if (!on) chip.classList.remove('is-selected');
+      }
+      var chars = document.querySelectorAll('[data-char]');
+      for (i = 0; i < chars.length; i++) {
+        var who = chars[i].getAttribute('data-char') || '';
+        var charOn = featureEnabled('skin_' + who);
+        chars[i].classList.toggle('is-off', !charOn);
+        chars[i].style.pointerEvents = '';
+        chars[i].style.opacity = '';
+      }
+      var miscBtns = document.querySelectorAll('[data-misc]');
+      for (i = 0; i < miscBtns.length; i++) {
+        var miscKind = miscBtns[i].getAttribute('data-misc') || '';
+        var miscOn = miscActionEnabled(miscKind);
+        miscBtns[i].classList.toggle('is-off', !miscOn);
+        miscBtns[i].disabled = false;
+        miscBtns[i].style.opacity = '';
+      }
+      var cleanBtns = document.querySelectorAll('[data-clean]');
+      for (i = 0; i < cleanBtns.length; i++) {
+        var cleanOn = featureEnabled('clean');
+        cleanBtns[i].classList.toggle('is-off', !cleanOn);
+        cleanBtns[i].disabled = false;
+        cleanBtns[i].style.opacity = '';
+      }
+      syncMenus();
+      syncHero();
+    }
+
+    function gameName() { return game === 'max' ? L('ff_max', 'FF Max') : L('free_fire', 'Free Fire'); }
+    function aimName() { return aimVersion === 'v1' ? L('aim_v1', 'Aim V1') : L('aim_v2', 'Aim V2'); }
+
+    function clearAimSelection() {
+      var chips = document.querySelectorAll('.patch-btn[data-kind="patch"].is-selected');
+      var i;
+      for (i = 0; i < chips.length; i++) chips[i].classList.remove('is-selected');
+      // Do not clear hasAimBackup — restore stays until user restores.
+    }
+
+    function syncAim() {
+      var segs = document.querySelectorAll('[data-seg="aim"]');
+      var i;
+      for (i = 0; i < segs.length; i++) segs[i].setAttribute('data-on', aimVersion);
+      var sets = document.querySelectorAll('[data-aim-set]');
+      for (i = 0; i < sets.length; i++) {
+        sets[i].classList.toggle('is-on', sets[i].getAttribute('data-aim-set') === aimVersion);
+      }
+      clearAimSelection();
+      var cleanTitle = document.getElementById('clean-aim-title');
+      if (cleanTitle) cleanTitle.textContent = 'Clean Aim V1';
+      syncHero();
+    }
+
+    function syncGame() {
+      var segs = document.querySelectorAll('[data-seg="game"]');
+      var i;
+      for (i = 0; i < segs.length; i++) segs[i].setAttribute('data-on', game);
+      var chips = document.querySelectorAll('.patch-btn.is-selected');
+      for (i = 0; i < chips.length; i++) chips[i].classList.remove('is-selected');
+      // Keep hasAimBackup — Restore Original must stay until user restores.
+      syncHero();
+    }
+
+    var pageEl = document.querySelector('.page');
+
+    function syncHero() {
+      var activeSet = document.querySelector('.aim-set.is-on');
+      var patch = activeSet
+        ? activeSet.querySelector('.patch-btn.is-selected[data-kind="patch"]')
+        : null;
+      var esp = app.querySelector('.patch-btn.is-selected[data-kind="esp"]');
+      var aimEl = document.getElementById('aim-hero');
+      var espEl = document.getElementById('esp-hero');
+      var label = document.getElementById('game-label');
+      var injectBtn = document.getElementById('inject-btn');
+      var restoreBtn = document.getElementById('restore-btn');
+      var show = !!(patch || esp);
+      var showRestore = aimVersion === 'v2' && hasAimBackup;
+      if (label) label.textContent = gameName() + ' · ' + aimName();
+      if (aimEl) {
+        if (patch) {
+          var aimSpan = patch.querySelector('[data-i18n]');
+          var aimKey = aimSpan ? aimSpan.getAttribute('data-i18n') : '';
+          aimEl.removeAttribute('data-i18n');
+          aimEl.textContent = aimKey ? L(aimKey, patch.getAttribute('data-label') || '') : (patch.getAttribute('data-label') || '');
+        } else {
+          aimEl.setAttribute('data-i18n', 'not_set');
+          aimEl.textContent = L('not_set', 'Not set');
+        }
+        aimEl.classList.toggle('is-empty', !patch);
+      }
+      if (espEl) {
+        if (esp) {
+          var espSpan = esp.querySelector('[data-i18n]');
+          var espKey = espSpan ? espSpan.getAttribute('data-i18n') : '';
+          espEl.removeAttribute('data-i18n');
+          espEl.textContent = espKey ? L(espKey, esp.getAttribute('data-label') || '') : (esp.getAttribute('data-label') || '');
+        } else {
+          espEl.setAttribute('data-i18n', 'not_set');
+          espEl.textContent = L('not_set', 'Not set');
+        }
+        espEl.classList.toggle('is-empty', !esp);
+      }
+      if (injectBtn) {
+        injectBtn.classList.toggle('is-ready', show);
+        injectBtn.style.transform = '';
+      }
+      if (restoreBtn) restoreBtn.classList.toggle('is-ready', showRestore);
+      var exploitPage = document.querySelector('.tab-page[data-page="exploit"]');
+      if (exploitPage) exploitPage.classList.toggle('has-inject', !!(patch || esp || showRestore));
+    }
+
+    var skinListCache = {};
+    var skinAssetsWarmed = false;
+
+    function buildSkinListFragment(char) {
+      var items = SKINS[char] || [];
+      var frag = document.createDocumentFragment();
+      var i;
+      for (i = 0; i < items.length; i++) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'skin-item';
+        btn.setAttribute('data-skin', items[i].id);
+        var img = document.createElement('img');
+        img.src = items[i].img || CHAR_IMG[char];
+        img.alt = '';
+        img.decoding = 'async';
+        img.loading = 'eager';
+        var span = document.createElement('span');
+        var b = document.createElement('b');
+        b.textContent = items[i].name;
+        var small = document.createElement('small');
+        small.textContent = CHAR_NAME[char] + ' · Free Fire';
+        span.appendChild(b);
+        span.appendChild(small);
+        btn.appendChild(img);
+        btn.appendChild(span);
+        frag.appendChild(btn);
+      }
+      return frag;
+    }
+
+    function warmSkinAssets() {
+      if (skinAssetsWarmed) return;
+      skinAssetsWarmed = true;
+      var chars = Object.keys(SKINS);
+      var ci;
+      for (ci = 0; ci < chars.length; ci++) {
+        var char = chars[ci];
+        skinListCache[char] = buildSkinListFragment(char);
+        var imgPath = CHAR_IMG[char];
+        if (imgPath) {
+          var pre = new Image();
+          pre.decoding = 'async';
+          pre.src = imgPath;
+        }
+        var list = SKINS[char] || [];
+        var si;
+        for (si = 0; si < list.length; si++) {
+          var thumb = new Image();
+          thumb.decoding = 'async';
+          thumb.src = list[si].img;
+        }
+      }
+    }
+
+    function renderSkins(char) {
+      skinList.textContent = '';
+      var cached = skinListCache[char];
+      if (cached) {
+        skinList.appendChild(cached.cloneNode(true));
+        return;
+      }
+      skinList.appendChild(buildSkinListFragment(char));
+    }
+
+    function openSkinPop(char) {
+      warmSkinAssets();
+      skinChar = char;
+      skinPick = '';
+      var cards = document.querySelectorAll('.char-card');
+      var i;
+      for (i = 0; i < cards.length; i++) cards[i].classList.toggle('is-selected', cards[i].getAttribute('data-char') === char);
+      document.getElementById('skin-pop-title').textContent =
+        char === 'alok' ? L('alok_skins', 'Alok skins') : L('dimitri_skins', 'Dimitri skins');
+      renderSkins(char);
+      skinPop.classList.add('is-on', 'is-open');
+    }
+
+    function closeSkinPop(instant) {
+      skinPop.classList.remove('is-open');
+      if (instant || NATIVE || window.__FAST_UI) {
+        skinPop.classList.remove('is-on');
+        return;
+      }
+      setTimeout(function () { skinPop.classList.remove('is-on'); }, reduce ? 0 : 320);
+    }
+
+    function miscFeatureKey(kind) {
+      if (kind === 'clean') return 'misc_clean';
+      if (kind === 'guestReset') return 'guest_reset';
+      if (kind === 'guestClean') return 'guest_clean';
+      return 'misc_' + kind;
+    }
+
+    function miscActionEnabled(kind) {
+      var key = miscFeatureKey(kind);
+      if (/^misc_\d+$/.test(key)) return featureEnabled(key);
+      if (key === 'misc_clean' || key === 'guest_reset' || key === 'guest_clean')
+        return featureEnabled(key);
+      return featureEnabled('misc') && featureEnabled(key);
+    }
+
+    function miscIdleLabel(kind) {
+      if (kind === 'clean') return L('clean_misc', 'Clean Misc');
+      if (kind === 'guestReset') return L('reset_guest', 'Reset Guest');
+      if (kind === 'guestClean') return L('reset_guest_clean', 'Reset Guest - Clean');
+      return L('misc_n', 'Misc') + ' ' + kind;
+    }
+
+    function miscBusyLabel(kind) {
+      if (kind === 'clean' || kind === 'guestClean') return L('cleaning', 'Cleaning…');
+      if (kind === 'guestReset') return L('resetting', 'Resetting…');
+      return L('applying', 'Applying…');
+    }
+
+    function miscDoneLabel(kind, ok) {
+      if (!ok) return L('failed', 'Failed');
+      if (kind === 'clean' || kind === 'guestClean') return L('cleaned_ok', 'Cleaned successfully');
+      if (kind === 'guestReset') return L('reset_ok', 'Reset successful');
+      return L('applied_ok', 'Applied successfully');
+    }
+
+    function activeTabName() {
+      var on = document.querySelector('#dock [data-tab].is-on');
+      return on ? on.getAttribute('data-tab') || 'exploit' : 'exploit';
+    }
+
+    function openTab(name, opts) {
+      opts = opts || {};
+      var prev = activeTabName();
+      if (prev === name && !opts.force) {
+        if (window.dockLimelight) window.dockLimelight.update(true);
+        return;
+      }
+      var pages = document.querySelectorAll('.tab-page');
+      var tabs = document.querySelectorAll('#dock [data-tab]');
+      var order = ['exploit', 'skin', 'clean', 'misc', 'account'];
+      var fromIdx = order.indexOf(prev);
+      var toIdx = order.indexOf(name);
+      var forward = toIdx >= fromIdx;
+      var titles = {
+        exploit: L('tab_home', 'Home'),
+        clean: L('tab_clean', 'Clean'),
+        misc: L('tab_misc', 'Misc'),
+        account: L('tab_account', 'Account'),
+        skin: L('tab_skin', 'Skin')
+      };
+      var i;
+      for (i = 0; i < pages.length; i++) {
+        var page = pages[i];
+        var on = page.getAttribute('data-page') === name;
+        page.classList.remove('tab-slide-forward', 'tab-slide-back');
+        page.classList.toggle('is-on', on);
+        if (on && !opts.silent && !reduce) {
+          page.classList.add(forward ? 'tab-slide-forward' : 'tab-slide-back');
+        }
+      }
+      for (i = 0; i < tabs.length; i++) tabs[i].classList.toggle('is-on', tabs[i].getAttribute('data-tab') === name);
+      var kicker = document.getElementById('kicker');
+      var head = document.querySelector('.main-head');
+      if (kicker) {
+        kicker.removeAttribute('data-i18n');
+        kicker.textContent = titles[name] || L('tab_home', 'Home');
+        kicker.classList.remove('is-off');
+      }
+      if (head) {
+        head.classList.remove('is-solo', 'is-off');
+        head.style.removeProperty('display');
+      }
+      var helloEl = document.getElementById('hello');
+      if (helloEl) helloEl.textContent = brandHello();
+      if (name !== 'skin') closeSkinPop(true);
+      syncHero();
+      if (window.dockLimelight) {
+        window.dockLimelight.update(!!(opts.silent || reduce));
+      }
+      if (name === 'skin') warmSkinAssets();
+    }
+
+    document.getElementById('auth-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var status = document.getElementById('auth-status');
+      var key = (pass.value || '').trim();
+      if (key.length < 4) {
+        status.classList.add('is-error');
+        status.textContent = L('enter_license', 'Enter a license key');
+        return;
+      }
+      try {
+        if (remember.checked) localStorage.setItem(KEY_STORE, key);
+        else localStorage.removeItem(KEY_STORE);
+      } catch (err) {}
+      status.textContent = '';
+      setAuthLaunching(true);
+      if (nativeSend({ type: 'license', key: key, remember: !!remember.checked })) return;
+      setTimeout(function () {
+        showMain(brandName(), key);
+      }, reduce ? 200 : 1100);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', function () {
+      var on = app.querySelectorAll('.patch-btn.is-selected');
+      var i;
+      for (i = 0; i < on.length; i++) on[i].classList.remove('is-selected');
+      syncHero();
+      this.textContent = 'Reset';
+      var btn = this;
+      setTimeout(function () { btn.textContent = 'Reset all'; }, 1600);
+    });
+
+    app.addEventListener('click', function (e) {
+      var tab = e.target.closest('#dock [data-tab]');
+      if (tab && app.classList.contains('app-on')) {
+        var nextTab = tab.getAttribute('data-tab');
+        if (!menuEnabled(nextTab === 'exploit' ? 'home' : nextTab)) {
+          toast(L('menu_off', 'This menu is turned off'));
+          return;
+        }
+        e.preventDefault();
+        openTab(nextTab);
+        return;
+      }
+      var charBtn = e.target.closest('[data-char]');
+      if (charBtn) {
+        var who = charBtn.getAttribute('data-char') || '';
+        if (!featureEnabled('skin_' + who)) {
+          toast(L('skins_off_toast', 'Skins are turned off'));
+          return;
+        }
+        openSkinPop(who);
+        return;
+      }
+      var skinItem = e.target.closest('[data-skin]');
+      if (skinItem) {
+        var items = skinList.querySelectorAll('.skin-item');
+        var i;
+        for (i = 0; i < items.length; i++) items[i].classList.remove('is-selected');
+        skinItem.classList.add('is-selected');
+        skinPick = skinItem.getAttribute('data-skin');
+        return;
+      }
+      if (e.target.closest('#skin-pop-bg')) {
+        closeSkinPop();
+        return;
+      }
+      var skinInject = e.target.closest('#skin-inject');
+      if (skinInject) {
+        if (!skinPick) return;
+        var span = skinInject.querySelector('span') || skinInject;
+        skinInject.classList.add('is-busy');
+        span.textContent = 'Injecting…';
+        if (nativeSend({ type: 'skinInject', character: skinChar, skin: skinPick })) return;
+        if (paySound) {
+          paySound.play().then(function () {
+            paySound.pause();
+            paySound.currentTime = 0;
+          }).catch(function () {});
+        }
+        setTimeout(function () {
+          skinInject.classList.remove('is-busy');
+          span.textContent = 'Injected successfully';
+          playSuccess();
+          setTimeout(function () { span.textContent = 'Inject'; }, SUCCESS_HOLD_MS);
+        }, 700);
+        return;
+      }
+      var gameBtn = e.target.closest('[data-game]');
+      if (gameBtn) {
+        var next = gameBtn.getAttribute('data-game');
+        if (next && next !== game) {
+          game = next;
+          syncGame();
+        }
+        return;
+      }
+      var aimBtn = e.target.closest('[data-aim]');
+      if (aimBtn) {
+        var nextAim = aimBtn.getAttribute('data-aim');
+        if (nextAim && nextAim !== aimVersion) {
+          aimVersion = nextAim;
+          syncAim();
+        }
+        return;
+      }
+      var miscBtn = e.target.closest('[data-misc]');
+      if (miscBtn && !miscBtn.disabled) {
+        var miscKind = miscBtn.getAttribute('data-misc');
+        if (!miscActionEnabled(miscKind)) {
+          toast(L('function_off', 'Function turned off'));
+          return;
+        }
+        var miscTitle = miscBtn.querySelector('.cat-title');
+        var miscIdle = miscIdleLabel(miscKind);
+        miscBtn.disabled = true;
+        if (miscTitle) miscTitle.textContent = miscBusyLabel(miscKind);
+        if (nativeSend({ type: 'misc', game: game, kind: miscKind })) return;
+        setTimeout(function () {
+          if (miscTitle) miscTitle.textContent = miscDoneLabel(miscKind, true);
+          if (paySound && miscKind !== 'clean') {
+            paySound.play().then(function () {
+              paySound.pause();
+              paySound.currentTime = 0;
+            }).catch(function () {});
+          }
+          setTimeout(function () {
+            if (miscTitle) miscTitle.textContent = miscIdle;
+            miscBtn.disabled = false;
+          }, SUCCESS_HOLD_MS);
+        }, 800);
+        return;
+      }
+      var cleanBtn = e.target.closest('[data-clean]');
+      if (cleanBtn && !cleanBtn.disabled) {
+        if (!featureEnabled('clean')) { toast(L('function_off', 'Function turned off')); return; }
+        var title = cleanBtn.querySelector('.cat-title');
+        var kind = cleanBtn.getAttribute('data-clean');
+        var idle = kind === 'esp' ? 'Clean ESP' : 'Clean Aim V1';
+        cleanBtn.disabled = true;
+        if (title) title.textContent = 'Cleaning…';
+        if (nativeSend({ type: 'clean', game: game, kind: kind, aimVersion: kind === 'esp' ? aimVersion : 'v1' })) return;
+        setTimeout(function () {
+          if (title) title.textContent = 'Cleaned successfully';
+          setTimeout(function () { if (title) title.textContent = idle; cleanBtn.disabled = false; }, SUCCESS_HOLD_MS);
+        }, 800);
+        return;
+      }
+      var injectBtn = e.target.closest('[data-inject]');
+      if (injectBtn) {
+        if (injectBtn.classList.contains('is-busy')) return;
+        var activeSet = document.querySelector('.aim-set.is-on');
+        var patch = activeSet
+          ? activeSet.querySelector('.patch-btn.is-selected[data-kind="patch"]')
+          : null;
+        var esp = app.querySelector('.patch-btn.is-selected[data-kind="esp"]');
+        var span = injectBtn.querySelector('span');
+        if (!patch && !esp) {
+          if (span) span.textContent = 'Select an option';
+          injectBtn.classList.add('is-error');
+          setTimeout(function () {
+            if (span) span.textContent = 'Inject';
+            injectBtn.classList.remove('is-error');
+          }, 1000);
+          return;
+        }
+        var injectPayload = {
+          type: 'inject',
+          game: game,
+          aimVersion: aimVersion,
+          patch: patch ? patch.getAttribute('data-patch') : '',
+          esp: esp ? esp.getAttribute('data-patch') : ''
+        };
+        if (NATIVE) {
+          if (!nativeSend(injectPayload)) {
+            injectBtn.classList.add('is-error');
+            if (span) span.textContent = L('failed', 'Failed');
+          }
+          return;
+        }
+        requestAnimationFrame(function () {
+          injectBtn.classList.add('is-busy');
+          if (span) span.textContent = L('injecting', 'Injecting…');
+          if (nativeSend(injectPayload)) return;
+          if (paySound) {
+            paySound.play().then(function () {
+              paySound.pause();
+              paySound.currentTime = 0;
+            }).catch(function () {});
+          }
+          setTimeout(function () {
+            injectBtn.classList.remove('is-busy');
+            span.textContent = 'Injected successfully';
+            playSuccess();
+            if (aimVersion === 'v2' && patch) {
+              hasAimBackup = true;
+              syncHero();
+            }
+            setTimeout(function () { span.textContent = 'Inject'; injectBtn.classList.remove('is-error'); }, SUCCESS_HOLD_MS);
+          }, 700);
+        });
+        return;
+      }
+      var restoreBtn = e.target.closest('[data-restore]');
+      if (restoreBtn) {
+        if (aimVersion !== 'v2' || !hasAimBackup) return;
+        var rspan = restoreBtn.querySelector('span') || restoreBtn;
+        restoreBtn.classList.add('is-busy');
+        rspan.textContent = 'Restoring…';
+        if (nativeSend({ type: 'restore', game: game, aimVersion: aimVersion })) return;
+        setTimeout(function () {
+          restoreBtn.classList.remove('is-busy');
+          rspan.textContent = 'Back Restored';
+          hasAimBackup = false;
+          syncHero();
+          playSuccess();
+          setTimeout(function () { rspan.textContent = 'Restore Original'; }, 1200);
+        }, 600);
+        return;
+      }
+      var patchBtn = e.target.closest('.patch-btn');
+      if (patchBtn) {
+        var btnKey = patchBtn.getAttribute('data-key') || '';
+        var btnKind = patchBtn.getAttribute('data-kind') || '';
+        var btnSet = patchBtn.closest('[data-aim-set]');
+        var btnVer = (btnKind === 'esp') ? '' : (btnSet ? btnSet.getAttribute('data-aim-set') : aimVersion);
+        if (patchBtn.classList.contains('is-off') || !featureEnabled(btnKey, btnVer)) {
+          toast(L('function_off', 'Function turned off'));
+          return;
+        }
+        var kind = btnKind;
+        var scope = kind === 'patch'
+          ? (document.querySelector('.aim-set.is-on') || app)
+          : app;
+        var current = scope.querySelector('.patch-btn.is-selected[data-kind="' + kind + '"]');
+        if (current === patchBtn) { patchBtn.classList.remove('is-selected'); syncHero(); return; }
+        if (current) current.classList.remove('is-selected');
+        patchBtn.classList.add('is-selected');
+        syncHero();
+        return;
+      }
+      var openLink = e.target.closest('[data-open-url], a.credit-card[href]');
+      if (openLink) {
+        var href = openLink.getAttribute('data-open-url') || openLink.getAttribute('href') || '';
+        if (href && href.indexOf('http') === 0) {
+          e.preventDefault();
+          if (nativeSend({ type: 'openURL', url: href })) return;
+          try { window.open(href, '_blank'); } catch (err) {}
+          return;
+        }
+      }
+      var signOut = e.target.closest('#sign-out-btn');
+      if (signOut) {
+        try { localStorage.removeItem(KEY_STORE); } catch (err) {}
+        signedKey = '';
+        hasAimBackup = false;
+        document.documentElement.classList.remove('app-on', 'resume-main');
+        window.BYTRIX_RESUME_MAIN = false;
+        window.BYTRIX_START = '';
+        app.classList.remove('app-on');
+        main.classList.remove('is-on');
+        auth.classList.add('is-on', 'is-ready');
+        startAuthFerro();
+        playBrandLoop();
+        setAuthLaunching(false);
+        resetEyeToggle();
+        openTab('exploit');
+        focusAuth();
+        toast(L('signed_out', 'Signed out'));
+        nativeSend({ type: 'signOut' });
+      }
+    });
+
+
+    function fillAbout(info) {
+      if (!info) return;
+      if (info.key) document.getElementById('about-key').textContent = info.key;
+      if (info.status) document.getElementById('about-status').textContent = info.status;
+      if (info.expiry) document.getElementById('about-expiry').textContent = info.expiry;
+      if (info.bought) document.getElementById('about-bought').textContent = info.bought;
+      if (info.remain) document.getElementById('about-remain-text').textContent = info.remain;
+      if (info.remainPct != null) document.getElementById('about-remain').style.width = info.remainPct + '%';
+      if (info.session) document.getElementById('about-session').textContent = info.session;
+      if (info.validity) document.getElementById('about-validity').textContent = info.validity;
+    }
+
+    function finishBusy(btn, ok, doneText, idleText, failText) {
+      if (!btn) return;
+      btn.classList.remove('is-busy');
+      btn.disabled = false;
+      var span = btn.querySelector('span') || btn.querySelector('.cat-title') || btn;
+      span.textContent = ok ? doneText : (failText || 'Failed');
+      if (!ok) btn.classList.add('is-error');
+      if (ok) playSuccess();
+      setTimeout(function () {
+        span.textContent = idleText;
+        btn.classList.remove('is-error');
+      }, ok ? SUCCESS_HOLD_MS : 2400);
+    }
+
+    function applyBrand(brand) {
+      if (!brand) return;
+      var name = brand.name || brand.hello || brandName();
+      var hello = brand.hello || (name + ' - iOS');
+      var about = brand.about || (name + ' - iOS');
+      var tagline = brand.tagline || 'iOS · External';
+      var logoSrc = brand.logoDataUrl || brand.logo || 'PhantomBrand.png';
+      var authLabel = document.getElementById('auth-brand-label');
+      if (authLabel) authLabel.textContent = name;
+      var helloEl = document.getElementById('hello');
+      if (helloEl) helloEl.textContent = hello;
+      var aboutBrand = document.getElementById('about-brand');
+      if (aboutBrand) aboutBrand.textContent = about;
+      var authSub = document.querySelector('.auth-sub');
+      if (authSub) authSub.textContent = tagline;
+      var aboutMark = document.getElementById('about-mark');
+      if (aboutMark) aboutMark.src = logoSrc;
+      var introLogo = document.getElementById('intro-logo');
+      if (introLogo) {
+        introLogo.src = logoSrc;
+        introLogo.alt = name;
+      }
+      var authMark = document.getElementById('auth-brand-mark') || document.querySelector('.auth-brand-mark');
+      if (authMark) {
+        authMark.src = logoSrc;
+        authMark.alt = name;
+      }
+      document.querySelectorAll('video.intro-logo, video.auth-brand-mark').forEach(function (v) {
+        var img = document.createElement('img');
+        img.className = v.className;
+        if (v.id) img.id = v.id;
+        img.src = logoSrc;
+        img.alt = name;
+        v.replaceWith(img);
+      });
+      if (window.authShinyInstances && !app.classList.contains('app-on')) {
+        document.querySelectorAll('[data-shiny-text]').forEach(function (el) {
+          if (window.authShinyInstances.has(el)) window.authShinyInstances.get(el).refresh();
+        });
+      }
+      var blockLinks = brand.no_external_links === true || brand.noExternalLinks === true;
+      var linksRoot = document.querySelector('.bx-links .credit-grid');
+      if (linksRoot) {
+        var cards = linksRoot.querySelectorAll('.credit-card');
+        var linkDefs = [
+          { name: brand.owner_name, role: brand.owner_role || L('owner_role', 'Owner'), url: brand.owner_url },
+          { name: brand.developer_name, role: brand.developer_role || L('developer_role', 'Developer'), url: brand.developer_url },
+          { name: brand.server_name, role: brand.server_role || L('server_role', 'Official'), url: brand.server_url }
+        ];
+        for (var ci = 0; ci < cards.length; ci++) {
+          var card = cards[ci];
+          var def = linkDefs[ci] || {};
+          var hasUrl = !!(def.url && String(def.url).indexOf('http') === 0);
+          var hasName = !!(def.name && String(def.name).trim());
+          if (blockLinks || (!hasUrl && !hasName)) {
+            card.style.display = 'none';
+            card.removeAttribute('href');
+            continue;
+          }
+          card.style.display = '';
+          card.style.pointerEvents = hasUrl ? 'auto' : 'none';
+          var nameEl = card.querySelector('b');
+          var roleEl = card.querySelector('small');
+          if (nameEl && hasName) nameEl.textContent = def.name;
+          if (roleEl && def.role) {
+            roleEl.removeAttribute('data-i18n');
+            roleEl.textContent = def.role;
+          }
+          if (hasUrl) {
+            card.setAttribute('href', def.url);
+            card.setAttribute('target', '_blank');
+            card.setAttribute('rel', 'noopener');
+            card.setAttribute('data-open-url', def.url);
+          } else {
+            card.setAttribute('href', '#');
+            card.removeAttribute('data-open-url');
+          }
+        }
+        var anyVisible = false;
+        for (var cj = 0; cj < cards.length; cj++) {
+          if (cards[cj].style.display !== 'none') anyVisible = true;
+        }
+        var linkSection = document.querySelector('.bx-links');
+        if (linkSection) linkSection.style.display = anyVisible ? '' : 'none';
+      }
+      if (blockLinks) {
+        document.querySelectorAll('.contact-link').forEach(function (el) {
+          el.style.display = 'none';
+          el.style.pointerEvents = 'none';
+          if (el.tagName === 'A') el.removeAttribute('href');
+        });
+      }
+    }
+
+    function applyBootBrand() {
+      if (window.__BOOT_BRAND) applyBrand(window.__BOOT_BRAND);
+    }
+    window.applyBootBrand = applyBootBrand;
+    window.onPanelI18nApplied = function () {
+      if (window.authShinyInstances) {
+        document.querySelectorAll('[data-shiny-text]').forEach(function (el) {
+          if (window.authShinyInstances.has(el)) window.authShinyInstances.get(el).refresh();
+        });
+      }
+      if (typeof syncHero === 'function') syncHero();
+      if (typeof openTab === 'function' && app.classList.contains('app-on')) {
+        openTab(activeTabName(), { force: true, silent: true });
+      }
+      var aboutStatus = document.getElementById('about-status');
+      if (aboutStatus && signedKey) {
+        aboutStatus.textContent = L('active_license', 'Active license');
+      }
+      if (signedKey) {
+        var aboutKey = document.getElementById('about-key');
+        if (aboutKey) {
+          aboutKey.textContent = signedKey.length > 4
+            ? (L('key_label', 'Key') + '  ••••' + signedKey.slice(-4))
+            : (L('key_label', 'Key') + '  ••••');
+        }
+      }
+      var maintTitle = document.getElementById('maint-title');
+      if (maintTitle && document.documentElement.classList.contains('maint-on')) {
+        maintTitle.textContent = L('under_update', 'This is under update');
+      }
+      var launchLabel = document.getElementById('signin-label');
+      if (launchLabel && !auth.classList.contains('is-launching')) {
+        launchLabel.textContent = L('launch', 'Launch');
+      }
+    };
+    applyBootBrand();
+    if (window.panelI18n && window.panelI18n.apply) window.panelI18n.apply();
+    // Native waits for boot / maintenance before settling (prevents license flash).
+    if (window.BYTRIX_RESUME_MAIN || window.BYTRIX_START === 'main') {
+      markUiSettled();
+    }
+
+    window.bytrixReceive = function (msg) {
+      if (!msg || !msg.type) return;
+      if (msg.type === 'boot') {
+        if (msg.fastUi) window.__FAST_UI = true;
+        if (msg.lang && window.panelI18n) {
+          try { localStorage.setItem('ox.panel.language', msg.lang); } catch (e) {}
+          window.panelI18n.setCode(msg.lang);
+        }
+        if (msg.brand) applyBrand(msg.brand);
+        if (msg.features || msg.menus) applyRemoteConfig(msg);
+        if (msg.prefill) {
+          pass.value = msg.prefill;
+          remember.checked = true;
+        }
+        if (msg.maintLock) {
+          document.documentElement.classList.remove('resume-main', 'app-on');
+          document.documentElement.classList.add('maint-on', 'ui-settled');
+          app.classList.remove('app-on');
+          intro.classList.remove('is-on', 'play');
+          auth.classList.remove('is-on', 'is-ready', 'is-launching');
+          main.classList.remove('is-on');
+          var layer = document.getElementById('maint-layer');
+          var mt = document.getElementById('maint-title');
+          var mr = document.getElementById('maint-reason');
+          if (mt) mt.textContent = L('under_update', 'This is under update');
+          if (mr) mr.textContent = '';
+          if (layer) layer.classList.add('is-on');
+          if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+          markUiSettled();
+          return;
+        }
+        if (msg.route === 'main') {
+          window.BYTRIX_RESUME_MAIN = true;
+          document.documentElement.classList.add('resume-main', 'app-on');
+          intro.classList.remove('is-on', 'play');
+          auth.classList.remove('is-on', 'is-ready', 'is-launching');
+          showMain(msg.user || brandName(), msg.key || msg.prefill || '', true);
+          if (msg.info) fillAbout(msg.info);
+          markUiSettled();
+          return;
+        }
+        if (msg.brandOnly) {
+          applyBootBrand();
+          openNativeAuthShell();
+          markUiSettled();
+          return;
+        }
+        if (msg.skipIntro) {
+          if (typeof stopIntroZoom === 'function') stopIntroZoom();
+          intro.classList.remove('is-on', 'play', 'is-leaving', 'is-crossfading');
+          if (!app.classList.contains('app-on') && !document.documentElement.classList.contains('maint-on')) {
+            openNativeAuthShell();
+            startAuthFerro();
+            focusAuth();
+          }
+          markUiSettled();
+        } else if (msg.fastUi) {
+          if (!document.documentElement.classList.contains('maint-on')) {
+            auth.classList.add('is-ready');
+          }
+          markUiSettled();
+        }
+        if (msg.message) window.bytrixReceive({ type: 'status', message: msg.message });
+        return;
+      }
+      if (msg.type === 'remoteConfig') {
+        applyRemoteConfig(msg);
+        return;
+      }
+      if (msg.type === 'sessionUpdate') {
+        if (document.documentElement.classList.contains('maint-on')) return;
+        if (msg.ok) {
+          if (msg.info) fillAbout(msg.info);
+          if (msg.user && msg.key) populateMain(msg.user, msg.key);
+          if (msg.features || msg.menus) applyRemoteConfig(msg);
+          if (!app.classList.contains('app-on')) {
+            showMain(msg.user || brandName(), msg.key || pass.value || '', true);
+          }
+          return;
+        }
+        if (msg.message) toast(msg.message);
+        return;
+      }
+      if (msg.type === 'status') {
+        if (document.documentElement.classList.contains('maint-on')) return;
+        if (app.classList.contains('app-on') || document.documentElement.classList.contains('app-on')) {
+          if (msg.message) toast(msg.message);
+          return;
+        }
+        var status = document.getElementById('auth-status');
+        var text = msg.message || '';
+        var lower = text.toLowerCase();
+        var checking = lower.indexOf('checking') !== -1;
+        auth.classList.add('is-on', 'is-ready');
+        startAuthFerro();
+        playBrandLoop();
+        intro.classList.remove('is-on');
+        setAuthLaunching(checking);
+        status.classList.remove('is-error');
+        status.style.color = checking ? 'var(--mute)' : '#eb4545';
+        if (!checking) status.classList.add('is-error');
+        status.textContent = text;
+        return;
+      }
+      if (msg.type === 'authResult') {
+        if (document.documentElement.classList.contains('maint-on')) {
+          setAuthLaunching(false);
+          return;
+        }
+        setAuthLaunching(false);
+        var status = document.getElementById('auth-status');
+        if (!msg.ok) {
+          status.classList.add('is-error');
+          status.textContent = msg.message || 'License failed';
+          return;
+        }
+        status.textContent = '';
+        showMain(msg.user || brandName(), msg.key || pass.value || '', true);
+        fillAbout(msg.info);
+        if (msg.features || msg.menus) applyRemoteConfig(msg);
+        return;
+      }
+      if (msg.type === 'pasted' && msg.text) {
+        pass.value = msg.text;
+        return;
+      }
+      if (msg.type === 'injectAck') {
+        var ackBtn = document.getElementById('inject-btn');
+        var ackSpan = ackBtn && ackBtn.querySelector('span');
+        if (ackBtn) ackBtn.classList.add('is-busy');
+        if (ackSpan) ackSpan.textContent = L('injecting', 'Injecting…');
+        return;
+      }
+      if (msg.type === 'injectResult') {
+        if (msg.ok && aimVersion === 'v2') hasAimBackup = true;
+        finishBusy(document.getElementById('inject-btn'), !!msg.ok, L('injected_ok', 'Injected successfully'), L('inject', 'Inject'),
+          L('inject_failed', 'Injection failed'));
+        syncHero();
+        return;
+      }
+      if (msg.type === 'restoreResult') {
+        if (msg.ok) hasAimBackup = false;
+        finishBusy(document.getElementById('restore-btn'), !!msg.ok, L('restored_ok', 'Back Restored'), L('restore_original', 'Restore Original'),
+          L('restore_failed', 'Restore failed'));
+        syncHero();
+        return;
+      }
+      if (msg.type === 'skinResult') {
+        finishBusy(document.getElementById('skin-inject'), !!msg.ok, L('injected_ok', 'Injected successfully'), L('inject', 'Inject'),
+          L('inject_failed', 'Injection failed'));
+        return;
+      }
+      if (msg.type === 'cleanResult') {
+        var btn = document.querySelector('[data-clean="' + (msg.kind || 'aim') + '"]');
+        var idle = (msg.kind === 'esp') ? L('clean_esp', 'Clean ESP') : L('clean_aim_v1', 'Clean Aim V1');
+        if (btn) {
+          btn.disabled = false;
+          var title = btn.querySelector('.cat-title');
+          if (title) title.textContent = msg.ok ? L('cleaned_ok', 'Cleaned successfully') : L('clean_failed', 'Clean failed');
+          setTimeout(function () { if (title) title.textContent = idle; }, msg.ok ? SUCCESS_HOLD_MS : 2400);
+        }
+        if (msg.ok) playSuccess();
+        return;
+      }
+      if (msg.type === 'miscResult') {
+        var miscKind = msg.kind || '';
+        var miscBtn = document.querySelector('[data-misc="' + miscKind + '"]');
+        var miscIdle = miscIdleLabel(miscKind);
+        if (miscBtn) {
+          miscBtn.disabled = false;
+          var miscTitle = miscBtn.querySelector('.cat-title');
+          if (miscTitle) miscTitle.textContent = miscDoneLabel(miscKind, !!msg.ok);
+          setTimeout(function () {
+            if (miscTitle) miscTitle.textContent = miscIdle;
+          }, msg.ok ? SUCCESS_HOLD_MS : 2400);
+        }
+        if (msg.ok) playSuccess();
+        return;
+      }
+      if (msg.type === 'toast' && msg.message) {
+        toast(msg.message);
+        return;
+      }
+      if (msg.type === 'maintenance') {
+        var layer = document.getElementById('maint-layer');
+        var mt = document.getElementById('maint-title');
+        var mr = document.getElementById('maint-reason');
+        if (msg.active) {
+          document.documentElement.classList.remove('resume-main', 'app-on');
+          document.documentElement.classList.add('maint-on', 'ui-settled');
+          app.classList.remove('app-on');
+          if (mt) mt.textContent = msg.title || L('under_update', 'This is under update');
+          if (mr) mr.textContent = msg.reason || '';
+          if (layer) layer.classList.add('is-on');
+          intro.classList.remove('is-on');
+          auth.classList.remove('is-on', 'is-ready', 'is-launching');
+          main.classList.remove('is-on');
+          setAuthLaunching(false);
+          var statusEl = document.getElementById('auth-status');
+          if (statusEl) statusEl.textContent = '';
+          if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+          markUiSettled();
+        } else {
+          document.documentElement.classList.remove('maint-on');
+          if (layer) layer.classList.remove('is-on');
+          var resume = msg.resume || 'auth';
+          if (resume === 'main') {
+            document.documentElement.classList.add('resume-main', 'app-on', 'ui-settled');
+            app.classList.add('app-on');
+            auth.classList.remove('is-on', 'is-ready', 'is-launching');
+            main.classList.add('is-on');
+            if (typeof window.startAppFerrofluid === 'function') window.startAppFerrofluid();
+            markUiSettled();
+          } else if (resume === 'auth') {
+            document.documentElement.classList.remove('resume-main', 'app-on');
+            app.classList.remove('app-on');
+            main.classList.remove('is-on');
+            openNativeAuthShell();
+            if (typeof startAuthFerro === 'function') startAuthFerro();
+            markUiSettled();
+          }
+        }
+        return;
+      }
+      if (msg.type === 'lifecycle' && msg.state === 'active') {
+        if (document.visibilityState === 'visible' &&
+            typeof window.startAppFerrofluid === 'function') {
+          window.startAppFerrofluid();
+        }
+        return;
+      }
+    };
+
+    // Drain any boot/status messages that arrived before the handler existed.
+    (function drainBxPending() {
+      var q = window.__bxPending || [];
+      window.__bxPending = [];
+      var i;
+      for (i = 0; i < q.length; i++) {
+        try { window.bytrixReceive(q[i]); } catch (e) {}
+      }
+    })();
+    // Signal native only after bytrixReceive is live (prevents lost boot → black screen).
+    nativeSend({ type: 'ready' });
+
+    function bindFadeScroll(el) {
+      function updateFade() {
+        var max = el.scrollHeight - el.clientHeight;
+        el.classList.toggle('fade-top', el.scrollTop > 6);
+        el.classList.toggle('fade-bot', max > 8 && el.scrollTop < max - 6);
+      }
+      el.addEventListener('scroll', updateFade, { passive: true });
+      updateFade();
+    }
+    var scrolls = document.querySelectorAll('.chip-scroll');
+    var s;
+    for (s = 0; s < scrolls.length; s++) bindFadeScroll(scrolls[s]);
+    syncAim();
+    syncGame();
+    syncFeatures();
+  })();
+  </script>
+</body>
+</html>

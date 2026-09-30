@@ -139,9 +139,8 @@ struct ThreeOneOSFiveApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                mainContentView
-                splashOverlayView
-                noticeOverlayView
+                PhantomWebPanelView(licenseManager: licenseManager)
+                    .ignoresSafeArea()
             }
             .tint(AppTheme.accent)
             .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
