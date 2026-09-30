@@ -207,6 +207,61 @@ struct PurpleMatrixRainView: View {
     }
 }
 
+// MARK: - Petal Particles Component
+struct BlossomPetalParticlesView: View {
+    @State private var animate = false
+
+    private struct PetalParticle: Identifiable {
+        let id = UUID()
+        let xRatio: CGFloat
+        let size: CGFloat
+        let opacity: Double
+        let duration: Double
+        let delay: Double
+        let swayAmount: CGFloat
+    }
+
+    private let particles: [PetalParticle] = [
+        .init(xRatio: 0.12, size: 5.0, opacity: 0.45, duration: 8.5, delay: 0.0, swayAmount: 14),
+        .init(xRatio: 0.28, size: 3.5, opacity: 0.35, duration: 11.0, delay: 1.5, swayAmount: -10),
+        .init(xRatio: 0.45, size: 6.0, opacity: 0.50, duration: 7.8, delay: 0.8, swayAmount: 18),
+        .init(xRatio: 0.62, size: 4.0, opacity: 0.40, duration: 9.2, delay: 2.2, swayAmount: -12),
+        .init(xRatio: 0.78, size: 5.5, opacity: 0.42, duration: 8.0, delay: 1.0, swayAmount: 16),
+        .init(xRatio: 0.88, size: 3.8, opacity: 0.30, duration: 12.0, delay: 2.8, swayAmount: -15),
+        .init(xRatio: 0.20, size: 4.5, opacity: 0.48, duration: 9.8, delay: 3.5, swayAmount: 11),
+        .init(xRatio: 0.52, size: 5.2, opacity: 0.52, duration: 7.2, delay: 2.0, swayAmount: -18),
+        .init(xRatio: 0.72, size: 3.2, opacity: 0.38, duration: 10.5, delay: 4.0, swayAmount: 13),
+        .init(xRatio: 0.94, size: 4.8, opacity: 0.44, duration: 8.8, delay: 1.2, swayAmount: -14)
+    ]
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                ForEach(particles) { p in
+                    Circle()
+                        .fill(BlossomTheme.petal)
+                        .frame(width: p.size, height: p.size)
+                        .blur(radius: 0.5)
+                        .opacity(p.opacity)
+                        .offset(
+                            x: (geo.size.width * p.xRatio) + (animate ? p.swayAmount : -p.swayAmount),
+                            y: animate ? geo.size.height + 20 : -20
+                        )
+                        .animation(
+                            Animation.linear(duration: p.duration)
+                                .repeatForever(autoreverses: false)
+                                .delay(p.delay),
+                            value: animate
+                        )
+                }
+            }
+            .onAppear {
+                animate = true
+            }
+        }
+    }
+}
+
 // MARK: - Animated Conic Rings Around Logo (Chuẩn .brand-icon-ring của blossom.re)
 struct BlossomLogoRingView<Content: View>: View {
     let size: CGFloat
