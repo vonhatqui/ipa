@@ -96,7 +96,7 @@ struct CheatStoreLoginView: View {
                         }
                         .padding(.top, 8)
 
-                        Text("VeLix VN")
+                        Text("CheatStore VN")
                             .font(.system(size: 28, weight: .black, design: .rounded))
                             .foregroundStyle(.white)
 
@@ -601,8 +601,8 @@ struct AnimatedDownloadIconView: View {
 // MARK: - MẪU 4: DARK MECH TITANIUM BẢO TRÌ HỆ THỐNG
 struct RotatingMechGearsView: View {
     @State private var isSpinning = false
-    private let violetNeon = Color(red: 0.98, green: 0.12, blue: 0.20)
-    private let deepIndigo = Color(red: 0.65, green: 0.05, blue: 0.10)
+    private let violetNeon = Color(red: 0.65, green: 0.35, blue: 0.98)
+    private let deepIndigo = Color(red: 0.35, green: 0.20, blue: 0.75)
 
     var body: some View {
         ZStack {
@@ -660,8 +660,8 @@ struct DarkMechMaintenanceModalView: View {
     let info: AppMaintenanceInfo
     var onRefresh: (() -> Void)? = nil
 
-    private let violetNeon = Color(red: 0.98, green: 0.12, blue: 0.20)
-    private let deepIndigo = Color(red: 0.65, green: 0.05, blue: 0.10)
+    private let violetNeon = Color(red: 0.65, green: 0.35, blue: 0.98)
+    private let deepIndigo = Color(red: 0.35, green: 0.20, blue: 0.75)
 
     var body: some View {
         ZStack {
@@ -675,11 +675,11 @@ struct DarkMechMaintenanceModalView: View {
                     .padding(.top, 8)
 
                 VStack(spacing: 8) {
-                    // Badge VeLix VN
+                    // Badge CheatStoreVN (yêu cầu riêng của bạn)
                     HStack(spacing: 4) {
                         Image(systemName: "shield.lefthalf.filled")
                             .font(.system(size: 11, weight: .bold))
-                        Text(info.badge.isEmpty ? "VeLix VN" : info.badge)
+                        Text(info.badge.isEmpty ? "CheatStoreVN" : info.badge)
                             .font(.system(size: 11, weight: .black, design: .monospaced))
                     }
                     .foregroundStyle(violetNeon)
@@ -1137,7 +1137,7 @@ struct KeyNotificationModalView: View {
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
 
-                        Text("Chào mừng bạn! Bản quyền VIP VeLix VN đã sẵn sàng trên thiết bị.")
+                        Text("Chào mừng bạn! Bản quyền VIP CheatStore VN đã sẵn sàng trên thiết bị.")
                             .font(.system(size: 12))
                             .foregroundStyle(.gray)
                             .multilineTextAlignment(.center)
@@ -1269,8 +1269,8 @@ struct KeyNotificationModalView: View {
                                     .stroke(sakura.opacity(0.4), lineWidth: 1)
                             )
 
-                            // Tiêu đề thay thế: "VeLix VN đã có phiên bản mới nhất"
-                            Text("VeLix VN đã có phiên bản mới nhất")
+                            // Tiêu đề thay thế: "CheatStore đã có phiên bản mới nhất"
+                            Text("CheatStore đã có phiên bản mới nhất")
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                                 .foregroundStyle(.white)
                                 .multilineTextAlignment(.center)

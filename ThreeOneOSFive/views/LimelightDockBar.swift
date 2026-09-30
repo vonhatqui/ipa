@@ -7,11 +7,11 @@ struct LimelightDockBar: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
     @Namespace private var limelightNamespace
 
-    // Theme VeLix VN Crimson
+    // Theme Blossom Dark Sakura
     private let brandSakura = BlossomTheme.sakura
     private let brandSakuraLight = BlossomTheme.sakuraLight
     private let brandSakuraDeep = BlossomTheme.sakuraDeep
-    private let dockBackground = Color(red: 0.065, green: 0.015, blue: 0.025).opacity(0.94)
+    private let dockBackground = Color(red: 0.065, green: 0.035, blue: 0.115).opacity(0.94)
 
     var body: some View {
         HStack(spacing: 6) {

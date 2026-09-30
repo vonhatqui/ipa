@@ -301,6 +301,38 @@ enum DevicePatchService {
         }
     }
 
+    // MARK: - Duy trì nạp Injector vào Game & Vào Trận
+    /// Tự động xác thực và khóa dữ liệu injector vào game đảm bảo cả khi vào game lẫn vào trận đều không bị mất dữ liệu
+    static func ensureActivePatchesInjected() {
+        serialQueue.async {
+            let allContainers = allAvailableFreeFireContainers()
+            let fileManager = FileManager.default
+            
+            for (_, root) in allContainers {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                let patchFile = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let configFile = docDir.appendingPathComponent("localConfig.json")
+                
+                // Đảm bảo localConfig.json luôn luôn tồn tại với testCodePatch: true khi patch đang có
+                if fileManager.fileExists(atPath: patchFile.path) {
+                    if !fileManager.fileExists(atPath: configFile.path) {
+                        let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                        try? configData.write(to: configFile, options: .atomic)
+                    }
+                    // Đặt quyền posix và loại trừ backup để chống bị iOS / Game dọn cache khi chuyển cảnh vào trận
+                    var url1 = patchFile
+                    var url2 = configFile
+                    var resourceValues = URLResourceValues()
+                    resourceValues.isExcludedFromBackup = true
+                    try? url1.setResourceValues(resourceValues)
+                    try? url2.setResourceValues(resourceValues)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: patchFile.path)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: configFile.path)
+                }
+            }
+        }
+    }
+
     // MARK: - Restore & Rollback (Tắt chức năng)
     static func restore(
         receipt: PatchTransactionReceipt,
