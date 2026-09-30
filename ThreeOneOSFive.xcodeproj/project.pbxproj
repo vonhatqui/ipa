@@ -90,6 +90,7 @@
 		3105M212 /* InjectorActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
 		3105M213 /* AntibanProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M113; };
 		3105M214 /* antiban.mobileconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3105M114; };
+		3105M215 /* AppleIpaV2Injector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M115; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -194,6 +195,7 @@
 		3105M112 /* InjectorActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorActionButton.swift; sourceTree = "<group>"; };
 		3105M113 /* AntibanProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanProfileService.swift; sourceTree = "<group>"; };
 		3105M114 /* antiban.mobileconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = antiban.mobileconfig; sourceTree = "<group>"; };
+		3105M115 /* AppleIpaV2Injector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleIpaV2Injector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -290,6 +292,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105M115 /* AppleIpaV2Injector.swift */,
 				3105M113 /* AntibanProfileService.swift */,
 				3105M100 /* CheatStoreLicenseManager.swift */,
 				3105M110 /* CheatStoreSoundManager.swift */,
@@ -497,6 +500,7 @@
 				3105M210,
 				3105M212,
 				3105M213,
+				3105M215,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
