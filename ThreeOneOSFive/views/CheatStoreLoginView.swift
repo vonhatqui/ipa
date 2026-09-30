@@ -96,13 +96,18 @@ struct CheatStoreLoginView: View {
                         }
                         .padding(.top, 8)
 
-                        Text("CheatStore VN")
-                            .font(.system(size: 28, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
+                        ShinyTextView(
+                            text: "CheatStore VN",
+                            font: .system(size: 29, weight: .black, design: .rounded),
+                            baseColor: .white,
+                            shineColor: Color(red: 0.75, green: 0.9, blue: 1.0),
+                            duration: 2.6,
+                            tracking: 1.2
+                        )
 
-                        Text("Hệ Thống Phân Phối Tiện Ích & Mod Game iOS")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundStyle(.gray)
+                        Text("0xCheats Engine • Hệ Thống Tiện Ích iOS VIP")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.65))
                     }
 
                     // Card Nhập Key
@@ -825,8 +830,8 @@ struct LoginSuccessIntroView: View {
 
     @State private var isDismissed: Bool = false
 
-    private let targetHeadline = "THE STANDARD. CHEATTING."
-    private let targetSubtitle = "Wellcome to CheatingCommunity"
+    private let targetHeadline = "THE STANDARD. 0XCHEATS."
+    private let targetSubtitle = "Welcome to CheatStore Community • Anti-Ban Active"
     private let greenBadge = Color(red: 0.20, green: 0.88, blue: 0.45)
 
     var body: some View {
@@ -887,9 +892,13 @@ struct LoginSuccessIntroView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 14, weight: .bold))
 
-                    Text("LOGIN SUCCESSFUL")
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
-                        .tracking(3)
+                    Circle()
+                        .fill(greenBadge)
+                        .frame(width: 7, height: 7)
+                        .shadow(color: greenBadge, radius: 5)
+                    Text("0XCHEATS PROTOCOL • VERIFIED")
+                        .font(.system(size: 12, weight: .heavy, design: .monospaced))
+                        .tracking(2.2)
                 }
                 .foregroundStyle(greenBadge)
                 .shadow(color: greenBadge.opacity(0.85), radius: 10, x: 0, y: 0)
@@ -932,27 +941,54 @@ struct LoginSuccessIntroView: View {
                         .foregroundStyle(Color.white.opacity(0.85))
                         .shadow(color: BlossomTheme.sakura.opacity(0.45), radius: 10, x: 0, y: 0)
 
-                    // Thông tin gói VIP & thời hạn (tinh tế)
+                    // Thẻ bản quyền 0xCheats Glassmorphism Card
                     if !planName.isEmpty {
-                        HStack(spacing: 6) {
-                            Image(systemName: "shield.checkered")
-                                .font(.system(size: 10, weight: .bold))
-                            Text(planName.uppercased())
-                                .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                        VStack(spacing: 7) {
+                            HStack {
+                                Label("BẢN QUYỀN HỆ THỐNG", systemImage: "shield.lefthalf.filled.badge.checkmark")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundStyle(Color.cyan)
+                                Spacer()
+                                Text("ACTIVE")
+                                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                                    .padding(.horizontal, 7)
+                                    .padding(.vertical, 2.5)
+                                    .background(greenBadge.opacity(0.2))
+                                    .foregroundStyle(greenBadge)
+                                    .clipShape(Capsule())
+                            }
+                            Divider().background(Color.white.opacity(0.12))
+                            HStack {
+                                Text("Gói dịch vụ:")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(.gray)
+                                Spacer()
+                                Text(planName)
+                                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.white)
+                            }
                             if !remainingTime.isEmpty {
-                                Text("•")
-                                Text(remainingTime)
-                                    .font(.system(size: 10.5, weight: .semibold))
+                                HStack {
+                                    Text("Hạn sử dụng:")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.gray)
+                                    Spacer()
+                                    Text(remainingTime)
+                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                        .foregroundStyle(greenBadge)
+                                }
                             }
                         }
-                        .foregroundStyle(greenBadge.opacity(0.9))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(14)
                         .background(Color.white.opacity(0.06))
-                        .clipShape(Capsule())
+                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                         .overlay(
-                            Capsule().stroke(greenBadge.opacity(0.25), lineWidth: 0.8)
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
                         )
+                        .shadow(color: Color.black.opacity(0.45), radius: 14, y: 6)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 4)
                     }
                 }
                 .opacity(subtitleOpacity)
