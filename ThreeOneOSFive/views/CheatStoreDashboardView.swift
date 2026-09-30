@@ -413,7 +413,7 @@ struct CheatStoreDashboardView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             // Cài đặt tất cả bundle patches và ledger
-            BundledPatchInjector.shared.autoImportBundledPatches(into: self.patchStore)
+            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             DevicePatchService.ensureActivePatchesInjected()
 
             Thread.sleep(forTimeInterval: 0.8)
@@ -863,7 +863,7 @@ struct CheatStoreDashboardView: View {
 
                     // Key Row
                     HStack {
-                        let key = licenseManager.licenseKey
+                        let key = licenseManager.activeKey
                         let maskedKey = key.count > 4 ? "Key  ••••" + String(key.suffix(4)) : "Key  ••••3105"
                         Text(maskedKey)
                             .font(.system(size: 14, weight: .semibold, design: .monospaced))
@@ -872,7 +872,7 @@ struct CheatStoreDashboardView: View {
                         Spacer()
 
                         Button(action: {
-                            UIPasteboard.general.string = licenseManager.licenseKey
+                            UIPasteboard.general.string = licenseManager.activeKey
                             copiedKey = true
                             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
