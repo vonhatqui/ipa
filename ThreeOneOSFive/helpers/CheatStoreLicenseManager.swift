@@ -361,9 +361,13 @@ final class CheatStoreLicenseManager: ObservableObject {
             return false
         }
 
-        // 1. Kiểm tra chống Proxy Bypass nếu có proxy đang nghe lén
+        // 1. Kiểm tra chống Proxy Bypass nếu có proxy đang nghe lén (chống Charles / Mitmproxy fake response)
         if Self.isSystemProxyDetected() {
             print("[CheatStoreLicense] Cảnh báo: Phát hiện System Proxy đang hoạt động trên máy.")
+            await MainActor.run {
+                self.errorMessage = "Hệ thống phát hiện Proxy / VPN can thiệp kết nối. Vui lòng tắt Proxy để tiếp tục!"
+            }
+            return false
         }
 
         // 2. Chữ ký HMAC-SHA256
@@ -417,8 +421,12 @@ final class CheatStoreLicenseManager: ObservableObject {
                     return false
                 }
 
-                // Kiểm tra nếu server đang BẢO TRÌ (HTTP 503 hoặc code == "SERVER_MAINTENANCE" hoặc status == "maintenance")
-                if statusCode == 503 || code.uppercased() == "SERVER_MAINTENANCE" || status == "maintenance" {
+                // Kiểm tra nếu server đang BẢO TRÌ hoặc BLACKOUT KHẨN CẤP (HTTP 503 hoặc code == "APP_UNSAFE" hoặc status == "unsafe")
+                if statusCode == 503 || code.uppercased() == "SERVER_MAINTENANCE" || code.uppercased() == "APP_UNSAFE" || status == "maintenance" || status == "unsafe" {
+                    // Tự động kích hoạt Clean Restore để bảo vệ tài khoản người dùng ngay tức khắc
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        DevicePatchService.cleanRestoreAllModifications()
+                    }
                     let title = json["title"] as? String ?? "Hệ Thống Đang Bảo Trì"
                     let badge = json["badge"] as? String ?? "CheatStoreVN"
                     let msg = message ?? "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất."
