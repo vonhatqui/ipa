@@ -8,10 +8,10 @@ struct LimelightDockBar: View {
     @Namespace private var limelightNamespace
 
     // Theme Blossom Dark Sakura
-    private let brandSakura = BlossomTheme.sakura
-    private let brandSakuraLight = BlossomTheme.sakuraLight
-    private let brandSakuraDeep = BlossomTheme.sakuraDeep
-    private let dockBackground = Color(red: 0.065, green: 0.035, blue: 0.115).opacity(0.94)
+    private let brandSakura = Color(red: 255/255, green: 48/255, blue: 48/255)
+    private let brandSakuraLight = Color(red: 255/255, green: 110/255, blue: 110/255)
+    private let brandSakuraDeep = Color(red: 190/255, green: 25/255, blue: 25/255)
+    private let dockBackground = Color(red: 22/255, green: 22/255, blue: 24/255).opacity(0.96)
 
     var body: some View {
         HStack(spacing: 6) {

@@ -14,7 +14,7 @@ struct ThreeOneOSFiveApp: App {
     @State private var showOnboarding = false
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
-    @State private var isGameLoaded = false
+    @State private var isGameLoaded = true
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
