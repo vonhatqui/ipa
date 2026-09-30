@@ -94,9 +94,11 @@ struct LimelightDockBar: View {
                             .frame(height: 20)
 
                             Text(tab.title)
-                                .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
+                                .font(.system(size: 9.5, weight: isSelected ? .bold : .medium, design: .rounded))
                                 .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.48))
                                 .shadow(color: isSelected ? brandSakura.opacity(0.4) : .clear, radius: 3)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.75)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
