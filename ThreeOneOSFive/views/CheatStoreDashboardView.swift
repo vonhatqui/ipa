@@ -3,16 +3,14 @@ import UIKit
 
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
-    case mainVIP = 1
-    case esp = 2
-    case skin = 3
-    case antiban = 4
-    case profile = 5
+    case esp = 1
+    case skin = 2
+    case antiban = 3
+    case profile = 4
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
-        case .mainVIP: return "MainVIP"
         case .esp: return "Định Vị"
         case .skin: return "Mod Skin"
         case .antiban: return "Antiban"
@@ -23,7 +21,6 @@ enum CheatStoreTab: Int, CaseIterable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .mainVIP: return "crown.fill"
         case .esp: return "location.viewfinder"
         case .skin: return "tshirt.fill"
         case .antiban: return "checkmark.shield.fill"
@@ -251,9 +248,6 @@ struct CheatStoreDashboardView: View {
                     if selectedTab == .home {
                         homeView
                             .transition(.opacity)
-                    } else if selectedTab == .mainVIP {
-                        mainVIPView
-                            .transition(.opacity)
                     } else if selectedTab == .esp {
                         espView
                             .transition(.opacity)
@@ -460,99 +454,6 @@ struct CheatStoreDashboardView: View {
     private var homeView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
-                // MARK: - Banner Nổi Bật Dẫn Đến Tab MainVIP Mới
-                Button {
-                    CheatStoreSoundManager.shared.playTabSwitchHaptic()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = .mainVIP
-                    }
-                } label: {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 1.0, green: 0.85, blue: 0.3), Color(red: 0.95, green: 0.45, blue: 0.1)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 44, height: 44)
-                                .shadow(color: Color.orange.opacity(0.6), radius: 8, x: 0, y: 2)
-
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.black)
-                        }
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 6) {
-                                Text("TAB MỚI: MAINVIP")
-                                    .font(.system(size: 13.5, weight: .black))
-                                    .foregroundStyle(
-                                        LinearGradient(
-                                            colors: [Color.white, Color(red: 1.0, green: 0.85, blue: 0.3)],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-
-                                Text("HOT VIP")
-                                    .font(.system(size: 8, weight: .black))
-                                    .foregroundStyle(.white)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 2)
-                                    .background(Color.red)
-                                    .cornerRadius(4)
-                            }
-
-                            Text("Tách riêng các siêu phẩm VIP: APPLE IPA V2, UI Player +20%, Silent Aim, No Recoil & Aimbot")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(Color.white.opacity(0.8))
-                                .lineLimit(2)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.3))
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color(red: 0.20, green: 0.08, blue: 0.05).opacity(0.9),
-                                        Color(red: 0.12, green: 0.05, blue: 0.15).opacity(0.9)
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(
-                                LinearGradient(
-                                    colors: [
-                                        Color.orange.opacity(0.6),
-                                        Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.3)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: 1.2
-                            )
-                    )
-                    .shadow(color: Color.orange.opacity(0.25), radius: 10, x: 0, y: 3)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 4)
-                }
-                .buttonStyle(ScaleButtonStyle())
-
                 // DANH MỤC 1: APPLESTORE PRIME - HOẠT ĐỘNG CHÍNH (CHỐNG VĂNG GAME)
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
@@ -734,183 +635,6 @@ struct CheatStoreDashboardView: View {
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(BlossomTheme.sakura.opacity(0.2), lineWidth: 0.8)
-                )
-                .padding(.horizontal, 20)
-                .padding(.top, 4)
-            }
-            .padding(.bottom, 24)
-        }
-    }
-
-    // MARK: - Tab Mới: MainVIP (Kho Vũ Khí Hack VIP Tách Riêng Biệt)
-    private var mainVIPView: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 16) {
-                // Header Danh Mục MainVIP
-                HStack {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Text("👑 KHO TÍNH NĂNG MAINVIP")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                .tracking(1.0)
-
-                            Text("ĐỘC QUYỀN VIP")
-                                .font(.system(size: 8, weight: .black))
-                                .foregroundStyle(.black)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2.5)
-                                .background(Color(red: 1.0, green: 0.85, blue: 0.3))
-                                .cornerRadius(4)
-                        }
-
-                        Text("Tách riêng các siêu phẩm VIP chiến đấu • Ổn định tuyệt đối không văng")
-                            .font(.system(size: 11.5, weight: .medium))
-                            .foregroundStyle(.gray)
-                    }
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-                .padding(.top, 14)
-
-                // Thẻ Báo Trạng Thái Injector Kép (Vào Game & Vào Trận)
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.green.opacity(0.2))
-                            .frame(width: 36, height: 36)
-
-                        Image(systemName: "bolt.shield.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.green)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 6) {
-                            Text("INJECTOR KÉP:")
-                                .font(.system(size: 11.5, weight: .bold))
-                                .foregroundColor(.white)
-
-                            Text("VÀO TRẬN ĐÃ KHÓA DỮ LIỆU")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(.green)
-                        }
-
-                        Text("Dữ liệu nạp được lưu cố định trong Documents/, bảo đảm khi vào sảnh chờ lẫn vào trận đấu đều nhận mod 100%.")
-                            .font(.system(size: 10.5))
-                            .foregroundColor(.gray)
-                            .lineLimit(2)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(cardBackground.opacity(0.9))
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green.opacity(0.4), lineWidth: 1)
-                )
-                .padding(.horizontal, 20)
-
-                // Danh Sách Các Siêu Phẩm VIP
-                VStack(spacing: 14) {
-                    // 1. APPLE IPA V2 (MainVIP Master Edition)
-                    AppleIpaV2Card(
-                        item: appleIpaV2Item,
-                        isApplied: appleIpaV2Item != nil && appliedProjectIDs.contains(appleIpaV2Item!.id),
-                        isWorking: appleIpaV2Item != nil && workingPatchID == appleIpaV2Item!.id,
-                        isUnderMaintenance: appleIpaV2Item != nil ? isItemUnderMaintenance(appleIpaV2Item!) : !licenseManager.featureConfig.apple_ipa,
-                        brandBlue: brandBlue,
-                        onToggle: { enable in
-                            let itemToToggle = appleIpaV2Item ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_apple_ipa_v2")
-                            if let item = itemToToggle {
-                                handleMaintenanceToggle(item: item, enable: enable)
-                            }
-                        }
-                    )
-
-                    // 2. SWIFT iOS (Fix Văng Free Fire MAX)
-                    SwiftIosCard(
-                        item: swiftIosItem,
-                        isApplied: swiftIosItem != nil && appliedProjectIDs.contains(swiftIosItem!.id),
-                        isWorking: swiftIosItem != nil && workingPatchID == swiftIosItem!.id,
-                        isUnderMaintenance: swiftIosItem != nil ? isItemUnderMaintenance(swiftIosItem!) : !licenseManager.featureConfig.swift_ios,
-                        brandBlue: brandBlue,
-                        onToggle: { enable in
-                            let itemToToggle = swiftIosItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_swift_ios")
-                            if let item = itemToToggle {
-                                handleMaintenanceToggle(item: item, enable: enable)
-                            }
-                        }
-                    )
-
-                    // 3. APPLESTORE PRIME
-                    ApplestorePrimeCard(
-                        item: applestorePrimeItem,
-                        isApplied: applestorePrimeItem != nil && appliedProjectIDs.contains(applestorePrimeItem!.id),
-                        isWorking: applestorePrimeItem != nil && workingPatchID == applestorePrimeItem!.id,
-                        isUnderMaintenance: applestorePrimeItem != nil ? isItemUnderMaintenance(applestorePrimeItem!) : !licenseManager.featureConfig.applestore_prime,
-                        brandBlue: brandBlue,
-                        onToggle: { enable in
-                            let itemToToggle = applestorePrimeItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_applestore_prime")
-                            if let item = itemToToggle {
-                                handleMaintenanceToggle(item: item, enable: enable)
-                            }
-                        }
-                    )
-
-                    // 4. AIMNECK VIP
-                    if let vipItem = aimneckVipItem {
-                        AimneckVipCard(
-                            item: vipItem,
-                            isApplied: appliedProjectIDs.contains(vipItem.id),
-                            isWorking: workingPatchID == vipItem.id,
-                            isUnderMaintenance: isItemUnderMaintenance(vipItem),
-                            brandBlue: brandBlue,
-                            onToggle: { enable in
-                                handleMaintenanceToggle(item: vipItem, enable: enable)
-                            }
-                        )
-                    }
-
-                    // 5. INTERNAL MOD
-                    InternalCard(
-                        item: internalItem,
-                        isApplied: internalItem != nil && appliedProjectIDs.contains(internalItem!.id),
-                        isWorking: internalItem != nil && workingPatchID == internalItem!.id,
-                        isUnderMaintenance: internalItem != nil ? isItemUnderMaintenance(internalItem!) : !licenseManager.featureConfig.internal_mod,
-                        brandBlue: brandBlue,
-                        onToggle: { enable in
-                            let itemToToggle = internalItem ?? PatchProjectLibrary.loadBundledItem(named: "lib_app_internal")
-                            if let item = itemToToggle {
-                                handleMaintenanceToggle(item: item, enable: enable)
-                            }
-                        }
-                    )
-                }
-                .padding(.horizontal, 20)
-
-                // Card Mẹo Sử Dụng
-                HStack(spacing: 8) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color(red: 1.0, green: 0.85, blue: 0.3))
-
-                    Text("Mẹo: Bật chức năng trong Tab MainVIP trước khi bấm Vào Game để injector tự nạp vào trận.")
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.8))
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(cardBackground.opacity(0.85))
-                .cornerRadius(10)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color(red: 1.0, green: 0.85, blue: 0.3).opacity(0.3), lineWidth: 0.8)
                 )
                 .padding(.horizontal, 20)
                 .padding(.top, 4)
@@ -2951,56 +2675,17 @@ private struct AppleIpaV2Card: View {
     let onToggle: (Bool) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            ModernCleanCardRow(
-                title: "APPLE IPA V2 (MainVIP Master)",
-                subtitle: "Ui Player +20% • Đạn Ma & Aimbot • No Recoil",
-                imageName: "CheatLogo",
-                glowColor: Color(red: 0.95, green: 0.15, blue: 0.35),
-                isApplied: isApplied,
-                isWorking: isWorking,
-                isUnderMaintenance: isUnderMaintenance,
-                brandBlue: brandBlue,
-                onToggle: onToggle
-            )
-
-            // Dải thẻ Pill hiển thị chi tiết các tính năng mới
-            HStack(spacing: 5) {
-                Text("🔴 Ui Player +20%")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color(red: 0.85, green: 0.12, blue: 0.25).opacity(0.85))
-                    .cornerRadius(4)
-
-                Text("🎯 Aimbot Neck/Head")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.purple.opacity(0.75))
-                    .cornerRadius(4)
-
-                Text("⚡ Silent Aim")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.blue.opacity(0.75))
-                    .cornerRadius(4)
-
-                Text("🛡️ No Recoil 0.0f")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(Color.orange.opacity(0.75))
-                    .cornerRadius(4)
-            }
-            .padding(.leading, 48)
-            .padding(.bottom, 2)
-        }
+        ModernCleanCardRow(
+            title: "APPLE IPA V2",
+            subtitle: "Menu iOS V2",
+            imageName: "CheatLogo",
+            glowColor: BlossomTheme.sakura,
+            isApplied: isApplied,
+            isWorking: isWorking,
+            isUnderMaintenance: isUnderMaintenance,
+            brandBlue: brandBlue,
+            onToggle: onToggle
+        )
     }
 }
 
