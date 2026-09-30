@@ -67,11 +67,8 @@ struct BlossomBackgroundView: View {
                 .frame(width: 300, height: 300)
                 .offset(x: 100, y: 260)
 
-            // Hiệu ứng mưa chữ số Matrix bay bay full màu tím huyền ảo
+            // Hiệu ứng hạt cánh hoa anh đào rơi nhẹ nhàng
             if showParticles {
-                PurpleMatrixRainView()
-                    .ignoresSafeArea()
-
                 BlossomPetalParticlesView()
                     .ignoresSafeArea()
             }
