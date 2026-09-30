@@ -110,7 +110,7 @@ struct ZeroXChipButton: View {
                     .stroke(isSelected ? Color.white.opacity(0.18) : Color.white.opacity(0.08), lineWidth: 1)
             )
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(ZeroXScaleButtonStyle())
     }
 }
 
@@ -842,7 +842,7 @@ struct CheatStoreDashboardView: View {
             .cornerRadius(22)
             .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
         }
-        .buttonStyle(ScaleButtonStyle())
+        .buttonStyle(ZeroXScaleButtonStyle())
     }
 
     // Modal Sheet chọn Skin cho nhân vật
@@ -1390,7 +1390,7 @@ struct RoundedCorner: Shape {
 }
 
 // MARK: - Scale Button Style
-struct ScaleButtonStyle: ButtonStyle {
+private struct ZeroXScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
