@@ -24,6 +24,11 @@ struct ThreeOneOSFiveApp: App {
     init() {
         setupLogCapture()
         log("app: CheatStore VN launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
+        
+        // 0xCheats Auto Lifecycle Restore: Khi app cheat hoặc game bị tắt, tự động hoàn trả file gốc
+        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: nil) { _ in
+            _ = DevicePatchService.cleanRestoreAllModifications()
+        }
     }
 
     private var language: AppLanguage {

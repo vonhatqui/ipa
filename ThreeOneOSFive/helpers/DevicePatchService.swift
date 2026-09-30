@@ -295,6 +295,9 @@ enum DevicePatchService {
                 }
             }
 
+            // 0xCheats Ledger: Ghi chép inject ledger vào container game
+            recordInjectLedger(project: project, containers: allContainers, fileManager: fileManager)
+
             // Cập nhật in-memory cache
             setProjectAppliedInMemory(projectID: project.id, applied: true)
             return receipt
@@ -484,6 +487,9 @@ enum DevicePatchService {
             // 1. Phục hồi 100% tất cả các file từ Golden Snapshot cho toàn bộ container
             restoreAllGoldenSnapshots(for: nil)
 
+            // Xóa sạch toàn bộ dấu vết 0xCheats Ledger (.0xfixa-inject)
+            cleanupInjectLedgers(containers: allAvailableFreeFireContainers(), fileManager: fileManager)
+
             // 2. Dọn sạch toàn bộ receipts và journal trong thư mục backup (Bảo tồn Golden Snapshots vĩnh viễn)
             if let backupRoot = try? PatchProjectLibrary.backupRootURL(),
                let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
@@ -671,4 +677,45 @@ enum DevicePatchService {
         let roots = try resolveContainers(bundleIDs: bundleIDs)
         return try operation(roots)
     }
+
+    // MARK: - 0xCheats Ledger System (.0xfixa-inject/ledger.json)
+    private static func recordInjectLedger(project: PatchProject, containers: [String: URL], fileManager: FileManager = .default) {
+        for (bundleID, root) in containers {
+            let ledgerDir = root.appendingPathComponent(".0xfixa-inject", isDirectory: true)
+            try? fileManager.createDirectory(at: ledgerDir, withIntermediateDirectories: true)
+            
+            var fileRecords: [[String: Any]] = []
+            for rule in project.rules {
+                fileRecords.append([
+                    "target": rule.relativePath,
+                    "bundle_id": bundleID,
+                    "size": rule.replacementData.count,
+                    "sha256": SHA256.hash(data: rule.replacementData).compactMap { String(format: "%02x", $0) }.joined()
+                ])
+            }
+            
+            let ledgerDict: [String: Any] = [
+                "timestamp": Int64(Date().timeIntervalSince1970),
+                "owner_stamp": "\(bundleID).0xfixa.ledger",
+                "project_id": project.id.uuidString,
+                "project_name": project.name,
+                "injected_files": fileRecords
+            ]
+            
+            let ledgerFile = ledgerDir.appendingPathComponent("ledger.json")
+            if let data = try? JSONSerialization.data(withJSONObject: ledgerDict, options: [.prettyPrinted]) {
+                try? data.write(to: ledgerFile, options: .atomic)
+            }
+        }
+    }
+
+    private static func cleanupInjectLedgers(containers: [String: URL], fileManager: FileManager = .default) {
+        for (_, root) in containers {
+            let ledgerDir = root.appendingPathComponent(".0xfixa-inject", isDirectory: true)
+            if fileManager.fileExists(atPath: ledgerDir.path) {
+                try? fileManager.removeItem(at: ledgerDir)
+            }
+        }
+    }
+
 }
