@@ -245,9 +245,7 @@ struct GameSelectionView: View {
                 .ignoresSafeArea()
 
             // Hạt cánh hoa anh đào rơi nhẹ
-            BlossomPetalParticlesView()
-                .opacity(0.35)
-                .ignoresSafeArea()
+            // Clean ambient spotlight background
 
             // Viền sáng neon bao quanh mép màn hình (Screen Inset Glow)
             RoundedRectangle(cornerRadius: 38, style: .continuous)

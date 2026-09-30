@@ -14,9 +14,6 @@ struct ThreeOneOSFiveApp: App {
     @State private var showOnboarding = false
     @State private var showAttribution = false
     @State private var updateOffer: AppUpdateChecker.Offer?
-    @State private var isSplashActive = true
-    @State private var mainUIAppeared = false
-    @State private var showPostSplashNotice = false
     @State private var isGameLoaded = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -83,101 +80,50 @@ struct ThreeOneOSFiveApp: App {
                 }
             } else {
                 CheatStoreLoginView(licenseManager: licenseManager)
-                    .zIndex(2)
+                    .transition(.opacity)
             }
-        }
-        .scaleEffect(mainUIAppeared ? 1.0 : 0.96)
-        .offset(y: mainUIAppeared ? 0 : 35)
-        .blur(radius: mainUIAppeared ? 0 : 4)
-        .opacity(mainUIAppeared ? 1.0 : 0.0)
-    }
-
-    @ViewBuilder
-    private var splashOverlayView: some View {
-        if isSplashActive {
-            BlossomSplashView(onFinished: {
-                withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 1.2)) {
-                    mainUIAppeared = true
-                }
-                withAnimation(.easeOut(duration: 0.6)) {
-                    isSplashActive = false
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                    withAnimation(.spring(response: 0.55, dampingFraction: 0.82)) {
-                        showPostSplashNotice = true
-                    }
-                }
-            })
-            .zIndex(999)
-            .transition(.opacity)
-        }
-    }
-
-    @ViewBuilder
-    private var noticeOverlayView: some View {
-        if showPostSplashNotice {
-            BlossomNoticeModalView(
-                onDiscord: {
-                    if let url = URL(string: "https://discord.gg/A3wS4ZPFQn") {
-                        UIApplication.shared.open(url)
-                    }
-                },
-                onDismiss: {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        showPostSplashNotice = false
-                    }
-                }
-            )
-            .zIndex(1000)
-            .transition(.asymmetric(
-                insertion: .opacity.combined(with: .scale(scale: 0.92)),
-                removal: .opacity.combined(with: .scale(scale: 0.95))
-            ))
         }
     }
 
     var body: some Scene {
         WindowGroup {
-            ZStack {
-                PhantomWebPanelView(licenseManager: licenseManager)
-                    .ignoresSafeArea()
-            }
-            .tint(AppTheme.accent)
-            .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
-            .sheet(isPresented: $showAttribution) {
-                DisplayAttributionSheet()
-            }
-            .alert(item: $updateOffer) { offer in
-                Alert(
-                    title: Text(language.text("update.title")),
-                    message: Text(language.text("update.message", offer.version)),
-                    primaryButton: .default(Text(language.text("update.agree"))) {
-                        UIApplication.shared.open(offer.url)
-                    },
-                    secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
-                        AppUpdateChecker.dismiss(version: offer.version)
+            mainContentView
+                .tint(AppTheme.accent)
+                .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
+                .sheet(isPresented: $showAttribution) {
+                    DisplayAttributionSheet()
+                }
+                .alert(item: $updateOffer) { offer in
+                    Alert(
+                        title: Text(language.text("update.title")),
+                        message: Text(language.text("update.message", offer.version)),
+                        primaryButton: .default(Text(language.text("update.agree"))) {
+                            UIApplication.shared.open(offer.url)
+                        },
+                        secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
+                            AppUpdateChecker.dismiss(version: offer.version)
+                        }
+                    )
+                }
+                .onAppear {
+                    if !showOnboarding {
+                        appState.detectSupport()
+                        checkForUpdate()
                     }
-                )
-            }
-            .onAppear {
-                if !showOnboarding {
+                }
+                .onChange(of: scenePhase) { phase in
+                    guard phase == .active, !showOnboarding else { return }
                     appState.detectSupport()
                     checkForUpdate()
                 }
-            }
-            .onChange(of: scenePhase) { phase in
-                guard phase == .active, !showOnboarding else { return }
-                appState.detectSupport()
-                checkForUpdate()
-            }
-            .onChange(of: licenseManager.isActivated) { activated in
-                if !activated {
-                    isGameLoaded = false
+                .onChange(of: licenseManager.isActivated) { activated in
+                    if !activated {
+                        isGameLoaded = false
+                    }
                 }
-            }
-            .onOpenURL { url in
-                patchDraftCoordinator.presentImport(url)
-            }
+                .onOpenURL { url in
+                    patchDraftCoordinator.presentImport(url)
+                }
         }
     }
 }

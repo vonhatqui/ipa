@@ -67,7 +67,7 @@ enum ThemePreset: String, CaseIterable {
 
 enum AppTheme {
     /// Đổi màu chủ đạo ứng dụng bằng cách thay đổi giá trị dưới đây:
-    static let activePreset: ThemePreset = .blossomSakura
+    static let activePreset: ThemePreset = .cyberBlue
 
     static var accent: Color {
         activePreset.accentColor

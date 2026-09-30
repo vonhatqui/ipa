@@ -5,15 +5,14 @@ struct CheatStoreLoginView: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
     @State private var inputKey: String = ""
     @State private var copiedDeviceID = false
-    @State private var showShopWeb = false
-    @State private var keyNotification: KeyNotificationType? = nil
+    @State private var inlineErrorMessage: String? = nil
     @State private var showLoginSuccessSplash: Bool = false
 
     init(licenseManager: CheatStoreLicenseManager = .shared) {
         self.licenseManager = licenseManager
     }
 
-    // Theme: Blossom Luxury Sakura Purple (Chuẩn 100% blossom.re)
+    // 0xCheats Luxury Cyan & Obsidian Theme
     private let brandBlue = BlossomTheme.sakura
     private let brandBlueDark = BlossomTheme.sakuraDeep
     private let darkBackground = BlossomTheme.bgBottom
@@ -30,12 +29,12 @@ struct CheatStoreLoginView: View {
 
     var body: some View {
         ZStack {
-            // Nền hoa anh đào đêm và hạt bay rơi nhẹ chuẩn blossom.re
-            BlossomBackgroundView(showParticles: true)
+            // Nền tối sẫm không gian sâu 0xCheats với vầng sáng spotlight
+            BlossomBackgroundView(showParticles: false)
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
-                    // TOP BAR: Hiển thị Phiên Bản & Nút "Check Update" (Gọn, Dễ nhìn, Dễ thấy)
+                    // TOP BAR: Hiển thị Phiên Bản VIP & Nút "Check Update"
                     HStack {
                         // Badge Phiên bản
                         HStack(spacing: 6) {
@@ -43,9 +42,9 @@ struct CheatStoreLoginView: View {
                                 .fill(Color(red: 0.2, green: 0.88, blue: 0.45))
                                 .frame(width: 7, height: 7)
                                 .shadow(color: Color(red: 0.2, green: 0.88, blue: 0.45).opacity(0.8), radius: 4)
-                            Text("v2.3 (Build 10)")
+                            Text("0xCheats v2.3 VIP")
                                 .font(.system(size: 11.5, weight: .bold, design: .monospaced))
-                                .foregroundStyle(.white.opacity(0.85))
+                                .foregroundStyle(.white.opacity(0.9))
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
@@ -80,7 +79,7 @@ struct CheatStoreLoginView: View {
                                 )
                             )
                             .clipShape(Capsule())
-                            .shadow(color: BlossomTheme.sakura.opacity(0.45), radius: 8, x: 0, y: 2)
+                            .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 8, x: 0, y: 2)
                             .overlay(
                                 Capsule().stroke(Color.white.opacity(0.35), lineWidth: 1)
                             )
@@ -89,19 +88,19 @@ struct CheatStoreLoginView: View {
                     .padding(.horizontal, 22)
                     .padding(.top, 16)
 
-                    // Header Logo với vòng xoay Conic Rings đa chiều (.brand-icon-ring của blossom.re)
+                    // Header Logo & Tiêu đề ánh kim 0xCheats
                     VStack(spacing: 14) {
-                        BlossomLogoRingView(size: 84, cornerRadius: 22) {
-                            CheatStoreLogoView(size: 84, cornerRadius: 22)
+                        BlossomLogoRingView(size: 80, cornerRadius: 20) {
+                            CheatStoreLogoView(size: 80, cornerRadius: 20)
                         }
-                        .padding(.top, 8)
+                        .padding(.top, 6)
 
                         ShinyTextView(
                             text: "CheatStore VN",
-                            font: .system(size: 29, weight: .black, design: .rounded),
+                            font: .system(size: 28, weight: .black, design: .rounded),
                             baseColor: .white,
-                            shineColor: Color(red: 0.75, green: 0.9, blue: 1.0),
-                            duration: 2.6,
+                            shineColor: Color(red: 0.5, green: 0.9, blue: 1.0),
+                            duration: 2.5,
                             tracking: 1.2
                         )
 
@@ -110,9 +109,13 @@ struct CheatStoreLoginView: View {
                             .foregroundStyle(Color.white.opacity(0.65))
                     }
 
-                    // Card Nhập Key
+                    // Card Kích Hoạt Bản Quyền (Giao diện chuẩn, rõ ràng, không bị che khuất)
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
+                            Image(systemName: "key.horizontal.fill")
+                                .foregroundStyle(brandBlue)
+                                .font(.system(size: 14))
+
                             Text("KÍCH HOẠT BẢN QUYỀN")
                                 .font(.system(size: 13, weight: .bold))
                                 .foregroundStyle(brandBlue)
@@ -121,7 +124,7 @@ struct CheatStoreLoginView: View {
                             Spacer()
                         }
 
-                        // Ô Nhập Key
+                        // Ô Nhập Key với nút Dán
                         HStack {
                             Image(systemName: "key.fill")
                                 .foregroundStyle(brandBlue)
@@ -148,11 +151,11 @@ struct CheatStoreLoginView: View {
                                 }
                             } label: {
                                 Text("Dán")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 5)
-                                    .background(brandBlue.opacity(0.2))
+                                    .font(.system(size: 12, weight: .bold))
                                     .foregroundStyle(brandBlue)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(brandBlue.opacity(0.15))
                                     .cornerRadius(6)
                             }
                         }
@@ -164,6 +167,42 @@ struct CheatStoreLoginView: View {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(brandBlue.opacity(0.3), lineWidth: 1)
                         )
+
+                        // Thông báo lỗi Inline (Nếu có) - Không che màn hình, không đè UI
+                        if let err = inlineErrorMessage {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundStyle(Color(red: 1.0, green: 0.35, blue: 0.35))
+
+                                Text(err)
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundStyle(Color(red: 1.0, green: 0.4, blue: 0.4))
+                                    .lineLimit(2)
+
+                                Spacer()
+
+                                Button {
+                                    withAnimation(.easeOut(duration: 0.2)) {
+                                        inlineErrorMessage = nil
+                                    }
+                                } label: {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 11, weight: .bold))
+                                        .foregroundStyle(Color.white.opacity(0.6))
+                                        .padding(4)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color(red: 1.0, green: 0.2, blue: 0.2).opacity(0.12))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(red: 1.0, green: 0.3, blue: 0.3).opacity(0.35), lineWidth: 1)
+                            )
+                            .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                        }
 
                         // Tùy chọn Ghi Nhớ Mã Key trên thiết bị
                         Button {
@@ -201,6 +240,7 @@ struct CheatStoreLoginView: View {
 
                         // Nút Kích Hoạt / Đăng Nhập
                         Button {
+                            inlineErrorMessage = nil
                             Task {
                                 let success = await licenseManager.activateKey(inputKey)
                                 await MainActor.run {
@@ -214,7 +254,7 @@ struct CheatStoreLoginView: View {
                                         generator.notificationOccurred(.error)
                                         let msg = licenseManager.errorMessage ?? "Kích hoạt không thành công. Vui lòng thử lại!"
                                         withAnimation(.spring(response: 0.38, dampingFraction: 0.72)) {
-                                            keyNotification = .error(message: msg)
+                                            inlineErrorMessage = msg
                                         }
                                     }
                                 }
@@ -223,11 +263,11 @@ struct CheatStoreLoginView: View {
                             HStack {
                                 if licenseManager.isVerifying {
                                     ProgressView()
-                                        .tint(.black)
+                                        .tint(.white)
                                         .padding(.trailing, 4)
                                     Text("Đang kiểm tra...")
                                         .font(.system(size: 14, weight: .bold))
-                                        .foregroundStyle(.black)
+                                        .foregroundStyle(.white)
                                 } else {
                                     Image(systemName: "checkmark.seal.fill")
                                     Text(!licenseManager.activeKey.isEmpty && inputKey == licenseManager.activeKey ? "Đăng Nhập Ngay" : "Kích Hoạt Ngay")
@@ -235,7 +275,7 @@ struct CheatStoreLoginView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity)
-                            .frame(height: 42)
+                            .frame(height: 44)
                             .background(
                                 LinearGradient(
                                     colors: [brandBlue, brandBlueDark],
@@ -244,18 +284,18 @@ struct CheatStoreLoginView: View {
                                 )
                             )
                             .foregroundStyle(.white)
-                            .cornerRadius(11)
-                            .shadow(color: brandBlue.opacity(0.4), radius: 6, y: 3)
+                            .cornerRadius(12)
+                            .shadow(color: brandBlue.opacity(0.35), radius: 6, y: 3)
                         }
-                        .disabled(licenseManager.isVerifying || inputKey.isEmpty)
-                        .opacity((licenseManager.isVerifying || inputKey.isEmpty) ? 0.6 : 1.0)
+                        .disabled(licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .opacity((licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
                     }
-                    .padding(16)
-                    .background(Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82))
-                    .cornerRadius(16)
+                    .padding(18)
+                    .background(BlossomTheme.cardBackground)
+                    .cornerRadius(18)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
-                            .stroke(brandBlue.opacity(0.2), lineWidth: 1)
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(BlossomTheme.cardBorder, lineWidth: 1)
                     )
                     .padding(.horizontal, 20)
 
@@ -268,7 +308,7 @@ struct CheatStoreLoginView: View {
 
                             Spacer()
 
-                            // Duy nhất 1 chỉ báo hỗ trợ iOS ở trên/cạnh mã thiết bị
+                            // Chỉ báo hỗ trợ iOS
                             HStack(spacing: 5) {
                                 Circle()
                                     .fill(isDeviceSupported ? Color(red: 0.15, green: 0.95, blue: 0.55) : Color.red)
@@ -312,7 +352,7 @@ struct CheatStoreLoginView: View {
                             }
                         }
                         .padding(12)
-                        .background(Color.white.opacity(0.03))
+                        .background(Color.white.opacity(0.04))
                         .cornerRadius(10)
                     }
                     .padding(.horizontal, 24)
@@ -359,27 +399,7 @@ struct CheatStoreLoginView: View {
                 .padding(.bottom, 40)
             }
 
-            // POPUP MODAL THÔNG BÁO KẾT QUẢ NHẬP KEY (HIỆU ỨNG CYBERPUNK CÓ NÚT ĐÓNG)
-            if let notif = keyNotification {
-                KeyNotificationModalView(
-                    notification: notif,
-                    onDismiss: {
-                        withAnimation(.easeOut(duration: 0.22)) {
-                            keyNotification = nil
-                        }
-                    },
-                    onConfirmSuccess: {
-                        withAnimation {
-                            keyNotification = nil
-                            licenseManager.confirmActivation()
-                        }
-                    }
-                )
-                .transition(.scale(scale: 0.86).combined(with: .opacity))
-                .zIndex(50)
-            }
-
-            // HIỆU ỨNG INTRO ĐĂNG NHẬP THÀNH CÔNG (TỪNG CHỮ CHUẨN BLOSSOM TYPOGRAPHY)
+            // HIỆU ỨNG INTRO ĐĂNG NHẬP THÀNH CÔNG (0XCHEATS VERIFIED • SANG TRỌNG)
             if showLoginSuccessSplash {
                 LoginSuccessIntroView(
                     planName: licenseManager.planName,
@@ -402,6 +422,7 @@ struct CheatStoreLoginView: View {
         }
     }
 }
+
 
 struct CheatStoreLogoView: View {
     var size: CGFloat = 84
@@ -850,8 +871,11 @@ struct LoginSuccessIntroView: View {
                     .ignoresSafeArea()
 
                 // Hạt cánh hoa anh đào rơi nhẹ phía sau
-                BlossomPetalParticlesView()
-                    .opacity(0.35)
+                Circle()
+                    .fill(BlossomTheme.sakura.opacity(0.14))
+                    .blur(radius: 95)
+                    .frame(width: 320, height: 320)
+                    .offset(y: -100)
                     .ignoresSafeArea()
 
                 // Viền sáng neon chạy quanh mép màn hình (Screen Inset Neon Glow)
