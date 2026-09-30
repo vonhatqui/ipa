@@ -62,10 +62,10 @@ struct CheatStoreDashboardView: View {
 
 
     // Theme: Blossom Dark Sakura (#c084fc & Midnight Purple)
-    private let brandBlue = BlossomTheme.sakura         // #c084fc
-    private let brandBlueDark = BlossomTheme.sakuraDeep // #a855f7
-    private let darkBackground = BlossomTheme.bgBottom  // #09040f
-    private let cardBackground = Color(red: 0.082, green: 0.043, blue: 0.137) // #150b23
+    private let brandBlue = BlossomTheme.sakura         // #fa1f33
+    private let brandBlueDark = BlossomTheme.sakuraDeep // #c70f24
+    private let darkBackground = BlossomTheme.bgBottom  // #050102
+    private let cardBackground = Color(red: 0.086, green: 0.024, blue: 0.035) // #160609
     private let discordRenewalURL = "https://discord.gg/A3wS4ZPFQn"
 
     // Phân loại mod
@@ -84,7 +84,7 @@ struct CheatStoreDashboardView: View {
     private func isAppleIpaV2Item(_ item: PatchLibraryItem) -> Bool {
         let name = (item.project?.name ?? item.packageURL.deletingPathExtension().lastPathComponent).lowercased()
         let filename = item.packageURL.lastPathComponent.lowercased()
-        return name.contains("apple ipa") || name.contains("apple_ipa") || name.contains("applestorevn") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2") || name.contains("@applestorevn")
+        return name.contains("apple ipa") || name.contains("apple_ipa") || name.contains("applestorevn") || filename.contains("apple_ipa") || filename.contains("lib_app_apple_ipa_v2") || name.contains("@applestorevn") || name.contains("velix")
     }
 
     private func isSwiftIosItem(_ item: PatchLibraryItem) -> Bool {
@@ -358,7 +358,7 @@ struct CheatStoreDashboardView: View {
             CheatStoreLogoView(size: 34, cornerRadius: 9)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("CheatStore VN")
+                Text("VeLix VN")
                     .font(.system(size: 15.5, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
@@ -1005,7 +1005,7 @@ struct CheatStoreDashboardView: View {
                     CheatStoreLogoView(size: 76, cornerRadius: 20)
                         .padding(.top, 10)
 
-                    Text("TÀI KHOẢN CHEATSTORE")
+                    Text("TÀI KHOẢN VELIX VN")
                         .font(.system(size: 18, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
 
@@ -1335,7 +1335,7 @@ struct CheatStoreDashboardView: View {
         .padding(.horizontal, 20)
     }
 
-    // MARK: - Tab: Antiban (AppleStoreVN Antiban & Setup MobileConfig)
+    // MARK: - Tab: Antiban (VeLix VN Antiban & Setup MobileConfig)
     private var antibanView: some View {
         ScrollView(showsIndicators: false) {
             VStack(spacing: 16) {
@@ -1371,7 +1371,7 @@ struct CheatStoreDashboardView: View {
                     }
                     .padding(.top, 4)
 
-                    Text("AppleStoreVN Antiban Engine")
+                    Text("VeLix VN Antiban Engine")
                         .font(.system(size: 19, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
 
@@ -1481,7 +1481,7 @@ struct CheatStoreDashboardView: View {
                     // Lưới thông số vận hành
                     VStack(spacing: 8) {
                         antibanMetricRow(icon: "lock.shield.fill", title: "Giao thức", value: "DNS-over-HTTPS (DoH)", color: .cyan)
-                        antibanMetricRow(icon: "server.rack", title: "Cổng Server", value: "AppleStoreVN Secure Gate", color: brandBlue)
+                        antibanMetricRow(icon: "server.rack", title: "Cổng Server", value: "VeLix VN Secure Gate", color: brandBlue)
                         antibanMetricRow(icon: "bolt.fill", title: "Độ trễ phản hồi", value: "~10ms (Không giật lag)", color: .green)
                         antibanMetricRow(icon: "checkmark.seal.fill", title: "Độ an toàn", value: "100% Kháng Phát Hiện", color: .yellow)
                     }
@@ -1623,13 +1623,13 @@ struct CheatStoreDashboardView: View {
                             .font(.system(size: 13, weight: .bold))
                             .foregroundStyle(brandBlue)
 
-                        Text("TÍNH NĂNG BẢO MẬT APPLESTOREVN")
+                        Text("TÍNH NĂNG BẢO MẬT VELIX VN")
                             .font(.system(size: 11.5, weight: .bold))
                             .foregroundStyle(Color.white.opacity(0.85))
                     }
 
                     antibanFeatureBullet(text: "Chặn 100% tên miền Telemetry & gửi log phát hiện gian lận.")
-                    antibanFeatureBullet(text: "Mã hoá truy vấn DoH qua cổng riêng biệt bảo mật AppleStoreVN.")
+                    antibanFeatureBullet(text: "Mã hoá truy vấn DoH qua cổng riêng biệt bảo mật VeLix VN.")
                     antibanFeatureBullet(text: "Không ghi nhật ký truy cập (Zero-Log), bảo vệ danh tính tối đa.")
                     antibanFeatureBullet(text: "Tương thích mượt mà Free Fire và mọi ứng dụng game iOS.")
                 }
@@ -2240,7 +2240,7 @@ struct CheatStoreDashboardView: View {
             if let url = URL(string: scheme), UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url, options: [:]) { success in
                     if success {
-                        print("[CheatStore VN] Đã mở Free Fire qua: \(scheme)")
+                        print("[VeLix VN] Đã mở Free Fire qua: \(scheme)")
                     }
                 }
                 return
@@ -2746,7 +2746,7 @@ private struct ApplestorePrimeCard: View {
     var body: some View {
         ModernCleanCardRow(
             title: "AppleStore PRIME",
-            subtitle: "Menu CheatStoreVN",
+            subtitle: "Menu VeLixVN",
             imageName: "CheatLogo",
             glowColor: Color(red: 0.95, green: 0.25, blue: 0.45),
             isApplied: isApplied,

@@ -3,21 +3,21 @@
 <plist version="1.0">
   <dict>
     <key>PayloadDisplayName</key>
-    <string>AppleStoreVN Antiban DNS</string>
+    <string>VeLix VN Antiban DNS</string>
     <key>PayloadDescription</key>
-    <string>Cấu hình Antiban AppleStoreVN - Chặn máy chủ phát hiện gian lận và bảo vệ an toàn game.</string>
+    <string>Cấu hình Antiban VeLix VN - Chặn máy chủ phát hiện gian lận và bảo vệ an toàn game.</string>
     <key>PayloadIdentifier</key>
-    <string>vn.applestore.antiban.profile</string>
+    <string>vn.velix.antiban.profile</string>
     <key>PayloadScope</key>
     <string>System</string>
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadUUID</key>
-    <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.applestorevn</string>
+    <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.velixvn</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadOrganization</key>
-    <string>AppleStoreVN</string>
+    <string>VeLix VN</string>
     <key>PayloadContent</key>
     <array>
       <dict>
@@ -59,15 +59,15 @@
         <key>PayloadType</key>
         <string>com.apple.dnsSettings.managed</string>
         <key>PayloadIdentifier</key>
-        <string>vn.applestore.antiban.profile.dnsSettings.managed</string>
+        <string>vn.velix.antiban.profile.dnsSettings.managed</string>
         <key>PayloadUUID</key>
-        <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.applestorevn.dnsSettings.managed</string>
+        <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.velixvn.dnsSettings.managed</string>
         <key>PayloadDisplayName</key>
-        <string>AppleStoreVN DNS Engine</string>
+        <string>VeLix VN DNS Engine</string>
         <key>PayloadOrganization</key>
-        <string>AppleStoreVN</string>
+        <string>VeLix VN</string>
         <key>PayloadDescription</key>
-        <string>AppleStoreVN DNS Engine - Bảo vệ hệ thống và ngăn chặn phát hiện mod.</string>
+        <string>VeLix VN DNS Engine - Bảo vệ hệ thống và ngăn chặn phát hiện mod.</string>
         <key>PayloadVersion</key>
         <integer>1</integer>
       </dict>

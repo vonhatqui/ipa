@@ -32,7 +32,7 @@ struct RepositoryHomeView: View {
                 await store.refreshAllAndWait()
                 rebuildFeed()
             }
-            .navigationTitle("CheatStore")
+            .navigationTitle("VeLix VN")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 AppUtilityToolbar(

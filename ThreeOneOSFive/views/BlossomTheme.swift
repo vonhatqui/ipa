@@ -1,19 +1,19 @@
 import SwiftUI
 
-// MARK: - Blossom Design Tokens (Trích xuất 100% từ blossom.re)
+// MARK: - VeLix VN Design Tokens (Rich Cyber Crimson & Obsidian Red Aesthetic)
 enum BlossomTheme {
-    // Colors - Đậm sâu, phát sáng và rực rỡ hơn (Rich Neon Purple Aesthetic)
-    static let bgTop = Color(red: 0.055, green: 0.024, blue: 0.098)       // #0e0619 (Đậm sâu hơn)
-    static let bgBottom = Color(red: 0.020, green: 0.008, blue: 0.038)    // #05020a (Đậm sâu hơn)
-    static let sakura = Color(red: 0.812, green: 0.478, blue: 1.000)      // #cf7aff (Sáng rực rỡ và đậm đà hơn)
-    static let sakuraLight = Color(red: 0.957, green: 0.898, blue: 1.000) // #f4e5ff (Highlight siêu sáng)
-    static let sakuraDeep = Color(red: 0.627, green: 0.235, blue: 0.980)  // #a03cfa (Tím đậm sâu phát sáng)
-    static let petal = Color(red: 0.886, green: 0.706, blue: 1.000)       // #e2b4ff
-    static let branch = Color(red: 0.380, green: 0.125, blue: 0.725)      // #6120b9
-    static let cardBackground = Color(red: 0.078, green: 0.039, blue: 0.141).opacity(0.82) // Đậm đặc tương phản hơn
-    static let cardBorder = Color(red: 0.812, green: 0.478, blue: 1.000).opacity(0.20)     // Viền tím neon sắc sảo
+    // Colors - Phong cách VeLix VN: Đỏ Crimson / Scarlet Neon rực rỡ & Đen Obsidian huyền bí
+    static let bgTop = Color(red: 0.065, green: 0.015, blue: 0.024)       // #110406 (Đỏ thẫm bóng đêm)
+    static let bgBottom = Color(red: 0.020, green: 0.005, blue: 0.008)    // #050102 (Đen tuyền Obsidian)
+    static let sakura = Color(red: 0.980, green: 0.120, blue: 0.200)      // #fa1f33 (Đỏ Scarlet Neon rực sáng chuẩn logo VeLix)
+    static let sakuraLight = Color(red: 1.000, green: 0.380, blue: 0.420) // #ff616b (Highlight đỏ hồng neon cực sáng)
+    static let sakuraDeep = Color(red: 0.780, green: 0.060, blue: 0.140)  // #c70f24 (Đỏ Ruby đậm sâu phát sáng)
+    static let petal = Color(red: 1.000, green: 0.240, blue: 0.280)       // #ff3d47 (Tàn lửa than đỏ rực bay bổng)
+    static let branch = Color(red: 0.480, green: 0.040, blue: 0.080)      // #7a0a14
+    static let cardBackground = Color(red: 0.086, green: 0.024, blue: 0.035).opacity(0.85) // Kính mờ đen đỏ tương phản cao
+    static let cardBorder = Color(red: 0.980, green: 0.120, blue: 0.200).opacity(0.24)     // Viền đỏ neon sắc nét
     static let textPrimary = Color(red: 0.984, green: 0.980, blue: 1.000) // #fafaff
-    static let textDim = Color(red: 0.741, green: 0.620, blue: 0.980)     // #bd9efa
+    static let textDim = Color(red: 0.920, green: 0.620, blue: 0.660)     // #eb9ea8
 
     // Gradients
     static var backgroundGradient: LinearGradient {

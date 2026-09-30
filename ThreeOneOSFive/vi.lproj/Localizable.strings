@@ -14,8 +14,8 @@
 "common.back" = "Quay lại";
 "common.finish" = "Hoàn thành";
 
-"update.title" = "Update CheatStore";
-"update.message" = "CheatStore Update in Discord\nPhiên bản %@ đã có mặt trên Discord CheatStore VN.";
+"update.title" = "Cập nhật VeLix VN";
+"update.message" = "VeLix VN Update in Discord\nPhiên bản %@ đã có mặt trên Discord VeLix VN.";
 "update.agree" = "Discord";
 "update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Sai mật khẩu.";

@@ -17,7 +17,7 @@ struct SettingsView: View {
                         AppLogo()
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("CheatStore VN").font(.headline)
+                            Text("VeLix VN").font(.headline)
                             Text(language.text("common.version", appVersion))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)

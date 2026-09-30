@@ -14,8 +14,8 @@
 "common.back" = "Back";
 "common.finish" = "Finish";
 
-"update.title" = "Update CheatStore";
-"update.message" = "CheatStore Update in Discord\nVersion %@ is available on CheatStore VN Discord.";
+"update.title" = "Update VeLix VN";
+"update.message" = "VeLix VN Update in Discord\nVersion %@ is available on VeLix VN Discord.";
 "update.agree" = "Discord";
 "update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Incorrect password.";

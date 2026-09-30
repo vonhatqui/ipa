@@ -528,7 +528,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThreeOneOSFive/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "CheatStore VN";
+				INFOPLIST_KEY_CFBundleDisplayName = "VeLix VN";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -541,7 +541,7 @@
 				);
 				MARKETING_VERSION = 2.3;
 				OTHER_LDFLAGS = "-lz";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cheatstore.vn";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.velix.vn";
 				PRODUCT_NAME = CheatStore;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
@@ -562,7 +562,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThreeOneOSFive/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "CheatStore VN";
+				INFOPLIST_KEY_CFBundleDisplayName = "VeLix VN";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -575,7 +575,7 @@
 				);
 				MARKETING_VERSION = 2.3;
 				OTHER_LDFLAGS = "-lz";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.cheatstore.vn";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.velix.vn";
 				PRODUCT_NAME = CheatStore;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";

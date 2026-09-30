@@ -84,7 +84,7 @@ struct GameSelectionView: View {
             CheatStoreLogoView(size: 34, cornerRadius: 9)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("CheatStore VN")
+                Text("VeLix VN")
                     .font(.system(size: 16, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
 
@@ -292,7 +292,7 @@ struct GameSelectionView: View {
                     }
 
                     VStack(spacing: 3) {
-                        Text("CHEATSTORE VN")
+                        Text("VELIX VN")
                             .font(.system(size: 11, weight: .bold, design: .rounded))
                             .tracking(5)
                             .foregroundStyle(Color.white.opacity(0.45))

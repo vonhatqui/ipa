@@ -48,10 +48,10 @@ struct BlossomSplashView: View {
 
             // Cụm chữ Typography trung tâm
             VStack(spacing: 12) {
-                // Tiêu đề chính "CHEATSTORE"
-                Text("CHEATSTORE")
+                // Tiêu đề chính "VELIX VN"
+                Text("VELIX VN")
                     .font(.system(size: 30, weight: .black, design: .rounded))
-                    .tracking(12)
+                    .tracking(10)
                     .foregroundStyle(BlossomTheme.textGradient)
                     .shadow(color: BlossomTheme.sakura.opacity(0.75), radius: 24, x: 0, y: 0)
                     .shadow(color: BlossomTheme.sakuraDeep.opacity(0.45), radius: 40, x: 0, y: 0)
