@@ -1,6 +1,38 @@
 import SwiftUI
 import UIKit
 
+/// Các tab điều hướng của CheatStore
+public enum CheatStoreTab: Int, CaseIterable {
+    case home = 0
+    case mainVIP = 1
+    case esp = 2
+    case skin = 3
+    case antiban = 4
+    case profile = 5
+
+    public var title: String {
+        switch self {
+        case .home: return "Trang Chủ"
+        case .mainVIP: return "MainVIP"
+        case .esp: return "Định Vị"
+        case .skin: return "Mod Skin"
+        case .antiban: return "Antiban"
+        case .profile: return "Cá Nhân"
+        }
+    }
+
+    public var icon: String {
+        switch self {
+        case .home: return "house.fill"
+        case .mainVIP: return "crown.fill"
+        case .esp: return "location.viewfinder"
+        case .skin: return "tshirt.fill"
+        case .antiban: return "checkmark.shield.fill"
+        case .profile: return "person.crop.circle.fill"
+        }
+    }
+}
+
 /// Thanh điều hướng Dock Limelight lơ lửng cao cấp (Chuẩn kích thước 56pt, không bị giãn chiều cao)
 struct LimelightDockBar: View {
     @Binding var selectedTab: CheatStoreTab

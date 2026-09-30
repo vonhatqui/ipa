@@ -64,7 +64,7 @@ final class AppleIpaV2Injector: ObservableObject {
     }
 
     // MARK: - Ghi Bytecode Nhị Phân Chuẩn Little-Endian
-    private func writeInt32(_ data: inout Data, offset: Int, value: Int32) {
+    private static func writeInt32(_ data: inout Data, offset: Int, value: Int32) {
         guard offset + 4 <= data.count else { return }
         var leValue = value.littleEndian
         withUnsafeBytes(of: &leValue) { rawBuffer in
@@ -72,8 +72,15 @@ final class AppleIpaV2Injector: ObservableObject {
         }
     }
 
-    /// Tùy biến mã máy IL bytecode trực tiếp theo đúng 5 cờ chức năng được bật/tắt
-    func generateCustomPatchData(from baseData: Data) -> Data {
+    /// Tùy biến mã máy IL bytecode trực tiếp theo đúng 5 cờ chức năng được bật/tắt (Thread-safe)
+    static func generateCustomPatchData(
+        from baseData: Data,
+        aimbot: Bool,
+        silentAim: Bool,
+        noRecoil: Bool,
+        espBoxLine: Bool,
+        espNameDist: Bool
+    ) -> Data {
         var bytes = baseData
         guard bytes.count >= 40600 else { return baseData }
 
@@ -83,7 +90,7 @@ final class AppleIpaV2Injector: ObservableObject {
         writeInt32(&bytes, offset: 20899, value: 0)
 
         // 2. CHỐNG GIẬT SÚNG NO RECOIL (Method #3 tại byte offset 9439)
-        if isNoRecoilEnabled {
+        if noRecoil {
             // Ldc_R4 0.0f; Ret 1 (Triệt tiêu độ tản đạn & giật = 0.0f)
             writeInt32(&bytes, offset: 9439, value: 3)   // Ldc_R4
             writeInt32(&bytes, offset: 9443, value: 0)   // 0.0f
@@ -98,7 +105,7 @@ final class AppleIpaV2Injector: ObservableObject {
         }
 
         // 3. ĐẠN MA THUẬT SILENT AIM (Method #13 tại byte offset 32903)
-        if !isSilentAimEnabled {
+        if !silentAim {
             // ldnull; Ret 1 (Tắt hoàn toàn silent aim, đạn bay tự nhiên)
             writeInt32(&bytes, offset: 32903, value: 28)  // ldnull
             writeInt32(&bytes, offset: 32907, value: 0)
@@ -111,13 +118,13 @@ final class AppleIpaV2Injector: ObservableObject {
         }
 
         // 4. KHÓA TÂM AIMBOT (Method #5 tại byte offset 40340)
-        let aimbotTargetName = isAimbotEnabled ? "GetAttackableCenterWS" : "OffAttackableCenterWS"
+        let aimbotTargetName = aimbot ? "GetAttackableCenterWS" : "OffAttackableCenterWS"
         if let aimBytes = aimbotTargetName.data(using: .utf8), bytes.count >= 40340 + aimBytes.count {
             bytes.replaceSubrange(40340..<(40340 + aimBytes.count), with: aimBytes)
         }
 
         // 5. ĐỊNH VỊ ESP BOX, LINE, TÊN & KHOẢNG CÁCH (Method #4)
-        if !isEspBoxLineEnabled && !isEspNameDistEnabled {
+        if !espBoxLine && !espNameDist {
             // Tắt toàn bộ ESP: Ret ngay tại instruction 0 của OnGUI (offset 9887)
             writeInt32(&bytes, offset: 9887, value: 136)
             writeInt32(&bytes, offset: 9891, value: 0)
@@ -136,6 +143,13 @@ final class AppleIpaV2Injector: ObservableObject {
         self.isWorking = true
         self.statusMessage = "Đang xử lý & đóng gói dữ liệu nạp..."
 
+        // Thu thập trạng thái các cờ trên MainActor trước khi chuyển background
+        let aimbot = self.isAimbotEnabled
+        let silentAim = self.isSilentAimEnabled
+        let noRecoil = self.isNoRecoilEnabled
+        let espBoxLine = self.isEspBoxLineEnabled
+        let espNameDist = self.isEspNameDistEnabled
+
         DispatchQueue.global(qos: .userInitiated).async {
             do {
                 // 1. Tải bản mẫu gốc từ Bundle AppCore
@@ -146,7 +160,14 @@ final class AppleIpaV2Injector: ObservableObject {
                 }
 
                 // 2. Chuyển đổi mã máy theo 5 cờ được chọn
-                let customizedData = self.generateCustomPatchData(from: ifixRule.replacementData)
+                let customizedData = Self.generateCustomPatchData(
+                    from: ifixRule.replacementData,
+                    aimbot: aimbot,
+                    silentAim: silentAim,
+                    noRecoil: noRecoil,
+                    espBoxLine: espBoxLine,
+                    espNameDist: espNameDist
+                )
                 let localConfigData = "{\"testCodePatch\":true}".data(using: .utf8)!
 
                 // 3. Tạo Project Patch tiêu chuẩn
@@ -240,6 +261,13 @@ final class AppleIpaV2Injector: ObservableObject {
                     self.statusMessage = "Đã khôi phục sạch 100% dữ liệu gốc."
                     UINotificationFeedbackGenerator().notificationOccurred(.success)
                     completion(.success(()))
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.isWorking = false
+                    self.statusMessage = "Lỗi khôi phục: \(error.localizedDescription)"
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    completion(.failure(error))
                 }
             }
         }
