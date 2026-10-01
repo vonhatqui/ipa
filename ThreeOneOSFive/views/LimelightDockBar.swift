@@ -7,11 +7,9 @@ struct LimelightDockBar: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
     @Namespace private var limelightNamespace
 
-    // Theme Blossom Dark Sakura
-    private let brandSakura = Color(red: 255/255, green: 48/255, blue: 48/255)
-    private let brandSakuraLight = Color(red: 255/255, green: 110/255, blue: 110/255)
-    private let brandSakuraDeep = Color(red: 190/255, green: 25/255, blue: 25/255)
-    private let dockBackground = Color(red: 22/255, green: 22/255, blue: 24/255).opacity(0.96)
+    // Theme Black & White LED Glow
+    private let ledWhite = Color.white
+    private let dockBackground = Color(red: 14/255, green: 14/255, blue: 16/255).opacity(0.96)
 
     var body: some View {
         HStack(spacing: 6) {
@@ -34,26 +32,24 @@ struct LimelightDockBar: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                brandSakuraDeep.opacity(0.42),
-                                                brandSakura.opacity(0.20)
+                                                Color.white.opacity(0.18),
+                                                Color.white.opacity(0.06)
                                             ],
                                             startPoint: .top,
                                             endPoint: .bottom
                                         )
                                     )
-                                    .shadow(color: brandSakura.opacity(0.55), radius: 8, x: 0, y: 0)
-
-                                // Vệt sáng đèn rọi dưới chân icon
-                                Capsule()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [brandSakuraLight, brandSakura],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                            .stroke(Color.white.opacity(0.28), lineWidth: 1)
                                     )
-                                    .frame(width: 22, height: 3)
-                                    .shadow(color: brandSakuraLight, radius: 4, x: 0, y: -1)
+                                    .shadow(color: Color.white.opacity(0.22), radius: 8, x: 0, y: 0)
+
+                                // Vệt sáng LED rọi dưới chân icon
+                                Capsule()
+                                    .fill(Color.white)
+                                    .frame(width: 22, height: 2.5)
+                                    .shadow(color: Color.white, radius: 5, x: 0, y: -1)
                                     .padding(.bottom, 3)
                             }
                             .frame(height: 48)
@@ -67,10 +63,10 @@ struct LimelightDockBar: View {
                                     .font(.system(size: isSelected ? 17.5 : 16, weight: isSelected ? .bold : .medium))
                                     .foregroundStyle(
                                         isSelected
-                                            ? LinearGradient(colors: [Color.white, brandSakuraLight], startPoint: .top, endPoint: .bottom)
-                                            : LinearGradient(colors: [Color.white.opacity(0.55), Color.white.opacity(0.45)], startPoint: .top, endPoint: .bottom)
+                                            ? Color.white
+                                            : Color.white.opacity(0.45)
                                     )
-                                    .shadow(color: isSelected ? brandSakura.opacity(0.85) : .clear, radius: 6, x: 0, y: 0)
+                                    .shadow(color: isSelected ? Color.white.opacity(0.9) : .clear, radius: 8, x: 0, y: 0)
                                     .scaleEffect(isSelected ? 1.06 : 1.0)
 
                                 // Badge trạng thái bảo trì nếu có
@@ -96,7 +92,7 @@ struct LimelightDockBar: View {
                             Text(tab.title)
                                 .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
                                 .foregroundStyle(isSelected ? Color.white : Color.white.opacity(0.48))
-                                .shadow(color: isSelected ? brandSakura.opacity(0.4) : .clear, radius: 3)
+                                .shadow(color: isSelected ? Color.white.opacity(0.55) : .clear, radius: 4)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
@@ -116,14 +112,13 @@ struct LimelightDockBar: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(dockBackground)
 
-                // Ánh sáng tím sâu dạ quang viền
+                // Ánh sáng LED trắng dạ quang viền
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
                             colors: [
-                                brandSakura.opacity(0.35),
-                                brandSakuraDeep.opacity(0.18),
-                                Color.white.opacity(0.08)
+                                Color.white.opacity(0.35),
+                                Color.white.opacity(0.10)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -131,8 +126,8 @@ struct LimelightDockBar: View {
                         lineWidth: 1.1
                     )
             }
-            .shadow(color: Color.black.opacity(0.65), radius: 14, x: 0, y: 6)
-            .shadow(color: brandSakuraDeep.opacity(0.2), radius: 18, x: 0, y: 0)
+            .shadow(color: Color.black.opacity(0.75), radius: 14, x: 0, y: 6)
+            .shadow(color: Color.white.opacity(0.12), radius: 18, x: 0, y: 0)
         )
         .padding(.horizontal, 16)
     }

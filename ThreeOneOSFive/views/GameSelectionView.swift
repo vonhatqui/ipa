@@ -15,12 +15,11 @@ struct GameSelectionView: View {
         FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
     }
 
-    // Design Tokens (Obsidian 0xCheats Luxury)
+    // Design Tokens (Obsidian Luxury • Black & White LED Glow)
     private let colorVoid = Color.black
     private let colorInk = Color(red: 244/255, green: 241/255, blue: 234/255)
-    private let colorMute = Color(red: 141/255, green: 136/255, blue: 128/255)
-    private let accentRed = Color(red: 255/255, green: 48/255, blue: 48/255)
-    private let glassBg = Color.white.opacity(0.05)
+    private let colorMute = Color(red: 160/255, green: 160/255, blue: 165/255)
+    private let glassBg = Color.white.opacity(0.04)
     private let glassBorder = Color.white.opacity(0.12)
     private let greenBadge = Color(red: 0.20, green: 0.88, blue: 0.45)
 
@@ -29,9 +28,9 @@ struct GameSelectionView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Vầng sáng Ambient Glow
+            // Vầng sáng Ambient Glow Trắng LED
             RadialGradient(
-                gradient: Gradient(colors: [accentRed.opacity(0.10), Color.clear]),
+                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
                 center: .top,
                 startRadius: 20,
                 endRadius: 380
@@ -47,9 +46,9 @@ struct GameSelectionView: View {
                         // Tiêu đề mục
                         HStack {
                             Text("CHỌN PHIÊN BẢN GAME")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .tracking(2.4)
-                                .foregroundColor(accentRed.opacity(0.85))
+                                .foregroundColor(Color.white.opacity(0.75))
                             Spacer()
                         }
                         .padding(.horizontal, 20)
@@ -132,12 +131,12 @@ struct GameSelectionView: View {
                     Text("Đổi Key")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                 }
-                .foregroundColor(accentRed)
+                .foregroundColor(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(accentRed.opacity(0.12))
+                .background(Color.white.opacity(0.08))
                 .cornerRadius(10)
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(accentRed.opacity(0.25), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.25), lineWidth: 1))
             }
         }
         .padding(.horizontal, 20)
@@ -178,10 +177,10 @@ struct GameSelectionView: View {
                         if isSelected {
                             Text("MẶC ĐỊNH")
                                 .font(.system(size: 8.5, weight: .black, design: .rounded))
-                                .foregroundColor(accentRed)
+                                .foregroundColor(.black)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(accentRed.opacity(0.14))
+                                .background(Color.white)
                                 .cornerRadius(4)
                         }
                     }
@@ -214,9 +213,9 @@ struct GameSelectionView: View {
             .cornerRadius(18)
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSelected ? accentRed.opacity(0.5) : glassBorder, lineWidth: 1)
+                    .stroke(isSelected ? Color.white.opacity(0.65) : glassBorder, lineWidth: 1.2)
             )
-            .shadow(color: Color.black.opacity(0.3), radius: 8, y: 4)
+            .shadow(color: isSelected ? Color.white.opacity(0.15) : Color.black.opacity(0.3), radius: 10, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
     }
@@ -226,7 +225,7 @@ struct GameSelectionView: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: "checkmark.shield.fill")
                 .font(.system(size: 18))
-                .foregroundColor(accentRed)
+                .foregroundColor(.white)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {

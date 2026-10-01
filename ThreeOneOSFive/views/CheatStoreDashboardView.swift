@@ -246,9 +246,9 @@ struct CheatStoreDashboardView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Subtle red ambient glow
+            // Subtle white LED ambient glow
             RadialGradient(
-                gradient: Gradient(colors: [accentRed.opacity(0.08), Color.clear]),
+                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
                 center: .top,
                 startRadius: 20,
                 endRadius: 400
@@ -486,15 +486,15 @@ struct CheatStoreDashboardView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(Color.white.opacity(0.22), lineWidth: 1.2)
+                        .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
                 )
-                .shadow(color: accentRed.opacity(0.35), radius: 8, x: 0, y: 0)
+                .shadow(color: Color.white.opacity(0.25), radius: 8, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedTab.title.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(3.2)
-                    .foregroundColor(accentRed.opacity(0.85))
+                    .foregroundColor(Color.white.opacity(0.70))
 
                 Text("CheatStore VN")
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
@@ -554,7 +554,7 @@ struct CheatStoreDashboardView: View {
                                 .foregroundColor(colorMute)
                             Text(currentAimDisplayText)
                                 .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(currentAimDisplayText != "Chưa bật" ? accentRed : colorMute)
+                                .foregroundColor(currentAimDisplayText != "Chưa bật" ? Color.white : colorMute)
                                 .lineLimit(1)
                                 .minimumScaleFactor(0.65)
                         }
@@ -701,7 +701,7 @@ struct CheatStoreDashboardView: View {
                     }
                     .disabled(isInjecting)
 
-                    // Nút 2: Vào Free Fire (Icon FreeFireAppIconView có sẵn, nhỏ lại ~15%)
+                    // Nút 2: Vào Free Fire (Icon FreeFireAppIconView có sẵn, nhỏ lại ~15% - Black & White LED)
                     Button(action: handleLaunchGame) {
                         HStack(spacing: 8) {
                             FreeFireAppIconView(size: 20, cornerRadius: 5)
@@ -714,13 +714,14 @@ struct CheatStoreDashboardView: View {
                         .frame(height: 40)
                         .background(
                             LinearGradient(
-                                colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                colors: [Color(white: 0.18), Color(white: 0.08)],
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
                         .cornerRadius(14)
-                        .shadow(color: Color.purple.opacity(0.25), radius: 8, x: 0, y: 2)
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.35), lineWidth: 1))
+                        .shadow(color: Color.white.opacity(0.18), radius: 8, x: 0, y: 2)
                     }
 
                     // Nút 3: Khôi Phục Gốc (An toàn 100%, nhỏ lại ~15%)
@@ -743,12 +744,13 @@ struct CheatStoreDashboardView: View {
                     .disabled(isRestoringClean)
                 }
                 .padding(10)
-                .background(Color.black.opacity(0.35))
+                .background(Color.black.opacity(0.4))
                 .cornerRadius(20)
                 .overlay(
                     RoundedRectangle(cornerRadius: 20)
-                        .stroke(glassBorder, lineWidth: 1)
+                        .stroke(Color.white.opacity(0.22), lineWidth: 1.2)
                 )
+                .shadow(color: Color.white.opacity(0.08), radius: 10, y: 0)
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }
@@ -972,7 +974,7 @@ struct CheatStoreDashboardView: View {
                     HStack(spacing: 16) {
                         Text("◈")
                             .font(.system(size: 24, weight: .bold))
-                            .foregroundColor(accentRed)
+                            .foregroundColor(Color.white)
                             .frame(width: 44, height: 44)
                             .background(Color.white.opacity(0.06))
                             .clipShape(Circle())
@@ -1372,7 +1374,7 @@ struct CheatStoreDashboardView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .stroke(accentRed.opacity(0.4), lineWidth: 1.2)
+                                    .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
                             )
 
                         VStack(alignment: .leading, spacing: 3) {
@@ -1633,12 +1635,12 @@ struct CheatStoreDashboardView: View {
                         Text("Đăng Xuất")
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                     }
-                    .foregroundColor(accentRed)
+                    .foregroundColor(Color.white.opacity(0.9))
                     .frame(maxWidth: .infinity)
                     .frame(height: 48)
-                    .background(accentRed.opacity(0.08))
+                    .background(Color.white.opacity(0.06))
                     .cornerRadius(16)
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(accentRed.opacity(0.3), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.25), lineWidth: 1))
                 }
                 .padding(.top, 4)
 

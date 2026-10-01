@@ -473,8 +473,8 @@ struct ApplePayCheckmarkView: View {
 // MARK: - BIỂU TƯỢNG TẢI XUỐNG VỚI HIỆU ỨNG LÊN XUỐNG NHẸ NHÀNG
 struct AnimatedDownloadIconView: View {
     @State private var isFloating = false
-    private let sakura = BlossomTheme.sakura
-    private let cyan = Color(red: 0.00, green: 0.88, blue: 1.00)
+    private let whiteLed = Color.white
+    private let cyan = Color.white.opacity(0.9)
 
     var body: some View {
         ZStack {
@@ -482,7 +482,7 @@ struct AnimatedDownloadIconView: View {
             Circle()
                 .fill(
                     RadialGradient(
-                        colors: [cyan.opacity(0.35), sakura.opacity(0.20), Color.clear],
+                        colors: [Color.white.opacity(0.35), Color.white.opacity(0.12), Color.clear],
                         center: .center,
                         startRadius: 10,
                         endRadius: 46
@@ -494,7 +494,7 @@ struct AnimatedDownloadIconView: View {
             Circle()
                 .stroke(
                     LinearGradient(
-                        colors: [cyan, sakura.opacity(0.7)],
+                        colors: [Color.white, Color.white.opacity(0.6)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     ),
@@ -511,12 +511,12 @@ struct AnimatedDownloadIconView: View {
                 .font(.system(size: 42, weight: .bold))
                 .foregroundStyle(
                     LinearGradient(
-                        colors: [cyan, sakura],
+                        colors: [Color.white, Color(white: 0.8)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
                 )
-                .shadow(color: cyan.opacity(0.65), radius: 8, y: 2)
+                .shadow(color: Color.white.opacity(0.65), radius: 8, y: 2)
                 .offset(y: isFloating ? -5 : 5)
         }
         .onAppear {
@@ -998,7 +998,7 @@ struct KeyNotificationModalView: View {
     private let brandBlue = Color(red: 0.00, green: 0.72, blue: 1.00)
     private let brandGreen = Color(red: 0.20, green: 0.88, blue: 0.45)
     private let brandRed = Color(red: 1.00, green: 0.30, blue: 0.35)
-    private let sakura = BlossomTheme.sakura
+    private let sakura = Color.white
 
     var body: some View {
         ZStack {
@@ -1231,14 +1231,14 @@ struct KeyNotificationModalView: View {
                                 .frame(height: 48)
                                 .background(
                                     LinearGradient(
-                                        colors: [sakura, BlossomTheme.sakuraDeep],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
+                                        colors: [Color.white, Color(white: 0.88)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
                                     )
                                 )
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.black)
                                 .cornerRadius(14)
-                                .shadow(color: sakura.opacity(0.45), radius: 10, y: 4)
+                                .shadow(color: Color.white.opacity(0.35), radius: 10, y: 2)
                             }
 
                             // Nút Đóng

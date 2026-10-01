@@ -22,15 +22,15 @@ struct InjectorActionButton: View {
         if isWorking {
             HStack(spacing: 5) {
                 ProgressView()
-                    .progressViewStyle(CircularProgressViewStyle(tint: BlossomTheme.sakura))
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(0.7)
                 Text(isApplied ? "Đang gỡ..." : "Injecting...")
                     .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(BlossomTheme.sakura)
+                    .foregroundStyle(.white)
             }
             .padding(.horizontal, 9)
             .padding(.vertical, 6)
-            .background(BlossomTheme.sakura.opacity(0.12))
+            .background(Color.white.opacity(0.12))
             .clipShape(Capsule())
         } else if isUnderMaintenance {
             if isApplied {
@@ -48,7 +48,7 @@ struct InjectorActionButton: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(Color.red.opacity(0.85))
+                    .background(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.85))
                     .clipShape(Capsule())
                 }
                 .buttonStyle(InjectorScaleButtonStyle())
@@ -64,13 +64,13 @@ struct InjectorActionButton: View {
                         Text("KHÔNG AN TOÀN")
                             .font(.system(size: 10, weight: .black, design: .rounded))
                     }
-                    .foregroundStyle(Color(red: 1.0, green: 0.35, blue: 0.45))
+                    .foregroundStyle(Color(red: 239/255, green: 68/255, blue: 68/255))
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5.5)
-                    .background(Color.red.opacity(0.12))
+                    .background(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.12))
                     .clipShape(Capsule())
                     .overlay(
-                        Capsule().stroke(Color.red.opacity(0.4), lineWidth: 0.8)
+                        Capsule().stroke(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.4), lineWidth: 0.8)
                     )
                 }
                 .buttonStyle(InjectorScaleButtonStyle())
@@ -87,19 +87,19 @@ struct InjectorActionButton: View {
                     Text("UN-INJECT")
                         .font(.system(size: 10.5, weight: .black, design: .rounded))
                 }
-                .foregroundStyle(Color(red: 1.0, green: 0.35, blue: 0.45))
+                .foregroundStyle(Color.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
-                .background(Color.red.opacity(0.16))
+                .background(Color.white.opacity(0.12))
                 .clipShape(Capsule())
                 .overlay(
-                    Capsule().stroke(Color.red.opacity(0.45), lineWidth: 1)
+                    Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1)
                 )
-                .shadow(color: Color.red.opacity(0.25), radius: 5)
+                .shadow(color: Color.white.opacity(0.15), radius: 5)
             }
             .buttonStyle(InjectorScaleButtonStyle())
         } else {
-            // CHƯA INJECT -> Nút INJECT (Bơm vào game)
+            // CHƯA INJECT -> Nút INJECT (Bơm vào game - Silver/White LED Glow)
             Button {
                 CheatStoreSoundManager.shared.playTabSwitchHaptic()
                 onToggle(true)
@@ -110,20 +110,20 @@ struct InjectorActionButton: View {
                     Text("INJECT")
                         .font(.system(size: 11, weight: .black, design: .rounded))
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(.black)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     LinearGradient(
-                        colors: [BlossomTheme.sakura, BlossomTheme.sakuraDeep],
-                        startPoint: .leading,
-                        endPoint: .trailing
+                        colors: [Color.white, Color(white: 0.88)],
+                        startPoint: .top,
+                        endPoint: .bottom
                     )
                 )
                 .clipShape(Capsule())
-                .shadow(color: BlossomTheme.sakura.opacity(0.45), radius: 6, x: 0, y: 2)
+                .shadow(color: Color.white.opacity(0.35), radius: 6, x: 0, y: 1)
                 .overlay(
-                    Capsule().stroke(Color.white.opacity(0.35), lineWidth: 0.8)
+                    Capsule().stroke(Color.white, lineWidth: 0.8)
                 )
             }
             .buttonStyle(InjectorScaleButtonStyle())
