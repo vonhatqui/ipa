@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import WebKit
 
 // MARK: - CheatStoreTab Enum (5 Tab Tiếng Việt Chuẩn)
 enum CheatStoreTab: Int, CaseIterable {
@@ -246,9 +247,14 @@ struct CheatStoreDashboardView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
+            // React Bits Ferrofluid Red Organic Shader Background
+            FerrofluidBackgroundView()
+                .ignoresSafeArea()
+                .opacity(0.88)
+
             // Subtle white LED ambient glow
             RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
+                gradient: Gradient(colors: [Color.white.opacity(0.06), Color.clear]),
                 center: .top,
                 startRadius: 20,
                 endRadius: 400
@@ -1889,3 +1895,255 @@ private struct ZeroXScaleButtonStyle: ButtonStyle {
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
     }
 }
+
+// MARK: - React Bits Ferrofluid WebGL Background
+struct FerrofluidBackgroundView: UIViewRepresentable {
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        config.preferences.javaScriptEnabled = true
+
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.bounces = false
+        webView.scrollView.showsVerticalScrollIndicator = false
+        webView.scrollView.showsHorizontalScrollIndicator = false
+        webView.isUserInteractionEnabled = false
+
+        webView.loadHTMLString(FerrofluidShaderSource.html, baseURL: nil)
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+}
+
+private enum FerrofluidShaderSource {
+    static let html: String = #"""
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: transparent; }
+canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas id="glcanvas"></canvas>
+<script>
+(function() {
+  const canvas = document.getElementById('glcanvas');
+  const gl = canvas.getContext('webgl', { alpha: true, antialias: false, powerPreference: 'high-performance' });
+  if (!gl) return;
+
+  const vsSource = `
+    attribute vec2 position;
+    varying vec2 vUv;
+    void main() {
+      vUv = (position + 1.0) * 0.5;
+      gl_Position = vec4(position, 0.0, 1.0);
+    }
+  `;
+
+  const fsSource = `
+    precision highp float;
+    uniform vec3  iResolution;
+    uniform vec2  iMouse;
+    uniform float iTime;
+
+    uniform vec3  uColor0;
+    uniform vec3  uColor1;
+    uniform vec3  uColor2;
+
+    uniform vec2  uFlow;
+    uniform float uSpeed;
+    uniform float uScale;
+    uniform float uTurbulence;
+    uniform float uFluidity;
+    uniform float uRimWidth;
+    uniform float uSharpness;
+    uniform float uShimmer;
+    uniform float uGlow;
+    uniform float uOpacity;
+    uniform float uMouseEnabled;
+    uniform float uMouseStrength;
+    uniform float uMouseRadius;
+
+    varying vec2 vUv;
+
+    #define PI 3.14159265
+
+    vec3 palette(float h) {
+      if (h < 0.5) return mix(uColor0, uColor1, h * 2.0);
+      return mix(uColor1, uColor2, (h - 0.5) * 2.0);
+    }
+
+    float hash(vec3 p3) {
+      p3 = fract(p3 * 0.1031);
+      p3 += dot(p3, p3.zyx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+
+    float smin(float a, float b, float k) {
+      float r = exp2(-a / k) + exp2(-b / k);
+      return -k * log2(r);
+    }
+
+    float sinlerp(float a, float b, float w) {
+      return mix(a, b, (sin(w * PI - PI / 2.0) + 1.0) / 2.0);
+    }
+
+    float vn(vec2 p, float s, float seed) {
+      vec2 cellp = floor(p / s);
+      vec2 relp = mod(p, s);
+      float g1 = hash(vec3(cellp, seed));
+      float g2 = hash(vec3(cellp.x + 1.0, cellp.y, seed));
+      float g3 = hash(vec3(cellp.x + 1.0, cellp.y + 1.0, seed));
+      float g4 = hash(vec3(cellp.x, cellp.y + 1.0, seed));
+      float bx = sinlerp(g1, g2, relp.x / s);
+      float tx = sinlerp(g4, g3, relp.x / s);
+      return sinlerp(bx, tx, relp.y / s);
+    }
+
+    float dbn(vec2 p, float s, float seed) {
+      float o = s / 2.0;
+      float n0 = vn(p, s, seed);
+      float n1 = vn(p + vec2(o, o), s, seed + 0.1);
+      float n2 = vn(p + vec2(-o, o), s, seed + 0.2);
+      float n3 = vn(p + vec2(o, -o), s, seed + 0.3);
+      float n4 = vn(p + vec2(-o, -o), s, seed + 0.4);
+      return (2.0 * n0 + 1.5 * n1 + 1.25 * n2 + 1.125 * n3 + n4) / 7.0;
+    }
+
+    void main() {
+      vec2 fragCoord = vUv * iResolution.xy;
+      float ref = 700.0 / max(uScale, 0.05);
+      vec2 p = fragCoord / iResolution.y * ref;
+
+      float spd = 200.0 * uSpeed;
+      float t = iTime;
+
+      vec2 dir = uFlow;
+      vec2 perp = vec2(-dir.y, dir.x);
+
+      float distort1 = vn(p + perp * (t * spd), 60.0, 10.0) * 50.0 * uTurbulence;
+      float distort2 = vn(p - perp * (t * spd), 120.0, 15.0) * 100.0 * uTurbulence;
+
+      float peaks = dbn(p + distort1 + dir * (t * spd * 0.5), 40.0, 1.0);
+      float peaks2 = dbn(p + distort2 - dir * (t * spd * 0.5), 40.0, 0.0);
+
+      float mapeaks = smin(peaks, peaks2, max(uFluidity, 0.001));
+
+      float mGlow = 0.0;
+      if (uMouseEnabled > 0.5) {
+        vec2 mp = iMouse / iResolution.y * ref;
+        float md = length(p - mp) / ref;
+        float rr = max(uMouseRadius, 0.02);
+        mGlow = exp(-md * md / (rr * rr)) * uMouseStrength;
+      }
+
+      float band = (uRimWidth - abs((mapeaks - 0.4) * 2.0)) * 5.0;
+      float ltn = clamp(band - vn(p + dir * (t * spd * 0.5), 60.0, 12.0) * uShimmer, 0.0, 1.0);
+      ltn = pow(max(ltn, 0.0001), uSharpness) * uGlow;
+      ltn *= clamp(1.0 - mGlow, 0.0, 1.0);
+
+      float h = clamp(0.5 + (peaks - peaks2) * 0.8, 0.0, 1.0);
+      vec3 col = palette(h);
+
+      vec3 outc = col * ltn;
+      float a = clamp(max(outc.r, max(outc.g, outc.b)), 0.0, 1.0);
+      gl_FragColor = vec4(outc, a * uOpacity);
+    }
+  `;
+
+  function createShader(gl, type, source) {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, source);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(s));
+      gl.deleteShader(s);
+      return null;
+    }
+    return s;
+  }
+
+  const vs = createShader(gl, gl.VERTEX_SHADER, vsSource);
+  const fs = createShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs);
+  gl.attachShader(prog, fs);
+  gl.linkProgram(prog);
+
+  const posBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, posBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+
+  const posLoc = gl.getAttribLocation(prog, 'position');
+  gl.enableVertexAttribArray(posLoc);
+  gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+  gl.useProgram(prog);
+
+  // Exact React Bits parameters:
+  // Colors: #f20606, #de0606, #f07777
+  gl.uniform3f(gl.getUniformLocation(prog, 'uColor0'), 0.949, 0.024, 0.024);
+  gl.uniform3f(gl.getUniformLocation(prog, 'uColor1'), 0.871, 0.024, 0.024);
+  gl.uniform3f(gl.getUniformLocation(prog, 'uColor2'), 0.941, 0.467, 0.467);
+  gl.uniform2f(gl.getUniformLocation(prog, 'uFlow'), 0.0, -1.0);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uSpeed'), 0.50);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uScale'), 1.60);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uTurbulence'), 1.00);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uFluidity'), 0.10);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uRimWidth'), 0.20);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uSharpness'), 2.50);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uShimmer'), 1.50);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uGlow'), 2.0);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uOpacity'), 0.88);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uMouseEnabled'), 1.0);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uMouseStrength'), 1.0);
+  gl.uniform1f(gl.getUniformLocation(prog, 'uMouseRadius'), 0.35);
+
+  const uResLoc = gl.getUniformLocation(prog, 'iResolution');
+  const uTimeLoc = gl.getUniformLocation(prog, 'iTime');
+  const uMouseLoc = gl.getUniformLocation(prog, 'iMouse');
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth || 375;
+    const h = window.innerHeight || 812;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform3f(uResLoc, canvas.width, canvas.height, 1.0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  let start = performance.now();
+  function render() {
+    const t = (performance.now() - start) * 0.001;
+    gl.uniform1f(uTimeLoc, t);
+    
+    // Gentle autonomous drifting motion
+    const angle = t * 0.6;
+    const mx = (0.5 + Math.sin(angle) * 0.25) * canvas.width;
+    const my = (0.5 + Math.cos(angle * 1.2) * 0.25) * canvas.height;
+    gl.uniform2f(uMouseLoc, mx, my);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    requestAnimationFrame(render);
+  }
+  requestAnimationFrame(render);
+})();
+</script>
+</body>
+</html>
+"""#
+}
+
