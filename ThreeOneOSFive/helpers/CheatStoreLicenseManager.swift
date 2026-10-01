@@ -16,6 +16,9 @@ public struct FeatureMaintenanceConfig: Codable {
     public var skin: Bool = true                // Mod Skin VIP
     public var swift_ios: Bool = true           // Swift iOS VIP
 
+    public var app_name: String = "CheatStore VN"
+    public var app_subtitle: String = "iOS • External VIP"
+    public var announcement: String = ""
     public var is_app_safe: Bool = true         // Trạng thái an toàn toàn bộ app
     public var unsafe_message: String? = nil
     public var maintenance_message: String? = nil
@@ -31,10 +34,16 @@ public struct FeatureMaintenanceConfig: Codable {
         esp: Bool = true,
         skin: Bool = true,
         swift_ios: Bool = true,
+        app_name: String = "CheatStore VN",
+        app_subtitle: String = "iOS • External VIP",
+        announcement: String = "",
         is_app_safe: Bool = true,
         unsafe_message: String? = nil,
         maintenance_message: String? = nil
     ) {
+        self.app_name = app_name
+        self.app_subtitle = app_subtitle
+        self.announcement = announcement
         self.aimneck = aimneck
         self.esp_aimhead = esp_aimhead
         self.aim_auto = aim_auto
@@ -674,6 +683,19 @@ final class CheatStoreLicenseManager: ObservableObject {
     func updateFeatureConfig(from json: [String: Any]) {
         var updated = self.featureConfig
         var didChange = false
+
+        if let name = json["app_name"] as? String, !name.isEmpty {
+            updated.app_name = name
+            didChange = true
+        }
+        if let sub = json["app_subtitle"] as? String, !sub.isEmpty {
+            updated.app_subtitle = sub
+            didChange = true
+        }
+        if let ann = json["announcement"] as? String {
+            updated.announcement = ann
+            didChange = true
+        }
 
         if let features = (json["features"] as? [String: Any]) ?? (json["safety"] as? [String: Any]) {
             if let v = features["aimneck"] as? Bool ?? features["aim"] as? Bool {

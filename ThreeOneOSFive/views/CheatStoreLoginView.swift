@@ -82,7 +82,7 @@ struct CheatStoreLoginView: View {
             CheatStoreLogoView(size: 44, cornerRadius: 12)
 
             ShinyTextView(
-                text: "CheatStore VN",
+                text: licenseManager.featureConfig.app_name.isEmpty ? "CheatStore VN" : licenseManager.featureConfig.app_name,
                 font: .system(size: 21, weight: .bold, design: .rounded),
                 baseColor: Color(red: 0.78, green: 0.78, blue: 0.82),
                 shineColor: .white,
@@ -100,7 +100,7 @@ struct CheatStoreLoginView: View {
                 .font(.system(size: 32, weight: .bold, design: .default))
                 .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92))
 
-            Text("iOS • External")
+            Text(licenseManager.featureConfig.app_subtitle.isEmpty ? "iOS • External" : licenseManager.featureConfig.app_subtitle)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50))
         }
@@ -829,7 +829,7 @@ struct LoginSuccessIntroView: View {
 
             VStack(spacing: 4) {
                 ShinyTextView(
-                    text: "CheatStore VN",
+                    text: licenseManager.featureConfig.app_name.isEmpty ? "CheatStore VN" : licenseManager.featureConfig.app_name,
                     font: .system(size: 23, weight: .heavy, design: .rounded),
                     baseColor: Color(white: 0.88),
                     shineColor: .white,

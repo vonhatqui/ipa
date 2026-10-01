@@ -506,7 +506,7 @@ struct CheatStoreDashboardView: View {
                     .tracking(3.2)
                     .foregroundColor(Color.white.opacity(0.70))
 
-                Text("CheatStore VN")
+                Text(licenseManager.featureConfig.app_name.isEmpty ? "CheatStore VN" : licenseManager.featureConfig.app_name)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .tracking(-0.6)
                     .foregroundColor(colorInk)
@@ -543,7 +543,29 @@ struct CheatStoreDashboardView: View {
     private var homeView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 16) {
-                // 1. Hero Stats Card (.bx-hero)
+                                    // Remote Announcement Banner nếu admin cấu hình
+                    if !licenseManager.featureConfig.announcement.isEmpty {
+                        HStack(spacing: 8) {
+                            Image(systemName: "megaphone.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundColor(.orange)
+                            Text(licenseManager.featureConfig.announcement)
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(.white)
+                                .lineLimit(2)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 10)
+                        .background(Color.orange.opacity(0.12))
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.orange.opacity(0.35), lineWidth: 1)
+                        )
+                    }
+
+                    // 1. Hero Stats Card (.bx-hero)
                 VStack(alignment: .leading, spacing: 14) {
                     HStack {
                         Text(heroTagText)
@@ -1558,7 +1580,7 @@ struct CheatStoreDashboardView: View {
                     Divider().background(Color.white.opacity(0.08))
 
                     // Tên App
-                    metaRow(label: "Tên App", value: "CheatStore VN (v2.0)")
+                    metaRow(label: "Tên App", value: "\(licenseManager.featureConfig.app_name) (v2.0)")
 
                     Divider().background(Color.white.opacity(0.08))
 
