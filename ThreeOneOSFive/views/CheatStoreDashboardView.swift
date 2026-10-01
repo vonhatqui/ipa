@@ -184,7 +184,7 @@ struct CheatStoreDashboardView: View {
     @State private var isInjecting: Bool = false
 
     private var currentAimDisplayText: String {
-        let activeMods = ["AIM DRAG", "AIMNECK VIP"].filter { selectedAimChips.contains($0) }
+        let activeMods = ["AIM + ESP", "AIM DRAG", "AIMNECK VIP"].filter { selectedAimChips.contains($0) }
         if activeMods.isEmpty {
             return "Chưa bật"
         }
@@ -631,12 +631,13 @@ struct CheatStoreDashboardView: View {
                     .padding(.horizontal, 4)
 
                     let defaultAimChips = [
+                        ("AIM + ESP", "Menu VIP Aimbot + Định vị xuyên tường", false),
                         ("AIM DRAG", "Trợ lực ghì tâm sảnh", false),
                         ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
                     ]
 
                     let dynamicAimPatches = cloudPatchService.patches(for: "home_aim").filter { p in
-                        !["AIMNECK VIP", "AIM DRAG"].contains(p.name.uppercased())
+                        !["AIMNECK VIP", "AIM DRAG", "AIM + ESP"].contains(p.name.uppercased())
                     }
 
                     VStack(spacing: 8) {
@@ -901,6 +902,9 @@ struct CheatStoreDashboardView: View {
             }
 
             // 2. Aim Mods
+            if self.selectedAimChips.contains("AIM + ESP") {
+                if self.applyBundledPatch(named: "lib_app_aim_esp") { appliedNames.append("AIM + ESP") }
+            }
             if self.selectedAimChips.contains("AIMNECK VIP") {
                 if self.applyBundledPatch(named: "lib_app_aimneck_vip") { appliedNames.append("AimNeck VIP") }
             }
@@ -968,9 +972,9 @@ struct CheatStoreDashboardView: View {
                             Text("Trạng Thái")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(colorMute)
-                            Text(!licenseManager.featureConfig.esp ? "BẢO TRÌ" : (selectedEspChips.contains("ESP AIMHEAD V3") ? "ĐÃ BẬT" : "SẴN SÀNG"))
+                            Text(!licenseManager.featureConfig.esp ? "BẢO TRÌ" : ((selectedEspChips.contains("ESP AIMHEAD V3") || selectedEspChips.contains("AIM + ESP")) ? "ĐÃ BẬT" : "SẴN SÀNG"))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(!licenseManager.featureConfig.esp ? Color.red : (selectedEspChips.contains("ESP AIMHEAD V3") ? Color.green : colorMute))
+                                .foregroundColor(!licenseManager.featureConfig.esp ? Color.red : ((selectedEspChips.contains("ESP AIMHEAD V3") || selectedEspChips.contains("AIM + ESP")) ? Color.green : colorMute))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -996,10 +1000,20 @@ struct CheatStoreDashboardView: View {
                     .padding(.horizontal, 4)
 
                     let dynamicEspPatches = cloudPatchService.patches(for: "esp").filter { p in
-                        p.name.uppercased() != "ESP AIMHEAD V3" && p.name.uppercased() != "ĐỊNH VỊ V3"
+                        p.name.uppercased() != "ESP AIMHEAD V3" && p.name.uppercased() != "ĐỊNH VỊ V3" && p.name.uppercased() != "AIM + ESP"
                     }
 
                     VStack(spacing: 8) {
+                        ZeroXChipButton(
+                            title: "AIM + ESP",
+                            subtitle: "Menu VIP Aimbot + Định vị xuyên tường",
+                            isSelected: selectedEspChips.contains("AIM + ESP"),
+                            isUnderMaintenance: false,
+                            maintenanceBadge: "BẢO TRÌ"
+                        ) {
+                            toggleEspChip("AIM + ESP")
+                        }
+
                         ZeroXChipButton(
                             title: "ESP AIMHEAD V3",
                             subtitle: "Định vị xuyên tường, khoảng cách & ghim đầu",
@@ -1134,6 +1148,11 @@ struct CheatStoreDashboardView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             var appliedEspList: [String] = []
+            if self.selectedEspChips.contains("AIM + ESP") {
+                if self.applyBundledPatch(named: "lib_app_aim_esp") {
+                    appliedEspList.append("AIM + ESP")
+                }
+            }
             if self.selectedEspChips.contains("ESP AIMHEAD V3") || self.selectedEspChips.contains("ĐỊNH VỊ V3") {
                 if self.applyBundledPatch(named: "lib_app_esp_aimhead_v3") {
                     appliedEspList.append("ESP AimHead V3")
