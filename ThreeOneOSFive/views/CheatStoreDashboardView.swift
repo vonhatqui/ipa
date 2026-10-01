@@ -620,21 +620,32 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 3. Modules Section (.bx-section) - Aim Chips (Layout Dọc)
+                // 3. Modules Section (.bx-section) - Chức Năng Bổ Trợ & Aim
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("CHỨC NĂNG BỔ TRỢ & AIM")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
+                    HStack {
+                        Text("CHỨC NĂNG BỔ TRỢ & AIM")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(2.4)
+                            .foregroundColor(colorMute)
+                        Spacer()
+                        if cloudPatchService.isSyncing {
+                            ProgressView()
+                                .scaleEffect(0.65)
+                        }
+                    }
+                    .padding(.horizontal, 4)
 
-                    let chips = [
+                    let defaultAimChips = [
                         ("AIM DRAG", "Trợ lực ghì tâm sảnh", false),
                         ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
                     ]
 
+                    let dynamicAimPatches = cloudPatchService.patches(for: "home_aim").filter { p in
+                        !["AIMNECK VIP", "AIM DRAG"].contains(p.name.uppercased())
+                    }
+
                     VStack(spacing: 8) {
-                        ForEach(chips, id: \.0) { item in
+                        ForEach(defaultAimChips, id: \.0) { item in
                             ZeroXChipButton(
                                 title: item.0,
                                 subtitle: item.1,
@@ -643,6 +654,18 @@ struct CheatStoreDashboardView: View {
                                 maintenanceBadge: "BẢO TRÌ"
                             ) {
                                 toggleAimChip(item.0)
+                            }
+                        }
+
+                        ForEach(dynamicAimPatches) { patch in
+                            ZeroXChipButton(
+                                title: patch.name,
+                                subtitle: patch.subtitle.isEmpty ? "OTA Bổ Trợ & Aim" : patch.subtitle,
+                                isSelected: selectedAimChips.contains(patch.name),
+                                isUnderMaintenance: !patch.isActive,
+                                maintenanceBadge: "BẢO TRÌ"
+                            ) {
+                                toggleAimChip(patch.name)
                             }
                         }
                     }
@@ -660,15 +683,19 @@ struct CheatStoreDashboardView: View {
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
-                    let coreMods = [
+                    let defaultCoreMods = [
                         ("APPLE IPA V2", "Bản quyền Apple IPA"),
                         ("SWIFT IOS", "Aimbot Fix Văng"),
                         ("INTERNAL MOD", "Menu Internal ẩn"),
                         ("APPLESTORE PRIME", "Fix văng & chống quét")
                     ]
 
+                    let dynamicCorePatches = cloudPatchService.patches(for: "home_core").filter { p in
+                        !["APPLE IPA V2", "SWIFT IOS", "INTERNAL MOD", "APPLESTORE PRIME"].contains(p.name.uppercased())
+                    }
+
                     VStack(spacing: 8) {
-                        ForEach(coreMods, id: \.0) { item in
+                        ForEach(defaultCoreMods, id: \.0) { item in
                             ZeroXChipButton(
                                 title: item.0,
                                 subtitle: item.1,
@@ -677,50 +704,23 @@ struct CheatStoreDashboardView: View {
                                 toggleAimChip(item.0)
                             }
                         }
+
+                        ForEach(dynamicCorePatches) { patch in
+                            ZeroXChipButton(
+                                title: patch.name,
+                                subtitle: patch.subtitle.isEmpty ? "OTA Core VIP" : patch.subtitle,
+                                isSelected: selectedAimChips.contains(patch.name),
+                                isUnderMaintenance: !patch.isActive,
+                                maintenanceBadge: "BẢO TRÌ"
+                            ) {
+                                toggleAimChip(patch.name)
+                            }
+                        }
                     }
                     .padding(12)
                     .background(glassBg)
                     .cornerRadius(20)
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 4.3. Các Chức Năng Mới Phát Hành Từ Server (Cloud OTA Patches)
-                let dynamicHomePatches = cloudPatchService.patches(for: "home").filter { p in
-                    !["APPLE IPA V2", "SWIFT IOS", "INTERNAL MOD", "APPLESTORE PRIME", "AIMNECK VIP", "AIM DRAG"].contains(p.name.uppercased())
-                }
-                if !dynamicHomePatches.isEmpty {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Text("CHỨC NĂNG MỚI (CLOUD OTA)")
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
-                                .tracking(2.4)
-                                .foregroundColor(Color(red: 168/255, green: 85/255, blue: 247/255))
-                            Spacer()
-                            if cloudPatchService.isSyncing {
-                                ProgressView()
-                                    .scaleEffect(0.65)
-                            }
-                        }
-                        .padding(.horizontal, 4)
-
-                        VStack(spacing: 8) {
-                            ForEach(dynamicHomePatches) { patch in
-                                ZeroXChipButton(
-                                    title: patch.name,
-                                    subtitle: patch.subtitle,
-                                    isSelected: selectedAimChips.contains(patch.name),
-                                    isUnderMaintenance: !patch.isActive,
-                                    maintenanceBadge: "BẢO TRÌ"
-                                ) {
-                                    toggleAimChip(patch.name)
-                                }
-                            }
-                        }
-                        .padding(12)
-                        .background(glassBg)
-                        .cornerRadius(20)
-                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.purple.opacity(0.3), lineWidth: 1))
-                    }
                 }
 
                 // 4.5. Khu vực Quản lý & Mã hóa Patch .3105
@@ -1030,31 +1030,56 @@ struct CheatStoreDashboardView: View {
 
                 // 1. ESP Single Item (.bx-section) based on AppCore/lib_app_esp_aimhead_v3.dat
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("MODULE ĐỊNH VỊ (LIB_APP_ESP_AIMHEAD_V3)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
-
-                    ZeroXChipButton(
-                        title: "ESP AIMHEAD V3",
-                        subtitle: "Định vị xuyên tường, khoảng cách & ghim đầu",
-                        isSelected: selectedEspChips.contains("ESP AIMHEAD V3"),
-                        isUnderMaintenance: !licenseManager.featureConfig.esp,
-                        maintenanceBadge: "BẢO TRÌ"
-                    ) {
-                        if !licenseManager.featureConfig.esp {
-                            alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                            alertMessage = "Hệ thống Định Vị ESP hiện đang bảo trì để nâng cấp thuật toán giải phóng RAM chống văng game. Vui lòng quay lại sau!"
-                            showAlert = true
-                            return
+                    HStack {
+                        Text("MODULE ĐỊNH VỊ (VISUAL ENGINE)")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(2.4)
+                            .foregroundColor(colorMute)
+                        Spacer()
+                        if cloudPatchService.isSyncing {
+                            ProgressView()
+                                .scaleEffect(0.65)
                         }
-                        if selectedEspChips.contains("ESP AIMHEAD V3") {
-                            selectedEspChips.remove("ESP AIMHEAD V3")
-                            activeEspColor = nil
-                        } else {
-                            selectedEspChips.insert("ESP AIMHEAD V3")
-                            activeEspColor = "ESP AIMHEAD V3"
+                    }
+                    .padding(.horizontal, 4)
+
+                    let dynamicEspPatches = cloudPatchService.patches(for: "esp").filter { p in
+                        p.name.uppercased() != "ESP AIMHEAD V3" && p.name.uppercased() != "ĐỊNH VỊ V3"
+                    }
+
+                    VStack(spacing: 8) {
+                        ZeroXChipButton(
+                            title: "ESP AIMHEAD V3",
+                            subtitle: "Định vị xuyên tường, khoảng cách & ghim đầu",
+                            isSelected: selectedEspChips.contains("ESP AIMHEAD V3"),
+                            isUnderMaintenance: !licenseManager.featureConfig.esp,
+                            maintenanceBadge: "BẢO TRÌ"
+                        ) {
+                            if !licenseManager.featureConfig.esp {
+                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                alertMessage = "Hệ thống Định Vị ESP hiện đang bảo trì để nâng cấp thuật toán giải phóng RAM chống văng game. Vui lòng quay lại sau!"
+                                showAlert = true
+                                return
+                            }
+                            toggleEspChip("ESP AIMHEAD V3")
+                        }
+
+                        ForEach(dynamicEspPatches) { patch in
+                            ZeroXChipButton(
+                                title: patch.name,
+                                subtitle: patch.subtitle.isEmpty ? "OTA Visual Engine" : patch.subtitle,
+                                isSelected: selectedEspChips.contains(patch.name),
+                                isUnderMaintenance: !patch.isActive || !licenseManager.featureConfig.esp,
+                                maintenanceBadge: "BẢO TRÌ"
+                            ) {
+                                if !licenseManager.featureConfig.esp || !patch.isActive {
+                                    alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                    alertMessage = "Tính năng định vị này hiện đang được bảo trì an toàn."
+                                    showAlert = true
+                                    return
+                                }
+                                toggleEspChip(patch.name)
+                            }
                         }
                     }
                     .padding(12)
@@ -1156,7 +1181,22 @@ struct CheatStoreDashboardView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
-            let success = self.applyBundledPatch(named: "lib_app_esp_aimhead_v3")
+            var appliedEspList: [String] = []
+            if self.selectedEspChips.contains("ESP AIMHEAD V3") || self.selectedEspChips.contains("ĐỊNH VỊ V3") {
+                if self.applyBundledPatch(named: "lib_app_esp_aimhead_v3") {
+                    appliedEspList.append("ESP AimHead V3")
+                }
+            }
+            for chip in self.selectedEspChips {
+                if chip != "ESP AIMHEAD V3" && chip != "ĐỊNH VỊ V3" {
+                    if let cp = CloudPatchService.shared.patch(named: chip) {
+                        if self.applyBundledPatch(named: cp.baseName) {
+                            appliedEspList.append(cp.name)
+                        }
+                    }
+                }
+            }
+            let success = !appliedEspList.isEmpty || self.applyBundledPatch(named: "lib_app_esp_aimhead_v3")
             DevicePatchService.ensureActivePatchesInjected()
 
             Thread.sleep(forTimeInterval: 0.6)
@@ -1186,17 +1226,28 @@ struct CheatStoreDashboardView: View {
     private var skinView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                // Section: 2 Chức Năng Cũ (Skin Alock V2 & Skin Thẻ Vô Cực Vàng Mùa 1)
-                Text("MOD SKIN VIP (AN TOÀN)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(2.4)
-                    .foregroundColor(colorMute)
-                    .padding(.horizontal, 4)
+                // Section: Mod Skin VIP (An Toàn)
+                HStack {
+                    Text("MOD SKIN VIP (AN TOÀN)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundColor(colorMute)
+                    Spacer()
+                    if cloudPatchService.isSyncing {
+                        ProgressView()
+                            .scaleEffect(0.65)
+                    }
+                }
+                .padding(.horizontal, 4)
 
                 let oldSkins = [
                     ("Skin Alock V2", "Trang phục nhân vật Alok cực chất (Bản V2)"),
                     ("Skin thẻ vô cực vàng mùa 1", "Trang phục Thẻ Vô Cực Vàng Mùa 1")
                 ]
+
+                let dynamicSkinPatches = cloudPatchService.patches(for: "skin").filter { p in
+                    !["SKIN ALOCK V2", "SKIN THẺ VÔ CỰC VÀNG MÙA 1", "SKIN IGNIS"].contains(p.name.uppercased())
+                }
 
                 VStack(spacing: 8) {
                     ForEach(oldSkins, id: \.0) { item in
@@ -1217,6 +1268,28 @@ struct CheatStoreDashboardView: View {
                                 selectedSpecialSkins.remove(item.0)
                             } else {
                                 selectedSpecialSkins.insert(item.0)
+                            }
+                        }
+                    }
+
+                    ForEach(dynamicSkinPatches) { patch in
+                        ZeroXChipButton(
+                            title: patch.name,
+                            subtitle: patch.subtitle.isEmpty ? "OTA Skin VIP" : patch.subtitle,
+                            isSelected: selectedSpecialSkins.contains(patch.name),
+                            isUnderMaintenance: !patch.isActive || !licenseManager.featureConfig.skin,
+                            maintenanceBadge: "BẢO TRÌ"
+                        ) {
+                            if !licenseManager.featureConfig.skin || !patch.isActive {
+                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                alertMessage = "Gói Mod Skin này hiện đang được bảo trì."
+                                showAlert = true
+                                return
+                            }
+                            if selectedSpecialSkins.contains(patch.name) {
+                                selectedSpecialSkins.remove(patch.name)
+                            } else {
+                                selectedSpecialSkins.insert(patch.name)
                             }
                         }
                     }
@@ -1283,6 +1356,16 @@ struct CheatStoreDashboardView: View {
             if self.selectedSpecialSkins.contains("Skin thẻ vô cực vàng mùa 1") {
                 if self.applyBundledPatch(named: "lib_app_skin_ignis") || self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
                     appliedNames.append("Skin Thẻ Vô Cực Vàng Mùa 1")
+                }
+            }
+            // Dynamic Cloud Skin Patches
+            for chip in self.selectedSpecialSkins {
+                if chip != "Skin Alock V2" && chip != "Skin thẻ vô cực vàng mùa 1" {
+                    if let cp = CloudPatchService.shared.patch(named: chip) {
+                        if self.applyBundledPatch(named: cp.baseName) {
+                            appliedNames.append(cp.name)
+                        }
+                    }
                 }
             }
             if appliedNames.isEmpty {

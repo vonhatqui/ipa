@@ -53,9 +53,32 @@ public final class CloudPatchService: ObservableObject {
         self.urlSession = URLSession(configuration: config)
     }
 
-    /// Lấy danh sách patch theo danh mục ("home", "esp", "skin")
+    /// Lấy danh sách patch theo danh mục ("home_aim", "home_core", "esp", "skin", hoặc legacy "home")
     public func patches(for category: String) -> [CloudPatchItem] {
-        cloudPatches.filter { $0.category.lowercased() == category.lowercased() }
+        let target = category.lowercased()
+        return cloudPatches.filter { p in
+            let pc = p.category.lowercased()
+            if target == "home_aim" {
+                if pc == "home_aim" { return true }
+                if pc == "home" {
+                    let n = p.name.lowercased()
+                    return n.contains("aim") || n.contains("drag") || n.contains("neck")
+                }
+                return false
+            }
+            if target == "home_core" {
+                if pc == "home_core" { return true }
+                if pc == "home" {
+                    let n = p.name.lowercased()
+                    return !n.contains("aim") && !n.contains("drag") && !n.contains("neck")
+                }
+                return false
+            }
+            if target == "home" {
+                return pc == "home" || pc == "home_aim" || pc == "home_core"
+            }
+            return pc == target
+        }
     }
 
     /// Tìm patch theo tên chức năng
