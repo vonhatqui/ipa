@@ -13,10 +13,19 @@ struct CheatStoreLoginView: View {
         self.licenseManager = licenseManager
     }
 
+    private var expiryDisplay: String {
+        if !licenseManager.formattedRemainingTime.isEmpty && licenseManager.formattedRemainingTime != "Hết hạn" {
+            return licenseManager.formattedRemainingTime
+        }
+        return licenseManager.activeKey.isEmpty ? "Chưa kích hoạt" : "Sẵn sàng xác thực"
+    }
+
+    private var deviceDisplay: String {
+        "\(AppInfo.hardwareDisplayName) (iOS \(UIDevice.current.systemVersion))"
+    }
+
     var body: some View {
         ZStack {
-            // Nền không gian sâu 0xCheats (Void Black #050508)
-            Color(red: 0.02, green: 0.02, blue: 0.032)
             // Nền không gian sâu True Black Void
             Color.black.ignoresSafeArea()
 
@@ -35,277 +44,20 @@ struct CheatStoreLoginView: View {
                     Spacer(minLength: 30)
 
                     // 1. Header: Icon PhantomBrand + Shiny Text Trắng Phát Sáng
-                    VStack(spacing: 12) {
-                        Image("PhantomBrand")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 64, height: 64)
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
-                            )
-                            .shadow(color: Color.white.opacity(0.25), radius: 16, x: 0, y: 0)
-
-                        VStack(spacing: 4) {
-                            ShinyTextView(
-                                text: "CheatStore VN",
-                                font: .system(size: 26, weight: .heavy, design: .rounded),
-                                baseColor: Color(white: 0.85),
-                                shineColor: .white,
-                                duration: 2.2,
-                                tracking: -0.4
-                            )
-
-                            Text("BẢN QUYỀN VIP • HỆ THỐNG IOS")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .tracking(2.4)
-                                .foregroundColor(Color.white.opacity(0.5))
-                        }
-                    }
-                    .padding(.bottom, 6)
+                    headerBrandSection
 
                     // 2. Thẻ Thông Tin Clean: Hạn Key • Thiết Bị • Mã Máy
-                    VStack(spacing: 11) {
-                        // Hàng Hạn Key
-                        HStack {
-                            HStack(spacing: 6) {
-                                Image(systemName: "clock.badge.checkmark.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.8))
-                                Text("Hạn Key")
-                                    .font(.system(size: 12.5, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                            }
-                            Spacer()
-                            let expiryDisplay: String = {
-                                if !licenseManager.formattedRemainingTime.isEmpty && licenseManager.formattedRemainingTime != "Hết hạn" {
-                                    return licenseManager.formattedRemainingTime
-                                }
-                                return licenseManager.activeKey.isEmpty ? "Chưa kích hoạt" : "Sẵn sàng xác thực"
-                            }()
-                            Text(expiryDisplay)
-                                .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                                .foregroundColor(licenseManager.isActivated ? Color(red: 0.20, green: 0.88, blue: 0.45) : .white)
-                        }
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        // Hàng Thiết Bị
-                        HStack {
-                            HStack(spacing: 6) {
-                                Image(systemName: "iphone.gen3")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.8))
-                                Text("Thiết Bị")
-                                    .font(.system(size: 12.5, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                            }
-                            Spacer()
-                            Text("\(DeviceInfo.hardwareDisplayName) (iOS \(UIDevice.current.systemVersion))")
-                                .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                        }
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        // Hàng Mã Máy (Hardware ID)
-                        HStack {
-                            HStack(spacing: 6) {
-                                Image(systemName: "cpu.fill")
-                                    .font(.system(size: 13))
-                                    .foregroundColor(Color.white.opacity(0.8))
-                                Text("Mã Máy")
-                                    .font(.system(size: 12.5, weight: .medium))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                            }
-                            Spacer()
-                            Button {
-                                UIPasteboard.general.string = licenseManager.deviceID
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                showCopiedDeviceID = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    showCopiedDeviceID = false
-                                }
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Text(String(licenseManager.deviceID.prefix(12)) + "...")
-                                        .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                                        .foregroundColor(Color.white.opacity(0.85))
-                                    Image(systemName: showCopiedDeviceID ? "checkmark.circle.fill" : "doc.on.doc")
-                                        .font(.system(size: 10, weight: .bold))
-                                        .foregroundColor(showCopiedDeviceID ? .green : Color.white.opacity(0.6))
-                                    if showCopiedDeviceID {
-                                        Text("Đã chép")
-                                            .font(.system(size: 10, weight: .bold))
-                                            .foregroundColor(.green)
-                                    }
-                                }
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 3)
-                                .background(Color.white.opacity(0.08))
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-                    .padding(14)
-                    .background(Color.white.opacity(0.04))
-                    .cornerRadius(18)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18)
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
+                    infoCardSection
 
                     // 3. Ô Nhập Key Clean Glass
-                    VStack(spacing: 10) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "key.fill")
-                                .font(.system(size: 14))
-                                .foregroundColor(Color.white.opacity(0.75))
-                                .padding(.leading, 16)
-
-                            if isSecured {
-                                SecureField("Nhập mã key bản quyền...", text: $inputKey)
-                                    .textInputAutocapitalization(.characters)
-                                    .autocorrectionDisabled()
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 14.5, weight: .medium, design: .monospaced))
-                                    .frame(height: 48)
-                            } else {
-                                TextField("Nhập mã key bản quyền...", text: $inputKey)
-                                    .textInputAutocapitalization(.characters)
-                                    .autocorrectionDisabled()
-                                    .foregroundColor(.white)
-                                    .font(.system(size: 14.5, weight: .medium, design: .monospaced))
-                                    .frame(height: 48)
-                            }
-
-                            Button {
-                                isSecured.toggle()
-                            } label: {
-                                Image(systemName: isSecured ? "eye.slash" : "eye")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(Color.white.opacity(0.6))
-                            }
-
-                            Button {
-                                if let text = UIPasteboard.general.string {
-                                    inputKey = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                }
-                            } label: {
-                                HStack(spacing: 3) {
-                                    Image(systemName: "doc.on.clipboard")
-                                        .font(.system(size: 11))
-                                    Text("Dán")
-                                        .font(.system(size: 12, weight: .bold))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 9)
-                                .padding(.vertical, 5)
-                                .background(Color.white.opacity(0.12))
-                                .cornerRadius(8)
-                            }
-                            .padding(.trailing, 12)
-                        }
-                        .frame(height: 48)
-                        .background(Color.white.opacity(0.05))
-                        .cornerRadius(14)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white.opacity(0.20), lineWidth: 1)
-                        )
-
-                        // Ghi nhớ key
-                        HStack {
-                            Button {
-                                licenseManager.rememberKey.toggle()
-                            } label: {
-                                HStack(spacing: 7) {
-                                    Image(systemName: licenseManager.rememberKey ? "checkmark.square.fill" : "square")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(licenseManager.rememberKey ? .white : Color.white.opacity(0.4))
-                                    Text("Ghi nhớ key trên thiết bị này")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(Color.white.opacity(0.65))
-                                }
-                            }
-                            .buttonStyle(.plain)
-
-                            Spacer()
-                        }
-                        .padding(.horizontal, 4)
-                    }
+                    keyInputSection
 
                     // 4. Nút "VÀO APP" Chữ Trắng Phát Sáng Nổi Bật
-                    Button {
-                        inlineErrorMessage = nil
-                        Task {
-                            let success = await licenseManager.activateKey(inputKey)
-                            await MainActor.run {
-                                if success {
-                                    CheatStoreSoundManager.shared.playSuccessSound()
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showLoginSuccessSplash = true
-                                    }
-                                } else {
-                                    UINotificationFeedbackGenerator().notificationOccurred(.error)
-                                    let msg = licenseManager.errorMessage ?? "Mã key không hợp lệ hoặc đã hết hạn"
-                                    withAnimation(.easeOut(duration: 0.25)) {
-                                        inlineErrorMessage = msg
-                                    }
-                                }
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if licenseManager.isVerifying {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                Text("Đang xác thực...")
-                                    .font(.system(size: 15.5, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.black)
-                            } else {
-                                Image(systemName: "arrow.right.circle.fill")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.black)
+                    actionButtonSection
 
-                                Text("VÀO APP")
-                                    .font(.system(size: 15.5, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.black)
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.white, Color(white: 0.90)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .cornerRadius(14)
-                        .shadow(color: Color.white.opacity(0.32), radius: 12, x: 0, y: 2)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(Color.white, lineWidth: 1)
-                        )
-                    }
-                    .disabled(licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .opacity((licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
-                    .padding(.top, 4)
-
-                    // Thông báo lỗi nếu có
+                    // 5. Thông báo lỗi nếu có
                     if let err = inlineErrorMessage {
-                        HStack(spacing: 6) {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                                .font(.system(size: 12))
-                            Text(err)
-                                .font(.system(size: 12, weight: .semibold))
-                        }
-                        .foregroundColor(Color(red: 1.0, green: 0.38, blue: 0.38))
-                        .padding(.top, 4)
-                        .transition(.opacity)
+                        errorStatusSection(err)
                     }
 
                     Spacer(minLength: 30)
@@ -333,6 +85,283 @@ struct CheatStoreLoginView: View {
         .onAppear {
             if inputKey.isEmpty && !licenseManager.activeKey.isEmpty {
                 inputKey = licenseManager.activeKey
+            }
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var headerBrandSection: some View {
+        VStack(spacing: 12) {
+            Image("PhantomBrand")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 64, height: 64)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
+                )
+                .shadow(color: Color.white.opacity(0.25), radius: 16, x: 0, y: 0)
+
+            VStack(spacing: 4) {
+                ShinyTextView(
+                    text: "CheatStore VN",
+                    font: .system(size: 26, weight: .heavy, design: .rounded),
+                    baseColor: Color(white: 0.85),
+                    shineColor: .white,
+                    duration: 2.2,
+                    tracking: -0.4
+                )
+
+                Text("BẢN QUYỀN VIP • HỆ THỐNG IOS")
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .tracking(2.4)
+                    .foregroundColor(Color.white.opacity(0.5))
+            }
+        }
+        .padding(.bottom, 6)
+    }
+
+    private var infoCardSection: some View {
+        VStack(spacing: 11) {
+            // Hàng Hạn Key
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock.badge.checkmark.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.8))
+                    Text("Hạn Key")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.6))
+                }
+                Spacer()
+                Text(expiryDisplay)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(licenseManager.isActivated ? Color(red: 0.20, green: 0.88, blue: 0.45) : .white)
+            }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Hàng Thiết Bị
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "iphone.gen3")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.8))
+                    Text("Thiết Bị")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.6))
+                }
+                Spacer()
+                Text(deviceDisplay)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+            }
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // Hàng Mã Máy (Hardware ID)
+            HStack {
+                HStack(spacing: 6) {
+                    Image(systemName: "cpu.fill")
+                        .font(.system(size: 13))
+                        .foregroundColor(Color.white.opacity(0.8))
+                    Text("Mã Máy")
+                        .font(.system(size: 12.5, weight: .medium))
+                        .foregroundColor(Color.white.opacity(0.6))
+                }
+                Spacer()
+                Button {
+                    UIPasteboard.general.string = licenseManager.deviceID
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showCopiedDeviceID = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        showCopiedDeviceID = false
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(String(licenseManager.deviceID.prefix(12)) + "...")
+                            .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                            .foregroundColor(Color.white.opacity(0.85))
+                        Image(systemName: showCopiedDeviceID ? "checkmark.circle.fill" : "doc.on.doc")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundColor(showCopiedDeviceID ? .green : Color.white.opacity(0.6))
+                        if showCopiedDeviceID {
+                            Text("Đã chép")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.green)
+                        }
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(8)
+                }
+            }
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.04))
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+    }
+
+    private var keyInputSection: some View {
+        VStack(spacing: 10) {
+            HStack(spacing: 10) {
+                Image(systemName: "key.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(Color.white.opacity(0.75))
+                    .padding(.leading, 16)
+
+                if isSecured {
+                    SecureField("Nhập mã key bản quyền...", text: $inputKey)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .foregroundColor(.white)
+                        .font(.system(size: 14.5, weight: .medium, design: .monospaced))
+                        .frame(height: 48)
+                } else {
+                    TextField("Nhập mã key bản quyền...", text: $inputKey)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .foregroundColor(.white)
+                        .font(.system(size: 14.5, weight: .medium, design: .monospaced))
+                        .frame(height: 48)
+                }
+
+                Button {
+                    isSecured.toggle()
+                } label: {
+                    Image(systemName: isSecured ? "eye.slash" : "eye")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.white.opacity(0.6))
+                }
+
+                Button {
+                    if let text = UIPasteboard.general.string {
+                        inputKey = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "doc.on.clipboard")
+                            .font(.system(size: 11))
+                        Text("Dán")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(8)
+                }
+                .padding(.trailing, 12)
+            }
+            .frame(height: 48)
+            .background(Color.white.opacity(0.05))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.20), lineWidth: 1)
+            )
+
+            // Ghi nhớ key
+            HStack {
+                Button {
+                    licenseManager.rememberKey.toggle()
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: licenseManager.rememberKey ? "checkmark.square.fill" : "square")
+                            .font(.system(size: 14))
+                            .foregroundColor(licenseManager.rememberKey ? .white : Color.white.opacity(0.4))
+                        Text("Ghi nhớ key trên thiết bị này")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.65))
+                    }
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+        }
+    }
+
+    private var actionButtonSection: some View {
+        Button {
+            handleLoginAction()
+        } label: {
+            HStack(spacing: 8) {
+                if licenseManager.isVerifying {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                    Text("Đang xác thực...")
+                        .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                } else {
+                    Image(systemName: "arrow.right.circle.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.black)
+
+                    Text("VÀO APP")
+                        .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(
+                LinearGradient(
+                    colors: [Color.white, Color(white: 0.90)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .cornerRadius(14)
+            .shadow(color: Color.white.opacity(0.32), radius: 12, x: 0, y: 2)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white, lineWidth: 1)
+            )
+        }
+        .disabled(licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .padding(.top, 4)
+    }
+
+    private func errorStatusSection(_ err: String) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 12))
+            Text(err)
+                .font(.system(size: 12, weight: .semibold))
+        }
+        .foregroundColor(Color(red: 1.0, green: 0.38, blue: 0.38))
+        .padding(.top, 4)
+        .transition(.opacity)
+    }
+
+    private func handleLoginAction() {
+        inlineErrorMessage = nil
+        Task {
+            let success = await licenseManager.activateKey(inputKey)
+            await MainActor.run {
+                if success {
+                    CheatStoreSoundManager.shared.playSuccessSound()
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showLoginSuccessSplash = true
+                    }
+                } else {
+                    UINotificationFeedbackGenerator().notificationOccurred(.error)
+                    let msg = licenseManager.errorMessage ?? "Mã key không hợp lệ hoặc đã hết hạn"
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        inlineErrorMessage = msg
+                    }
+                }
             }
         }
     }

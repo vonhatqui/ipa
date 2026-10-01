@@ -1462,7 +1462,7 @@ struct CheatStoreDashboardView: View {
                                 Text("Dòng máy (iPhone)")
                                     .font(.system(size: 14))
                                     .foregroundColor(colorMute)
-                                Text(DeviceInfo.hardwareDisplayName)
+                                Text(AppInfo.hardwareDisplayName)
                                     .font(.system(size: 14, weight: .bold, design: .rounded))
                                     .foregroundColor(.white)
                             }
@@ -1824,7 +1824,7 @@ struct CheatStoreDashboardView: View {
                 Image(systemName: "iphone.gen3")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(colorInk.opacity(0.9))
-                Text(DeviceInfo.hardwareDisplayName)
+                Text(AppInfo.hardwareDisplayName)
                     .font(.system(size: 12.5, weight: .bold, design: .rounded))
                     .foregroundColor(colorInk)
             }

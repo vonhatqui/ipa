@@ -46,7 +46,8 @@ func setupLogCapture() {
     }
 }
 
-// MARK: - App Info
+// MARK: - App Info & Device Info Alias
+typealias DeviceInfo = AppInfo
 enum AppInfo {
     static var osVersion: String {
         let v = ProcessInfo.processInfo.operatingSystemVersion
