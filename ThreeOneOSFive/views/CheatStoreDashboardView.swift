@@ -42,59 +42,97 @@ struct ZeroXChipButton: View {
     let title: String
     let subtitle: String?
     let isSelected: Bool
-    let accentColor: Color
+    var isUnderMaintenance: Bool = false
+    var maintenanceBadge: String? = "BẢO TRÌ"
+    var accentColor: Color = Color(red: 255/255, green: 48/255, blue: 48/255)
     let action: () -> Void
 
     init(
         title: String,
         subtitle: String? = nil,
         isSelected: Bool,
+        isUnderMaintenance: Bool = false,
+        maintenanceBadge: String? = "BẢO TRÌ",
         accentColor: Color = Color(red: 255/255, green: 48/255, blue: 48/255),
         action: @escaping () -> Void
     ) {
         self.title = title
         self.subtitle = subtitle
         self.isSelected = isSelected
+        self.isUnderMaintenance = isUnderMaintenance
+        self.maintenanceBadge = maintenanceBadge
         self.accentColor = accentColor
         self.action = action
     }
 
     var body: some View {
         Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            if isUnderMaintenance {
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            } else {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            }
             action()
         }) {
             HStack(spacing: 9) {
-                // Square .box (18x18, border 1.5, radius 6)
-                ZStack {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(
-                            isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color(red: 244/255, green: 241/255, blue: 234/255).opacity(0.22),
-                            lineWidth: 1.5
-                        )
-                        .background(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color.clear)
-                        )
+                // Nếu đang bảo trì/lỗi: Ẩn ô vuông đi, thay bằng icon biển báo tam giác chấm than màu đỏ!
+                if isUnderMaintenance {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 15, weight: .bold))
+                        .foregroundColor(Color(red: 239/255, green: 68/255, blue: 68/255))
                         .frame(width: 18, height: 18)
+                } else {
+                    // Square .box (18x18, border 1.5, radius 6)
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(
+                                isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color(red: 244/255, green: 241/255, blue: 234/255).opacity(0.22),
+                                lineWidth: 1.5
+                            )
+                            .background(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color.clear)
+                            )
+                            .frame(width: 18, height: 18)
 
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .black))
-                            .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(Color(red: 17/255, green: 17/255, blue: 17/255))
+                        }
                     }
                 }
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                        .foregroundColor(isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color(red: 244/255, green: 241/255, blue: 234/255).opacity(0.82))
-                        .lineLimit(1)
+                    HStack(spacing: 6) {
+                        Text(title)
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundColor(
+                                isUnderMaintenance
+                                    ? Color(red: 239/255, green: 68/255, blue: 68/255)
+                                    : (isSelected ? Color(red: 244/255, green: 241/255, blue: 234/255) : Color(red: 244/255, green: 241/255, blue: 234/255).opacity(0.82))
+                            )
+                            .lineLimit(1)
+
+                        if isUnderMaintenance, let badge = maintenanceBadge {
+                            Text(badge)
+                                .font(.system(size: 9, weight: .black))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.85))
+                                .cornerRadius(4)
+                        }
+                    }
 
                     if let sub = subtitle, !sub.isEmpty {
                         Text(sub)
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color(red: 141/255, green: 136/255, blue: 128/255))
+                            .foregroundColor(
+                                isUnderMaintenance
+                                    ? Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.75)
+                                    : Color(red: 141/255, green: 136/255, blue: 128/255)
+                            )
                             .lineLimit(1)
                     }
                 }
@@ -103,11 +141,20 @@ struct ZeroXChipButton: View {
             }
             .padding(.horizontal, 12)
             .frame(height: subtitle == nil ? 46 : 52)
-            .background(isSelected ? Color.white.opacity(0.08) : Color.white.opacity(0.04))
+            .background(
+                isUnderMaintenance
+                    ? Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.08)
+                    : (isSelected ? Color.white.opacity(0.08) : Color.white.opacity(0.04))
+            )
             .cornerRadius(14)
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(isSelected ? Color.white.opacity(0.18) : Color.white.opacity(0.08), lineWidth: 1)
+                    .stroke(
+                        isUnderMaintenance
+                            ? Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.4)
+                            : (isSelected ? Color.white.opacity(0.18) : Color.white.opacity(0.08)),
+                        lineWidth: 1
+                    )
             )
         }
         .buttonStyle(ZeroXScaleButtonStyle())
@@ -130,20 +177,17 @@ struct CheatStoreDashboardView: View {
 
     // Tab 1: Trang Chủ State
     @State private var selectedGame: String = "ff"           // "ff" or "max"
-    @State private var selectedAimVersion: String = "v2"      // "v1" or "v2"
     @State private var activeAimPatch: String? = "HEAD"
     @State private var selectedAimChips: Set<String> = ["HEAD", "APPLE IPA V2"]
     @State private var isInjecting: Bool = false
 
-    // Tab 2: Định Vị State
-    @State private var activeEspColor: String? = "WEAPON GREEN"
-    @State private var selectedEspChips: Set<String> = ["WEAPON GREEN", "ESP BOX & LINE"]
+    // Tab 2: Định Vị State (chỉ 1 gói lib_app_esp_aimhead_v3)
+    @State private var activeEspColor: String? = "ESP AIMHEAD V3"
+    @State private var selectedEspChips: Set<String> = ["ESP AIMHEAD V3"]
     @State private var isInjectingEsp: Bool = false
 
-    // Tab 3: Modskin State
-    @State private var selectedCharacter: String? = nil
-    @State private var activeSkinID: Int? = 1
-    @State private var selectedSpecialSkins: Set<String> = ["Skin Ignis Hỏa Lôi"]
+    // Tab 3: Modskin State (2 chức năng cũ: Skin Alock V2 & Skin thẻ vô cực vàng mùa 1)
+    @State private var selectedSpecialSkins: Set<String> = ["Skin Alock V2"]
     @State private var isApplyingSkin: Bool = false
 
     // Tab 4: Antiban State
@@ -153,8 +197,11 @@ struct CheatStoreDashboardView: View {
         8: true
     ]
 
-    // Tab 5: Cá Nhân State
+    // Tab 5: Cá Nhân State (Chi tiết & Sang trọng)
     @State private var copiedKey: Bool = false
+    @State private var copiedHWID: Bool = false
+    @State private var enableHaptic: Bool = true
+    @State private var autoCleanOnExit: Bool = true
     @State private var selectedLanguage: String = "Tiếng Việt"
 
     // Common Alerts & Status
@@ -215,11 +262,6 @@ struct CheatStoreDashboardView: View {
                 // Limelight Dock Bar Navigation
                 LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
                     .padding(.bottom, 6)
-            }
-
-            // Skin Selection Modal Sheet
-            if let charName = selectedCharacter {
-                skinSelectionModal(character: charName)
             }
         }
         .alert(isPresented: $showAlert) {
@@ -302,47 +344,24 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(22)
                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
 
-                // 2. Segment Switch Panel (.bx-seg-panel)
-                VStack(spacing: 10) {
-                    // Game switch row
-                    HStack {
-                        Text("Game")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(colorMute)
-                        Spacer()
-                        HStack(spacing: 2) {
-                            segmentButton(title: "Free Fire", isSelected: selectedGame == "ff") {
-                                selectedGame = "ff"
-                            }
-                            segmentButton(title: "FF Max", isSelected: selectedGame == "max") {
-                                selectedGame = "max"
-                            }
+                // 2. Game Switch Row (Chỉ để FF thôi, không cần Aim V1 V2)
+                HStack {
+                    Text("Game")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(colorMute)
+                    Spacer()
+                    HStack(spacing: 2) {
+                        segmentButton(title: "FF", isSelected: selectedGame == "ff") {
+                            selectedGame = "ff"
                         }
-                        .padding(3)
-                        .background(Color.black.opacity(0.35))
-                        .cornerRadius(999)
-                        .overlay(RoundedRectangle(cornerRadius: 999).stroke(Color.white.opacity(0.08), lineWidth: 1))
-                    }
-
-                    // Aim switch row
-                    HStack {
-                        Text("Aim")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(colorMute)
-                        Spacer()
-                        HStack(spacing: 2) {
-                            segmentButton(title: "Aim V1", isSelected: selectedAimVersion == "v1") {
-                                selectedAimVersion = "v1"
-                            }
-                            segmentButton(title: "Aim V2", isSelected: selectedAimVersion == "v2") {
-                                selectedAimVersion = "v2"
-                            }
+                        segmentButton(title: "FFM", isSelected: selectedGame == "max") {
+                            selectedGame = "max"
                         }
-                        .padding(3)
-                        .background(Color.black.opacity(0.35))
-                        .cornerRadius(999)
-                        .overlay(RoundedRectangle(cornerRadius: 999).stroke(Color.white.opacity(0.08), lineWidth: 1))
                     }
+                    .padding(3)
+                    .background(Color.black.opacity(0.35))
+                    .cornerRadius(999)
+                    .overlay(RoundedRectangle(cornerRadius: 999).stroke(Color.white.opacity(0.08), lineWidth: 1))
                 }
                 .padding(14)
                 .background(glassBg)
@@ -358,10 +377,10 @@ struct CheatStoreDashboardView: View {
                         .padding(.horizontal, 4)
 
                     let chips = [
-                        ("AIM DRAG", "Trợ lực ghì tâm sảnh"),
-                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "⚠️ Cảnh báo quét an toàn"),
-                        ("AIMLOCK HEAD", "Ghim tâm đầu nhạy"),
-                        ("MAGIC BULLET", "Đạn ma thuật hỗ trợ")
+                        ("AIM DRAG", "Trợ lực ghì tâm sảnh", false),
+                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck),
+                        ("AIMLOCK HEAD", "Ghim tâm đầu nhạy", false),
+                        ("MAGIC BULLET", "Đạn ma thuật hỗ trợ", false)
                     ]
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -369,7 +388,9 @@ struct CheatStoreDashboardView: View {
                             ZeroXChipButton(
                                 title: item.0,
                                 subtitle: item.1,
-                                isSelected: selectedAimChips.contains(item.0)
+                                isSelected: selectedAimChips.contains(item.0),
+                                isUnderMaintenance: item.2,
+                                maintenanceBadge: "BẢO TRÌ"
                             ) {
                                 toggleAimChip(item.0)
                             }
@@ -487,9 +508,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var heroTagText: String {
-        let g = selectedGame == "ff" ? "Free Fire" : "FF Max"
-        let a = selectedAimVersion == "v1" ? "Aim V1" : "Aim V2"
-        return "\(g) · \(a)"
+        return selectedGame == "ff" ? "Free Fire (FF)" : "Free Fire MAX (FFM)"
     }
 
     private func applyBundledPatch(named name: String) -> Bool {
@@ -613,12 +632,12 @@ struct CheatStoreDashboardView: View {
 
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Màu Định Vị")
+                            Text("Gói Định Vị")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(colorMute)
-                            Text(activeEspColor ?? "Chưa bật")
+                            Text("ESP AIMHEAD V3")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(activeEspColor != nil ? Color.green : colorMute)
+                                .foregroundColor(Color.cyan)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -627,12 +646,12 @@ struct CheatStoreDashboardView: View {
                             .background(Color.white.opacity(0.1))
 
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Chế Độ")
+                            Text("Trạng Thái")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(colorMute)
-                            Text("XUYÊN TƯỜNG")
+                            Text(!licenseManager.featureConfig.esp ? "BẢO TRÌ" : (selectedEspChips.contains("ESP AIMHEAD V3") ? "ĐÃ BẬT" : "SẴN SÀNG"))
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundColor(Color.cyan)
+                                .foregroundColor(!licenseManager.featureConfig.esp ? Color.red : (selectedEspChips.contains("ESP AIMHEAD V3") ? Color.green : colorMute))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -642,30 +661,33 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(22)
                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
 
-                // 1. ESP Colors Section
+                // 1. ESP Single Item (.bx-section) based on AppCore/lib_app_esp_aimhead_v3.dat
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("MÀU SẮC ĐỊNH VỊ (ESP COLORS)")
+                    Text("MODULE ĐỊNH VỊ (LIB_APP_ESP_AIMHEAD_V3)")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
-                    let espColors = [
-                        ("WEAPON GREEN", "Định vị súng Xanh lá"),
-                        ("WEAPON CYAN", "Định vị súng Xanh lơ"),
-                        ("WEAPON PINK", "Định vị súng Hồng dạ quang"),
-                        ("FULL BODY ESP", "Định vị toàn thân")
-                    ]
-
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                        ForEach(espColors, id: \.0) { item in
-                            ZeroXChipButton(
-                                title: item.0,
-                                subtitle: item.1,
-                                isSelected: selectedEspChips.contains(item.0)
-                            ) {
-                                toggleEspChip(item.0)
-                            }
+                    ZeroXChipButton(
+                        title: "ESP AIMHEAD V3",
+                        subtitle: "Định vị xuyên tường, khoảng cách & ghim đầu",
+                        isSelected: selectedEspChips.contains("ESP AIMHEAD V3"),
+                        isUnderMaintenance: !licenseManager.featureConfig.esp,
+                        maintenanceBadge: "BẢO TRÌ"
+                    ) {
+                        if !licenseManager.featureConfig.esp {
+                            alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                            alertMessage = "Hệ thống Định Vị ESP hiện đang bảo trì để nâng cấp thuật toán giải phóng RAM chống văng game. Vui lòng quay lại sau!"
+                            showAlert = true
+                            return
+                        }
+                        if selectedEspChips.contains("ESP AIMHEAD V3") {
+                            selectedEspChips.remove("ESP AIMHEAD V3")
+                            activeEspColor = nil
+                        } else {
+                            selectedEspChips.insert("ESP AIMHEAD V3")
+                            activeEspColor = "ESP AIMHEAD V3"
                         }
                     }
                     .padding(12)
@@ -674,39 +696,7 @@ struct CheatStoreDashboardView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 2. ESP Features Section
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("TÍNH NĂNG ĐỊNH VỊ")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
-
-                    let espFeatures = [
-                        ("ESP BOX & LINE", "Khung xương & Kẻ chỉ"),
-                        ("ESP HEALTH BAR", "Thanh máu & Tên địch"),
-                        ("ESP AIMHEAD V3", "Định vị Đầu đỏ"),
-                        ("ESP X-RAY BLUE", "Xuyên vật cản Xanh biển")
-                    ]
-
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                        ForEach(espFeatures, id: \.0) { item in
-                            ZeroXChipButton(
-                                title: item.0,
-                                subtitle: item.1,
-                                isSelected: selectedEspChips.contains(item.0)
-                            ) {
-                                toggleEspChip(item.0)
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 3. Clean ESP Card
+                // 2. Clean ESP Card
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     selectedEspChips.removeAll()
@@ -747,7 +737,7 @@ struct CheatStoreDashboardView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 4. Inject Button
+                // 3. Inject Button
                 Button(action: handleInjectEspAction) {
                     HStack {
                         if isInjectingEsp {
@@ -772,28 +762,6 @@ struct CheatStoreDashboardView: View {
                     .shadow(color: Color.white.opacity(0.18), radius: 12, x: 0, y: 3)
                 }
                 .disabled(isInjectingEsp)
-
-                // 5. Vào Game Button
-                Button(action: handleLaunchGame) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 14, weight: .bold))
-                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(18)
-                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
-                }
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }
@@ -839,70 +807,49 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    // MARK: - TAB 3: Modskin View
+    // MARK: - TAB 3: Modskin View (Chỉ giữ lại 2 chức năng cũ)
     private var skinView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                // Section 1: Character Roster (.bx-roster)
-                Text("ROSTER NHÂN VẬT")
+                // Section: 2 Chức Năng Cũ (Skin Alock V2 & Skin Thẻ Vô Cực Vàng Mùa 1)
+                Text("MOD SKIN VIP (AN TOÀN)")
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(2.4)
                     .foregroundColor(colorMute)
                     .padding(.horizontal, 4)
 
-                VStack(spacing: 12) {
-                    // Card 1: Alok
-                    characterCard(
-                        name: "Alok",
-                        imageName: "char-alok",
-                        subtitle: "8 trang phục VIP có sẵn"
-                    ) {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        selectedCharacter = "Alok"
-                    }
-
-                    // Card 2: Dimitri
-                    characterCard(
-                        name: "Dimitri",
-                        imageName: "char-dimitri",
-                        subtitle: "8 trang phục VIP có sẵn"
-                    ) {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        selectedCharacter = "Dimitri"
-                    }
-                }
-
-                // Section 2: Trang Phục Độc Quyền VIP
-                Text("TRANG PHỤC ĐỘC QUYỀN VIP")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(2.4)
-                    .foregroundColor(colorMute)
-                    .padding(.horizontal, 4)
-
-                let specialSkins = [
-                    ("Skin Ignis Hỏa Lôi", "Hiệu ứng lửa cháy rực rỡ"),
-                    ("Skin Naco Vũ Trụ", "Hào quang dải ngân hà"),
-                    ("Thẻ Vô Cực Mùa 1 Hoàng Kim", "Trang phục Thẻ Vô Cực Vàng")
+                let oldSkins = [
+                    ("Skin Alock V2", "Trang phục nhân vật Alok cực chất (Bản V2)"),
+                    ("Skin thẻ vô cực vàng mùa 1", "Trang phục Thẻ Vô Cực Vàng Mùa 1")
                 ]
 
                 VStack(spacing: 8) {
-                    ForEach(specialSkins, id: \.0) { item in
+                    ForEach(oldSkins, id: \.0) { item in
                         ZeroXChipButton(
                             title: item.0,
                             subtitle: item.1,
-                            isSelected: selectedSpecialSkins.contains(item.0)
+                            isSelected: selectedSpecialSkins.contains(item.0),
+                            isUnderMaintenance: !licenseManager.featureConfig.skin,
+                            maintenanceBadge: "BẢO TRÌ"
                         ) {
+                            if !licenseManager.featureConfig.skin {
+                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
+                                showAlert = true
+                                return
+                            }
                             if selectedSpecialSkins.contains(item.0) {
                                 selectedSpecialSkins.remove(item.0)
                             } else {
                                 selectedSpecialSkins.insert(item.0)
-                                alertTitle = "✅ ĐÃ CHỌN TRANG PHỤC"
-                                alertMessage = "Đã chọn [\(item.0)]. Bấm 'Áp dụng Trang Phục' để nạp vào game!"
-                                showAlert = true
                             }
                         }
                     }
                 }
+                .padding(12)
+                .background(glassBg)
+                .cornerRadius(20)
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
                 // Nút áp dụng Skin
                 Button(action: handleApplySkinAction) {
@@ -931,28 +878,6 @@ struct CheatStoreDashboardView: View {
                 .disabled(isApplyingSkin)
                 .padding(.top, 4)
 
-                // Nút Vào Game
-                Button(action: handleLaunchGame) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 14, weight: .bold))
-                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(18)
-                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
-                }
-
                 Spacer(minLength: 40)
             }
             .padding(.horizontal, 16)
@@ -960,165 +885,14 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    private func characterCard(name: String, imageName: String, subtitle: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 16) {
-                Image(imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 72, height: 72)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(name)
-                        .font(.system(size: 18, weight: .bold, design: .rounded))
-                        .foregroundColor(colorInk)
-                    Text(subtitle)
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(colorMute)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(colorMute.opacity(0.7))
-            }
-            .padding(14)
-            .background(glassBg)
-            .cornerRadius(22)
-            .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
-        }
-        .buttonStyle(ZeroXScaleButtonStyle())
-    }
-
-    // Modal Sheet chọn Skin cho nhân vật
-    private func skinSelectionModal(character: String) -> some View {
-        let alokSkins = [
-            SkinItemData(id: 1, name: "Alok Sơ Mi Trắng", subtitle: "Hào Quang DJ Vàng Kim"),
-            SkinItemData(id: 2, name: "Alok Áo Choàng Quỷ Vương", subtitle: "Lửa Đỏ Rực"),
-            SkinItemData(id: 3, name: "Alok Chiến Binh Ánh Sáng", subtitle: "Ánh Kim Bạch Kim Tối Thượng"),
-            SkinItemData(id: 4, name: "Alok Dạ Khúc Mùa Đông", subtitle: "Băng Tuyết Pha Lê VIP"),
-            SkinItemData(id: 5, name: "Alok Hắc Báo Sấm Sét", subtitle: "Tia Sét Tím Đột Phá"),
-            SkinItemData(id: 6, name: "Alok Samurai Bóng Đêm", subtitle: "Song Kiếm Hắc Hóa"),
-            SkinItemData(id: 7, name: "Alok Cyberpunk 2077", subtitle: "Neon Dạ Quang Siêu Thực"),
-            SkinItemData(id: 8, name: "Alok Hoàng Kim Đế Vương", subtitle: "Thần Giáp Đầy Đủ")
-        ]
-
-        let dimitriSkins = [
-            SkinItemData(id: 11, name: "Dimitri Lãng Tử Phong Trần", subtitle: "Phong Cách Cổ Điển"),
-            SkinItemData(id: 12, name: "Dimitri Thần Thoại Ai Cập", subtitle: "Ánh Sáng Pharaoh"),
-            SkinItemData(id: 13, name: "Dimitri Điệp Viên 007", subtitle: "Suit Đen Lịch Lãm"),
-            SkinItemData(id: 14, name: "Dimitri Tử Thần Vực Thẳm", subtitle: "Khói Đen Ma Mị"),
-            SkinItemData(id: 15, name: "Dimitri Bá Tước Ma Cà Rồng", subtitle: "Hiệu ứng Dơi Đỏ"),
-            SkinItemData(id: 16, name: "Dimitri Đao Phủ Thiên Hà", subtitle: "Chiến Binh Không Gian"),
-            SkinItemData(id: 17, name: "Dimitri Robot Hủy Diệt", subtitle: "Âm Thanh Cơ Khí Độc Lạ"),
-            SkinItemData(id: 18, name: "Dimitri Chiến Giáp Titan", subtitle: "Giáp Kim Loại Bất Hoại")
-        ]
-
-        let skins = character == "Alok" ? alokSkins : dimitriSkins
-
-        return ZStack {
-            Color.black.opacity(0.65)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    withAnimation { selectedCharacter = nil }
-                }
-
-            VStack(spacing: 0) {
-                Spacer()
-
-                VStack(spacing: 16) {
-                    HStack {
-                        Text(character)
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-                            .foregroundColor(colorInk)
-                        Spacer()
-                        Button(action: { withAnimation { selectedCharacter = nil } }) {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(colorMute)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 16)
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(spacing: 10) {
-                            ForEach(skins) { skin in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        Text(skin.name)
-                                            .font(.system(size: 15, weight: .semibold, design: .rounded))
-                                            .foregroundColor(colorInk)
-                                        Text(skin.subtitle)
-                                            .font(.system(size: 12))
-                                            .foregroundColor(colorMute)
-                                    }
-                                    Spacer()
-                                    Button(action: {
-                                        injectSkin(skin)
-                                    }) {
-                                        Text(activeSkinID == skin.id ? "Đã Nạp" : "Inject")
-                                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                                            .foregroundColor(activeSkinID == skin.id ? .green : .white)
-                                            .padding(.horizontal, 14)
-                                            .padding(.vertical, 6)
-                                            .background(activeSkinID == skin.id ? Color.green.opacity(0.15) : accentRed.opacity(0.75))
-                                            .cornerRadius(999)
-                                    }
-                                }
-                                .padding(12)
-                                .background(Color.white.opacity(0.04))
-                                .cornerRadius(14)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                    .frame(maxHeight: 340)
-
-                    Button(action: { withAnimation { selectedCharacter = nil } }) {
-                        Text("Xong")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(colorInk)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(16)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 24)
-                }
-                .background(Color(red: 16/255, green: 16/255, blue: 18/255))
-                .cornerRadius(28, corners: [.topLeft, .topRight])
-                .overlay(RoundedRectangle(cornerRadius: 28).stroke(glassBorder, lineWidth: 1))
-            }
-        }
-        .transition(.move(edge: .bottom))
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: selectedCharacter)
-    }
-
-    private func injectSkin(_ skin: SkinItemData) {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        activeSkinID = skin.id
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
-            let success = self.applyBundledPatch(named: "lib_app_skin_alock_v2")
-            DevicePatchService.ensureActivePatchesInjected()
-
-            DispatchQueue.main.async {
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-                self.alertTitle = success ? "✅ ĐÃ NẠP SKIN THÀNH CÔNG" : "⚠️ THÔNG BÁO"
-                self.alertMessage = "Trang phục [\(skin.name)] đã được nạp an toàn vào Free Fire (\(self.selectedGame.uppercased()))!\n\nBấm 'Vào Game' để chiêm ngưỡng."
-                self.showAlert = true
-            }
-        }
-    }
-
     private func handleApplySkinAction() {
         guard !isApplyingSkin else { return }
+        if !licenseManager.featureConfig.skin {
+            alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+            alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
+            showAlert = true
+            return
+        }
         isApplyingSkin = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
@@ -1126,15 +900,19 @@ struct CheatStoreDashboardView: View {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             var appliedNames: [String] = []
 
-            if self.selectedSpecialSkins.contains("Skin Ignis Hỏa Lôi") {
-                if self.applyBundledPatch(named: "lib_app_skin_ignis") {
-                    appliedNames.append("Skin Ignis Hỏa Lôi")
+            if self.selectedSpecialSkins.contains("Skin Alock V2") {
+                if self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
+                    appliedNames.append("Skin Alock V2")
                 }
             }
-            if self.selectedSpecialSkins.contains("Skin Naco Vũ Trụ") || self.selectedSpecialSkins.contains("Thẻ Vô Cực Mùa 1 Hoàng Kim") || appliedNames.isEmpty {
+            if self.selectedSpecialSkins.contains("Skin thẻ vô cực vàng mùa 1") {
+                if self.applyBundledPatch(named: "lib_app_skin_ignis") || self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
+                    appliedNames.append("Skin Thẻ Vô Cực Vàng Mùa 1")
+                }
+            }
+            if appliedNames.isEmpty {
                 if self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
-                    let name = self.selectedSpecialSkins.first ?? "Skin Alok V2 VIP"
-                    appliedNames.append(name)
+                    appliedNames.append("Skin Alock V2 (Mặc định)")
                 }
             }
 
@@ -1145,7 +923,7 @@ struct CheatStoreDashboardView: View {
                 self.isApplyingSkin = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 self.alertTitle = "✅ ÁP DỤNG SKIN THÀNH CÔNG"
-                self.alertMessage = "Toàn bộ skin đã chọn đã được nạp an toàn vào game:\n" + appliedNames.map { "• " + $0 }.joined(separator: "\n") + "\n\nBấm 'Vào Game' để trải nghiệm!"
+                self.alertMessage = "Toàn bộ skin đã chọn đã được nạp an toàn vào game:\n" + appliedNames.map { "• " + $0 }.joined(separator: "\n")
                 self.showAlert = true
             }
         }
@@ -1329,29 +1107,7 @@ struct CheatStoreDashboardView: View {
                     }
                 }
 
-                // 4. Action Buttons (Vào Game & Clean Restore)
-                Button(action: handleLaunchGame) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 14, weight: .bold))
-                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(18)
-                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
-                }
-                .padding(.top, 4)
-
+                // 4. Action Buttons (Clean Restore)
                 Button(action: {
                     performCleanRestore()
                 }) {
@@ -1386,36 +1142,68 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    // MARK: - TAB 5: Cá Nhân View (.bx-pass & .bx-meta)
+    // MARK: - TAB 5: Cá Nhân View (.bx-pass & .bx-meta - Chi Tiết & Cao Cấp)
     private var profileView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 16) {
-                // 1. VIP Pass Card (.bx-pass)
+                // 1. VIP Holographic Membership Card
                 VStack(alignment: .leading, spacing: 16) {
                     HStack(spacing: 14) {
                         Image("PhantomBrand")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 44, height: 44)
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14)
+                                    .stroke(accentRed.opacity(0.4), lineWidth: 1.2)
+                            )
 
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("CheatStore VN")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(colorInk)
-                            Text("Bản quyền kích hoạt")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color.green)
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 6) {
+                                Text("CheatStore VN")
+                                    .font(.system(size: 18, weight: .heavy, design: .rounded))
+                                    .foregroundColor(colorInk)
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.green)
+                            }
+
+                            HStack(spacing: 6) {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 7, height: 7)
+                                Text("Bản Quyền Đã Kích Hoạt")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundColor(.green)
+                            }
                         }
+
                         Spacer()
+
+                        // VIP Tier Tag
+                        Text("DIAMOND VIP")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.orange, accentRed],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .cornerRadius(8)
+                            .shadow(color: Color.orange.opacity(0.3), radius: 6, x: 0, y: 2)
                     }
 
-                    // Key Row
+                    // Key Row with Copy Action
                     HStack {
                         let key = licenseManager.activeKey
-                        let maskedKey = key.count > 4 ? "Key  ••••" + String(key.suffix(4)) : "Key  ••••3105"
+                        let maskedKey = key.count > 4 ? "KEY: ••••••••" + String(key.suffix(4)) : "KEY: ••••••••3105"
                         Text(maskedKey)
-                            .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
                             .foregroundColor(colorInk)
 
                         Spacer()
@@ -1428,29 +1216,33 @@ struct CheatStoreDashboardView: View {
                                 copiedKey = false
                             }
                         }) {
-                            Text(copiedKey ? "Đã chép" : "Sao chép")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 5)
-                                .background(Color.white.opacity(0.12))
-                                .cornerRadius(999)
+                            HStack(spacing: 4) {
+                                Image(systemName: copiedKey ? "checkmark" : "doc.on.doc.fill")
+                                    .font(.system(size: 11))
+                                Text(copiedKey ? "Đã chép" : "Sao chép")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(copiedKey ? Color.green.opacity(0.35) : Color.white.opacity(0.12))
+                            .cornerRadius(999)
                         }
                     }
                     .padding(12)
-                    .background(Color.black.opacity(0.3))
+                    .background(Color.black.opacity(0.4))
                     .cornerRadius(12)
 
-                    // Time Left Progress Bar
+                    // Validity Progress Bar
                     VStack(alignment: .leading, spacing: 6) {
                         HStack {
-                            Text("Thời gian còn lại")
+                            Text("Thời hạn bản quyền VIP")
                                 .font(.system(size: 12))
                                 .foregroundColor(colorMute)
                             Spacer()
-                            Text("30 ngày")
+                            Text("30 ngày còn lại")
                                 .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(colorInk)
+                                .foregroundColor(Color.orange)
                         }
 
                         GeometryReader { geo in
@@ -1471,12 +1263,22 @@ struct CheatStoreDashboardView: View {
                             }
                         }
                         .frame(height: 6)
+
+                        HStack {
+                            Text("Cấp: 01/10/2026")
+                                .font(.system(size: 10))
+                                .foregroundColor(colorMute)
+                            Spacer()
+                            Text("Hết hạn: 31/10/2026")
+                                .font(.system(size: 10))
+                                .foregroundColor(colorMute)
+                        }
                     }
                 }
                 .padding(18)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [accentRed.opacity(0.14), Color.black.opacity(0.55)]),
+                        gradient: Gradient(colors: [accentRed.opacity(0.16), Color(red: 24/255, green: 14/255, blue: 18/255), Color.black.opacity(0.65)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -1484,50 +1286,177 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(24)
                 .overlay(RoundedRectangle(cornerRadius: 24).stroke(glassBorder, lineWidth: 1))
 
-                // 2. Metadata List (.bx-meta .meta-list)
-                VStack(spacing: 12) {
-                    metaRow(label: "Ngày cấp", value: "01/10/2026")
-                    Divider().background(Color.white.opacity(0.08))
-                    metaRow(label: "Hạn dùng", value: "31/10/2026")
-                    Divider().background(Color.white.opacity(0.08))
-                    metaRow(label: "Mã thiết bị", value: String(UIDevice.current.identifierForVendor?.uuidString.prefix(8) ?? "VN-3105"))
-                    Divider().background(Color.white.opacity(0.08))
-                    metaRow(label: "Gói VIP", value: "30 ngày")
-                }
-                .padding(16)
-                .background(glassBg)
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-
-                // 3. Language Section
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("NGÔN NGỮ")
+                // 2. Hardware & Device Specs Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("THÔNG TIN THIẾT BỊ & HỆ THỐNG")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
-                    HStack {
-                        Text("Ngôn ngữ giao diện")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(colorInk)
-                        Spacer()
-                        Text(selectedLanguage)
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(colorMute)
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 12))
-                            .foregroundColor(colorMute)
+                    VStack(spacing: 12) {
+                        metaRow(label: "Tên thiết bị", value: UIDevice.current.name)
+                        Divider().background(Color.white.opacity(0.08))
+                        metaRow(label: "Kiểu máy", value: UIDevice.current.model)
+                        Divider().background(Color.white.opacity(0.08))
+                        metaRow(label: "Hệ điều hành", value: "iOS " + UIDevice.current.systemVersion)
+                        Divider().background(Color.white.opacity(0.08))
+                        
+                        // Hardware UUID with copy
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Mã phần cứng (UUID)")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(colorMute)
+                                let hwid = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
+                                Text(String(hwid.prefix(16)) + "...")
+                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                    .foregroundColor(colorInk.opacity(0.85))
+                            }
+                            Spacer()
+                            Button(action: {
+                                UIPasteboard.general.string = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
+                                copiedHWID = true
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    copiedHWID = false
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: copiedHWID ? "checkmark" : "doc.on.doc")
+                                        .font(.system(size: 10))
+                                    Text(copiedHWID ? "Đã chép" : "Chép")
+                                        .font(.system(size: 11, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 4)
+                                .background(Color.white.opacity(0.12))
+                                .cornerRadius(8)
+                            }
+                        }
+                        
+                        Divider().background(Color.white.opacity(0.08))
+                        metaRow(label: "Kiến trúc nhân", value: "ARM64 Substrate Direct")
+                        Divider().background(Color.white.opacity(0.08))
+                        metaRow(label: "Bản dựng ứng dụng", value: "v2.0 (Build 3105-PRO)")
                     }
                     .padding(16)
                     .background(glassBg)
-                    .cornerRadius(18)
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 4. Community Grid
+                // 3. Security Engine & Gateway Status Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("BẢO MẬT & ĐỘNG CƠ INJECTION")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundColor(colorMute)
+                        .padding(.horizontal, 4)
+
+                    VStack(spacing: 10) {
+                        statusRow(
+                            icon: "checkmark.shield.fill",
+                            iconColor: .green,
+                            title: "Antiban DNS Shield",
+                            subtitle: "Bảo vệ tài khoản trực tuyến",
+                            status: "CHỦ ĐỘNG",
+                            statusColor: .green
+                        )
+                        Divider().background(Color.white.opacity(0.08))
+                        statusRow(
+                            icon: "cpu.fill",
+                            iconColor: Color.purple,
+                            title: "Injection Engine V3",
+                            subtitle: "Tải dylib trực tiếp không văng",
+                            status: "HOẠT ĐỘNG",
+                            statusColor: .purple
+                        )
+                        Divider().background(Color.white.opacity(0.08))
+                        statusRow(
+                            icon: "bolt.shield.fill",
+                            iconColor: Color.orange,
+                            title: "Anti-Crash Watcher",
+                            subtitle: "Tự động quản lý & giải phóng RAM",
+                            status: "BẬT",
+                            statusColor: .orange
+                        )
+                        Divider().background(Color.white.opacity(0.08))
+                        statusRow(
+                            icon: "antenna.radiowaves.left.and.right",
+                            iconColor: .green,
+                            title: "Server Gateway",
+                            subtitle: "Độ trễ máy chủ phản hồi",
+                            status: "18ms (ONLINE)",
+                            statusColor: .green
+                        )
+                    }
+                    .padding(16)
+                    .background(glassBg)
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 4. App Preferences Section
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("CÀI ĐẶT & TÙY CHỌN TRẢI NGHIỆM")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundColor(colorMute)
+                        .padding(.horizontal, 4)
+
+                    VStack(spacing: 12) {
+                        Toggle(isOn: $enableHaptic) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Rung phản hồi (Haptic)")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(colorInk)
+                                Text("Tạo cảm giác rung khi bấm nút & toggle")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(colorMute)
+                            }
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: accentRed))
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        Toggle(isOn: $autoCleanOnExit) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Tự dọn dẹp RAM khi thoát")
+                                    .font(.system(size: 15, weight: .medium))
+                                    .foregroundColor(colorInk)
+                                Text("Giải phóng bộ nhớ tạm để máy luôn mượt")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(colorMute)
+                            }
+                        }
+                        .toggleStyle(SwitchToggleStyle(tint: accentRed))
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        HStack {
+                            Text("Ngôn ngữ giao diện")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundColor(colorInk)
+                            Spacer()
+                            Text(selectedLanguage)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(colorMute)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 11))
+                                .foregroundColor(colorMute)
+                        }
+                    }
+                    .padding(16)
+                    .background(glassBg)
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 5. Community & Official Support
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("HỖ TRỢ & CỘNG ĐỒNG")
+                    Text("HỖ TRỢ & CỘNG ĐỒNG CHÍNH THỨC")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
@@ -1536,9 +1465,14 @@ struct CheatStoreDashboardView: View {
                     HStack(spacing: 10) {
                         Link(destination: URL(string: "https://t.me/applestorevn") ?? URL(string: "https://apple.com")!) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Chủ Sở Hữu")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "crown.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(Color.orange)
+                                    Text("Chủ Sở Hữu")
+                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .foregroundColor(colorInk)
+                                }
                                 Text("@applestorevn")
                                     .font(.system(size: 12))
                                     .foregroundColor(colorMute)
@@ -1552,9 +1486,14 @@ struct CheatStoreDashboardView: View {
 
                         Link(destination: URL(string: "https://t.me/cheatstorevn") ?? URL(string: "https://apple.com")!) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("Kỹ Thuật")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
+                                HStack(spacing: 6) {
+                                    Image(systemName: "wrench.and.screwdriver.fill")
+                                        .font(.system(size: 12))
+                                        .foregroundColor(accentRed)
+                                    Text("Kỹ Thuật")
+                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .foregroundColor(colorInk)
+                                }
                                 Text("@cheatstorevn")
                                     .font(.system(size: 12))
                                     .foregroundColor(colorMute)
@@ -1568,19 +1507,42 @@ struct CheatStoreDashboardView: View {
                     }
                 }
 
-                // 5. Sign Out Button
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    licenseManager.deactivate()
-                }) {
-                    Text("Đăng Xuất")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                // 6. System Reset & Sign Out Actions
+                VStack(spacing: 10) {
+                    Button(action: {
+                        performCleanRestore()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.counterclockwise.circle.fill")
+                                .font(.system(size: 14))
+                            Text("Khôi Phục Cài Đặt Gốc (Clean Reset)")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(colorInk.opacity(0.85))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 46)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(16)
+                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(glassBorder, lineWidth: 1))
+                    }
+
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        licenseManager.deactivate()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "rectangle.portrait.and.arrow.right")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Đăng Xuất Khỏi Thiết Bị")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                        }
                         .foregroundColor(accentRed)
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
                         .background(accentRed.opacity(0.08))
                         .cornerRadius(16)
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(accentRed.opacity(0.3), lineWidth: 1))
+                    }
                 }
                 .padding(.top, 4)
 
@@ -1588,6 +1550,36 @@ struct CheatStoreDashboardView: View {
             }
             .padding(.horizontal, 16)
             .padding(.top, 4)
+        }
+    }
+
+    private func statusRow(icon: String, iconColor: Color, title: String, subtitle: String, status: String, statusColor: Color) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 18))
+                .foregroundColor(iconColor)
+                .frame(width: 32, height: 32)
+                .background(iconColor.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .foregroundColor(colorInk)
+                Text(subtitle)
+                    .font(.system(size: 11))
+                    .foregroundColor(colorMute)
+            }
+
+            Spacer()
+
+            Text(status)
+                .font(.system(size: 11, weight: .black, design: .monospaced))
+                .foregroundColor(statusColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(statusColor.opacity(0.12))
+                .cornerRadius(6)
         }
     }
 
