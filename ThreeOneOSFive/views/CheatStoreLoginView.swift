@@ -331,18 +331,19 @@ struct CheatStoreLogoView: View {
     var cornerRadius: CGFloat = 22
 
     private var loadedImage: UIImage? {
-        if let img = UIImage(named: "CheatLogo") ?? UIImage(named: "CheatStoreLogo") {
+        if let img = UIImage(named: "PhantomBrand") ?? UIImage(named: "CheatLogo") ?? UIImage(named: "CheatStoreLogo") {
             return img
         }
         if let resPath = Bundle.main.resourcePath {
             let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
-            let candidates = ["CheatLogo.png", "CheatStoreLogo.jpg", "CheatStoreLogo.png"]
+            let candidates = ["PhantomBrand.png", "CheatLogo.png", "CheatStoreLogo.jpg", "CheatStoreLogo.png"]
             for name in candidates {
                 let p = (appCoreAssets as NSString).appendingPathComponent(name)
                 if let img = UIImage(contentsOfFile: p) { return img }
             }
         }
-        if let path = Bundle.main.path(forResource: "CheatLogo", ofType: "png") ??
+        if let path = Bundle.main.path(forResource: "PhantomBrand", ofType: "png") ??
+                      Bundle.main.path(forResource: "CheatLogo", ofType: "png") ??
                       Bundle.main.path(forResource: "CheatStoreLogo", ofType: "png") ??
                       Bundle.main.path(forResource: "CheatStoreLogo", ofType: "jpg"),
            let img = UIImage(contentsOfFile: path) {
@@ -360,22 +361,22 @@ struct CheatStoreLogoView: View {
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(BlossomTheme.sakura.opacity(0.6), lineWidth: 1.5)
+                        .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
                 )
-                .shadow(color: BlossomTheme.sakura.opacity(0.4), radius: 10)
+                .shadow(color: Color.white.opacity(0.2), radius: 8)
         } else {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .fill(BlossomTheme.sakura.opacity(0.16))
+                    .fill(Color.white.opacity(0.08))
                     .frame(width: size, height: size)
                     .overlay(
-                    RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(BlossomTheme.sakura.opacity(0.6), lineWidth: 1.5)
+                        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                            .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
                     )
 
                 Image(systemName: "bolt.shield.fill")
                     .font(.system(size: size * 0.5, weight: .bold))
-                    .foregroundStyle(BlossomTheme.sakura)
+                    .foregroundStyle(.white)
             }
         }
     }

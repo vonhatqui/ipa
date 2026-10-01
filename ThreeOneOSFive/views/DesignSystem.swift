@@ -168,9 +168,11 @@ struct AppLogo: View {
 
     var body: some View {
         Group {
-            if let icon = UIImage(named: "AppIcon60x60")
+            if let icon = UIImage(named: "PhantomBrand")
+                ?? UIImage(named: "AppIcon60x60")
                 ?? Bundle.main.path(forResource: "AppIcon60x60@2x", ofType: "png").flatMap(UIImage.init(contentsOfFile:))
-                ?? UIImage(named: "AppIcon") {
+                ?? UIImage(named: "AppIcon")
+                ?? UIImage(named: "CheatLogo") {
                 Image(uiImage: icon)
                     .resizable()
                     .scaledToFill()
