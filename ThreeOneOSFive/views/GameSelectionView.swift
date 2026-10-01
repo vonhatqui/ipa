@@ -7,67 +7,68 @@ struct GameSelectionView: View {
 
     let onSelectFreeFire: () -> Void
 
-    @State private var isLoading = false
-    @State private var loadProgress: Double = 0.0
-    @State private var currentStepIndex: Int = 0
-    @State private var stepCardOpacity: Double = 1.0
-    @State private var stepCardOffsetY: CGFloat = 0.0
-    @State private var isFinalReady: Bool = false
     @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
-    @State private var activeVersion: FreeFireGameVersion = .standard
+    @State private var isLaunchingGame: Bool = false
+    @State private var launchingVersionTitle: String = ""
 
     private var currentGameVersion: FreeFireGameVersion {
         FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
     }
 
-    private var loadingSteps: [String] {
-        [
-            "Loading \(activeVersion.fullTitle)",
-            "Bypass Anti-cheat",
-            "Inject 3105 Kernel Driver",
-            "Sync AimAssist & Memory ESP",
-            "All Systems Ready • Launching..."
-        ]
-    }
-
-    // Theme: Blossom Dark Sakura (blossom.re)
-    private let brandBlue = BlossomTheme.sakura
-    private let brandCyan = BlossomTheme.sakuraLight
-    private let darkBackground = BlossomTheme.bgBottom
-    private let cardBackground = Color(red: 0.082, green: 0.043, blue: 0.137)
+    // Design Tokens (Obsidian 0xCheats Luxury)
+    private let colorVoid = Color.black
+    private let colorInk = Color(red: 244/255, green: 241/255, blue: 234/255)
+    private let colorMute = Color(red: 141/255, green: 136/255, blue: 128/255)
+    private let accentRed = Color(red: 255/255, green: 48/255, blue: 48/255)
+    private let glassBg = Color.white.opacity(0.05)
+    private let glassBorder = Color.white.opacity(0.12)
+    private let greenBadge = Color(red: 0.20, green: 0.88, blue: 0.45)
 
     var body: some View {
         ZStack {
-            // Nền hoa anh đào Blossom
-            BlossomBackgroundView(showParticles: true)
+            // Nền đen sâu True Black Void
+            colorVoid.ignoresSafeArea()
+
+            // Vầng sáng Ambient Glow
+            RadialGradient(
+                gradient: Gradient(colors: [accentRed.opacity(0.10), Color.clear]),
+                center: .top,
+                startRadius: 20,
+                endRadius: 380
+            )
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Thanh Header trên cùng
+                // Header thanh trên
                 topHeaderView
 
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 18) {
-                        // Tiêu đề mục: ỨNG DỤNG (1)
+                        // Tiêu đề mục
                         HStack {
-                            Text("ỨNG DỤNG (1)")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(Color.white.opacity(0.75))
-                                .tracking(1.0)
+                            Text("CHỌN PHIÊN BẢN GAME")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .tracking(2.4)
+                                .foregroundColor(accentRed.opacity(0.85))
                             Spacer()
                         }
                         .padding(.horizontal, 20)
-                        .padding(.top, 18)
+                        .padding(.top, 16)
 
-                        // Thẻ game Free Fire Thường (com.dts.freefireth)
+                        // 1. Thẻ Game Free Fire Thường (com.dts.freefireth)
                         gameCardView(version: .standard)
                             .padding(.horizontal, 20)
 
-                        // Gợi ý sử dụng
+                        // 2. Thẻ Game Free Fire MAX (com.dts.freefiremax)
+                        gameCardView(version: .max)
+                            .padding(.horizontal, 20)
+
+                        // 3. Thông tin bảo mật Antiban
                         instructionCardView
                             .padding(.horizontal, 20)
-                            .padding(.top, 8)
+                            .padding(.top, 6)
                     }
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 24)
                 }
 
                 Spacer(minLength: 0)
@@ -75,54 +76,76 @@ struct GameSelectionView: View {
                 // Footer thông tin thiết bị & phiên bản iOS
                 deviceStatusFooterView
             }
+
+            // Loading overlay khi chọn game
+            if isLaunchingGame {
+                ZStack {
+                    Color.black.opacity(0.75).ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.2)
+                        Text("Đang nạp dữ liệu \(launchingVersionTitle)...")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    .padding(24)
+                    .background(Color(red: 22/255, green: 22/255, blue: 26/255))
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+                .transition(.opacity)
+            }
         }
     }
 
     // MARK: - Top Header
     private var topHeaderView: some View {
         HStack(spacing: 12) {
-            CheatStoreLogoView(size: 34, cornerRadius: 9)
+            CheatStoreLogoView(size: 38, cornerRadius: 10)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("CheatStore VN")
-                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                    .foregroundColor(colorInk)
 
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(brandBlue)
+                        .fill(greenBadge)
                         .frame(width: 6, height: 6)
-                        .shadow(color: brandBlue.opacity(0.8), radius: 3)
-                    ShinyTextView(
-                        text: "VIP ĐÃ KÍCH HOẠT",
-                        font: .system(size: 10, weight: .bold, design: .rounded),
-                        baseColor: brandBlue,
-                        shineColor: BlossomTheme.sakuraLight,
-                        duration: 2.5
-                    )
+                    Text("VIP ĐÃ KÍCH HOẠT")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundColor(greenBadge)
                 }
             }
 
             Spacer()
 
-            // Nút đăng xuất nếu muốn đổi key
+            // Nút đăng xuất
             Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 licenseManager.deactivate()
             } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(Color.red.opacity(0.85))
-                    .padding(8)
-                    .background(Color.red.opacity(0.12))
-                    .clipShape(Circle())
+                HStack(spacing: 4) {
+                    Image(systemName: "rectangle.portrait.and.arrow.right")
+                        .font(.system(size: 11, weight: .bold))
+                    Text("Đổi Key")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                }
+                .foregroundColor(accentRed)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(accentRed.opacity(0.12))
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(accentRed.opacity(0.25), lineWidth: 1))
             }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(darkBackground.opacity(0.85))
+        .background(Color.black.opacity(0.4))
     }
 
-    // MARK: - Thẻ Game Free Fire
+    // MARK: - Thẻ Game Card
     private func gameCardView(version: FreeFireGameVersion) -> some View {
         let isSelected = (currentGameVersion == version)
         return Button {
@@ -130,472 +153,121 @@ struct GameSelectionView: View {
             selectedGameVersionRaw = version.rawValue
             DevicePatchService.preferredVersion = version
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
-            onSelectFreeFire()
+
+            launchingVersionTitle = version.fullTitle
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isLaunchingGame = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                isLaunchingGame = false
+                onSelectFreeFire()
+            }
         } label: {
-            HStack(spacing: 11) {
+            HStack(spacing: 14) {
                 // Icon Free Fire
-                FreeFireAppIconView(size: 42, cornerRadius: 11)
+                FreeFireAppIconView(size: 46, cornerRadius: 12)
 
                 // Thông tin Game
-                VStack(alignment: .leading, spacing: 2.5) {
+                VStack(alignment: .leading, spacing: 3) {
                     HStack(spacing: 6) {
                         Text(version.fullTitle)
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(colorInk)
 
                         if isSelected {
-                            Text("ĐANG CHỌN")
-                                .font(.system(size: 8, weight: .black, design: .rounded))
-                                .foregroundStyle(brandCyan)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1.5)
-                                .background(brandCyan.opacity(0.12))
-                                .cornerRadius(3)
+                            Text("MẶC ĐỊNH")
+                                .font(.system(size: 8.5, weight: .black, design: .rounded))
+                                .foregroundColor(accentRed)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(accentRed.opacity(0.14))
+                                .cornerRadius(4)
                         }
                     }
 
                     Text(version.primaryBundleID)
-                        .font(.system(size: 10.5, weight: .medium, design: .monospaced))
-                        .foregroundStyle(Color.white.opacity(0.65))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(colorMute)
                 }
 
                 Spacer()
 
-                // Nút / Huy hiệu READY
+                // Nút / Huy hiệu SẴN SÀNG
                 HStack(spacing: 6) {
-                    Text("READY")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .foregroundStyle(brandCyan)
+                    Text("SẴN SÀNG")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundColor(.green)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(brandCyan.opacity(0.10))
+                        .background(Color.green.opacity(0.12))
                         .cornerRadius(6)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(brandCyan, lineWidth: 1.1)
-                        )
 
                     Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color.white.opacity(0.55))
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(colorMute.opacity(0.7))
                 }
             }
-            .padding(.horizontal, 13)
-            .padding(.vertical, 10)
-            .background(cardBackground)
-            .cornerRadius(13)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(glassBg)
+            .cornerRadius(18)
             .overlay(
-                RoundedRectangle(cornerRadius: 13)
-                    .stroke(isSelected ? brandBlue.opacity(0.5) : brandBlue.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(isSelected ? accentRed.opacity(0.5) : glassBorder, lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.35), radius: 6, x: 0, y: 3)
+            .shadow(color: Color.black.opacity(0.3), radius: 8, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
     }
 
-    // MARK: - Gợi ý hướng dẫn
+    // MARK: - Gợi ý hướng dẫn / Bảo vệ
     private var instructionCardView: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(brandBlue)
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "checkmark.shield.fill")
+                .font(.system(size: 18))
+                .foregroundColor(accentRed)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("Hướng dẫn khởi động:")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(.white)
+                Text("Bảo Vệ Antiban Active")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(colorInk)
 
-                Text("Chạm vào game Free Fire để hệ thống tự động giải mã và nạp danh sách file mod bản quyền. Sau đó bạn có thể bật/tắt chức năng tuỳ ý.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.gray)
+                Text("Chạm vào game Free Fire để hệ thống tự động nạp cấu hình và mở bảng điều khiển mod. Toàn bộ file gốc sẽ được hoàn trả an toàn khi thoát.")
+                    .font(.system(size: 11.5))
+                    .foregroundColor(colorMute)
                     .lineSpacing(2)
             }
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground)
-        .cornerRadius(14)
+        .background(glassBg)
+        .cornerRadius(18)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(brandBlue.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(glassBorder, lineWidth: 1)
         )
-    }
-
-    private var currentStepTitle: String {
-        if currentStepIndex < loadingSteps.count {
-            return loadingSteps[currentStepIndex]
-        }
-        return loadingSteps.last ?? "All Systems Ready • Launching..."
-    }
-
-    // MARK: - Loading Overlay Blossom Mẫu 1 (Hiện từng câu kèm icon xanh, xong biến mất)
-    private var loadingOverlayView: some View {
-        ZStack {
-            // Nền tối sẫm Blossom AMOLED
-            Color.black.opacity(0.88)
-                .ignoresSafeArea()
-
-            BlossomTheme.bgBottom
-                .opacity(0.85)
-                .ignoresSafeArea()
-
-            BlossomTheme.backgroundGradient
-                .opacity(0.75)
-                .ignoresSafeArea()
-
-            // Hạt cánh hoa anh đào rơi nhẹ
-            // Clean ambient spotlight background
-
-            // Viền sáng neon bao quanh mép màn hình (Screen Inset Glow)
-            RoundedRectangle(cornerRadius: 38, style: .continuous)
-                .stroke(
-                    LinearGradient(
-                        colors: [
-                            BlossomTheme.sakura.opacity(0.65),
-                            BlossomTheme.sakuraDeep.opacity(0.25),
-                            Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35),
-                            Color.clear
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ),
-                    lineWidth: 1.5
-                )
-                .padding(8)
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                // TOP: Icon Free Fire & Thương hiệu
-                VStack(spacing: 8) {
-                    ZStack {
-                        Circle()
-                            .fill(BlossomTheme.sakura.opacity(0.3))
-                            .frame(width: 80, height: 80)
-                            .blur(radius: 20)
-
-                        FreeFireAppIconView(size: 72, cornerRadius: 18)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                                    .stroke(
-                                        LinearGradient(
-                                            colors: [BlossomTheme.sakuraLight, BlossomTheme.sakura.opacity(0.4)],
-                                            startPoint: .topLeading,
-                                            endPoint: .bottomTrailing
-                                        ),
-                                        lineWidth: 1.5
-                                    )
-                            )
-                            .shadow(color: BlossomTheme.sakura.opacity(0.5), radius: 18)
-                    }
-
-                    VStack(spacing: 3) {
-                        Text("CHEATSTORE VN")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .tracking(5)
-                            .foregroundStyle(Color.white.opacity(0.45))
-
-                        Text("FREE FIRE OS")
-                            .font(.system(size: 20, weight: .black, design: .rounded))
-                            .tracking(2.5)
-                            .foregroundStyle(
-                                LinearGradient(
-                                    colors: [.white, BlossomTheme.sakuraLight, BlossomTheme.sakura],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
-                                )
-                            )
-                    }
-                }
-                .padding(.top, 40)
-
-                Spacer()
-
-                // CENTER SPOTLIGHT: Thanh ngang nằm ngang đúng dáng thanh ngang như ban đầu
-                HStack(spacing: 12) {
-                    // Dấu tích xanh neon
-                    ZStack {
-                        Circle()
-                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3))
-                            .frame(width: 32, height: 32)
-                            .blur(radius: 6)
-
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                            .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.9), radius: 8)
-                    }
-
-                    // Dòng chữ chính to rõ
-                    Text(currentStepTitle)
-                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-
-                    Spacer()
-
-                    // Badge OK / READY
-                    Text(isFinalReady ? "READY" : "OK")
-                        .font(.system(size: 10, weight: .black, design: .monospaced))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3.5)
-                        .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.15))
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.35), lineWidth: 1)
-                        )
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
-                .frame(maxWidth: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(red: 0.08, green: 0.04, blue: 0.14).opacity(0.92))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(
-                            isFinalReady
-                                ? LinearGradient(colors: [Color(red: 0.20, green: 0.88, blue: 0.45), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                : LinearGradient(colors: [BlossomTheme.sakura.opacity(0.45), Color.clear], startPoint: .topLeading, endPoint: .bottomTrailing),
-                            lineWidth: 1.2
-                        )
-                )
-                .shadow(color: isFinalReady ? Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.3) : BlossomTheme.sakura.opacity(0.25), radius: 20)
-                .padding(.horizontal, 22)
-                .opacity(stepCardOpacity)
-                .offset(y: stepCardOffsetY)
-
-                Spacer()
-
-                // BOTTOM: Tiến trình % & Nút vào ngay
-                VStack(spacing: 12) {
-                    HStack {
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
-                                .frame(width: 7, height: 7)
-                            Text(isFinalReady ? "BẢO MẬT HOÀN TẤT" : "ĐANG XÁC THỰC...")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                                .foregroundStyle(Color.white.opacity(0.8))
-                        }
-                        Spacer()
-                        Text("\(Int(loadProgress * 100))%")
-                            .font(.system(size: 15, weight: .heavy, design: .rounded))
-                            .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                    }
-                    .padding(.horizontal, 4)
-
-                    // Thanh tiến trình
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            Capsule()
-                                .fill(Color.white.opacity(0.08))
-                                .frame(height: 8)
-
-                            Capsule()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [BlossomTheme.sakura, Color(red: 0.20, green: 0.88, blue: 0.45)],
-                                        startPoint: .leading,
-                                        endPoint: .trailing
-                                    )
-                                )
-                                .frame(width: max(8, geo.size.width * CGFloat(loadProgress)), height: 8)
-                                .shadow(color: Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.85), radius: 6)
-                        }
-                    }
-                    .frame(height: 8)
-
-                    Button {
-                        finishImmediately()
-                    } label: {
-                        Text("Chạm để vào game ngay")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.4))
-                            .padding(.top, 4)
-                    }
-                }
-                .padding(.horizontal, 26)
-                .padding(.bottom, 36)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            finishImmediately()
-        }
-    }
-
-    // MARK: - Bắt đầu quá trình nạp file Mẫu 1 (Hiện từng câu rồi biến mất)
-    private func startGameLoading(for version: FreeFireGameVersion? = nil) {
-        if let v = version {
-            activeVersion = v
-        } else {
-            activeVersion = currentGameVersion
-        }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-
-        loadProgress = 0.0
-        currentStepIndex = 0
-        isFinalReady = false
-        stepCardOpacity = 1.0
-        stepCardOffsetY = 0.0
-
-        withAnimation(.easeInOut(duration: 0.25)) {
-            isLoading = true
-        }
-
-        // Thực thi nạp file ngầm
-        BundledPatchInjector.autoImportBundledPatches(into: patchStore)
-
-        // Bắt đầu chuỗi bước
-        animateStep(index: 0)
-    }
-
-    private func animateStep(index: Int) {
-        guard isLoading else { return }
-
-        if index >= loadingSteps.count {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                isFinalReady = true
-                loadProgress = 1.0
-                stepCardOpacity = 1.0
-                stepCardOffsetY = 0
-            }
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                finishImmediately()
-            }
-            return
-        }
-
-        currentStepIndex = index
-        let targetProgress = Double(index + 1) / Double(loadingSteps.count)
-
-        // 1. Enter: Trượt vào mượt mà
-        withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
-            stepCardOpacity = 1.0
-            stepCardOffsetY = 0
-            loadProgress = targetProgress
-        }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-
-        // 2. Dừng hiển thị ~0.65s, sau đó bay lên biến mất để nhường cho câu tiếp theo
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
-            guard isLoading else { return }
-            if index < loadingSteps.count - 1 {
-                withAnimation(.easeIn(duration: 0.32)) {
-                    stepCardOpacity = 0.0
-                    stepCardOffsetY = -26
-                }
-                // Chuyển sang bước tiếp theo
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-                    animateStep(index: index + 1)
-                }
-            } else {
-                animateStep(index: index + 1)
-            }
-        }
-    }
-
-    private func finishImmediately() {
-        guard isLoading else { return }
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isLoading = false
-            onSelectFreeFire()
-        }
     }
 
     // MARK: - Footer thông tin thiết bị
-    private var isDeviceSupported: Bool {
-        let v = AppInfo.versionTuple
-        return ExploitSupportPolicy.isSupported(
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
-            build: AppInfo.osBuild
-        )
-    }
-
     private var deviceStatusFooterView: some View {
-        HStack(spacing: 8) {
-            HStack(spacing: 4) {
-                Image(systemName: "iphone.gen3")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(brandBlue)
-
-                Text(AppInfo.hardwareDisplayName)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-            }
-
-            Text("•")
-                .font(.system(size: 10))
-                .foregroundStyle(Color.gray.opacity(0.4))
-
-            HStack(spacing: 4) {
-                Image(systemName: "apple.logo")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.85))
-
-                Text("iOS \(AppInfo.osVersion)")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .lineLimit(1)
-            }
-
-            Spacer(minLength: 4)
-
-            if isDeviceSupported {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-
-                    Text("Có hỗ trợ")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(red: 0.20, green: 0.88, blue: 0.45))
-                }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
-                .cornerRadius(6)
-            } else {
-                HStack(spacing: 4) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
-
-                    Text("Không hỗ trợ")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(Color(red: 1.00, green: 0.28, blue: 0.28))
-                }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Color(red: 1.00, green: 0.28, blue: 0.28).opacity(0.12))
-                .cornerRadius(6)
-            }
+        HStack {
+            Text(UIDevice.current.name)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(colorMute)
+            Spacer()
+            Text("iOS \(UIDevice.current.systemVersion) • 3105-PRO")
+                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .foregroundColor(colorMute)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(red: 0.05, green: 0.08, blue: 0.14).opacity(0.92))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(brandBlue.opacity(0.2), lineWidth: 0.8)
-        )
         .padding(.horizontal, 20)
-        .padding(.bottom, 6)
+        .padding(.vertical, 10)
+        .background(Color.black.opacity(0.3))
     }
 }
 
-// MARK: - FreeFireAppIconView (Load từ Asset hoặc File png)
+// MARK: - FreeFireAppIconView
 struct FreeFireAppIconView: View {
     let size: CGFloat
     let cornerRadius: CGFloat
@@ -628,13 +300,11 @@ struct FreeFireAppIconView: View {
     }
 
     private func loadIconImage() -> UIImage? {
-        if let img = UIImage(named: "FreeFireIcon") {
+        if let img = UIImage(named: "FreeFireIcon") ?? UIImage(named: "freefire") {
             return img
         }
-        if let img = UIImage(named: "freefire") {
-            return img
-        }
-        if let path = Bundle.main.path(forResource: "FreeFireIcon", ofType: "png"),
+        if let path = Bundle.main.path(forResource: "FreeFireIcon", ofType: "png") ??
+                      Bundle.main.path(forResource: "FreeFireIcon", ofType: "jpg"),
            let img = UIImage(contentsOfFile: path) {
             return img
         }

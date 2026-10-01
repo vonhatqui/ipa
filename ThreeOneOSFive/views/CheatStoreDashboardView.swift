@@ -177,9 +177,17 @@ struct CheatStoreDashboardView: View {
 
     // Tab 1: Trang Chủ State
     @State private var selectedGame: String = "ff"           // "ff" or "max"
-    @State private var activeAimPatch: String? = "HEAD"
-    @State private var selectedAimChips: Set<String> = ["HEAD", "APPLE IPA V2"]
+    @State private var activeAimPatch: String? = "AIM DRAG"
+    @State private var selectedAimChips: Set<String> = ["AIM DRAG", "APPLE IPA V2"]
     @State private var isInjecting: Bool = false
+
+    private var currentAimDisplayText: String {
+        let activeMods = ["AIM DRAG", "AIMNECK VIP"].filter { selectedAimChips.contains($0) }
+        if activeMods.isEmpty {
+            return "Chưa bật"
+        }
+        return activeMods.joined(separator: " + ")
+    }
 
     // Tab 2: Định Vị State (chỉ 1 gói lib_app_esp_aimhead_v3)
     @State private var activeEspColor: String? = "ESP AIMHEAD V3"
@@ -268,7 +276,7 @@ struct CheatStoreDashboardView: View {
             Alert(
                 title: Text(alertTitle.isEmpty ? "Thông báo" : alertTitle),
                 message: Text(alertMessage ?? ""),
-                dismissButton: .default(Text("OK"))
+                dismissButton: .default(Text("Đóng"))
             )
         }
     }
@@ -288,6 +296,26 @@ struct CheatStoreDashboardView: View {
                     .foregroundColor(colorInk)
             }
             Spacer()
+
+            if let onBackToGames = onBackToGames {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    onBackToGames()
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 12))
+                        Text("Đổi Game")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(colorInk)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
+                }
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 10)
@@ -317,9 +345,11 @@ struct CheatStoreDashboardView: View {
                             Text("Aimbot")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(colorMute)
-                            Text(activeAimPatch ?? "Chưa bật")
+                            Text(currentAimDisplayText)
                                 .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(activeAimPatch != nil ? accentRed : colorMute)
+                                .foregroundColor(currentAimDisplayText != "Chưa bật" ? accentRed : colorMute)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.65)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -378,9 +408,7 @@ struct CheatStoreDashboardView: View {
 
                     let chips = [
                         ("AIM DRAG", "Trợ lực ghì tâm sảnh", false),
-                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck),
-                        ("AIMLOCK HEAD", "Ghim tâm đầu nhạy", false),
-                        ("MAGIC BULLET", "Đạn ma thuật hỗ trợ", false)
+                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
                     ]
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
@@ -1047,67 +1075,7 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 3. Misc patches sheet (.sheet#misc-slots)
-                Text("MISC PATCHES & TIỆN ÍCH (8 SLOTS)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .tracking(2.4)
-                    .foregroundColor(colorMute)
-                    .padding(.horizontal, 4)
-
-                VStack(spacing: 8) {
-                    let miscSlots = [
-                        (1, "Anti-Lag & 60-90 FPS Boost"),
-                        (2, "High Damage & Fast Reload"),
-                        (3, "Auto Scope & Quick Switch"),
-                        (4, "Wide View / Drone Camera"),
-                        (5, "Night Mode / HD Sky"),
-                        (6, "No Grass / Clear Field"),
-                        (7, "Black Body / Silhouette"),
-                        (8, "Safe Antiban Shield Bypass")
-                    ]
-
-                    ForEach(miscSlots, id: \.0) { slot in
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Misc \(slot.0)")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
-                                Text(slot.1)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(colorMute)
-                            }
-                            Spacer()
-
-                            Toggle("", isOn: Binding(
-                                get: {
-                                    if slot.0 == 8 {
-                                        return antibanService.isAntibanEnabled
-                                    }
-                                    return miscToggles[slot.0] ?? false
-                                },
-                                set: { val in
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    if slot.0 == 8 {
-                                        antibanService.isAntibanEnabled = val
-                                    } else {
-                                        miscToggles[slot.0] = val
-                                        if val {
-                                            _ = applyBundledPatch(named: "lib_app_system")
-                                        }
-                                    }
-                                }
-                            ))
-                            .labelsHidden()
-                            .toggleStyle(SwitchToggleStyle(tint: accentRed))
-                        }
-                        .padding(14)
-                        .background(glassBg)
-                        .cornerRadius(18)
-                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
-                    }
-                }
-
-                // 4. Action Buttons (Clean Restore)
+                // 3. Action Buttons (Clean Restore)
                 Button(action: {
                     performCleanRestore()
                 }) {
@@ -1133,7 +1101,7 @@ struct CheatStoreDashboardView: View {
                     .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 4)
                 }
                 .disabled(isRestoringClean)
-                .padding(.top, 4)
+                .padding(.top, 8)
 
                 Spacer(minLength: 40)
             }
@@ -1142,12 +1110,12 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    // MARK: - TAB 5: Cá Nhân View (.bx-pass & .bx-meta - Chi Tiết & Cao Cấp)
+    // MARK: - TAB 5: Hồ Sơ / Cá Nhân View
     private var profileView: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(spacing: 16) {
-                // 1. VIP Holographic Membership Card
-                VStack(alignment: .leading, spacing: 16) {
+                // 1. Thẻ Thông Tin Ứng Dụng & Key
+                VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 14) {
                         Image("PhantomBrand")
                             .resizable()
@@ -1169,42 +1137,38 @@ struct CheatStoreDashboardView: View {
                                     .foregroundColor(.green)
                             }
 
-                            HStack(spacing: 6) {
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 7, height: 7)
-                                Text("Bản Quyền Đã Kích Hoạt")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundColor(.green)
-                            }
+                            Text("Chủ sở hữu: Võ Nhật Qui (CheatVN)")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(Color.orange)
                         }
 
                         Spacer()
-
-                        // VIP Tier Tag
-                        Text("DIAMOND VIP")
-                            .font(.system(size: 10, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.orange, accentRed],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .cornerRadius(8)
-                            .shadow(color: Color.orange.opacity(0.3), radius: 6, x: 0, y: 2)
                     }
 
-                    // Key Row with Copy Action
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Tên App
+                    metaRow(label: "Tên App", value: "CheatStore VN (v2.0)")
+
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Chủ sở hữu
+                    metaRow(label: "Chủ sở hữu", value: "Võ Nhật Qui (CheatVN)")
+
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Key bản quyền
                     HStack {
-                        let key = licenseManager.activeKey
-                        let maskedKey = key.count > 4 ? "KEY: ••••••••" + String(key.suffix(4)) : "KEY: ••••••••3105"
-                        Text(maskedKey)
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .foregroundColor(colorInk)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Key")
+                                .font(.system(size: 14))
+                                .foregroundColor(colorMute)
+                            let key = licenseManager.activeKey
+                            let maskedKey = key.count > 4 ? "KEY: ••••••••" + String(key.suffix(4)) : "KEY: ••••••••3105"
+                            Text(maskedKey)
+                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                                .foregroundColor(colorInk)
+                        }
 
                         Spacer()
 
@@ -1229,83 +1193,35 @@ struct CheatStoreDashboardView: View {
                             .cornerRadius(999)
                         }
                     }
-                    .padding(12)
-                    .background(Color.black.opacity(0.4))
-                    .cornerRadius(12)
-
-                    // Validity Progress Bar
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Thời hạn bản quyền VIP")
-                                .font(.system(size: 12))
-                                .foregroundColor(colorMute)
-                            Spacer()
-                            Text("30 ngày còn lại")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(Color.orange)
-                        }
-
-                        GeometryReader { geo in
-                            ZStack(alignment: .leading) {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.white.opacity(0.1))
-                                    .frame(height: 6)
-
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [accentRed, Color.orange]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .frame(width: geo.size.width * 0.92, height: 6)
-                            }
-                        }
-                        .frame(height: 6)
-
-                        HStack {
-                            Text("Cấp: 01/10/2026")
-                                .font(.system(size: 10))
-                                .foregroundColor(colorMute)
-                            Spacer()
-                            Text("Hết hạn: 31/10/2026")
-                                .font(.system(size: 10))
-                                .foregroundColor(colorMute)
-                        }
-                    }
                 }
-                .padding(18)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [accentRed.opacity(0.16), Color(red: 24/255, green: 14/255, blue: 18/255), Color.black.opacity(0.65)]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .cornerRadius(24)
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(glassBorder, lineWidth: 1))
+                .padding(16)
+                .background(glassBg)
+                .cornerRadius(20)
+                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 2. Hardware & Device Specs Section
+                // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("THÔNG TIN THIẾT BỊ & HỆ THỐNG")
+                    Text("THIẾT BỊ & HỆ THỐNG")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
                     VStack(spacing: 12) {
-                        metaRow(label: "Tên thiết bị", value: UIDevice.current.name)
+                        // Tên Thiết Bị
+                        metaRow(label: "Tên Thiết Bị", value: UIDevice.current.name)
+
                         Divider().background(Color.white.opacity(0.08))
-                        metaRow(label: "Kiểu máy", value: UIDevice.current.model)
+
+                        // Hệ điều hành ios
+                        metaRow(label: "Hệ điều hành iOS", value: "iOS " + UIDevice.current.systemVersion)
+
                         Divider().background(Color.white.opacity(0.08))
-                        metaRow(label: "Hệ điều hành", value: "iOS " + UIDevice.current.systemVersion)
-                        Divider().background(Color.white.opacity(0.08))
-                        
-                        // Hardware UUID with copy
+
+                        // Mã phần cứng
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Mã phần cứng (UUID)")
+                                Text("Mã phần cứng")
                                     .font(.system(size: 14))
                                     .foregroundColor(colorMute)
                                 let hwid = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
@@ -1313,7 +1229,9 @@ struct CheatStoreDashboardView: View {
                                     .font(.system(size: 12, weight: .medium, design: .monospaced))
                                     .foregroundColor(colorInk.opacity(0.85))
                             }
+
                             Spacer()
+
                             Button(action: {
                                 UIPasteboard.general.string = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
                                 copiedHWID = true
@@ -1335,11 +1253,6 @@ struct CheatStoreDashboardView: View {
                                 .cornerRadius(8)
                             }
                         }
-                        
-                        Divider().background(Color.white.opacity(0.08))
-                        metaRow(label: "Kiến trúc nhân", value: "ARM64 Substrate Direct")
-                        Divider().background(Color.white.opacity(0.08))
-                        metaRow(label: "Bản dựng ứng dụng", value: "v2.0 (Build 3105-PRO)")
                     }
                     .padding(16)
                     .background(glassBg)
@@ -1347,202 +1260,110 @@ struct CheatStoreDashboardView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 3. Security Engine & Gateway Status Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("BẢO MẬT & ĐỘNG CƠ INJECTION")
+                // 3. Tùy Chỉnh Tiếng Việt - Tiếng Anh
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("TUỲ CHỈNH NGÔN NGỮ")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
-                    VStack(spacing: 10) {
-                        statusRow(
-                            icon: "checkmark.shield.fill",
-                            iconColor: .green,
-                            title: "Antiban DNS Shield",
-                            subtitle: "Bảo vệ tài khoản trực tuyến",
-                            status: "CHỦ ĐỘNG",
-                            statusColor: .green
-                        )
-                        Divider().background(Color.white.opacity(0.08))
-                        statusRow(
-                            icon: "cpu.fill",
-                            iconColor: Color.purple,
-                            title: "Injection Engine V3",
-                            subtitle: "Tải dylib trực tiếp không văng",
-                            status: "HOẠT ĐỘNG",
-                            statusColor: .purple
-                        )
-                        Divider().background(Color.white.opacity(0.08))
-                        statusRow(
-                            icon: "bolt.shield.fill",
-                            iconColor: Color.orange,
-                            title: "Anti-Crash Watcher",
-                            subtitle: "Tự động quản lý & giải phóng RAM",
-                            status: "BẬT",
-                            statusColor: .orange
-                        )
-                        Divider().background(Color.white.opacity(0.08))
-                        statusRow(
-                            icon: "antenna.radiowaves.left.and.right",
-                            iconColor: .green,
-                            title: "Server Gateway",
-                            subtitle: "Độ trễ máy chủ phản hồi",
-                            status: "18ms (ONLINE)",
-                            statusColor: .green
-                        )
+                    HStack {
+                        Text("Ngôn ngữ giao diện")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(colorInk)
+
+                        Spacer()
+
+                        HStack(spacing: 4) {
+                            Button(action: {
+                                selectedLanguage = "Tiếng Việt"
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }) {
+                                Text("Tiếng Việt")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(selectedLanguage == "Tiếng Việt" ? .black : colorMute)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(selectedLanguage == "Tiếng Việt" ? Color.white : Color.clear)
+                                    .cornerRadius(10)
+                            }
+
+                            Button(action: {
+                                selectedLanguage = "English"
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            }) {
+                                Text("English")
+                                    .font(.system(size: 12, weight: .bold))
+                                    .foregroundColor(selectedLanguage == "English" ? .black : colorMute)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(selectedLanguage == "English" ? Color.white : Color.clear)
+                                    .cornerRadius(10)
+                            }
+                        }
+                        .padding(4)
+                        .background(Color.black.opacity(0.4))
+                        .cornerRadius(12)
                     }
-                    .padding(16)
+                    .padding(14)
                     .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                    .cornerRadius(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 4. App Preferences Section
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("CÀI ĐẶT & TÙY CHỌN TRẢI NGHIỆM")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
+                // 4. Nút Liên Hệ ZL: 0365829172
+                Button(action: {
+                    if let url = URL(string: "https://zalo.me/0365829172") {
+                        UIApplication.shared.open(url)
+                    }
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "message.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(Color.cyan)
+                            .frame(width: 38, height: 38)
+                            .background(Color.cyan.opacity(0.15))
+                            .clipShape(Circle())
 
-                    VStack(spacing: 12) {
-                        Toggle(isOn: $enableHaptic) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Rung phản hồi (Haptic)")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(colorInk)
-                                Text("Tạo cảm giác rung khi bấm nút & toggle")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(colorMute)
-                            }
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: accentRed))
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        Toggle(isOn: $autoCleanOnExit) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Tự dọn dẹp RAM khi thoát")
-                                    .font(.system(size: 15, weight: .medium))
-                                    .foregroundColor(colorInk)
-                                Text("Giải phóng bộ nhớ tạm để máy luôn mượt")
-                                    .font(.system(size: 11))
-                                    .foregroundColor(colorMute)
-                            }
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: accentRed))
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        HStack {
-                            Text("Ngôn ngữ giao diện")
-                                .font(.system(size: 15, weight: .medium))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Liên hệ Zalo: 0365829172")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundColor(colorInk)
-                            Spacer()
-                            Text(selectedLanguage)
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(colorMute)
-                            Image(systemName: "chevron.right")
+                            Text("Chủ sở hữu: Võ Nhật Qui (CheatVN)")
                                 .font(.system(size: 11))
                                 .foregroundColor(colorMute)
                         }
+
+                        Spacer()
+
+                        Image(systemName: "arrow.up.right.square.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(Color.cyan)
                     }
-                    .padding(16)
+                    .padding(14)
                     .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                    .cornerRadius(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.cyan.opacity(0.3), lineWidth: 1))
                 }
 
-                // 5. Community & Official Support
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("HỖ TRỢ & CỘNG ĐỒNG CHÍNH THỨC")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
-
-                    HStack(spacing: 10) {
-                        Link(destination: URL(string: "https://t.me/applestorevn") ?? URL(string: "https://apple.com")!) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "crown.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(Color.orange)
-                                    Text("Chủ Sở Hữu")
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .foregroundColor(colorInk)
-                                }
-                                Text("@applestorevn")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(colorMute)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(glassBg)
-                            .cornerRadius(16)
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(glassBorder, lineWidth: 1))
-                        }
-
-                        Link(destination: URL(string: "https://t.me/cheatstorevn") ?? URL(string: "https://apple.com")!) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "wrench.and.screwdriver.fill")
-                                        .font(.system(size: 12))
-                                        .foregroundColor(accentRed)
-                                    Text("Kỹ Thuật")
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .foregroundColor(colorInk)
-                                }
-                                Text("@cheatstorevn")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(colorMute)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(glassBg)
-                            .cornerRadius(16)
-                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(glassBorder, lineWidth: 1))
-                        }
+                // 5. Nút Đăng Xuất
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    licenseManager.deactivate()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Đăng Xuất")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
                     }
-                }
-
-                // 6. System Reset & Sign Out Actions
-                VStack(spacing: 10) {
-                    Button(action: {
-                        performCleanRestore()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.counterclockwise.circle.fill")
-                                .font(.system(size: 14))
-                            Text("Khôi Phục Cài Đặt Gốc (Clean Reset)")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        }
-                        .foregroundColor(colorInk.opacity(0.85))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 46)
-                        .background(Color.white.opacity(0.06))
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(glassBorder, lineWidth: 1))
-                    }
-
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        licenseManager.deactivate()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "rectangle.portrait.and.arrow.right")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Đăng Xuất Khỏi Thiết Bị")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(accentRed)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(accentRed.opacity(0.08))
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(accentRed.opacity(0.3), lineWidth: 1))
-                    }
+                    .foregroundColor(accentRed)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(accentRed.opacity(0.08))
+                    .cornerRadius(16)
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(accentRed.opacity(0.3), lineWidth: 1))
                 }
                 .padding(.top, 4)
 

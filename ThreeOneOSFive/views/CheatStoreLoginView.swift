@@ -693,313 +693,164 @@ struct DarkMechMaintenanceModalView: View {
     }
 }
 
-// MARK: - HIỆU ỨNG INTRO ĐĂNG NHẬP THÀNH CÔNG (CHUẨN BLOSSOM & HIỆN TỪNG CHỮ)
+// MARK: - MÀN HÌNH XÁC NHẬN BẢN QUYỀN SAU KHI NHẬP KEY (CHUẨN CHEATSTORE VN)
 struct LoginSuccessIntroView: View {
     var planName: String = ""
     var remainingTime: String = ""
     let onFinished: () -> Void
 
-    // Animation States
-    @State private var overlayOpacity: Double = 1.0
-    @State private var borderGlowOpacity: Double = 0.0
+    @State private var cardScale: CGFloat = 0.92
+    @State private var cardOpacity: Double = 0.0
 
-    // Cụm chữ Typography trung tâm
-    @State private var textGroupOffsetY: CGFloat = 16
-
-    // Badge "LOGIN SUCCESSFUL"
-    @State private var badgeOpacity: Double = 0.0
-    @State private var badgeScale: CGFloat = 0.85
-    @State private var badgeOffsetY: CGFloat = 12
-
-    // Dòng chính "THE STANDARD. CHEATTING."
-    @State private var displayedHeadline: String = ""
-    @State private var headlineOpacity: Double = 0.0
-    @State private var isHeadlineTypingDone: Bool = false
-
-    // Dòng phụ "Wellcome to CheatingCommunity"
-    @State private var subtitleOpacity: Double = 0.0
-    @State private var subtitleOffsetY: CGFloat = 14
-
-    @State private var isDismissed: Bool = false
-
-    private let targetHeadline = "THE STANDARD. 0XCHEATS."
-    private let targetSubtitle = "Welcome to CheatStore Community • Anti-Ban Active"
     private let greenBadge = Color(red: 0.20, green: 0.88, blue: 0.45)
+    private let accentRed = Color(red: 255/255, green: 48/255, blue: 48/255)
 
     var body: some View {
         ZStack {
-            // Lớp phủ nền tối mờ huyền ảo kết hợp hiệu ứng Blossom
-            ZStack {
-                Color.black.opacity(0.88)
-                    .ignoresSafeArea()
+            // Nền tối mờ True Black
+            Color.black.opacity(0.85)
+                .ignoresSafeArea()
 
-                BlossomTheme.bgBottom
-                    .opacity(0.85)
-                    .ignoresSafeArea()
+            VStack(spacing: 0) {
+                VStack(spacing: 20) {
+                    // Logo & App Name
+                    VStack(spacing: 12) {
+                        CheatStoreLogoView(size: 64, cornerRadius: 18)
+                            .shadow(color: accentRed.opacity(0.3), radius: 12, y: 4)
 
-                BlossomTheme.backgroundGradient
-                    .opacity(0.75)
-                    .ignoresSafeArea()
+                        Text("CheatStore VN")
+                            .font(.system(size: 24, weight: .heavy, design: .rounded))
+                            .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92))
 
-                // Hạt cánh hoa anh đào rơi nhẹ phía sau
-                Circle()
-                    .fill(BlossomTheme.sakura.opacity(0.14))
-                    .blur(radius: 95)
-                    .frame(width: 320, height: 320)
-                    .offset(y: -100)
-                    .ignoresSafeArea()
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.system(size: 15))
+                                .foregroundColor(greenBadge)
+                            Text("KÍCH HOẠT BẢN QUYỀN THÀNH CÔNG")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(greenBadge)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        .background(greenBadge.opacity(0.12))
+                        .cornerRadius(999)
+                    }
 
-                // Viền sáng neon chạy quanh mép màn hình (Screen Inset Neon Glow)
-                RoundedRectangle(cornerRadius: 38, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                BlossomTheme.sakura.opacity(0.6),
-                                BlossomTheme.sakuraDeep.opacity(0.25),
-                                BlossomTheme.sakuraLight.opacity(0.4),
-                                Color.clear
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.5
-                    )
-                    .padding(8)
-                    .ignoresSafeArea()
-                    .opacity(borderGlowOpacity)
-            }
+                    // Metadata Box
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Ứng Dụng:")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.gray)
+                            Spacer()
+                            Text("CheatStore VN (v2.0)")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                        }
 
-            // Cụm Typography trung tâm
-            VStack(spacing: 16) {
-                // Faint watermark silhouette phía trên giống trong ảnh mẫu
-                VStack(spacing: 6) {
-                    CheatStoreLogoView(size: 48, cornerRadius: 13)
-                        .opacity(0.22)
-                    Text("BLOSSOM")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
-                        .tracking(6)
-                        .foregroundStyle(Color.white.opacity(0.25))
-                }
-                .padding(.bottom, 12)
+                        Divider().background(Color.white.opacity(0.1))
 
-                // 1. DÒNG THÔNG BÁO XANH: ● LOGIN SUCCESSFUL
-                HStack(spacing: 8) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 14, weight: .bold))
+                        HStack {
+                            Text("Gói Dịch Vụ:")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.gray)
+                            Spacer()
+                            Text(planName.isEmpty ? "Gói VIP Diamond" : planName)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundStyle(Color.orange)
+                        }
 
-                    Circle()
-                        .fill(greenBadge)
-                        .frame(width: 7, height: 7)
-                        .shadow(color: greenBadge, radius: 5)
-                    Text("0XCHEATS PROTOCOL • VERIFIED")
-                        .font(.system(size: 12, weight: .heavy, design: .monospaced))
-                        .tracking(2.2)
-                }
-                .foregroundStyle(greenBadge)
-                .shadow(color: greenBadge.opacity(0.85), radius: 10, x: 0, y: 0)
-                .shadow(color: greenBadge.opacity(0.45), radius: 20, x: 0, y: 0)
-                .scaleEffect(badgeScale)
-                .opacity(badgeOpacity)
-                .offset(y: badgeOffsetY)
+                        Divider().background(Color.white.opacity(0.1))
 
-                // 2. DÒNG CHỮ CHÍNH: THE STANDARD. CHEATTING. (GÕ TỪNG KÝ TỰ)
-                ZStack {
-                    // Placeholder vô hình giữ khung hình không bị co giật khi từng chữ hiện lên
-                    Text(targetHeadline)
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                        .tracking(6)
-                        .opacity(0)
+                        HStack {
+                            Text("Thời Gian Key:")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.gray)
+                            Spacer()
+                            Text(remainingTime.isEmpty ? "30 Ngày (Hạn dùng: 31/10/2026)" : remainingTime)
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .foregroundStyle(greenBadge)
+                        }
 
-                    Text(displayedHeadline.isEmpty ? " " : displayedHeadline)
-                        .font(.system(size: 24, weight: .black, design: .rounded))
-                        .tracking(6)
-                        .foregroundStyle(
+                        Divider().background(Color.white.opacity(0.1))
+
+                        HStack {
+                            Text("Bảo Mật:")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.gray)
+                            Spacer()
+                            Text("Antiban Shield Active")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(greenBadge)
+                        }
+                    }
+                    .padding(16)
+                    .background(Color.white.opacity(0.05))
+                    .cornerRadius(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.12), lineWidth: 1))
+
+                    // Confirm Action Button
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        withAnimation(.easeOut(duration: 0.25)) {
+                            cardOpacity = 0.0
+                            cardScale = 0.92
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                            onFinished()
+                        }
+                    }) {
+                        HStack(spacing: 8) {
+                            Text("Xác Nhận & Vào Chọn Game")
+                                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.system(size: 17, weight: .bold))
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 52)
+                        .background(
                             LinearGradient(
-                                colors: [Color.white, BlossomTheme.sakuraLight, BlossomTheme.sakura],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                                colors: [Color.white, Color(white: 0.88)],
+                                startPoint: .top,
+                                endPoint: .bottom
                             )
                         )
-                        .shadow(color: BlossomTheme.sakura.opacity(0.85), radius: 20, x: 0, y: 0)
-                        .shadow(color: BlossomTheme.sakuraDeep.opacity(0.55), radius: 36, x: 0, y: 0)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-                }
-                .padding(.horizontal, 20)
-                .opacity(headlineOpacity)
-
-                // 3. DÒNG CHỮ PHỤ: Wellcome to CheatingCommunity
-                VStack(spacing: 10) {
-                    Text(targetSubtitle)
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
-                        .tracking(1.5)
-                        .foregroundStyle(Color.white.opacity(0.85))
-                        .shadow(color: BlossomTheme.sakura.opacity(0.45), radius: 10, x: 0, y: 0)
-
-                    // Thẻ bản quyền 0xCheats Glassmorphism Card
-                    if !planName.isEmpty {
-                        VStack(spacing: 7) {
-                            HStack {
-                                Label("BẢN QUYỀN HỆ THỐNG", systemImage: "shield.lefthalf.filled.badge.checkmark")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundStyle(Color.cyan)
-                                Spacer()
-                                Text("ACTIVE")
-                                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 2.5)
-                                    .background(greenBadge.opacity(0.2))
-                                    .foregroundStyle(greenBadge)
-                                    .clipShape(Capsule())
-                            }
-                            Divider().background(Color.white.opacity(0.12))
-                            HStack {
-                                Text("Gói dịch vụ:")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.gray)
-                                Spacer()
-                                Text(planName)
-                                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.white)
-                            }
-                            if !remainingTime.isEmpty {
-                                HStack {
-                                    Text("Hạn sử dụng:")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.gray)
-                                    Spacer()
-                                    Text(remainingTime)
-                                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                                        .foregroundStyle(greenBadge)
-                                }
-                            }
-                        }
-                        .padding(14)
-                        .background(Color.white.opacity(0.06))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                        )
-                        .shadow(color: Color.black.opacity(0.45), radius: 14, y: 6)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 4)
+                        .cornerRadius(16)
+                        .shadow(color: Color.white.opacity(0.2), radius: 12, y: 3)
                     }
                 }
-                .opacity(subtitleOpacity)
-                .offset(y: subtitleOffsetY)
+                .padding(24)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(red: 22/255, green: 22/255, blue: 26/255), Color(red: 14/255, green: 14/255, blue: 18/255)]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .cornerRadius(28)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(
+                            LinearGradient(
+                                colors: [accentRed.opacity(0.4), Color.white.opacity(0.15)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.2
+                        )
+                )
+                .shadow(color: Color.black.opacity(0.6), radius: 30, y: 15)
+                .padding(.horizontal, 24)
+                .scaleEffect(cardScale)
+                .opacity(cardOpacity)
             }
-            .offset(y: textGroupOffsetY)
-
-            // Gợi ý chạm để bỏ qua / vào ngay ở mép dưới
-            VStack {
-                Spacer()
-                Text("Chạm để vào game ngay")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(BlossomTheme.textDim.opacity(0.45))
-                    .padding(.bottom, 36)
-                    .opacity(isHeadlineTypingDone ? 0.8 : 0)
-            }
-        }
-        .opacity(overlayOpacity)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            dismissImmediately()
         }
         .onAppear {
-            startAnimationTimeline()
-        }
-    }
-
-    private func startAnimationTimeline() {
-        // Giai đoạn 0: Viền neon sáng dần
-        withAnimation(.easeIn(duration: 0.6)) {
-            borderGlowOpacity = 1.0
-        }
-
-        // Giai đoạn 1 (t=0.15s): Badge "LOGIN SUCCESSFUL" bật sáng + haptic rung nhẹ
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            guard !isDismissed else { return }
-            let generator = UINotificationFeedbackGenerator()
-            generator.notificationOccurred(.success)
-
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.72)) {
-                badgeOpacity = 1.0
-                badgeScale = 1.0
-                badgeOffsetY = 0
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                cardScale = 1.0
+                cardOpacity = 1.0
             }
-        }
-
-        // Giai đoạn 2 (t=0.45s): Bắt đầu gõ từng chữ "THE STANDARD. CHEATTING."
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) {
-            guard !isDismissed else { return }
-            withAnimation(.easeOut(duration: 0.25)) {
-                headlineOpacity = 1.0
-            }
-            startTypewriter()
-        }
-    }
-
-    private func startTypewriter() {
-        let chars = Array(targetHeadline)
-        let impact = UIImpactFeedbackGenerator(style: .light)
-        impact.prepare()
-
-        for i in 0..<chars.count {
-            let delay = Double(i) * 0.038 // ~38ms mỗi ký tự
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                guard !isDismissed else { return }
-                displayedHeadline = String(chars[0...i])
-
-                if i % 4 == 0 {
-                    impact.impactOccurred(intensity: 0.5)
-                }
-
-                // Khi đã gõ xong chữ cuối cùng
-                if i == chars.count - 1 {
-                    isHeadlineTypingDone = true
-                    revealSubtitleAndComplete()
-                }
-            }
-        }
-    }
-
-    private func revealSubtitleAndComplete() {
-        // Giai đoạn 3: Dòng phụ "Wellcome to CheatingCommunity" trượt lên & hiện rõ
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            guard !isDismissed else { return }
-            withAnimation(.timingCurve(0.16, 1.0, 0.3, 1.0, duration: 0.9)) {
-                subtitleOpacity = 1.0
-                subtitleOffsetY = 0
-            }
-        }
-
-        // Giai đoạn 4: Cụm chữ nâng nhẹ lên và mờ dần (tổng thời gian ~3.2s)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
-            guard !isDismissed else { return }
-            withAnimation(.easeIn(duration: 0.55)) {
-                textGroupOffsetY = -45
-                overlayOpacity = 0.0
-            }
-        }
-
-        // Giai đoạn 5: Kết thúc và xác nhận vào ứng dụng chính
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.35) {
-            guard !isDismissed else { return }
-            isDismissed = true
-            onFinished()
-        }
-    }
-
-    private func dismissImmediately() {
-        guard !isDismissed else { return }
-        isDismissed = true
-        withAnimation(.easeOut(duration: 0.25)) {
-            textGroupOffsetY = -35
-            overlayOpacity = 0.0
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            onFinished()
         }
     }
 }
