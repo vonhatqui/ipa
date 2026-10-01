@@ -227,6 +227,7 @@ struct CheatStoreDashboardView: View {
     @State private var showToast: Bool = false
 
     // Detailed Restore Progress Modal State
+    @State private var showPatchCodecSheet: Bool = false
     @State private var showRestoreProgressModal: Bool = false
     @State private var restoreProgressValue: Double = 0.0
     @State private var restoreCurrentStepTitle: String = ""
@@ -480,6 +481,10 @@ struct CheatStoreDashboardView: View {
                 dismissButton: .default(Text("Đóng"))
             )
         }
+        .sheet(isPresented: $showPatchCodecSheet) {
+            PatchCodecView()
+                .environmentObject(patchStore)
+        }
     }
 
     // MARK: - Top Header (.main-head bx-head)
@@ -673,6 +678,49 @@ struct CheatStoreDashboardView: View {
                     .background(glassBg)
                     .cornerRadius(20)
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 4.5. Khu vực Quản lý & Mã hóa Patch .3105
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("QUẢN LÝ & MÃ HÓA FILE .3105")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundColor(colorMute)
+                        .padding(.horizontal, 4)
+
+                    Button(action: {
+                        showPatchCodecSheet = true
+                    }) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(accentRed.opacity(0.18))
+                                    .frame(width: 36, height: 36)
+                                Image(systemName: "lock.shield.fill")
+                                    .font(.system(size: 17, weight: .bold))
+                                    .foregroundColor(accentRed)
+                            }
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Thêm file .3105 (Mã hóa sang .dat)")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(colorInk)
+                                Text("Mã hóa stream XOR & nạp thẳng vào game")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(colorMute)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundColor(accentRed)
+                        }
+                        .padding(12)
+                        .background(glassBg)
+                        .cornerRadius(18)
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                    }
                 }
 
                 // 5. Thanh Vuông Bo Tròn chứa 3 Nút Hành Động (Tối ưu nhỏ lại ~15%, Icon Kim Tiêm & Free Fire)
@@ -1588,6 +1636,39 @@ struct CheatStoreDashboardView: View {
                         .padding(4)
                         .background(Color.black.opacity(0.4))
                         .cornerRadius(12)
+                    }
+                    .padding(14)
+                    .background(glassBg)
+                    .cornerRadius(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 3.5. Tiện ích Quản lý & Mã hóa Patch .3105
+                Button(action: {
+                    showPatchCodecSheet = true
+                }) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 18))
+                            .foregroundColor(accentRed)
+                            .frame(width: 38, height: 38)
+                            .background(accentRed.opacity(0.15))
+                            .clipShape(Circle())
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Quản lý & Mã hóa file .3105")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(colorInk)
+                            Text("Mã hóa sang .dat và đồng bộ vào Thư Viện Patch")
+                                .font(.system(size: 11))
+                                .foregroundColor(colorMute)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(colorMute)
                     }
                     .padding(14)
                     .background(glassBg)
