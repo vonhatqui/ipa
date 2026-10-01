@@ -144,6 +144,7 @@ struct CheatStoreDashboardView: View {
     @State private var selectedCharacter: String? = nil
     @State private var activeSkinID: Int? = 1
     @State private var selectedSpecialSkins: Set<String> = ["Skin Ignis Hỏa Lôi"]
+    @State private var isApplyingSkin: Bool = false
 
     // Tab 4: Antiban State
     @State private var miscGame: String = "ff"
@@ -350,16 +351,18 @@ struct CheatStoreDashboardView: View {
 
                 // 3. Modules Section (.bx-section) - Aim Chips
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("MODULES AIM (GIM & KHÓA TÂM)")
+                    Text("CHỨC NĂNG BỔ TRỢ & AIM")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
                         .padding(.horizontal, 4)
 
-                    let chips = selectedAimVersion == "v1"
-                        ? [("DRAG", "Kéo tâm nhẹ"), ("NECK", "Ghim tâm cổ"), ("BODY", "Ghim tâm ngực"), ("MAGIC BULLET", "Đạn ma thuật")]
-                        : [("AIMLOCK", "Khóa tâm mượt"), ("NECK", "Ghim tâm cổ"), ("HEAD", "Ghim tâm đầu"), ("BODY", "Ghim tâm thân"),
-                           ("HEAD ANTENNA", "Ăng-ten đầu"), ("DRAG ANTENNA", "Ăng-ten kéo tâm"), ("BODY ANTENNA", "Ăng-ten toàn thân"), ("MAGIC BULLET", "Đạn ma thuật")]
+                    let chips = [
+                        ("AIM DRAG", "Trợ lực ghì tâm sảnh"),
+                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "⚠️ Cảnh báo quét an toàn"),
+                        ("AIMLOCK HEAD", "Ghim tâm đầu nhạy"),
+                        ("MAGIC BULLET", "Đạn ma thuật hỗ trợ")
+                    ]
 
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
                         ForEach(chips, id: \.0) { item in
@@ -380,7 +383,7 @@ struct CheatStoreDashboardView: View {
 
                 // 4. Core VIP Patches
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("CORE VIP MODS")
+                    Text("CORE VIP MODS (CHỐNG VĂNG)")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .tracking(2.4)
                         .foregroundColor(colorMute)
@@ -388,7 +391,7 @@ struct CheatStoreDashboardView: View {
 
                     let coreMods = [
                         ("APPLE IPA V2", "Bản quyền Apple IPA"),
-                        ("SWIFT IOS", "Tối ưu hóa Swift iOS"),
+                        ("SWIFT IOS", "Aimbot Fix Văng"),
                         ("INTERNAL MOD", "Menu Internal ẩn"),
                         ("APPLESTORE PRIME", "Fix văng & chống quét")
                     ]
@@ -420,7 +423,7 @@ struct CheatStoreDashboardView: View {
                                     .progressViewStyle(CircularProgressViewStyle(tint: .black))
                                     .padding(.trailing, 6)
                             }
-                            Text(isInjecting ? "Đang nạp Inject..." : "Inject")
+                            Text(isInjecting ? "Đang nạp Inject..." : "Inject Vào Game")
                                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
                         }
@@ -438,11 +441,33 @@ struct CheatStoreDashboardView: View {
                     }
                     .disabled(isInjecting)
 
+                    // Vào Game Button
+                    Button(action: handleLaunchGame) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(18)
+                        .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
+                    }
+
                     // Restore Original Button
                     Button(action: {
                         performCleanRestore()
                     }) {
-                        Text("Khôi phục gốc")
+                        Text(isRestoringClean ? "Đang khôi phục..." : "Khôi phục gốc")
                             .font(.system(size: 15, weight: .semibold, design: .rounded))
                             .foregroundColor(colorInk.opacity(0.8))
                             .frame(maxWidth: .infinity)
@@ -451,6 +476,7 @@ struct CheatStoreDashboardView: View {
                             .cornerRadius(18)
                             .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
                     }
+                    .disabled(isRestoringClean)
                 }
                 .padding(.top, 4)
                 .padding(.bottom, 24)
@@ -466,15 +492,62 @@ struct CheatStoreDashboardView: View {
         return "\(g) · \(a)"
     }
 
+    private func applyBundledPatch(named name: String) -> Bool {
+        guard let item = PatchProjectLibrary.loadBundledItem(named: name),
+              let project = item.project else {
+            print("[CheatStore] Không tìm thấy bundled item: \(name)")
+            return false
+        }
+        do {
+            _ = try DevicePatchService.applyPatch(project: project)
+            return true
+        } catch {
+            print("[CheatStore] Lỗi nạp \(name): \(error)")
+            return false
+        }
+    }
+
+    private func handleLaunchGame() {
+        let scheme = selectedGame == "max" ? "freefiremax://" : "freefire://"
+        if let url = URL(string: scheme) {
+            if UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            } else if let fallback = URL(string: selectedGame == "max" ? "freefire://" : "freefiremax://"),
+                      UIApplication.shared.canOpenURL(fallback) {
+                UIApplication.shared.open(fallback, options: [:], completionHandler: nil)
+            } else {
+                alertTitle = "⚠️ Chưa cài đặt Free Fire"
+                alertMessage = "Không tìm thấy game Free Fire trên thiết bị này. Vui lòng cài đặt trước!"
+                showAlert = true
+            }
+        }
+    }
+
     private func toggleAimChip(_ chip: String) {
-        if selectedAimChips.contains(chip) {
-            selectedAimChips.remove(chip)
-            if activeAimPatch == chip {
-                activeAimPatch = selectedAimChips.first
+        let coreNames: Set<String> = ["APPLE IPA V2", "SWIFT IOS", "INTERNAL MOD", "APPLESTORE PRIME"]
+        if coreNames.contains(chip) {
+            if selectedAimChips.contains(chip) {
+                selectedAimChips.remove(chip)
+            } else {
+                for c in coreNames { selectedAimChips.remove(c) }
+                selectedAimChips.insert(chip)
             }
         } else {
-            selectedAimChips.insert(chip)
-            activeAimPatch = chip
+            if chip == "AIMNECK VIP" && !licenseManager.featureConfig.aimneck {
+                alertTitle = "⚠️ CẢNH BÁO AN TOÀN"
+                alertMessage = "Chức năng AimNeck VIP hiện đang được đánh dấu KHÔNG AN TOÀN do nguy cơ quét từ máy chủ game.\n\n👉 Quý khách vui lòng BẬT tính năng [APPLESTORE PRIME] để bảo vệ tài khoản!"
+                showAlert = true
+                return
+            }
+            if selectedAimChips.contains(chip) {
+                selectedAimChips.remove(chip)
+                if activeAimPatch == chip {
+                    activeAimPatch = selectedAimChips.first
+                }
+            } else {
+                selectedAimChips.insert(chip)
+                activeAimPatch = chip
+            }
         }
     }
 
@@ -485,16 +558,37 @@ struct CheatStoreDashboardView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+            var appliedNames: [String] = []
+
+            // 1. Core Mod
+            if self.selectedAimChips.contains("APPLE IPA V2") {
+                if self.applyBundledPatch(named: "lib_app_apple_ipa_v2") { appliedNames.append("Apple IPA V2") }
+            } else if self.selectedAimChips.contains("SWIFT IOS") {
+                if self.applyBundledPatch(named: "lib_app_swift_ios") { appliedNames.append("Swift iOS") }
+            } else if self.selectedAimChips.contains("APPLESTORE PRIME") {
+                if self.applyBundledPatch(named: "lib_app_applestore_prime") { appliedNames.append("AppleStore PRIME") }
+            } else if self.selectedAimChips.contains("INTERNAL MOD") {
+                if self.applyBundledPatch(named: "lib_app_internal") { appliedNames.append("Internal Mod") }
+            }
+
+            // 2. Aim Mods
+            if self.selectedAimChips.contains("AIMNECK VIP") {
+                if self.applyBundledPatch(named: "lib_app_aimneck_vip") { appliedNames.append("AimNeck VIP") }
+            }
+            if self.selectedAimChips.contains("AIM DRAG") || self.selectedAimChips.contains("DRAG") {
+                if self.applyBundledPatch(named: "lib_app_system") { appliedNames.append("Aim Drag") }
+            }
+
             DevicePatchService.ensureActivePatchesInjected()
 
-            Thread.sleep(forTimeInterval: 0.8)
+            Thread.sleep(forTimeInterval: 0.6)
 
             DispatchQueue.main.async {
                 self.isInjecting = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 self.alertTitle = "✅ INJECT THÀNH CÔNG"
-                let aimInfo = self.activeAimPatch ?? "None"
-                self.alertMessage = "Đã kích hoạt thành công:\n• Module Aim: \(aimInfo)\n• Game: \(self.selectedGame.uppercased())\n\nVui lòng mở Free Fire để trải nghiệm!"
+                let summary = appliedNames.isEmpty ? "Đã tối ưu hóa dữ liệu game!" : appliedNames.map { "• " + $0 }.joined(separator: "\n")
+                self.alertMessage = "Đã nạp mod thành công vào Free Fire (\(self.selectedGame.uppercased())):\n\(summary)\n\nBấm 'Vào Game' để trải nghiệm ngay!"
                 self.showAlert = true
             }
         }
@@ -617,9 +711,14 @@ struct CheatStoreDashboardView: View {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     selectedEspChips.removeAll()
                     activeEspColor = nil
-                    alertTitle = "✅ ĐÃ TẮT ĐỊNH VỊ"
-                    alertMessage = "Toàn bộ hiệu ứng định vị Visual đã được gỡ bỏ an toàn."
-                    showAlert = true
+                    DispatchQueue.global(qos: .userInitiated).async {
+                        DevicePatchService.cleanRestoreAllModifications()
+                        DispatchQueue.main.async {
+                            alertTitle = "✅ ĐÃ TẮT ĐỊNH VỊ"
+                            alertMessage = "Toàn bộ hiệu ứng định vị Visual đã được gỡ bỏ an toàn."
+                            showAlert = true
+                        }
+                    }
                 }) {
                     HStack(spacing: 16) {
                         Text("◈")
@@ -673,6 +772,28 @@ struct CheatStoreDashboardView: View {
                     .shadow(color: Color.white.opacity(0.18), radius: 12, x: 0, y: 3)
                 }
                 .disabled(isInjectingEsp)
+
+                // 5. Vào Game Button
+                Button(action: handleLaunchGame) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(18)
+                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
+                }
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }
@@ -700,16 +821,19 @@ struct CheatStoreDashboardView: View {
 
         DispatchQueue.global(qos: .userInitiated).async {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+            let success = self.applyBundledPatch(named: "lib_app_esp_aimhead_v3")
             DevicePatchService.ensureActivePatchesInjected()
 
-            Thread.sleep(forTimeInterval: 0.8)
+            Thread.sleep(forTimeInterval: 0.6)
 
             DispatchQueue.main.async {
                 self.isInjectingEsp = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
-                self.alertTitle = "✅ ĐÃ NẠP ĐỊNH VỊ THÀNH CÔNG"
-                let espInfo = self.activeEspColor ?? "Mặc định"
-                self.alertMessage = "Đã kích hoạt định vị:\n• Visual: \(espInfo)\n\nVui lòng mở Free Fire để trải nghiệm!"
+                self.alertTitle = success ? "✅ NẠP ĐỊNH VỊ THÀNH CÔNG" : "⚠️ THÔNG BÁO"
+                let espInfo = self.activeEspColor ?? "Visual ESP V3"
+                self.alertMessage = success
+                    ? "Đã kích hoạt định vị Visual vào Free Fire (\(self.selectedGame.uppercased())):\n• Chế độ: \(espInfo)\n• Bộ lọc: Xuyên tường & Khung xương\n\nBấm 'Vào Game' để trải nghiệm!"
+                    : "Không tìm thấy gói định vị tương ứng trong hệ thống."
                 self.showAlert = true
             }
         }
@@ -781,29 +905,53 @@ struct CheatStoreDashboardView: View {
                 }
 
                 // Nút áp dụng Skin
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                    UINotificationFeedbackGenerator().notificationOccurred(.success)
-                    alertTitle = "✅ ÁP DỤNG SKIN THÀNH CÔNG"
-                    alertMessage = "Toàn bộ skin đã chọn đã được mod trực tiếp vào game an toàn!"
-                    showAlert = true
-                }) {
-                    Text("Áp Dụng Mod Skin")
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.white, Color(white: 0.88)]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
+                Button(action: handleApplySkinAction) {
+                    HStack {
+                        if isApplyingSkin {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                .padding(.trailing, 6)
+                        }
+                        Text(isApplyingSkin ? "Đang nạp Skin..." : "Áp Dụng Mod Skin")
+                            .font(.system(size: 16, weight: .bold, design: .rounded))
+                            .foregroundColor(.black)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.white, Color(white: 0.88)]),
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
-                        .cornerRadius(18)
-                        .shadow(color: Color.white.opacity(0.18), radius: 10, x: 0, y: 3)
+                    )
+                    .cornerRadius(18)
+                    .shadow(color: Color.white.opacity(0.18), radius: 10, x: 0, y: 3)
                 }
+                .disabled(isApplyingSkin)
                 .padding(.top, 4)
+
+                // Nút Vào Game
+                Button(action: handleLaunchGame) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(18)
+                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
+                }
 
                 Spacer(minLength: 40)
             }
@@ -954,10 +1102,53 @@ struct CheatStoreDashboardView: View {
     private func injectSkin(_ skin: SkinItemData) {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         activeSkinID = skin.id
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        alertTitle = "✅ ĐÃ NẠP SKIN THÀNH CÔNG"
-        alertMessage = "Skin [\(skin.name)] đã được áp dụng an toàn vào Free Fire!"
-        showAlert = true
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+            let success = self.applyBundledPatch(named: "lib_app_skin_alock_v2")
+            DevicePatchService.ensureActivePatchesInjected()
+
+            DispatchQueue.main.async {
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                self.alertTitle = success ? "✅ ĐÃ NẠP SKIN THÀNH CÔNG" : "⚠️ THÔNG BÁO"
+                self.alertMessage = "Trang phục [\(skin.name)] đã được nạp an toàn vào Free Fire (\(self.selectedGame.uppercased()))!\n\nBấm 'Vào Game' để chiêm ngưỡng."
+                self.showAlert = true
+            }
+        }
+    }
+
+    private func handleApplySkinAction() {
+        guard !isApplyingSkin else { return }
+        isApplyingSkin = true
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+            var appliedNames: [String] = []
+
+            if self.selectedSpecialSkins.contains("Skin Ignis Hỏa Lôi") {
+                if self.applyBundledPatch(named: "lib_app_skin_ignis") {
+                    appliedNames.append("Skin Ignis Hỏa Lôi")
+                }
+            }
+            if self.selectedSpecialSkins.contains("Skin Naco Vũ Trụ") || self.selectedSpecialSkins.contains("Thẻ Vô Cực Mùa 1 Hoàng Kim") || appliedNames.isEmpty {
+                if self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
+                    let name = self.selectedSpecialSkins.first ?? "Skin Alok V2 VIP"
+                    appliedNames.append(name)
+                }
+            }
+
+            DevicePatchService.ensureActivePatchesInjected()
+            Thread.sleep(forTimeInterval: 0.6)
+
+            DispatchQueue.main.async {
+                self.isApplyingSkin = false
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                self.alertTitle = "✅ ÁP DỤNG SKIN THÀNH CÔNG"
+                self.alertMessage = "Toàn bộ skin đã chọn đã được nạp an toàn vào game:\n" + appliedNames.map { "• " + $0 }.joined(separator: "\n") + "\n\nBấm 'Vào Game' để trải nghiệm!"
+                self.showAlert = true
+            }
+        }
     }
 
     // MARK: - TAB 4: Antiban View
@@ -965,32 +1156,86 @@ struct CheatStoreDashboardView: View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 14) {
                 // 1. Antiban Safe Shield Card (.bx-pass)
-                HStack(spacing: 14) {
-                    Image(systemName: "checkmark.shield.fill")
-                        .font(.system(size: 38))
-                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                VStack(spacing: 12) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "checkmark.shield.fill")
+                            .font(.system(size: 38))
+                            .foregroundColor(antibanService.isAntibanEnabled ? Color(red: 0.20, green: 0.88, blue: 0.45) : colorMute)
 
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("AppleStoreVN Antiban Safe Shield")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(colorInk)
-                        Text("Ledger Safe Injection & Lifecycle Auto-Restore")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(colorMute)
-                        Text("BẢO VỆ 100% ONLINE")
-                            .font(.system(size: 10, weight: .black))
-                            .foregroundColor(Color.green)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(Color.green.opacity(0.12))
-                            .cornerRadius(4)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("AppleStoreVN Antiban Safe Shield")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundColor(colorInk)
+                            Text("Ledger Safe Injection & Lifecycle Auto-Restore")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(colorMute)
+                            Text(antibanService.isAntibanEnabled ? "BẢO VỆ 100% ONLINE" : "CHƯA KÍCH HOẠT")
+                                .font(.system(size: 10, weight: .black))
+                                .foregroundColor(antibanService.isAntibanEnabled ? Color.green : Color.orange)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background((antibanService.isAntibanEnabled ? Color.green : Color.orange).opacity(0.12))
+                                .cornerRadius(4)
+                        }
+                        Spacer()
+
+                        Toggle("", isOn: Binding(
+                            get: { antibanService.isAntibanEnabled },
+                            set: { _ in antibanService.toggleAntiban() }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(SwitchToggleStyle(tint: Color.green))
                     }
-                    Spacer()
+
+                    Divider().background(Color.white.opacity(0.08))
+
+                    // Buttons to Setup Profile & Open Settings
+                    HStack(spacing: 10) {
+                        Button(action: {
+                            antibanService.setupAntiban()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.down.doc.fill")
+                                    .font(.system(size: 12))
+                                Text(antibanService.isSettingUp ? "Đang gửi hồ sơ..." : "Cài Đặt Hồ Sơ Antiban")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(Color.white.opacity(0.12))
+                            .cornerRadius(12)
+                        }
+                        .disabled(antibanService.isSettingUp)
+
+                        Button(action: {
+                            antibanService.openIOSSettings()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "gearshape.fill")
+                                    .font(.system(size: 12))
+                                Text("Cài Đặt iOS")
+                                    .font(.system(size: 12, weight: .bold))
+                            }
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 38)
+                            .background(Color.white.opacity(0.08))
+                            .cornerRadius(12)
+                        }
+                    }
+
+                    if let notice = antibanService.statusNotice {
+                        Text(notice)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(Color.yellow)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 }
                 .padding(16)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [Color.green.opacity(0.10), Color.black.opacity(0.55)]),
+                        gradient: Gradient(colors: [antibanService.isAntibanEnabled ? Color.green.opacity(0.10) : Color.white.opacity(0.04), Color.black.opacity(0.55)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -1056,10 +1301,22 @@ struct CheatStoreDashboardView: View {
                             Spacer()
 
                             Toggle("", isOn: Binding(
-                                get: { miscToggles[slot.0] ?? false },
+                                get: {
+                                    if slot.0 == 8 {
+                                        return antibanService.isAntibanEnabled
+                                    }
+                                    return miscToggles[slot.0] ?? false
+                                },
                                 set: { val in
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    miscToggles[slot.0] = val
+                                    if slot.0 == 8 {
+                                        antibanService.isAntibanEnabled = val
+                                    } else {
+                                        miscToggles[slot.0] = val
+                                        if val {
+                                            _ = applyBundledPatch(named: "lib_app_system")
+                                        }
+                                    }
                                 }
                             ))
                             .labelsHidden()
@@ -1072,7 +1329,29 @@ struct CheatStoreDashboardView: View {
                     }
                 }
 
-                // 4. Action Buttons (Clean Restore)
+                // 4. Action Buttons (Vào Game & Clean Restore)
+                Button(action: handleLaunchGame) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 14, weight: .bold))
+                        Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
+                            .font(.system(size: 15, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(
+                        LinearGradient(
+                            colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(18)
+                    .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
+                }
+                .padding(.top, 4)
+
                 Button(action: {
                     performCleanRestore()
                 }) {
