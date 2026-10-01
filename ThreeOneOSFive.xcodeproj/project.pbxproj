@@ -95,6 +95,8 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		3105M115 /* PatchCodecAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchCodecAPIService.swift; sourceTree = "<group>"; };
+		3105M116 /* PatchCodecView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchCodecView.swift; sourceTree = "<group>"; };
 		3105A010 /* CheatStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CheatStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
