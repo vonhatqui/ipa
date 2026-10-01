@@ -225,6 +225,13 @@ struct CheatStoreDashboardView: View {
     @State private var toastColor: Color = Color.green
     @State private var showToast: Bool = false
 
+    // Detailed Restore Progress Modal State
+    @State private var showRestoreProgressModal: Bool = false
+    @State private var restoreProgressValue: Double = 0.0
+    @State private var restoreCurrentStepTitle: String = ""
+    @State private var restoreCompletedSteps: [String] = []
+    @State private var isRestoreFinished: Bool = false
+
     // 0xCheats Design Tokens
     private let colorVoid = Color.black
     private let colorPanel = Color(red: 22/255, green: 22/255, blue: 24/255)
@@ -276,7 +283,11 @@ struct CheatStoreDashboardView: View {
 
                 // Limelight Dock Bar Navigation
                 LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
-                    .padding(.bottom, 6)
+                    .padding(.bottom, 2)
+
+                // Thanh Thông Tin Thiết Bị Dưới Dashboard (To hơn 10%, Tên máy thật + iOS + ĐƯỢC HỖ TRỢ)
+                dashboardDeviceFooterView
+                    .padding(.bottom, 4)
             }
 
             // Toast Notification Banner (overlay phía trên)
@@ -348,6 +359,113 @@ struct CheatStoreDashboardView: View {
                 .transition(.opacity)
                 .zIndex(1000)
             }
+
+            // MODAL LOADING CHI TIẾT KHI KHÔI PHỤC GỐC AN TOÀN 100%
+            if showRestoreProgressModal {
+                ZStack {
+                    Color.black.opacity(0.85).ignoresSafeArea()
+
+                    VStack(spacing: 16) {
+                        // Header Icon Khiên / Mũi Tên Hoàn Tác
+                        ZStack {
+                            Circle()
+                                .fill(isRestoreFinished ? Color.green.opacity(0.18) : Color.orange.opacity(0.15))
+                                .frame(width: 58, height: 58)
+
+                            Image(systemName: isRestoreFinished ? "checkmark.shield.fill" : "arrow.counterclockwise.shield.fill")
+                                .font(.system(size: 26, weight: .bold))
+                                .foregroundColor(isRestoreFinished ? .green : .orange)
+                        }
+
+                        VStack(spacing: 4) {
+                            Text(isRestoreFinished ? "KHÔI PHỤC HOÀN TẤT 100%" : "ĐANG KHÔI PHỤC DỮ LIỆU GỐC")
+                                .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+
+                            Text(isRestoreFinished ? "Game đã trở về trạng thái nguyên bản sạch sẽ an toàn" : "Hệ thống đang tiến hành làm sạch theo quy trình chuẩn")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundColor(colorMute)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        // Thanh Progress Bar
+                        VStack(spacing: 6) {
+                            ProgressView(value: restoreProgressValue, total: 1.0)
+                                .progressViewStyle(LinearProgressViewStyle(tint: isRestoreFinished ? Color.green : Color.orange))
+                                .scaleEffect(x: 1, y: 2.2, anchor: .center)
+                                .clipShape(Capsule())
+
+                            HStack {
+                                Text(restoreCurrentStepTitle)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(colorMute)
+                                    .lineLimit(1)
+                                Spacer()
+                                Text("\(Int(restoreProgressValue * 100))%")
+                                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                                    .foregroundColor(isRestoreFinished ? .green : .orange)
+                            }
+                        }
+                        .padding(.horizontal, 4)
+
+                        Divider().background(Color.white.opacity(0.1))
+
+                        // Danh Sách Các Bước Đã Khôi Phục Cho Khách Thấy Rõ
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("CÁC MỤC ĐÃ KHÔI PHỤC AN TOÀN:")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(1.5)
+                                .foregroundColor(colorMute.opacity(0.85))
+
+                            ScrollView(.vertical, showsIndicators: false) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    ForEach(restoreCompletedSteps, id: \.self) { step in
+                                        HStack(alignment: .top, spacing: 8) {
+                                            Image(systemName: "checkmark.circle.fill")
+                                                .font(.system(size: 12, weight: .bold))
+                                                .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                                .padding(.top, 1)
+
+                                            Text(step)
+                                                .font(.system(size: 11.5, weight: .medium))
+                                                .foregroundColor(colorInk.opacity(0.92))
+                                                .fixedSize(horizontal: false, vertical: true)
+                                        }
+                                    }
+                                }
+                            }
+                            .frame(maxHeight: 130)
+                        }
+
+                        // Nút Đóng Khi Hoàn Tất
+                        if isRestoreFinished {
+                            Button {
+                                withAnimation(.easeOut(duration: 0.25)) {
+                                    showRestoreProgressModal = false
+                                }
+                            } label: {
+                                Text("HOÀN TẤT & ĐÓNG")
+                                    .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 40)
+                                    .background(Color.white)
+                                    .cornerRadius(12)
+                                    .shadow(color: Color.white.opacity(0.25), radius: 8, y: 2)
+                            }
+                            .padding(.top, 2)
+                        }
+                    }
+                    .padding(20)
+                    .background(Color(red: 22/255, green: 22/255, blue: 26/255))
+                    .cornerRadius(22)
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1.2))
+                    .shadow(color: Color.black.opacity(0.6), radius: 24, x: 0, y: 8)
+                    .padding(.horizontal, 24)
+                }
+                .zIndex(1001)
+                .transition(.opacity)
+            }
         }
         .alert(isPresented: $showAlert) {
             Alert(
@@ -360,16 +478,27 @@ struct CheatStoreDashboardView: View {
 
     // MARK: - Top Header (.main-head bx-head)
     private var topHeaderView: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
+        HStack(spacing: 12) {
+            Image("PhantomBrand")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                        .stroke(Color.white.opacity(0.22), lineWidth: 1.2)
+                )
+                .shadow(color: accentRed.opacity(0.35), radius: 8, x: 0, y: 0)
+
+            VStack(alignment: .leading, spacing: 2) {
                 Text(selectedTab.title.uppercased())
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .tracking(3.8)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .tracking(3.2)
                     .foregroundColor(accentRed.opacity(0.85))
 
                 Text("CheatStore VN")
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    .tracking(-0.8)
+                    .font(.system(size: 24, weight: .heavy, design: .rounded))
+                    .tracking(-0.6)
                     .foregroundColor(colorInk)
             }
             Spacer()
@@ -540,22 +669,26 @@ struct CheatStoreDashboardView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 5. Action Buttons (.bx-foot)
-                VStack(spacing: 10) {
-                    // Inject Button
+                // 5. Thanh Vuông Bo Tròn chứa 3 Nút Hành Động (Tối ưu nhỏ lại ~15%, Icon Kim Tiêm & Free Fire)
+                VStack(spacing: 8) {
+                    // Nút 1: Inject Vào Game (Icon cây kim tiêm syringe.fill, nhỏ lại ~15%)
                     Button(action: handleInjectAction) {
-                        HStack {
+                        HStack(spacing: 8) {
                             if isInjecting {
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                    .padding(.trailing, 6)
+                                    .scaleEffect(0.9)
+                            } else {
+                                Image(systemName: "syringe.fill")
+                                    .font(.system(size: 14, weight: .bold))
+                                    .foregroundColor(.black)
                             }
                             Text(isInjecting ? "Đang nạp Inject..." : "Inject Vào Game")
-                                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                                .font(.system(size: 14.5, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: 44)
                         .background(
                             LinearGradient(
                                 gradient: Gradient(colors: [Color.white, Color(white: 0.88)]),
@@ -563,22 +696,22 @@ struct CheatStoreDashboardView: View {
                                 endPoint: .bottom
                             )
                         )
-                        .cornerRadius(18)
-                        .shadow(color: Color.white.opacity(0.18), radius: 12, x: 0, y: 3)
+                        .cornerRadius(14)
+                        .shadow(color: Color.white.opacity(0.18), radius: 8, x: 0, y: 2)
                     }
                     .disabled(isInjecting)
 
-                    // Vào Game Button
+                    // Nút 2: Vào Free Fire (Icon FreeFireAppIconView có sẵn, nhỏ lại ~15%)
                     Button(action: handleLaunchGame) {
                         HStack(spacing: 8) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 14, weight: .bold))
-                            Text("Vào Game (\(selectedGame == "ff" ? "Free Fire" : "FF Max"))")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                            FreeFireAppIconView(size: 20, cornerRadius: 5)
+
+                            Text(selectedGame == "max" ? "Vào Free Fire MAX" : "Vào Free Fire")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
+                        .frame(height: 40)
                         .background(
                             LinearGradient(
                                 colors: [Color(red: 168/255, green: 85/255, blue: 247/255), Color(red: 126/255, green: 34/255, blue: 206/255)],
@@ -586,25 +719,36 @@ struct CheatStoreDashboardView: View {
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .cornerRadius(18)
-                        .shadow(color: Color.purple.opacity(0.3), radius: 10, x: 0, y: 3)
+                        .cornerRadius(14)
+                        .shadow(color: Color.purple.opacity(0.25), radius: 8, x: 0, y: 2)
                     }
 
-                    // Restore Original Button
+                    // Nút 3: Khôi Phục Gốc (An toàn 100%, nhỏ lại ~15%)
                     Button(action: {
                         performCleanRestore()
                     }) {
-                        Text(isRestoringClean ? "Đang khôi phục..." : "Khôi phục gốc")
-                            .font(.system(size: 15, weight: .semibold, design: .rounded))
-                            .foregroundColor(colorInk.opacity(0.8))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(glassBg)
-                            .cornerRadius(18)
-                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.counterclockwise.circle.fill")
+                                .font(.system(size: 13, weight: .semibold))
+                            Text(isRestoringClean ? "Đang khôi phục..." : "Khôi phục gốc (An toàn 100%)")
+                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(colorInk.opacity(0.85))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 38)
+                        .background(glassBg)
+                        .cornerRadius(14)
+                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(glassBorder, lineWidth: 1))
                     }
                     .disabled(isRestoringClean)
                 }
+                .padding(10)
+                .background(Color.black.opacity(0.35))
+                .cornerRadius(20)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(glassBorder, lineWidth: 1)
+                )
                 .padding(.top, 4)
                 .padding(.bottom, 24)
             }
@@ -1312,6 +1456,33 @@ struct CheatStoreDashboardView: View {
                         .padding(.horizontal, 4)
 
                     VStack(spacing: 12) {
+                        // Dòng Máy iPhone Thật
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Dòng máy (iPhone)")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(colorMute)
+                                Text(DeviceInfo.hardwareDisplayName)
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                    .frame(width: 6, height: 6)
+                                Text("Tương thích 100%")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3.5)
+                            .background(Color.green.opacity(0.12))
+                            .cornerRadius(8)
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
                         // Tên Thiết Bị
                         metaRow(label: "Tên Thiết Bị", value: UIDevice.current.name)
 
@@ -1595,20 +1766,32 @@ struct CheatStoreDashboardView: View {
         }
     }
 
-    // MARK: - Ledger Restore Cleanup Action
+    // MARK: - Ledger Restore Cleanup Action (Hiện Loading Chi Tiết Cho Khách Thấy Rõ)
     func performCleanRestore() {
         guard !isRestoringClean else { return }
         isRestoringClean = true
+        restoreProgressValue = 0.05
+        restoreCurrentStepTitle = "Khởi tạo quy trình khôi phục an toàn 100%..."
+        restoreCompletedSteps.removeAll()
+        isRestoreFinished = false
+        withAnimation(.easeInOut(duration: 0.25)) {
+            showRestoreProgressModal = true
+        }
 
-        // Hiện toast thông báo đang xử lý
-        showToastNotification(
-            message: "Đang khôi phục dữ liệu gốc game...",
-            icon: "arrow.counterclockwise",
-            color: Color.orange
-        )
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
         DispatchQueue.global(qos: .userInitiated).async {
-            DevicePatchService.cleanRestoreAllModifications()
+            _ = DevicePatchService.cleanRestoreWithProgress { stepIndex, stepTitle, progress in
+                DispatchQueue.main.async {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        self.restoreProgressValue = progress
+                        self.restoreCurrentStepTitle = stepTitle
+                        if !self.restoreCompletedSteps.contains(stepTitle) {
+                            self.restoreCompletedSteps.append(stepTitle)
+                        }
+                    }
+                }
+            }
 
             DispatchQueue.main.async {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -1618,6 +1801,8 @@ struct CheatStoreDashboardView: View {
                     self.selectedEspChips.removeAll()
                     self.selectedSpecialSkins.removeAll()
                     self.isRestoringClean = false
+                    self.isRestoreFinished = true
+                    self.restoreProgressValue = 1.0
                 }
 
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -1628,13 +1813,48 @@ struct CheatStoreDashboardView: View {
                     icon: "checkmark.circle.fill",
                     color: Color.green
                 )
-
-                // Đồng thời hiện alert chi tiết
-                self.alertTitle = "✅ ĐÃ KHÔI PHỤC SẠCH 100%"
-                self.alertMessage = "Toàn bộ file gốc của Free Fire đã được phục hồi nguyên bản an toàn. Đã gỡ bỏ toàn bộ trạng thái mod."
-                self.showAlert = true
             }
         }
+    }
+
+    // MARK: - Dashboard Footer View (Hiện Tên Máy + iOS + Có hỗ trợ hay không, to lên 10%)
+    private var dashboardDeviceFooterView: some View {
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "iphone.gen3")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(colorInk.opacity(0.9))
+                Text(DeviceInfo.hardwareDisplayName)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(colorInk)
+            }
+
+            Text("•")
+                .foregroundColor(colorMute.opacity(0.5))
+
+            Text("iOS \(UIDevice.current.systemVersion)")
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundColor(colorMute)
+
+            Spacer()
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                    .frame(width: 7, height: 7)
+                    .shadow(color: Color.green.opacity(0.8), radius: 3)
+                Text("ĐƯỢC HỖ TRỢ")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3.5)
+            .background(Color.green.opacity(0.12))
+            .cornerRadius(8)
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.28), lineWidth: 1))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
     }
 }
 

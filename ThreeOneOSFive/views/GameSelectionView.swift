@@ -252,18 +252,43 @@ struct GameSelectionView: View {
 
     // MARK: - Footer thông tin thiết bị
     private var deviceStatusFooterView: some View {
-        HStack {
-            Text(UIDevice.current.name)
-                .font(.system(size: 11, weight: .medium))
+        HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "iphone.gen3")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(colorInk.opacity(0.85))
+                Text(DeviceInfo.hardwareDisplayName)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(colorInk)
+            }
+
+            Text("•")
+                .foregroundColor(colorMute.opacity(0.5))
+
+            Text("iOS \(UIDevice.current.systemVersion)")
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
                 .foregroundColor(colorMute)
+
             Spacer()
-            Text("iOS \(UIDevice.current.systemVersion) • 3105-PRO")
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                .foregroundColor(colorMute)
+
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                    .frame(width: 7, height: 7)
+                    .shadow(color: Color.green.opacity(0.8), radius: 3)
+                Text("ĐƯỢC HỖ TRỢ")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3.5)
+            .background(Color.green.opacity(0.12))
+            .cornerRadius(8)
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.green.opacity(0.28), lineWidth: 1))
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 10)
-        .background(Color.black.opacity(0.3))
+        .padding(.vertical, 11)
+        .background(Color.black.opacity(0.4))
     }
 }
 

@@ -17,152 +17,227 @@ struct CheatStoreLoginView: View {
         ZStack {
             // Nền không gian sâu 0xCheats (Void Black #050508)
             Color(red: 0.02, green: 0.02, blue: 0.032)
-                .ignoresSafeArea()
+            // Nền không gian sâu True Black Void
+            Color.black.ignoresSafeArea()
 
-            // Vầng sáng spotlight ambient 0xCheats
-            Circle()
-                .fill(Color(red: 0.0, green: 0.72, blue: 1.0).opacity(0.12))
-                .blur(radius: 100)
-                .frame(width: 320, height: 320)
-                .offset(y: -180)
+            // Vầng sáng trắng phát sáng dịu nhẹ (White ambient glow)
+            RadialGradient(
+                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
+                center: .top,
+                startRadius: 20,
+                endRadius: 420
+            )
+            .ignoresSafeArea()
 
-            // Panel Đăng Nhập Chuẩn 100% 0xCheats (.auth-panel)
-            VStack(spacing: 0) {
-                Spacer()
+            // Panel Đăng Nhập Clean & Sang Trọng
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 20) {
+                    Spacer(minLength: 30)
 
-                VStack(spacing: 0) {
-                    // 1. .auth-brand: Logo + ShinyText Brand Name
-                    HStack(spacing: 12) {
-                        CheatStoreLogoView(size: 44, cornerRadius: 12)
-
-                        ShinyTextView(
-                            text: "CheatStore VN",
-                            font: .system(size: 21, weight: .bold, design: .rounded),
-                            baseColor: Color(red: 0.78, green: 0.78, blue: 0.82),
-                            shineColor: .white,
-                            duration: 2.5,
-                            tracking: 0.5
-                        )
-                    }
-                    .padding(.bottom, 24)
-
-                    // 2. .auth-title: Sign In
-                    Text("Sign In")
-                        .font(.system(size: 32, weight: .bold, design: .default))
-                        .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92))
-                        .padding(.bottom, 6)
-
-                    // 3. .auth-sub: iOS • External
-                    Text("iOS • External")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50))
-                        .padding(.bottom, 28)
-
-                    // 4. .glass-input-wrap (.glass-input)
-                    HStack(spacing: 10) {
-                        // Khóa icon
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 15))
-                            .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92).opacity(0.65))
-                            .padding(.leading, 16)
-
-                        // Trường nhập key (Hỗ trợ ẩn/hiện password)
-                        if isSecured {
-                            SecureField("License key", text: $inputKey)
-                                .textInputAutocapitalization(.characters)
-                                .autocorrectionDisabled()
-                                .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92))
-                                .font(.system(size: 15, weight: .medium, design: .monospaced))
-                                .frame(height: 48)
-                        } else {
-                            TextField("License key", text: $inputKey)
-                                .textInputAutocapitalization(.characters)
-                                .autocorrectionDisabled()
-                                .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92))
-                                .font(.system(size: 15, weight: .medium, design: .monospaced))
-                                .frame(height: 48)
-                        }
-
-                        // Nút Eye (Show/Hide Key)
-                        Button {
-                            isSecured.toggle()
-                        } label: {
-                            Image(systemName: isSecured ? "eye.slash" : "eye")
-                                .font(.system(size: 15))
-                                .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92).opacity(0.65))
-                                .padding(.trailing, 16)
-                        }
-                    }
-                    .frame(height: 52)
-                    .background(
-                        Capsule()
-                            .fill(
-                                LinearGradient(
-                                    colors: [
-                                        Color.white.opacity(0.04),
-                                        Color.white.opacity(0.09),
-                                        Color.white.opacity(0.04)
-                                    ],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                    // 1. Header: Icon PhantomBrand + Shiny Text Trắng Phát Sáng
+                    VStack(spacing: 12) {
+                        Image("PhantomBrand")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 64, height: 64)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .stroke(Color.white.opacity(0.35), lineWidth: 1.5)
                             )
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
-                    )
-                    .shadow(color: Color.black.opacity(0.35), radius: 16, y: 8)
-                    .padding(.bottom, 12)
+                            .shadow(color: Color.white.opacity(0.25), radius: 16, x: 0, y: 0)
 
-                    // 5. .auth-row: Remember (Trái) & Paste key (Phải)
-                    HStack {
-                        // Checkbox Remember
-                        Button {
-                            licenseManager.rememberKey.toggle()
-                        } label: {
-                            HStack(spacing: 8) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(licenseManager.rememberKey ? Color(red: 0.0, green: 0.72, blue: 1.0) : Color.white.opacity(0.08))
-                                        .frame(width: 16, height: 16)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .stroke(licenseManager.rememberKey ? Color(red: 0.0, green: 0.72, blue: 1.0) : Color.white.opacity(0.2), lineWidth: 1)
-                                        )
+                        VStack(spacing: 4) {
+                            ShinyTextView(
+                                text: "CheatStore VN",
+                                font: .system(size: 26, weight: .heavy, design: .rounded),
+                                baseColor: Color(white: 0.85),
+                                shineColor: .white,
+                                duration: 2.2,
+                                tracking: -0.4
+                            )
 
-                                    if licenseManager.rememberKey {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundStyle(.white)
+                            Text("BẢN QUYỀN VIP • HỆ THỐNG IOS")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                                .tracking(2.4)
+                                .foregroundColor(Color.white.opacity(0.5))
+                        }
+                    }
+                    .padding(.bottom, 6)
+
+                    // 2. Thẻ Thông Tin Clean: Hạn Key • Thiết Bị • Mã Máy
+                    VStack(spacing: 11) {
+                        // Hàng Hạn Key
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "clock.badge.checkmark.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.8))
+                                Text("Hạn Key")
+                                    .font(.system(size: 12.5, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                            }
+                            Spacer()
+                            let expiryDisplay: String = {
+                                if !licenseManager.formattedRemainingTime.isEmpty && licenseManager.formattedRemainingTime != "Hết hạn" {
+                                    return licenseManager.formattedRemainingTime
+                                }
+                                return licenseManager.activeKey.isEmpty ? "Chưa kích hoạt" : "Sẵn sàng xác thực"
+                            }()
+                            Text(expiryDisplay)
+                                .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                                .foregroundColor(licenseManager.isActivated ? Color(red: 0.20, green: 0.88, blue: 0.45) : .white)
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        // Hàng Thiết Bị
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "iphone.gen3")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.8))
+                                Text("Thiết Bị")
+                                    .font(.system(size: 12.5, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                            }
+                            Spacer()
+                            Text("\(DeviceInfo.hardwareDisplayName) (iOS \(UIDevice.current.systemVersion))")
+                                .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        // Hàng Mã Máy (Hardware ID)
+                        HStack {
+                            HStack(spacing: 6) {
+                                Image(systemName: "cpu.fill")
+                                    .font(.system(size: 13))
+                                    .foregroundColor(Color.white.opacity(0.8))
+                                Text("Mã Máy")
+                                    .font(.system(size: 12.5, weight: .medium))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                            }
+                            Spacer()
+                            Button {
+                                UIPasteboard.general.string = licenseManager.deviceID
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                showCopiedDeviceID = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    showCopiedDeviceID = false
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(String(licenseManager.deviceID.prefix(12)) + "...")
+                                        .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                                        .foregroundColor(Color.white.opacity(0.85))
+                                    Image(systemName: showCopiedDeviceID ? "checkmark.circle.fill" : "doc.on.doc")
+                                        .font(.system(size: 10, weight: .bold))
+                                        .foregroundColor(showCopiedDeviceID ? .green : Color.white.opacity(0.6))
+                                    if showCopiedDeviceID {
+                                        Text("Đã chép")
+                                            .font(.system(size: 10, weight: .bold))
+                                            .foregroundColor(.green)
                                     }
                                 }
-
-                                Text("Remember")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.white.opacity(0.08))
+                                .cornerRadius(8)
                             }
-                        }
-                        .buttonStyle(.plain)
-
-                        Spacer()
-
-                        // Nút Paste key
-                        Button {
-                            if let text = UIPasteboard.general.string {
-                                inputKey = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }
-                        } label: {
-                            Text("Paste key")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92).opacity(0.88))
                         }
                     }
-                    .padding(.horizontal, 4)
-                    .padding(.bottom, 22)
+                    .padding(14)
+                    .background(Color.white.opacity(0.04))
+                    .cornerRadius(18)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                    )
 
-                    // 6. .rainbow-btn: Launch Button
+                    // 3. Ô Nhập Key Clean Glass
+                    VStack(spacing: 10) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "key.fill")
+                                .font(.system(size: 14))
+                                .foregroundColor(Color.white.opacity(0.75))
+                                .padding(.leading, 16)
+
+                            if isSecured {
+                                SecureField("Nhập mã key bản quyền...", text: $inputKey)
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled()
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 14.5, weight: .medium, design: .monospaced))
+                                    .frame(height: 48)
+                            } else {
+                                TextField("Nhập mã key bản quyền...", text: $inputKey)
+                                    .textInputAutocapitalization(.characters)
+                                    .autocorrectionDisabled()
+                                    .foregroundColor(.white)
+                                    .font(.system(size: 14.5, weight: .medium, design: .monospaced))
+                                    .frame(height: 48)
+                            }
+
+                            Button {
+                                isSecured.toggle()
+                            } label: {
+                                Image(systemName: isSecured ? "eye.slash" : "eye")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(Color.white.opacity(0.6))
+                            }
+
+                            Button {
+                                if let text = UIPasteboard.general.string {
+                                    inputKey = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                }
+                            } label: {
+                                HStack(spacing: 3) {
+                                    Image(systemName: "doc.on.clipboard")
+                                        .font(.system(size: 11))
+                                    Text("Dán")
+                                        .font(.system(size: 12, weight: .bold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 5)
+                                .background(Color.white.opacity(0.12))
+                                .cornerRadius(8)
+                            }
+                            .padding(.trailing, 12)
+                        }
+                        .frame(height: 48)
+                        .background(Color.white.opacity(0.05))
+                        .cornerRadius(14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.20), lineWidth: 1)
+                        )
+
+                        // Ghi nhớ key
+                        HStack {
+                            Button {
+                                licenseManager.rememberKey.toggle()
+                            } label: {
+                                HStack(spacing: 7) {
+                                    Image(systemName: licenseManager.rememberKey ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 14))
+                                        .foregroundColor(licenseManager.rememberKey ? .white : Color.white.opacity(0.4))
+                                    Text("Ghi nhớ key trên thiết bị này")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(Color.white.opacity(0.65))
+                                }
+                            }
+                            .buttonStyle(.plain)
+
+                            Spacer()
+                        }
+                        .padding(.horizontal, 4)
+                    }
+
+                    // 4. Nút "VÀO APP" Chữ Trắng Phát Sáng Nổi Bật
                     Button {
                         inlineErrorMessage = nil
                         Task {
@@ -175,7 +250,7 @@ struct CheatStoreLoginView: View {
                                     }
                                 } else {
                                     UINotificationFeedbackGenerator().notificationOccurred(.error)
-                                    let msg = licenseManager.errorMessage ?? "Invalid license key"
+                                    let msg = licenseManager.errorMessage ?? "Mã key không hợp lệ hoặc đã hết hạn"
                                     withAnimation(.easeOut(duration: 0.25)) {
                                         inlineErrorMessage = msg
                                     }
@@ -186,88 +261,57 @@ struct CheatStoreLoginView: View {
                         HStack(spacing: 8) {
                             if licenseManager.isVerifying {
                                 ProgressView()
-                                    .tint(Color(red: 0.07, green: 0.07, blue: 0.08))
-                                Text("Verifying...")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundStyle(Color(red: 0.07, green: 0.07, blue: 0.08))
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                Text("Đang xác thực...")
+                                    .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
                             } else {
-                                ShinyTextView(
-                                    text: "Launch",
-                                    font: .system(size: 16, weight: .bold),
-                                    baseColor: Color(red: 0.07, green: 0.07, blue: 0.08),
-                                    shineColor: Color.white,
-                                    duration: 2.2,
-                                    tracking: 0.4
-                                )
+                                Image(systemName: "arrow.right.circle.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.black)
 
-                                Image(systemName: "arrow.right")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundStyle(Color(red: 0.07, green: 0.07, blue: 0.08))
+                                Text("VÀO APP")
+                                    .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
                             }
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 52)
+                        .frame(height: 48)
                         .background(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.white, Color(red: 0.95, green: 0.95, blue: 0.96)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
+                            LinearGradient(
+                                colors: [Color.white, Color(white: 0.90)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
                         )
-                        .shadow(color: Color.black.opacity(0.2), radius: 14, y: 6)
+                        .cornerRadius(14)
+                        .shadow(color: Color.white.opacity(0.32), radius: 12, x: 0, y: 2)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color.white.opacity(0.9), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white, lineWidth: 1)
                         )
                     }
                     .disabled(licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .opacity((licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+                    .padding(.top, 4)
 
-                    // 7. .auth-status: Trạng thái & thông báo lỗi
+                    // Thông báo lỗi nếu có
                     if let err = inlineErrorMessage {
                         HStack(spacing: 6) {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.system(size: 12))
                             Text(err)
-                                .font(.system(size: 12.5, weight: .medium))
+                                .font(.system(size: 12, weight: .semibold))
                         }
-                        .foregroundStyle(Color(red: 1.0, green: 0.35, blue: 0.35))
-                        .padding(.top, 14)
+                        .foregroundColor(Color(red: 1.0, green: 0.38, blue: 0.38))
+                        .padding(.top, 4)
                         .transition(.opacity)
-                    } else {
-                        Text("Enter your license key to continue")
-                            .font(.system(size: 12, weight: .regular))
-                            .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50).opacity(0.8))
-                            .padding(.top, 14)
                     }
-                }
-                .frame(maxWidth: 320)
-                .padding(.horizontal, 24)
 
-                Spacer()
-
-                // Footer kín đáo: Device ID (Chạm để sao chép cho Admin)
-                Button {
-                    UIPasteboard.general.string = licenseManager.deviceID
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showCopiedDeviceID = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        showCopiedDeviceID = false
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: showCopiedDeviceID ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 10))
-                        Text(showCopiedDeviceID ? "Device ID Copied" : "Device ID: \(String(licenseManager.deviceID.prefix(14)))...")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    }
-                    .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50).opacity(0.6))
-                    .padding(.bottom, 24)
+                    Spacer(minLength: 30)
                 }
-                .buttonStyle(.plain)
+                .frame(maxWidth: 340)
+                .padding(.horizontal, 20)
             }
 
             // HIỆU ỨNG INTRO ĐĂNG NHẬP THÀNH CÔNG (0XCHEATS VERIFIED)

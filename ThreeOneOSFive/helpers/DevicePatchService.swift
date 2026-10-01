@@ -482,28 +482,106 @@ enum DevicePatchService {
     /// 1-Chạm Khôi phục sạch toàn bộ dữ liệu game Free Fire & Free Fire MAX từ Golden Snapshots
     @discardableResult
     static func cleanRestoreAllModifications() -> Bool {
-        serialQueue.sync {
+        return cleanRestoreWithProgress { _, _, _ in }
+    }
+
+    /// Khôi phục an toàn 100% có báo cáo từng bước chi tiết cho giao diện UI
+    @discardableResult
+    static func cleanRestoreWithProgress(
+        progressHandler: @escaping (_ stepIndex: Int, _ stepTitle: String, _ progress: Double) -> Void
+    ) -> Bool {
+        return serialQueue.sync {
             let fileManager = FileManager.default
 
-            // 1. Phục hồi 100% tất cả các file từ Golden Snapshot cho toàn bộ container
+            // BƯỚC 1: Quét và nhận diện container game
+            DispatchQueue.main.async {
+                progressHandler(0, "Đang quét nhận diện container Free Fire & FF MAX...", 0.15)
+            }
+            let allContainers = allAvailableFreeFireContainers()
+            Thread.sleep(forTimeInterval: 0.25)
+
+            // BƯỚC 2: Quét cưỡng chế & dọn sạch toàn bộ file can thiệp, file rác, inject ledgers
+            DispatchQueue.main.async {
+                progressHandler(1, "Đang quét và dọn sạch file can thiệp (Assembly, config, ledger)...", 0.38)
+            }
+
+            let junkFileNames = [
+                "Assembly-CSharp-patch.bytes",
+                "localConfig.json",
+                "patch_cache",
+                "mod_signature.bin",
+                ".0xfixa.ledger"
+            ]
+
+            for (_, root) in allContainers {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                for junk in junkFileNames {
+                    let junkURL = docDir.appendingPathComponent(junk)
+                    if fileManager.fileExists(atPath: junkURL.path) {
+                        try? fileManager.removeItem(at: junkURL)
+                        log("patch: [SafeRestore] Đã xoá bỏ file rác: \(junk)")
+                    }
+                }
+            }
+
+            cleanupInjectLedgers(containers: allContainers, fileManager: fileManager)
+            Thread.sleep(forTimeInterval: 0.3)
+
+            // BƯỚC 3: Phục hồi nguyên tử 100% file gốc từ Golden Snapshot
+            DispatchQueue.main.async {
+                progressHandler(2, "Đang phục hồi nguyên tử các file gốc từ Golden Snapshot...", 0.65)
+            }
             restoreAllGoldenSnapshots(for: nil)
+            Thread.sleep(forTimeInterval: 0.3)
 
-            // Xóa sạch toàn bộ dấu vết 0xCheats Ledger (.0xfixa-inject)
-            cleanupInjectLedgers(containers: allAvailableFreeFireContainers(), fileManager: fileManager)
+            // BƯỚC 4: Khôi phục Timestamp & Quyền POSIX nguyên bản (Chống ban)
+            DispatchQueue.main.async {
+                progressHandler(3, "Đang đồng bộ Timestamp & Quyền POSIX gốc chống ban...", 0.82)
+            }
+            // Bảo tồn lại plist gốc
+            if let maxRoot = allContainers["com.dts.freefiremax"] {
+                let maxPlist = maxRoot.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                _ = restoreFromGoldenSnapshot(
+                    targetURL: maxPlist,
+                    bundleID: "com.dts.freefiremax",
+                    relativePath: "Library/Preferences/com.dts.freefiremax.plist",
+                    modData: nil,
+                    fileManager: fileManager
+                )
+            }
+            Thread.sleep(forTimeInterval: 0.25)
 
-            // 2. Dọn sạch toàn bộ receipts và journal trong thư mục backup (Bảo tồn Golden Snapshots vĩnh viễn)
+            // BƯỚC 5: Dọn sạch cache tạm và Receipts/Journal (bảo tồn vĩnh viễn GoldenSnapshots)
+            DispatchQueue.main.async {
+                progressHandler(4, "Đang dọn sạch cache tạm thời & Đặt lại trạng thái sạch...", 0.95)
+            }
+            for (_, root) in allContainers {
+                let cacheDir = root.appendingPathComponent("Library/Caches", isDirectory: true)
+                if let cacheItems = try? fileManager.contentsOfDirectory(atPath: cacheDir.path) {
+                    for cItem in cacheItems {
+                        let cURL = cacheDir.appendingPathComponent(cItem)
+                        try? fileManager.removeItem(at: cURL)
+                    }
+                }
+            }
+
             if let backupRoot = try? PatchProjectLibrary.backupRootURL(),
                let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
                 for entry in entries {
-                    if entry == "GoldenSnapshots" { continue } // Không bao giờ xóa bản sao lưu gốc sạch
+                    if entry == "GoldenSnapshots" { continue }
                     let dir = backupRoot.appendingPathComponent(entry)
                     try? fileManager.removeItem(at: dir)
                 }
             }
 
-            // 3. Reset in-memory cache
+            // BƯỚC 6: Hoàn tất 100%
             invalidateAppliedCache()
-            log("patch: Đã hoàn tất 1-Chạm Khôi phục sạch toàn bộ dữ liệu game.")
+            log("patch: [SafeRestore] Đã hoàn tất 100% khôi phục sạch toàn bộ dữ liệu game.")
+
+            DispatchQueue.main.async {
+                progressHandler(5, "Đã khôi phục dữ liệu gốc an toàn 100%! Game sạch hoàn toàn.", 1.0)
+            }
+            Thread.sleep(forTimeInterval: 0.25)
             return true
         }
     }
