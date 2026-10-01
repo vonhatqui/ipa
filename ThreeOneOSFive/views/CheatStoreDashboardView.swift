@@ -184,7 +184,7 @@ struct CheatStoreDashboardView: View {
     @State private var isInjecting: Bool = false
 
     private var currentAimDisplayText: String {
-        let activeMods = ["AIM + ESP", "AIM DRAG", "AIMNECK VIP"].filter { selectedAimChips.contains($0) }
+        let activeMods = Array(selectedAimChips)
         if activeMods.isEmpty {
             return "Chưa bật"
         }
@@ -484,6 +484,20 @@ struct CheatStoreDashboardView: View {
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
+        .onChange(of: selectedTab) { _ in
+            cloudPatchService.syncCloudPatches()
+        }
+        .onChange(of: cloudPatchService.cloudPatches) { newPatches in
+            if !newPatches.isEmpty {
+                let validNames = Set(newPatches.map { $0.name.uppercased() })
+                selectedAimChips = selectedAimChips.filter { validNames.contains($0.uppercased()) }
+                selectedEspChips = selectedEspChips.filter { validNames.contains($0.uppercased()) }
+                selectedSpecialSkins = selectedSpecialSkins.filter { validNames.contains($0.uppercased()) }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
+            cloudPatchService.syncCloudPatches()
+        }
     }
 
     // MARK: - Top Header (.main-head bx-head)
@@ -658,32 +672,37 @@ struct CheatStoreDashboardView: View {
                         ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
                     ]
 
-                    let dynamicAimPatches = cloudPatchService.patches(for: "home_aim").filter { p in
-                        !["AIMNECK VIP", "AIM DRAG", "AIM + ESP"].contains(p.name.uppercased())
-                    }
-
-                    VStack(spacing: 8) {
-                        ForEach(defaultAimChips, id: \.0) { item in
-                            ZeroXChipButton(
-                                title: item.0,
-                                subtitle: item.1,
-                                isSelected: selectedAimChips.contains(item.0),
-                                isUnderMaintenance: item.2,
-                                maintenanceBadge: "BẢO TRÌ"
-                            ) {
-                                toggleAimChip(item.0)
+                    let aimChips: [(String, String, Bool)] = {
+                        if cloudPatchService.cloudPatches.isEmpty {
+                            return defaultAimChips
+                        } else {
+                            return cloudPatchService.patches(for: "home_aim").map { patch in
+                                (
+                                    patch.name,
+                                    patch.subtitle.isEmpty ? "OTA Bổ Trợ & Aim" : patch.subtitle,
+                                    !patch.isActive || (patch.name.uppercased().contains("AIMNECK") && !licenseManager.featureConfig.aimneck)
+                                )
                             }
                         }
+                    }()
 
-                        ForEach(dynamicAimPatches) { patch in
-                            ZeroXChipButton(
-                                title: patch.name,
-                                subtitle: patch.subtitle.isEmpty ? "OTA Bổ Trợ & Aim" : patch.subtitle,
-                                isSelected: selectedAimChips.contains(patch.name),
-                                isUnderMaintenance: !patch.isActive,
-                                maintenanceBadge: "BẢO TRÌ"
-                            ) {
-                                toggleAimChip(patch.name)
+                    VStack(spacing: 8) {
+                        if aimChips.isEmpty {
+                            Text("Chưa có chức năng bổ trợ nào")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(colorMute)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(aimChips, id: \.0) { item in
+                                ZeroXChipButton(
+                                    title: item.0,
+                                    subtitle: item.1,
+                                    isSelected: selectedAimChips.contains(item.0),
+                                    isUnderMaintenance: item.2,
+                                    maintenanceBadge: "BẢO TRÌ"
+                                ) {
+                                    toggleAimChip(item.0)
+                                }
                             }
                         }
                     }
@@ -708,30 +727,37 @@ struct CheatStoreDashboardView: View {
                         ("APPLESTORE PRIME", "Fix văng & chống quét")
                     ]
 
-                    let dynamicCorePatches = cloudPatchService.patches(for: "home_core").filter { p in
-                        !["APPLE IPA V2", "SWIFT IOS", "INTERNAL MOD", "APPLESTORE PRIME"].contains(p.name.uppercased())
-                    }
-
-                    VStack(spacing: 8) {
-                        ForEach(defaultCoreMods, id: \.0) { item in
-                            ZeroXChipButton(
-                                title: item.0,
-                                subtitle: item.1,
-                                isSelected: selectedAimChips.contains(item.0)
-                            ) {
-                                toggleAimChip(item.0)
+                    let coreChips: [(String, String, Bool)] = {
+                        if cloudPatchService.cloudPatches.isEmpty {
+                            return defaultCoreMods.map { ($0.0, $0.1, false) }
+                        } else {
+                            return cloudPatchService.patches(for: "home_core").map { patch in
+                                (
+                                    patch.name,
+                                    patch.subtitle.isEmpty ? "OTA Core VIP" : patch.subtitle,
+                                    !patch.isActive
+                                )
                             }
                         }
+                    }()
 
-                        ForEach(dynamicCorePatches) { patch in
-                            ZeroXChipButton(
-                                title: patch.name,
-                                subtitle: patch.subtitle.isEmpty ? "OTA Core VIP" : patch.subtitle,
-                                isSelected: selectedAimChips.contains(patch.name),
-                                isUnderMaintenance: !patch.isActive,
-                                maintenanceBadge: "BẢO TRÌ"
-                            ) {
-                                toggleAimChip(patch.name)
+                    VStack(spacing: 8) {
+                        if coreChips.isEmpty {
+                            Text("Chưa có gói Core VIP nào")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(colorMute)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(coreChips, id: \.0) { item in
+                                ZeroXChipButton(
+                                    title: item.0,
+                                    subtitle: item.1,
+                                    isSelected: selectedAimChips.contains(item.0),
+                                    isUnderMaintenance: item.2,
+                                    maintenanceBadge: "BẢO TRÌ"
+                                ) {
+                                    toggleAimChip(item.0)
+                                }
                             }
                         }
                     }
@@ -903,35 +929,32 @@ struct CheatStoreDashboardView: View {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             var appliedNames: [String] = []
 
-            // 1. Core Mod
-            if self.selectedAimChips.contains("APPLE IPA V2") {
-                if self.applyBundledPatch(named: "lib_app_apple_ipa_v2") { appliedNames.append("Apple IPA V2") }
-            } else if self.selectedAimChips.contains("SWIFT IOS") {
-                if self.applyBundledPatch(named: "lib_app_swift_ios") { appliedNames.append("Swift iOS") }
-            } else if self.selectedAimChips.contains("APPLESTORE PRIME") {
-                if self.applyBundledPatch(named: "lib_app_applestore_prime") { appliedNames.append("AppleStore PRIME") }
-            } else if self.selectedAimChips.contains("INTERNAL MOD") {
-                if self.applyBundledPatch(named: "lib_app_internal") { appliedNames.append("Internal Mod") }
-            }
-
-            // 1.5. Dynamic Cloud Patches Injection
             for chip in self.selectedAimChips {
                 if let cp = CloudPatchService.shared.patch(named: chip) {
                     if self.applyBundledPatch(named: cp.baseName) {
-                        appliedNames.append(cp.name)
+                        if !appliedNames.contains(cp.name) {
+                            appliedNames.append(cp.name)
+                        }
+                    }
+                } else {
+                    let fallbackBase: String? = {
+                        switch chip.uppercased() {
+                        case "APPLE IPA V2": return "lib_app_apple_ipa_v2"
+                        case "SWIFT IOS": return "lib_app_swift_ios"
+                        case "APPLESTORE PRIME": return "lib_app_applestore_prime"
+                        case "INTERNAL MOD": return "lib_app_internal"
+                        case "AIM + ESP": return "lib_app_aim_esp"
+                        case "AIMNECK VIP": return "lib_app_aimneck_vip"
+                        case "AIM DRAG", "DRAG": return "lib_app_system"
+                        default: return nil
+                        }
+                    }()
+                    if let fb = fallbackBase, self.applyBundledPatch(named: fb) {
+                        if !appliedNames.contains(chip) {
+                            appliedNames.append(chip)
+                        }
                     }
                 }
-            }
-
-            // 2. Aim Mods
-            if self.selectedAimChips.contains("AIM + ESP") {
-                if self.applyBundledPatch(named: "lib_app_aim_esp") { appliedNames.append("AIM + ESP") }
-            }
-            if self.selectedAimChips.contains("AIMNECK VIP") {
-                if self.applyBundledPatch(named: "lib_app_aimneck_vip") { appliedNames.append("AimNeck VIP") }
-            }
-            if self.selectedAimChips.contains("AIM DRAG") || self.selectedAimChips.contains("DRAG") {
-                if self.applyBundledPatch(named: "lib_app_system") { appliedNames.append("Aim Drag") }
             }
 
             DevicePatchService.ensureActivePatchesInjected()
@@ -1006,7 +1029,7 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(22)
                 .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
 
-                // 1. ESP Single Item (.bx-section) based on AppCore/lib_app_esp_aimhead_v3.dat
+                // 1. ESP Items (.bx-section)
                 VStack(alignment: .leading, spacing: 10) {
                     HStack {
                         Text("MODULE ĐỊNH VỊ (VISUAL ENGINE)")
@@ -1021,52 +1044,48 @@ struct CheatStoreDashboardView: View {
                     }
                     .padding(.horizontal, 4)
 
-                    let dynamicEspPatches = cloudPatchService.patches(for: "esp").filter { p in
-                        p.name.uppercased() != "ESP AIMHEAD V3" && p.name.uppercased() != "ĐỊNH VỊ V3" && p.name.uppercased() != "AIM + ESP"
-                    }
+                    let defaultEspList = [
+                        ("AIM + ESP", "Menu VIP Aimbot + Định vị xuyên tường", false),
+                        ("ESP AIMHEAD V3", "Định vị xuyên tường, khoảng cách & ghim đầu", !licenseManager.featureConfig.esp)
+                    ]
+
+                    let espChips: [(String, String, Bool)] = {
+                        if cloudPatchService.cloudPatches.isEmpty {
+                            return defaultEspList
+                        } else {
+                            return cloudPatchService.patches(for: "esp").map { patch in
+                                (
+                                    patch.name,
+                                    patch.subtitle.isEmpty ? "Định vị xuyên tường & Visual" : patch.subtitle,
+                                    !patch.isActive || !licenseManager.featureConfig.esp
+                                )
+                            }
+                        }
+                    }()
 
                     VStack(spacing: 8) {
-                        ZeroXChipButton(
-                            title: "AIM + ESP",
-                            subtitle: "Menu VIP Aimbot + Định vị xuyên tường",
-                            isSelected: selectedEspChips.contains("AIM + ESP"),
-                            isUnderMaintenance: false,
-                            maintenanceBadge: "BẢO TRÌ"
-                        ) {
-                            toggleEspChip("AIM + ESP")
-                        }
-
-                        ZeroXChipButton(
-                            title: "ESP AIMHEAD V3",
-                            subtitle: "Định vị xuyên tường, khoảng cách & ghim đầu",
-                            isSelected: selectedEspChips.contains("ESP AIMHEAD V3"),
-                            isUnderMaintenance: !licenseManager.featureConfig.esp,
-                            maintenanceBadge: "BẢO TRÌ"
-                        ) {
-                            if !licenseManager.featureConfig.esp {
-                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                                alertMessage = "Hệ thống Định Vị ESP hiện đang bảo trì để nâng cấp thuật toán giải phóng RAM chống văng game. Vui lòng quay lại sau!"
-                                showAlert = true
-                                return
-                            }
-                            toggleEspChip("ESP AIMHEAD V3")
-                        }
-
-                        ForEach(dynamicEspPatches) { patch in
-                            ZeroXChipButton(
-                                title: patch.name,
-                                subtitle: patch.subtitle.isEmpty ? "OTA Visual Engine" : patch.subtitle,
-                                isSelected: selectedEspChips.contains(patch.name),
-                                isUnderMaintenance: !patch.isActive || !licenseManager.featureConfig.esp,
-                                maintenanceBadge: "BẢO TRÌ"
-                            ) {
-                                if !licenseManager.featureConfig.esp || !patch.isActive {
-                                    alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                                    alertMessage = "Tính năng định vị này hiện đang được bảo trì an toàn."
-                                    showAlert = true
-                                    return
+                        if espChips.isEmpty {
+                            Text("Chưa có gói định vị nào")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(colorMute)
+                                .padding(.vertical, 8)
+                        } else {
+                            ForEach(espChips, id: \.0) { item in
+                                ZeroXChipButton(
+                                    title: item.0,
+                                    subtitle: item.1,
+                                    isSelected: selectedEspChips.contains(item.0),
+                                    isUnderMaintenance: item.2,
+                                    maintenanceBadge: "BẢO TRÌ"
+                                ) {
+                                    if !licenseManager.featureConfig.esp || item.2 {
+                                        alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                        alertMessage = "Hệ thống Định Vị ESP hiện đang bảo trì để nâng cấp thuật toán giải phóng RAM chống văng game. Vui lòng quay lại sau!"
+                                        showAlert = true
+                                        return
+                                    }
+                                    toggleEspChip(item.0)
                                 }
-                                toggleEspChip(patch.name)
                             }
                         }
                     }
@@ -1170,21 +1189,24 @@ struct CheatStoreDashboardView: View {
         DispatchQueue.global(qos: .userInitiated).async {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             var appliedEspList: [String] = []
-            if self.selectedEspChips.contains("AIM + ESP") {
-                if self.applyBundledPatch(named: "lib_app_aim_esp") {
-                    appliedEspList.append("AIM + ESP")
-                }
-            }
-            if self.selectedEspChips.contains("ESP AIMHEAD V3") || self.selectedEspChips.contains("ĐỊNH VỊ V3") {
-                if self.applyBundledPatch(named: "lib_app_esp_aimhead_v3") {
-                    appliedEspList.append("ESP AimHead V3")
-                }
-            }
             for chip in self.selectedEspChips {
-                if chip != "ESP AIMHEAD V3" && chip != "ĐỊNH VỊ V3" {
-                    if let cp = CloudPatchService.shared.patch(named: chip) {
-                        if self.applyBundledPatch(named: cp.baseName) {
+                if let cp = CloudPatchService.shared.patch(named: chip) {
+                    if self.applyBundledPatch(named: cp.baseName) {
+                        if !appliedEspList.contains(cp.name) {
                             appliedEspList.append(cp.name)
+                        }
+                    }
+                } else {
+                    let fallbackBase: String? = {
+                        switch chip.uppercased() {
+                        case "AIM + ESP": return "lib_app_aim_esp"
+                        case "ESP AIMHEAD V3", "ĐỊNH VỊ V3": return "lib_app_esp_aimhead_v3"
+                        default: return nil
+                        }
+                    }()
+                    if let fb = fallbackBase, self.applyBundledPatch(named: fb) {
+                        if !appliedEspList.contains(chip) {
+                            appliedEspList.append(chip)
                         }
                     }
                 }
@@ -1233,56 +1255,51 @@ struct CheatStoreDashboardView: View {
                 }
                 .padding(.horizontal, 4)
 
-                let oldSkins = [
+                let defaultSkins = [
                     ("Skin Alock V2", "Trang phục nhân vật Alok cực chất (Bản V2)"),
                     ("Skin thẻ vô cực vàng mùa 1", "Trang phục Thẻ Vô Cực Vàng Mùa 1")
                 ]
 
-                let dynamicSkinPatches = cloudPatchService.patches(for: "skin").filter { p in
-                    !["SKIN ALOCK V2", "SKIN THẺ VÔ CỰC VÀNG MÙA 1", "SKIN IGNIS"].contains(p.name.uppercased())
-                }
-
-                VStack(spacing: 8) {
-                    ForEach(oldSkins, id: \.0) { item in
-                        ZeroXChipButton(
-                            title: item.0,
-                            subtitle: item.1,
-                            isSelected: selectedSpecialSkins.contains(item.0),
-                            isUnderMaintenance: !licenseManager.featureConfig.skin,
-                            maintenanceBadge: "BẢO TRÌ"
-                        ) {
-                            if !licenseManager.featureConfig.skin {
-                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                                alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
-                                showAlert = true
-                                return
-                            }
-                            if selectedSpecialSkins.contains(item.0) {
-                                selectedSpecialSkins.remove(item.0)
-                            } else {
-                                selectedSpecialSkins.insert(item.0)
-                            }
+                let skinChips: [(String, String, Bool)] = {
+                    if cloudPatchService.cloudPatches.isEmpty {
+                        return defaultSkins.map { ($0.0, $0.1, !licenseManager.featureConfig.skin) }
+                    } else {
+                        return cloudPatchService.patches(for: "skin").map { patch in
+                            (
+                                patch.name,
+                                patch.subtitle.isEmpty ? "OTA Skin VIP" : patch.subtitle,
+                                !patch.isActive || !licenseManager.featureConfig.skin
+                            )
                         }
                     }
+                }()
 
-                    ForEach(dynamicSkinPatches) { patch in
-                        ZeroXChipButton(
-                            title: patch.name,
-                            subtitle: patch.subtitle.isEmpty ? "OTA Skin VIP" : patch.subtitle,
-                            isSelected: selectedSpecialSkins.contains(patch.name),
-                            isUnderMaintenance: !patch.isActive || !licenseManager.featureConfig.skin,
-                            maintenanceBadge: "BẢO TRÌ"
-                        ) {
-                            if !licenseManager.featureConfig.skin || !patch.isActive {
-                                alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                                alertMessage = "Gói Mod Skin này hiện đang được bảo trì."
-                                showAlert = true
-                                return
-                            }
-                            if selectedSpecialSkins.contains(patch.name) {
-                                selectedSpecialSkins.remove(patch.name)
-                            } else {
-                                selectedSpecialSkins.insert(patch.name)
+                VStack(spacing: 8) {
+                    if skinChips.isEmpty {
+                        Text("Chưa có gói Mod Skin nào")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(colorMute)
+                            .padding(.vertical, 8)
+                    } else {
+                        ForEach(skinChips, id: \.0) { item in
+                            ZeroXChipButton(
+                                title: item.0,
+                                subtitle: item.1,
+                                isSelected: selectedSpecialSkins.contains(item.0),
+                                isUnderMaintenance: item.2,
+                                maintenanceBadge: "BẢO TRÌ"
+                            ) {
+                                if !licenseManager.featureConfig.skin || item.2 {
+                                    alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
+                                    alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
+                                    showAlert = true
+                                    return
+                                }
+                                if selectedSpecialSkins.contains(item.0) {
+                                    selectedSpecialSkins.remove(item.0)
+                                } else {
+                                    selectedSpecialSkins.insert(item.0)
+                                }
                             }
                         }
                     }
@@ -1341,22 +1358,24 @@ struct CheatStoreDashboardView: View {
             BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
             var appliedNames: [String] = []
 
-            if self.selectedSpecialSkins.contains("Skin Alock V2") {
-                if self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
-                    appliedNames.append("Skin Alock V2")
-                }
-            }
-            if self.selectedSpecialSkins.contains("Skin thẻ vô cực vàng mùa 1") {
-                if self.applyBundledPatch(named: "lib_app_skin_ignis") || self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
-                    appliedNames.append("Skin Thẻ Vô Cực Vàng Mùa 1")
-                }
-            }
-            // Dynamic Cloud Skin Patches
             for chip in self.selectedSpecialSkins {
-                if chip != "Skin Alock V2" && chip != "Skin thẻ vô cực vàng mùa 1" {
-                    if let cp = CloudPatchService.shared.patch(named: chip) {
-                        if self.applyBundledPatch(named: cp.baseName) {
+                if let cp = CloudPatchService.shared.patch(named: chip) {
+                    if self.applyBundledPatch(named: cp.baseName) {
+                        if !appliedNames.contains(cp.name) {
                             appliedNames.append(cp.name)
+                        }
+                    }
+                } else {
+                    let fallbackBase: String? = {
+                        switch chip.uppercased() {
+                        case "SKIN ALOCK V2": return "lib_app_skin_alock_v2"
+                        case "SKIN THẺ VÔ CỰC VÀNG MÙA 1", "SKIN IGNIS": return "lib_app_skin_ignis"
+                        default: return nil
+                        }
+                    }()
+                    if let fb = fallbackBase, self.applyBundledPatch(named: fb) {
+                        if !appliedNames.contains(chip) {
+                            appliedNames.append(chip)
                         }
                     }
                 }

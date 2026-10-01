@@ -58,24 +58,29 @@ public final class CloudPatchService: ObservableObject {
         let target = category.lowercased()
         return cloudPatches.filter { p in
             let pc = p.category.lowercased()
+            let pn = p.name.lowercased()
             if target == "home_aim" {
                 if pc == "home_aim" { return true }
                 if pc == "home" {
-                    let n = p.name.lowercased()
-                    return n.contains("aim") || n.contains("drag") || n.contains("neck")
+                    return pn.contains("aim") || pn.contains("drag") || pn.contains("neck")
                 }
                 return false
             }
             if target == "home_core" {
                 if pc == "home_core" { return true }
                 if pc == "home" {
-                    let n = p.name.lowercased()
-                    return !n.contains("aim") && !n.contains("drag") && !n.contains("neck")
+                    return !pn.contains("aim") && !pn.contains("drag") && !pn.contains("neck")
                 }
                 return false
             }
             if target == "home" {
                 return pc == "home" || pc == "home_aim" || pc == "home_core"
+            }
+            if target == "esp" {
+                return pc == "esp" || pn.contains("esp") || pn.contains("định vị")
+            }
+            if target == "skin" {
+                return pc == "skin" || pn.contains("skin")
             }
             return pc == target
         }
@@ -140,11 +145,24 @@ public final class CloudPatchService: ObservableObject {
         }
     }
 
-    /// Tải ngầm các tệp .dat vào sandbox nếu chưa có
+    /// Tải ngầm các tệp .dat vào sandbox nếu chưa có & dọn dẹp file bị xóa
     private func downloadMissingPatchFiles(_ patches: [CloudPatchItem]) async {
         guard let targetRoot = try? PatchProjectLibrary.packageRootURL() else { return }
         let fileManager = FileManager.default
 
+        // 1. Dọn dẹp các tệp .dat mồ côi đã bị xóa trên Web Admin
+        let validFilenames = Set(patches.map { $0.filename.lowercased() })
+        if let existingFiles = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
+            for f in existingFiles {
+                if f.lowercased().hasSuffix(".dat") && !validFilenames.contains(f.lowercased()) {
+                    let fileToDelete = targetRoot.appendingPathComponent(f)
+                    try? fileManager.removeItem(at: fileToDelete)
+                    print("[CloudPatchService] Đã xóa file không còn trên server: \(f)")
+                }
+            }
+        }
+
+        // 2. Tải các file mới
         for patch in patches {
             let destURL = targetRoot.appendingPathComponent(patch.filename)
 
