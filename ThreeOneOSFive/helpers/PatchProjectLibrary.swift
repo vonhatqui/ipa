@@ -212,6 +212,11 @@ enum PatchProjectLibrary {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
             }
         }
+        if let root = try? packageRootURL(fileManager: fileManager) {
+            for ext in ["dat", "bin", "3105"] {
+                candidateURLs.append(root.appendingPathComponent("\(name).\(ext)"))
+            }
+        }
         for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
             if let data = try? readPackage(at: url),
                let summary = try? PatchPackageCodec.inspect(data) {

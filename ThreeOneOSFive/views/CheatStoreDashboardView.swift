@@ -171,6 +171,7 @@ struct CheatStoreDashboardView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
     @ObservedObject private var antibanService = AntibanProfileService.shared
+    @ObservedObject private var cloudPatchService = CloudPatchService.shared
     var onBackToGames: (() -> Void)? = nil
 
     // Tab state
@@ -481,6 +482,9 @@ struct CheatStoreDashboardView: View {
                 dismissButton: .default(Text("Đóng"))
             )
         }
+        .onAppear {
+            cloudPatchService.syncCloudPatches()
+        }
         .sheet(isPresented: $showPatchCodecSheet) {
             PatchCodecView()
                 .environmentObject(patchStore)
@@ -678,6 +682,45 @@ struct CheatStoreDashboardView: View {
                     .background(glassBg)
                     .cornerRadius(20)
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 4.3. Các Chức Năng Mới Phát Hành Từ Server (Cloud OTA Patches)
+                let dynamicHomePatches = cloudPatchService.patches(for: "home").filter { p in
+                    !["APPLE IPA V2", "SWIFT IOS", "INTERNAL MOD", "APPLESTORE PRIME", "AIMNECK VIP", "AIM DRAG"].contains(p.name.uppercased())
+                }
+                if !dynamicHomePatches.isEmpty {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack {
+                            Text("CHỨC NĂNG MỚI (CLOUD OTA)")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(2.4)
+                                .foregroundColor(Color(red: 168/255, green: 85/255, blue: 247/255))
+                            Spacer()
+                            if cloudPatchService.isSyncing {
+                                ProgressView()
+                                    .scaleEffect(0.65)
+                            }
+                        }
+                        .padding(.horizontal, 4)
+
+                        VStack(spacing: 8) {
+                            ForEach(dynamicHomePatches) { patch in
+                                ZeroXChipButton(
+                                    title: patch.name,
+                                    subtitle: patch.subtitle,
+                                    isSelected: selectedAimChips.contains(patch.name),
+                                    isUnderMaintenance: !patch.isActive,
+                                    maintenanceBadge: "BẢO TRÌ"
+                                ) {
+                                    toggleAimChip(patch.name)
+                                }
+                            }
+                        }
+                        .padding(12)
+                        .background(glassBg)
+                        .cornerRadius(20)
+                        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.purple.opacity(0.3), lineWidth: 1))
+                    }
                 }
 
                 // 4.5. Khu vực Quản lý & Mã hóa Patch .3105
@@ -894,6 +937,15 @@ struct CheatStoreDashboardView: View {
                 if self.applyBundledPatch(named: "lib_app_applestore_prime") { appliedNames.append("AppleStore PRIME") }
             } else if self.selectedAimChips.contains("INTERNAL MOD") {
                 if self.applyBundledPatch(named: "lib_app_internal") { appliedNames.append("Internal Mod") }
+            }
+
+            // 1.5. Dynamic Cloud Patches Injection
+            for chip in self.selectedAimChips {
+                if let cp = CloudPatchService.shared.patch(named: chip) {
+                    if self.applyBundledPatch(named: cp.baseName) {
+                        appliedNames.append(cp.name)
+                    }
+                }
             }
 
             // 2. Aim Mods
