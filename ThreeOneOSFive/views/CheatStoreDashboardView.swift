@@ -177,8 +177,8 @@ struct CheatStoreDashboardView: View {
 
     // Tab 1: Trang Chủ State
     @State private var selectedGame: String = "ff"           // "ff" or "max"
-    @State private var activeAimPatch: String? = "AIM DRAG"
-    @State private var selectedAimChips: Set<String> = ["AIM DRAG", "APPLE IPA V2"]
+    @State private var activeAimPatch: String? = nil
+    @State private var selectedAimChips: Set<String> = []
     @State private var isInjecting: Bool = false
 
     private var currentAimDisplayText: String {
@@ -190,12 +190,12 @@ struct CheatStoreDashboardView: View {
     }
 
     // Tab 2: Định Vị State (chỉ 1 gói lib_app_esp_aimhead_v3)
-    @State private var activeEspColor: String? = "ESP AIMHEAD V3"
-    @State private var selectedEspChips: Set<String> = ["ESP AIMHEAD V3"]
+    @State private var activeEspColor: String? = nil
+    @State private var selectedEspChips: Set<String> = []
     @State private var isInjectingEsp: Bool = false
 
     // Tab 3: Modskin State (2 chức năng cũ: Skin Alock V2 & Skin thẻ vô cực vàng mùa 1)
-    @State private var selectedSpecialSkins: Set<String> = ["Skin Alock V2"]
+    @State private var selectedSpecialSkins: Set<String> = []
     @State private var isApplyingSkin: Bool = false
 
     // Tab 4: Antiban State
@@ -217,6 +217,13 @@ struct CheatStoreDashboardView: View {
     @State private var alertMessage: String? = nil
     @State private var showAlert: Bool = false
     @State private var isRestoringClean: Bool = false
+    @State private var isRestoringForGameSwitch: Bool = false
+
+    // Toast Notification State
+    @State private var toastMessage: String = ""
+    @State private var toastIcon: String = "checkmark.circle.fill"
+    @State private var toastColor: Color = Color.green
+    @State private var showToast: Bool = false
 
     // 0xCheats Design Tokens
     private let colorVoid = Color.black
@@ -271,6 +278,76 @@ struct CheatStoreDashboardView: View {
                 LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
                     .padding(.bottom, 6)
             }
+
+            // Toast Notification Banner (overlay phía trên)
+            if showToast {
+                VStack {
+                    HStack(spacing: 10) {
+                        Image(systemName: toastIcon)
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(toastColor)
+
+                        Text(toastMessage)
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .foregroundColor(colorInk)
+                            .lineLimit(2)
+
+                        Spacer()
+
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                showToast = false
+                            }
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(colorMute)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(red: 28/255, green: 28/255, blue: 32/255).opacity(0.96))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(toastColor.opacity(0.35), lineWidth: 1)
+                    )
+                    .shadow(color: toastColor.opacity(0.2), radius: 12, y: 4)
+                    .shadow(color: Color.black.opacity(0.5), radius: 8, y: 2)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
+                    Spacer()
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(999)
+            }
+
+            // Loading overlay khi đang khôi phục cho đổi game
+            if isRestoringForGameSwitch {
+                ZStack {
+                    Color.black.opacity(0.7).ignoresSafeArea()
+                    VStack(spacing: 14) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.2)
+                        Text("Đang khôi phục dữ liệu gốc...")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        Text("Vui lòng chờ trong giây lát")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(colorMute)
+                    }
+                    .padding(28)
+                    .background(Color(red: 22/255, green: 22/255, blue: 26/255))
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                }
+                .transition(.opacity)
+                .zIndex(1000)
+            }
         }
         .alert(isPresented: $showAlert) {
             Alert(
@@ -300,7 +377,7 @@ struct CheatStoreDashboardView: View {
             if let onBackToGames = onBackToGames {
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    onBackToGames()
+                    handleBackToGames(onBackToGames)
                 }) {
                     HStack(spacing: 5) {
                         Image(systemName: "gamecontroller.fill")
@@ -315,6 +392,7 @@ struct CheatStoreDashboardView: View {
                     .cornerRadius(12)
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
                 }
+                .disabled(isRestoringForGameSwitch)
             }
         }
         .padding(.horizontal, 20)
@@ -357,14 +435,14 @@ struct CheatStoreDashboardView: View {
                             .frame(height: 32)
                             .background(Color.white.opacity(0.1))
 
-                        // Status Stat
+                        // Status Stat - Hiển thị trạng thái thực tế
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Trạng Thái")
                                 .font(.system(size: 11, weight: .medium))
                                 .foregroundColor(colorMute)
-                            Text("SẴN SÀNG")
+                            Text(selectedAimChips.isEmpty ? "CHƯA BẬT" : "SẴN SÀNG")
                                 .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(Color.green)
+                                .foregroundColor(selectedAimChips.isEmpty ? colorMute : Color.green)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -398,7 +476,7 @@ struct CheatStoreDashboardView: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 3. Modules Section (.bx-section) - Aim Chips
+                // 3. Modules Section (.bx-section) - Aim Chips (Layout Dọc)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("CHỨC NĂNG BỔ TRỢ & AIM")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -411,7 +489,7 @@ struct CheatStoreDashboardView: View {
                         ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
                     ]
 
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    VStack(spacing: 8) {
                         ForEach(chips, id: \.0) { item in
                             ZeroXChipButton(
                                 title: item.0,
@@ -430,7 +508,7 @@ struct CheatStoreDashboardView: View {
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
                 }
 
-                // 4. Core VIP Patches
+                // 4. Core VIP Patches (Layout Dọc)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("CORE VIP MODS (CHỐNG VĂNG)")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -445,7 +523,7 @@ struct CheatStoreDashboardView: View {
                         ("APPLESTORE PRIME", "Fix văng & chống quét")
                     ]
 
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                    VStack(spacing: 8) {
                         ForEach(coreMods, id: \.0) { item in
                             ZeroXChipButton(
                                 title: item.0,
@@ -633,6 +711,15 @@ struct CheatStoreDashboardView: View {
             DispatchQueue.main.async {
                 self.isInjecting = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+                // Toast thông báo nhanh
+                let quickSummary = appliedNames.isEmpty ? "Tối ưu dữ liệu" : appliedNames.joined(separator: ", ")
+                self.showToastNotification(
+                    message: "✅ Inject thành công: \(quickSummary)",
+                    icon: "checkmark.circle.fill",
+                    color: Color.green
+                )
+
                 self.alertTitle = "✅ INJECT THÀNH CÔNG"
                 let summary = appliedNames.isEmpty ? "Đã tối ưu hóa dữ liệu game!" : appliedNames.map { "• " + $0 }.joined(separator: "\n")
                 self.alertMessage = "Đã nạp mod thành công vào Free Fire (\(self.selectedGame.uppercased())):\n\(summary)\n\nBấm 'Vào Game' để trải nghiệm ngay!"
@@ -825,6 +912,14 @@ struct CheatStoreDashboardView: View {
             DispatchQueue.main.async {
                 self.isInjectingEsp = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+                // Toast thông báo nhanh cho ESP
+                self.showToastNotification(
+                    message: success ? "✅ Định vị ESP đã nạp thành công!" : "⚠️ Không tìm thấy gói định vị",
+                    icon: success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill",
+                    color: success ? Color.green : Color.orange
+                )
+
                 self.alertTitle = success ? "✅ NẠP ĐỊNH VỊ THÀNH CÔNG" : "⚠️ THÔNG BÁO"
                 let espInfo = self.activeEspColor ?? "Visual ESP V3"
                 self.alertMessage = success
@@ -950,6 +1045,15 @@ struct CheatStoreDashboardView: View {
             DispatchQueue.main.async {
                 self.isApplyingSkin = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+                // Toast thông báo nhanh cho Skin
+                let skinSummary = appliedNames.joined(separator: ", ")
+                self.showToastNotification(
+                    message: "✅ Skin đã nạp: \(skinSummary)",
+                    icon: "checkmark.circle.fill",
+                    color: Color.green
+                )
+
                 self.alertTitle = "✅ ÁP DỤNG SKIN THÀNH CÔNG"
                 self.alertMessage = "Toàn bộ skin đã chọn đã được nạp an toàn vào game:\n" + appliedNames.map { "• " + $0 }.joined(separator: "\n")
                 self.showAlert = true
@@ -1432,10 +1536,76 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    // MARK: - Toast Notification Helper
+    private func showToastNotification(message: String, icon: String = "checkmark.circle.fill", color: Color = Color.green) {
+        toastMessage = message
+        toastIcon = icon
+        toastColor = color
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+            showToast = true
+        }
+        // Tự ẩn toast sau 3.5 giây
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
+            withAnimation(.easeOut(duration: 0.3)) {
+                showToast = false
+            }
+        }
+    }
+
+    // MARK: - Đổi Game với Auto-Restore
+    private func handleBackToGames(_ callback: @escaping () -> Void) {
+        // Kiểm tra xem có mod nào đang active không
+        let hasActiveMods = !selectedAimChips.isEmpty || !selectedEspChips.isEmpty || !selectedSpecialSkins.isEmpty
+
+        if hasActiveMods {
+            // Có mod active → hiện loading overlay, khôi phục, rồi đổi game
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isRestoringForGameSwitch = true
+            }
+
+            DispatchQueue.global(qos: .userInitiated).async {
+                DevicePatchService.cleanRestoreAllModifications()
+
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        self.activeAimPatch = nil
+                        self.activeEspColor = nil
+                        self.selectedAimChips.removeAll()
+                        self.selectedEspChips.removeAll()
+                        self.selectedSpecialSkins.removeAll()
+                        self.isRestoringForGameSwitch = false
+                    }
+
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                    self.showToastNotification(
+                        message: "Đã khôi phục dữ liệu gốc. Đang chuyển game...",
+                        icon: "arrow.triangle.2.circlepath",
+                        color: Color.cyan
+                    )
+
+                    // Delay nhẹ để toast hiện trước khi chuyển
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        callback()
+                    }
+                }
+            }
+        } else {
+            // Không có mod active → chuyển game luôn
+            callback()
+        }
+    }
+
     // MARK: - Ledger Restore Cleanup Action
     func performCleanRestore() {
         guard !isRestoringClean else { return }
         isRestoringClean = true
+
+        // Hiện toast thông báo đang xử lý
+        showToastNotification(
+            message: "Đang khôi phục dữ liệu gốc game...",
+            icon: "arrow.counterclockwise",
+            color: Color.orange
+        )
 
         DispatchQueue.global(qos: .userInitiated).async {
             DevicePatchService.cleanRestoreAllModifications()
@@ -1451,6 +1621,15 @@ struct CheatStoreDashboardView: View {
                 }
 
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+                // Hiện toast thành công
+                self.showToastNotification(
+                    message: "✅ Đã khôi phục sạch 100% dữ liệu game!",
+                    icon: "checkmark.circle.fill",
+                    color: Color.green
+                )
+
+                // Đồng thời hiện alert chi tiết
                 self.alertTitle = "✅ ĐÃ KHÔI PHỤC SẠCH 100%"
                 self.alertMessage = "Toàn bộ file gốc của Free Fire đã được phục hồi nguyên bản an toàn. Đã gỡ bỏ toàn bộ trạng thái mod."
                 self.showAlert = true
