@@ -484,10 +484,6 @@ struct CheatStoreDashboardView: View {
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
-        .sheet(isPresented: $showPatchCodecSheet) {
-            PatchCodecView()
-                .environmentObject(patchStore)
-        }
     }
 
     // MARK: - Top Header (.main-head bx-head)
