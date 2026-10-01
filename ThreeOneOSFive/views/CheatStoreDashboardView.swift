@@ -499,7 +499,7 @@ struct CheatStoreDashboardView: View {
             return false
         }
         do {
-            _ = try DevicePatchService.applyPatch(project: project)
+            _ = try DevicePatchService.apply(project: project)
             return true
         } catch {
             print("[CheatStore] Lỗi nạp \(name): \(error)")
