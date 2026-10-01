@@ -1626,7 +1626,6 @@ struct CheatStoreDashboardView: View {
                     self.selectedAimChips.removeAll()
                     self.selectedEspChips.removeAll()
                     self.selectedSpecialSkins.removeAll()
-                    self.activeSkinID = nil
                     self.isRestoringClean = false
                 }
 
