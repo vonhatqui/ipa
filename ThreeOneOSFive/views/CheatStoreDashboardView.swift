@@ -601,6 +601,17 @@ struct RainbowText: View {
         AppBrandingTheme.current.rainbowColors
     }
 
+    private var glowColor: Color {
+        switch AppBrandingTheme.current {
+        case .cheatStore:
+            return Color(red: 1.0, green: 0.35, blue: 0.75) // Vầng hào quang LED đa sắc
+        case .veLix:
+            return AppBrandingTheme.current.accentColor
+        case .venom:
+            return AppBrandingTheme.current.accentColor
+        }
+    }
+
     var body: some View {
         Text(text)
             .font(.system(size: 23, weight: .black, design: .rounded))
@@ -616,7 +627,7 @@ struct RainbowText: View {
                         .font(.system(size: 23, weight: .black, design: .rounded))
                 )
             )
-            .shadow(color: AppBrandingTheme.current.accentColor.opacity(0.65), radius: 14, x: 0, y: 0)
+            .shadow(color: glowColor.opacity(0.65), radius: 14, x: 0, y: 0)
             .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
             .onAppear {
                 withAnimation(

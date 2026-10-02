@@ -28,8 +28,78 @@ def get_patch_entries(app_folder):
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105": AURA_PATCH_BYTES,
     }
 
-def fix_base_ipa(raw_ipa_path, output_ipa_path):
+def generate_custom_icons(icon_path, app_folder, plist):
+    custom_icons = {}
+    if icon_path and os.path.exists(icon_path):
+        print(f"Generating icon sizes from {icon_path}...")
+        src_img = Image.open(icon_path).convert("RGBA")
+        icon_sizes = [
+            ("AppIcon60x60@2x.png", 120, 120),
+            ("AppIcon60x60@3x.png", 180, 180),
+            ("AppIcon76x76@2x~ipad.png", 152, 152),
+            ("AppIcon83.5x83.5@2x~ipad.png", 167, 167),
+            ("AppIcon20x20@2x.png", 40, 40),
+            ("AppIcon20x20@3x.png", 60, 60),
+            ("AppIcon29x29@2x.png", 58, 58),
+            ("AppIcon29x29@3x.png", 87, 87),
+            ("AppIcon40x40@2x.png", 80, 80),
+            ("AppIcon40x40@3x.png", 120, 120),
+        ]
+        icon_basenames = set()
+        for filename, w, h in icon_sizes:
+            resized = src_img.resize((w, h), Image.Resampling.LANCZOS)
+            buf = io.BytesIO()
+            resized.save(buf, format="PNG")
+            custom_icons[f"{app_folder}/{filename}"] = buf.getvalue()
+            base = filename.split("@")[0].replace("~ipad", "").replace(".png", "")
+            icon_basenames.add(base)
+
+        base_list = list(icon_basenames)
+        plist['CFBundleIcons'] = {
+            'CFBundlePrimaryIcon': {
+                'CFBundleIconFiles': base_list,
+                'CFBundleIconName': 'AppIcon'
+            }
+        }
+        plist['CFBundleIcons~ipad'] = {
+            'CFBundlePrimaryIcon': {
+                'CFBundleIconFiles': base_list,
+                'CFBundleIconName': 'AppIcon'
+            }
+        }
+
+        # Đồng bộ ảnh icon/logo vào AppCore/Assets và root bundle chuẩn 100%
+        logo_img = Image.open(icon_path).convert("RGB")
+        logo_resized = logo_img.resize((554, 554), Image.Resampling.LANCZOS)
+        buf_jpg = io.BytesIO()
+        logo_resized.save(buf_jpg, format="JPEG", quality=95)
+        jpg_data = buf_jpg.getvalue()
+
+        logo_rgba = Image.open(icon_path).convert("RGBA")
+        logo_rgba_resized = logo_rgba.resize((554, 554), Image.Resampling.LANCZOS)
+        buf_png = io.BytesIO()
+        logo_rgba_resized.save(buf_png, format="PNG")
+        png_data = buf_png.getvalue()
+
+        custom_icons[f"{app_folder}/AppCore/Assets/CheatStoreLogo.jpg"] = jpg_data
+        custom_icons[f"{app_folder}/AppCore/Assets/CheatStoreLogo.png"] = png_data
+        custom_icons[f"{app_folder}/AppCore/Assets/CheatLogo.png"] = png_data
+        custom_icons[f"{app_folder}/AppCore/Assets/PhantomBrand.png"] = png_data
+        custom_icons[f"{app_folder}/AppCore/Assets/CustomLogo.png"] = png_data
+        custom_icons[f"{app_folder}/AppCore/Assets/BrandLogo.png"] = png_data
+        custom_icons[f"{app_folder}/CustomLogo.png"] = png_data
+        custom_icons[f"{app_folder}/BrandLogo.png"] = png_data
+        custom_icons[f"{app_folder}/PhantomBrand.png"] = png_data
+        custom_icons[f"{app_folder}/CheatLogo.png"] = png_data
+        custom_icons[f"{app_folder}/CheatStoreLogo.jpg"] = jpg_data
+        custom_icons[f"{app_folder}/CheatStoreLogo.png"] = png_data
+
+    return custom_icons
+
+def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
     print(f"\n--- Fixing base IPA from {raw_ipa_path} -> {output_ipa_path} ---")
+    if icon_path:
+        print(f"Using icon: {icon_path} ({os.path.getsize(icon_path)} bytes)")
     with zipfile.ZipFile(raw_ipa_path, 'r') as zin:
         app_folder = None
         for name in zin.namelist():
@@ -63,6 +133,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
         plist['CFBundleVersion'] = "10"
         plist['AppReleaseDisplayVersion'] = "2.4"
 
+        custom_icons = generate_custom_icons(icon_path, app_folder, plist)
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
         patch_entries = get_patch_entries(app_folder)
 
@@ -92,6 +163,10 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, zin.read(clean))
+                elif clean in custom_icons:
+                    zinfo = zipfile.ZipInfo(clean, (2026, 1, 1, 0, 0, 0))
+                    zinfo.external_attr = 0o100644 << 16
+                    zout.writestr(zinfo, custom_icons[clean])
                 elif clean in patch_entries:
                     zinfo = zipfile.ZipInfo(clean, (2026, 1, 1, 0, 0, 0))
                     zinfo.external_attr = 0o100644 << 16
@@ -106,6 +181,15 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
                     else:
                         zinfo.external_attr = 0o100644 << 16
                         zout.writestr(zinfo, zin.read(item.filename))
+
+            # Ghi các file icon mới chưa có trong zip cũ
+            for icon_fname, icon_bytes in custom_icons.items():
+                if icon_fname not in seen:
+                    zinfo = zipfile.ZipInfo(icon_fname, (2026, 1, 1, 0, 0, 0))
+                    zinfo.external_attr = 0o100644 << 16
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zout.writestr(zinfo, icon_bytes)
+                    seen.add(icon_fname)
 
             # Ghi các file patch còn thiếu vào AppCore & BundledPatches
             for p_path, p_bytes in patch_entries.items():
@@ -139,70 +223,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
         plist['CFBundleVersion'] = "10"
         plist['AppReleaseDisplayVersion'] = "2.4"
 
-        custom_icons = {}
-        if icon_path and os.path.exists(icon_path):
-            print(f"Generating icon sizes from {icon_path}...")
-            src_img = Image.open(icon_path).convert("RGBA")
-            icon_sizes = [
-                ("AppIcon60x60@2x.png", 120, 120),
-                ("AppIcon60x60@3x.png", 180, 180),
-                ("AppIcon76x76@2x~ipad.png", 152, 152),
-                ("AppIcon83.5x83.5@2x~ipad.png", 167, 167),
-                ("AppIcon20x20@2x.png", 40, 40),
-                ("AppIcon20x20@3x.png", 60, 60),
-                ("AppIcon29x29@2x.png", 58, 58),
-                ("AppIcon29x29@3x.png", 87, 87),
-                ("AppIcon40x40@2x.png", 80, 80),
-                ("AppIcon40x40@3x.png", 120, 120),
-            ]
-            icon_basenames = set()
-            for filename, w, h in icon_sizes:
-                resized = src_img.resize((w, h), Image.Resampling.LANCZOS)
-                buf = io.BytesIO()
-                resized.save(buf, format="PNG")
-                custom_icons[f"{app_folder}/{filename}"] = buf.getvalue()
-                base = filename.split("@")[0].replace("~ipad", "").replace(".png", "")
-                icon_basenames.add(base)
-
-            base_list = list(icon_basenames)
-            plist['CFBundleIcons'] = {
-                'CFBundlePrimaryIcon': {
-                    'CFBundleIconFiles': base_list,
-                    'CFBundleIconName': 'AppIcon'
-                }
-            }
-            plist['CFBundleIcons~ipad'] = {
-                'CFBundlePrimaryIcon': {
-                    'CFBundleIconFiles': base_list,
-                    'CFBundleIconName': 'AppIcon'
-                }
-            }
-
-            # Đồng bộ ảnh icon/logo vào AppCore/Assets và root bundle chuẩn 100%
-            logo_img = Image.open(icon_path).convert("RGB")
-            logo_resized = logo_img.resize((554, 554), Image.Resampling.LANCZOS)
-            buf_jpg = io.BytesIO()
-            logo_resized.save(buf_jpg, format="JPEG", quality=95)
-            jpg_data = buf_jpg.getvalue()
-
-            logo_rgba = Image.open(icon_path).convert("RGBA")
-            logo_rgba_resized = logo_rgba.resize((554, 554), Image.Resampling.LANCZOS)
-            buf_png = io.BytesIO()
-            logo_rgba_resized.save(buf_png, format="PNG")
-            png_data = buf_png.getvalue()
-
-            custom_icons[f"{app_folder}/AppCore/Assets/CheatStoreLogo.jpg"] = jpg_data
-            custom_icons[f"{app_folder}/AppCore/Assets/CheatStoreLogo.png"] = png_data
-            custom_icons[f"{app_folder}/AppCore/Assets/CheatLogo.png"] = png_data
-            custom_icons[f"{app_folder}/AppCore/Assets/PhantomBrand.png"] = png_data
-            custom_icons[f"{app_folder}/AppCore/Assets/CustomLogo.png"] = png_data
-            custom_icons[f"{app_folder}/AppCore/Assets/BrandLogo.png"] = png_data
-            custom_icons[f"{app_folder}/CustomLogo.png"] = png_data
-            custom_icons[f"{app_folder}/BrandLogo.png"] = png_data
-            custom_icons[f"{app_folder}/PhantomBrand.png"] = png_data
-            custom_icons[f"{app_folder}/CheatLogo.png"] = png_data
-            custom_icons[f"{app_folder}/CheatStoreLogo.jpg"] = jpg_data
-
+        custom_icons = generate_custom_icons(icon_path, app_folder, plist)
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
         patch_entries = get_patch_entries(app_folder)
 
@@ -317,6 +338,8 @@ def main():
     venom_ipa = r"D:\update_file\Venom_VN.ipa"
 
     # Logo chuẩn của từng app:
+    # 0. CheatStore VN: Logo CheatStore gốc (ThreeOneOSFive/CheatLogo.png)
+    cheatstore_icon = r"assets\brands\cheatstore_logo.png"
     # 1. VeLix VN: Hình thiên thần có cánh + chữ VELIX VN (media_1790968897594.jpg)
     velix_icon = r"assets\brands\velix_logo.jpg"
     # 2. Venom VN: Hình vương miện & rồng tím + chữ VENOM VN (media_1790969601571.jpg)
@@ -324,12 +347,13 @@ def main():
 
     print("==================================================")
     print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI PATCH 46842 BYTES TỪ D:\\aaaaaaaaacc")
+    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes)")
     print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes)")
     print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes)")
     print("==================================================")
 
-    # 1. Tạo fixed base CheatStore-VN.ipa
-    fix_base_ipa(raw_ipa, fixed_base_ipa)
+    # 1. Tạo fixed base CheatStore-VN.ipa với icon CheatStore chuẩn
+    fix_base_ipa(raw_ipa, fixed_base_ipa, icon_path=cheatstore_icon)
 
     # 2. Cập nhật well-known base.ipa
     well_known_base = r"D:\update_file\well-known\base.ipa"
