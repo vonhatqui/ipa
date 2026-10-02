@@ -254,24 +254,12 @@ struct CheatStoreDashboardView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Vầng sáng Ambient Glow Tím Đen Aurora iOS (Chuẩn ảnh mẫu)
+            // Subtle white LED ambient glow (Black & White Theme)
             RadialGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.42, green: 0.12, blue: 0.72).opacity(0.32),
-                    Color(red: 0.18, green: 0.05, blue: 0.35).opacity(0.18),
-                    Color.clear
-                ]),
-                center: .center,
-                startRadius: 20,
-                endRadius: 420
-            )
-            .ignoresSafeArea()
-
-            RadialGradient(
-                gradient: Gradient(colors: [Color(red: 0.52, green: 0.18, blue: 0.88).opacity(0.16), Color.clear]),
+                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
                 center: .top,
-                startRadius: 10,
-                endRadius: 320
+                startRadius: 20,
+                endRadius: 400
             )
             .ignoresSafeArea()
 
@@ -528,7 +516,7 @@ struct CheatStoreDashboardView: View {
                         Text("Games")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
                     }
-                    .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                    .foregroundColor(Color.white)
                 }
                 .disabled(isRestoringForGameSwitch || isInjecting)
             } else {
@@ -541,7 +529,7 @@ struct CheatStoreDashboardView: View {
             VStack(spacing: 2) {
                 Text(brandHeaderTitle)
                     .font(.system(size: 15.5, weight: .heavy, design: .rounded))
-                    .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                    .foregroundColor(colorInk)
                     .tracking(0.5)
 
                 Text(auroraGameSubtitle)
@@ -555,11 +543,11 @@ struct CheatStoreDashboardView: View {
             HStack(spacing: 5) {
                 if isInjecting {
                     ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.72, green: 0.40, blue: 0.98)))
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
                         .scaleEffect(0.65)
                     Text("Injecting...")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                        .foregroundColor(.white)
                 } else if isInjected {
                     Circle()
                         .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
@@ -582,7 +570,7 @@ struct CheatStoreDashboardView: View {
                 RoundedRectangle(cornerRadius: 999)
                     .stroke(
                         isInjected ? Color.green.opacity(0.4) :
-                        (isInjecting ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.5) : Color.white.opacity(0.18)),
+                        (isInjecting ? Color.white.opacity(0.5) : Color.white.opacity(0.18)),
                         lineWidth: 1
                     )
             )
@@ -604,17 +592,11 @@ struct CheatStoreDashboardView: View {
     }
 
     private var auroraGameSubtitle: String {
-        let isMax = (selectedGameVersionRaw == FreeFireGameVersion.max.rawValue || selectedGame == "max")
-        return isMax ? "Free Fire MAX" : "Free Fire"
+        return "Free Fire"
     }
 
     private var brandCenterTag: String {
-        let name = licenseManager.featureConfig.app_name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if name.isEmpty || name == "CheatStore VN" {
-            return "@CHEATSTORE_IOS"
-        }
-        let formatted = name.uppercased().replacingOccurrences(of: " ", with: "_")
-        return formatted.contains("IOS") ? "@\(formatted)" : "@\(formatted)_IOS"
+        return "Discord: @jinwwostore.vn"
     }
 
     // MARK: - Top Header (.main-head bx-head)
@@ -675,14 +657,17 @@ struct CheatStoreDashboardView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Khu vực logo / Tên menu (@CHEATSTORE_IOS)
-            VStack(spacing: 12) {
+            // CHÍNH GIỮA: Tên Discord & Mô tả hỗ trợ
+            VStack(spacing: 8) {
                 Text(brandCenterTag)
-                    .font(.system(size: 34, weight: .black, design: .rounded))
-                    .italic()
+                    .font(.system(size: 24, weight: .black, design: .rounded))
                     .foregroundColor(.white)
-                    .shadow(color: Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.45), radius: 20, x: 0, y: 0)
+                    .shadow(color: Color.white.opacity(0.35), radius: 15, x: 0, y: 0)
                     .shadow(color: Color.black.opacity(0.8), radius: 10, x: 0, y: 4)
+
+                Text("Mô tả: Liên hệ khi cần hỗ trợ")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.65))
             }
             .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
             .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
@@ -697,14 +682,14 @@ struct CheatStoreDashboardView: View {
                 HStack(spacing: 7) {
                     if isInjecting {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.85, green: 0.60, blue: 1.0)))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.85)
                     }
 
                     Text(auroraInstructionText)
                         .font(.system(size: 13.5, weight: isInjecting ? .semibold : .medium, design: .rounded))
                         .foregroundColor(
-                            isInjecting ? Color(red: 0.85, green: 0.60, blue: 1.0) : (isInjected ? Color.green.opacity(0.9) : Color.white.opacity(0.55))
+                            isInjecting ? Color.white : (isInjected ? Color.green.opacity(0.9) : Color.white.opacity(0.55))
                         )
                         .multilineTextAlignment(.center)
                 }
@@ -745,30 +730,39 @@ struct CheatStoreDashboardView: View {
             }
         }) {
             ZStack {
-                // Nền tím bo góc màu sắc tương ứng trạng thái
+                // Nền đen trắng LED bo góc (Black & White Theme)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
+                        isInjected ?
                         LinearGradient(
-                            colors: isInjected ? [
-                                Color(red: 0.20, green: 0.08, blue: 0.40),
-                                Color(red: 0.12, green: 0.38, blue: 0.22)
-                            ] : [
-                                Color(red: 0.25, green: 0.09, blue: 0.48),
-                                Color(red: 0.16, green: 0.06, blue: 0.34)
+                            colors: [
+                                Color(red: 0.15, green: 0.38, blue: 0.22),
+                                Color(red: 0.08, green: 0.24, blue: 0.14)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(
+                            colors: isInjecting ? [
+                                Color(white: 0.92),
+                                Color(white: 0.82)
+                            ] : [
+                                Color.white,
+                                Color(white: 0.88)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
                         )
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(
-                                isInjected ? Color.green.opacity(0.4) : Color(red: 0.68, green: 0.35, blue: 0.95).opacity(0.35),
+                                isInjected ? Color.green.opacity(0.5) : Color.white.opacity(0.5),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
-                        color: isInjected ? Color.green.opacity(0.25) : Color(red: 0.60, green: 0.25, blue: 0.90).opacity(0.35),
+                        color: isInjected ? Color.green.opacity(0.3) : Color.white.opacity(0.28),
                         radius: 14,
                         y: 4
                     )
@@ -777,12 +771,12 @@ struct CheatStoreDashboardView: View {
                 HStack(spacing: 10) {
                     if isInjecting {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
                             .scaleEffect(1.0)
 
                         Text("Injecting...")
                             .font(.system(size: 16.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                     } else if isInjected {
                         Image(systemName: "gamecontroller.fill")
                             .font(.system(size: 17, weight: .bold))
@@ -795,11 +789,11 @@ struct CheatStoreDashboardView: View {
                     } else {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(Color(red: 0.85, green: 0.60, blue: 1.0))
+                            .foregroundColor(.black)
 
                         Text("INJECTOR")
                             .font(.system(size: 16.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .tracking(1.0)
                     }
                 }

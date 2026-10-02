@@ -28,16 +28,12 @@ struct GameSelectionView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Vầng sáng Ambient Glow Tím Đen Luxury
+            // Vầng sáng Ambient Glow Trắng LED Luxury (Black & White Theme)
             RadialGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 0.45, green: 0.15, blue: 0.75).opacity(0.24),
-                    Color(red: 0.20, green: 0.05, blue: 0.35).opacity(0.10),
-                    Color.clear
-                ]),
+                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
                 center: .top,
                 startRadius: 20,
-                endRadius: 400
+                endRadius: 380
             )
             .ignoresSafeArea()
 
@@ -49,7 +45,7 @@ struct GameSelectionView: View {
                     VStack(alignment: .leading, spacing: 18) {
                         // Tiêu đề mục
                         HStack {
-                            Text("CHỌN PHIÊN BẢN GAME")
+                            Text("PHIÊN BẢN GAME")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .tracking(2.4)
                                 .foregroundColor(Color.white.opacity(0.75))
@@ -58,15 +54,11 @@ struct GameSelectionView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 16)
 
-                        // 1. Thẻ Game Free Fire Thường (com.dts.freefireth)
+                        // Duy nhất 1 game Free Fire theo yêu cầu
                         gameCardView(version: .standard)
                             .padding(.horizontal, 20)
 
-                        // 2. Thẻ Game Free Fire MAX (com.dts.freefiremax)
-                        gameCardView(version: .max)
-                            .padding(.horizontal, 20)
-
-                        // 3. Thông tin bảo mật Antiban
+                        // Thông tin bảo mật Antiban
                         instructionCardView
                             .padding(.horizontal, 20)
                             .padding(.top, 6)
@@ -217,9 +209,9 @@ struct GameSelectionView: View {
             .cornerRadius(18)
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSelected ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.8) : glassBorder, lineWidth: 1.2)
+                    .stroke(isSelected ? Color.white.opacity(0.6) : glassBorder, lineWidth: 1.2)
             )
-            .shadow(color: isSelected ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.25) : Color.black.opacity(0.3), radius: 10, y: 4)
+            .shadow(color: isSelected ? Color.white.opacity(0.20) : Color.black.opacity(0.3), radius: 10, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
     }
