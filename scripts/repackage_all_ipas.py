@@ -8,8 +8,8 @@ from PIL import Image
 import subprocess
 import shutil
 
-# Đọc file patch gốc chuẩn từ D:\aura\Aurora Menu v1.3105
-AURA_PATCH_PATH = r"D:\aura\Aurora Menu v1.3105"
+# Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105
+AURA_PATCH_PATH = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
 if not os.path.exists(AURA_PATCH_PATH):
     raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
 
@@ -26,9 +26,6 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/core_manifest.bin": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105": AURA_PATCH_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1-0.3105": AURA_PATCH_BYTES,
-        f"{app_folder}/BundledPatches/@Nhism Menu v1-0.3105": AURA_PATCH_BYTES,
-        f"{app_folder}/BundledPatches/CheatVN Menu v1-0.3105": AURA_PATCH_BYTES,
     }
 
 def fix_base_ipa(raw_ipa_path, output_ipa_path):
@@ -79,6 +76,8 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
             for item in zin.infolist():
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
+                    continue
+                if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
                     continue
                 seen.add(clean)
 
@@ -218,6 +217,8 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
+                if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
+                    continue
                 seen.add(clean)
 
                 zinfo = zipfile.ZipInfo(clean, item.date_time)
@@ -322,7 +323,7 @@ def main():
     venom_icon = r"assets\brands\venom_logo.jpg"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI PATCH 46842 BYTES TỪ D:\\aura")
+    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI PATCH 46842 BYTES TỪ D:\\aaaaaaaaacc")
     print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes)")
     print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes)")
     print("==================================================")

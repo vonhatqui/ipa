@@ -903,17 +903,12 @@ struct RainbowText: View {
         pulseAnimation = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp DUY NHẤT file .3105 mới
+        // 1. Chạy background task nạp DUY NHẤT file .3105 gốc
         DispatchQueue.global(qos: .userInitiated).async {
-            // Nạp duy nhất file @Nhism Menu / Aurora Menu .3105
+            // Nạp duy nhất file Aurora Menu v1.3105 gốc
             _ = self.applyAuroraPackage()
 
             DevicePatchService.ensureActivePatchesInjected()
-
-            // Đồng bộ kiểm tra file core OTA từ web trong nền sau khi đã nạp
-            Task {
-                await CloudPatchService.shared.syncCorePatch()
-            }
         }
 
         // 2. Thời gian loading animation chuẩn 12 giây (trong khoảng 10-15s như yêu cầu)
@@ -929,7 +924,7 @@ struct RainbowText: View {
             CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
             self.showToastNotification(
-                message: "✅ Đã nạp file .3105 thành công! Đang tự động vào game...",
+                message: "Đã injetor thành công",
                 icon: "checkmark.circle.fill",
                 color: Color.green
             )
@@ -946,21 +941,17 @@ struct RainbowText: View {
         let fileManager = FileManager.default
         let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // Danh sách các đường dẫn tìm kiếm file mod đã được mã hoá/nguỵ trang bảo mật
+        // Danh sách các đường dẫn tìm kiếm file mod gốc chuẩn
         var candidateURLs: [URL] = []
 
-        // 1. ƯU TIÊN SỐ 1: File cập nhật OTA từ Web Admin trong thư mục Sandbox
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
             candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
             candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
             candidateURLs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
-            candidateURLs.append(root.appendingPathComponent("@Nhism Menu v1-0.3105"))
-            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
             candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
         }
 
-        // 2. Dự phòng: Thư mục AppCore & Assets đóng gói sẵn trong App Bundle
         if let resURL = Bundle.main.resourceURL {
             candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
@@ -968,11 +959,9 @@ struct RainbowText: View {
             candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1.3105"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/@Nhism Menu v1-0.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
         }
-        candidateURLs.append(URL(fileURLWithPath: "D:/aura/Aurora Menu v1.3105"))
+        candidateURLs.append(URL(fileURLWithPath: "D:/aaaaaaaaacc/Aurora Menu v1.3105"))
         if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
             candidateURLs.append(binURL)
         }
@@ -983,17 +972,8 @@ struct RainbowText: View {
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_runtime.dat"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/@Nhism Menu v1-0.3105"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
-
-        // 3. Fallback thư mục New folder nếu có
-        let newFolderPath = "C:/Users/Administrator/Downloads/New folder"
-        if fileManager.fileExists(atPath: newFolderPath) {
-            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/.core_runtime.dat"))
-            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/core_manifest.bin"))
-            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/CheatVN Menu v1-0.3105"))
-        }
 
         var appliedSuccess = false
 
