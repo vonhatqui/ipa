@@ -15,13 +15,13 @@ struct CheatStoreLoginView: View {
 
     var body: some View {
         ZStack {
-            // Nền không gian sâu 0xCheats (Void Black #050508)
-            Color(red: 0.02, green: 0.02, blue: 0.032)
+            // Nền không gian sâu đồng bộ theo thương hiệu
+            AppBrandingTheme.current.colorVoid
                 .ignoresSafeArea()
 
-            // Vầng sáng spotlight ambient 0xCheats
+            // Vầng sáng spotlight ambient đồng bộ theo màu chủ đề thương hiệu
             Circle()
-                .fill(Color(red: 0.0, green: 0.72, blue: 1.0).opacity(0.12))
+                .fill(AppBrandingTheme.current.accentColor.opacity(0.14))
                 .blur(radius: 100)
                 .frame(width: 320, height: 320)
                 .offset(y: -180)
@@ -82,7 +82,7 @@ struct CheatStoreLoginView: View {
             CheatStoreLogoView(size: 44, cornerRadius: 12)
 
             ShinyTextView(
-                text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? "CheatStore VN" : CheatStoreLicenseManager.shared.featureConfig.app_name,
+                text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? AppBrandingTheme.current.appTitle : CheatStoreLicenseManager.shared.featureConfig.app_name,
                 font: .system(size: 21, weight: .bold, design: .rounded),
                 baseColor: Color(red: 0.78, green: 0.78, blue: 0.82),
                 shineColor: .white,
@@ -331,23 +331,49 @@ struct CheatStoreLogoView: View {
     var cornerRadius: CGFloat = 22
 
     private var loadedImage: UIImage? {
-        if let img = UIImage(named: "PhantomBrand") ?? UIImage(named: "CheatLogo") ?? UIImage(named: "CheatStoreLogo") {
-            return img
-        }
+        let theme = AppBrandingTheme.current
         if let resPath = Bundle.main.resourcePath {
             let appCoreAssets = (resPath as NSString).appendingPathComponent("AppCore/Assets")
-            let candidates = ["PhantomBrand.png", "CheatLogo.png", "CheatStoreLogo.jpg", "CheatStoreLogo.png"]
+
+            // Nếu là bản clone (VeLix hoặc Venom), ưu tiên các file icon/logo được cloner thay thế
+            let candidates: [String]
+            if theme != .cheatStore {
+                candidates = [
+                    "CustomLogo.png",
+                    "BrandLogo.png",
+                    "AppIcon60x60@3x.png",
+                    "AppIcon60x60@2x.png",
+                    "CheatStoreLogo.jpg",
+                    "PhantomBrand.png",
+                    "CheatLogo.png",
+                    "CheatStoreLogo.png"
+                ]
+            } else {
+                candidates = [
+                    "PhantomBrand.png",
+                    "CheatLogo.png",
+                    "CheatStoreLogo.png",
+                    "CheatStoreLogo.jpg",
+                    "AppIcon60x60@3x.png",
+                    "AppIcon60x60@2x.png"
+                ]
+            }
+
+            // 1. Thử trong thư mục gốc app bundle trước (nơi Cloner thay icon chính xác nhất)
+            for name in candidates {
+                let p = (resPath as NSString).appendingPathComponent(name)
+                if let img = UIImage(contentsOfFile: p) { return img }
+            }
+            // 2. Thử trong thư mục AppCore/Assets
             for name in candidates {
                 let p = (appCoreAssets as NSString).appendingPathComponent(name)
                 if let img = UIImage(contentsOfFile: p) { return img }
             }
         }
-        if let path = Bundle.main.path(forResource: "PhantomBrand", ofType: "png") ??
-                      Bundle.main.path(forResource: "CheatLogo", ofType: "png") ??
-                      Bundle.main.path(forResource: "CheatStoreLogo", ofType: "png") ??
-                      Bundle.main.path(forResource: "CheatStoreLogo", ofType: "jpg"),
-           let img = UIImage(contentsOfFile: path) {
-            return img
+        if theme == .cheatStore {
+            if let img = UIImage(named: "PhantomBrand") ?? UIImage(named: "CheatLogo") ?? UIImage(named: "CheatStoreLogo") {
+                return img
+            }
         }
         return nil
     }
@@ -361,9 +387,9 @@ struct CheatStoreLogoView: View {
                 .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
+                        .stroke(AppBrandingTheme.current.accentColor.opacity(0.4), lineWidth: 1.2)
                 )
-                .shadow(color: Color.white.opacity(0.2), radius: 8)
+                .shadow(color: AppBrandingTheme.current.accentColor.opacity(0.25), radius: 8)
         } else {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -371,12 +397,12 @@ struct CheatStoreLogoView: View {
                     .frame(width: size, height: size)
                     .overlay(
                         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                            .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
+                            .stroke(AppBrandingTheme.current.accentColor.opacity(0.4), lineWidth: 1.2)
                     )
 
                 Image(systemName: "bolt.shield.fill")
                     .font(.system(size: size * 0.5, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(AppBrandingTheme.current.accentColor)
             }
         }
     }
@@ -816,11 +842,7 @@ struct LoginSuccessIntroView: View {
 
     private var headerSection: some View {
         VStack(spacing: 10) {
-            Image("PhantomBrand")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 60, height: 60)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            CheatStoreLogoView(size: 60, cornerRadius: 16)
                 .overlay(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Color.white.opacity(0.38), lineWidth: 1.2)
@@ -829,7 +851,7 @@ struct LoginSuccessIntroView: View {
 
             VStack(spacing: 4) {
                 ShinyTextView(
-                    text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? "CheatStore VN" : CheatStoreLicenseManager.shared.featureConfig.app_name,
+                    text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? AppBrandingTheme.current.appTitle : CheatStoreLicenseManager.shared.featureConfig.app_name,
                     font: .system(size: 23, weight: .heavy, design: .rounded),
                     baseColor: Color(white: 0.88),
                     shineColor: .white,

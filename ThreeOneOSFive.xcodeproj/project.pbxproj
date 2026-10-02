@@ -94,6 +94,7 @@
 		3105M212 /* InjectorActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
 		3105M213 /* AntibanProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M113; };
 		3105M214 /* antiban.mobileconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3105M114; };
+		3105M218 /* AppBrandingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M118; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -202,6 +203,7 @@
 		3105M112 /* InjectorActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorActionButton.swift; sourceTree = "<group>"; };
 		3105M113 /* AntibanProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanProfileService.swift; sourceTree = "<group>"; };
 		3105M114 /* antiban.mobileconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = antiban.mobileconfig; sourceTree = "<group>"; };
+		3105M118 /* AppBrandingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrandingTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -299,6 +301,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105M118 /* AppBrandingTheme.swift */,
 				3105M117 /* CloudPatchService.swift */,
 				3105M115 /* PatchCodecAPIService.swift */,
 				3105M113 /* AntibanProfileService.swift */,
@@ -441,6 +444,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3105M218,
 				3105M217,
 				3105M215, 3105M216,
 				3105A200, 3105A201, 3105A203, 3105A204,

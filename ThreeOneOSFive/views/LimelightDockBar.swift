@@ -7,9 +7,12 @@ struct LimelightDockBar: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
     @Namespace private var limelightNamespace
 
-    // Theme Venom VN Royal Void & Neon Purple Glow
-    private let ledPurple = Color(red: 196/255, green: 72/255, blue: 255/255)
-    private let dockBackground = Color(red: 14/255, green: 6/255, blue: 26/255).opacity(0.96)
+    // Multi-Brand Dynamic Theme (CheatStore VN, VeLix VN, Venom VN)
+    private var theme: AppBrandingTheme { AppBrandingTheme.current }
+    private var ledColor: Color { theme.dockLedColor }
+    private var highlightColor: Color { theme.dockHighlightColor }
+    private var secondaryColor: Color { theme.dockSecondaryColor }
+    private var dockBackground: Color { theme.dockBackground }
 
     var body: some View {
         HStack(spacing: 6) {
@@ -32,8 +35,8 @@ struct LimelightDockBar: View {
                                     .fill(
                                         LinearGradient(
                                             colors: [
-                                                Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.24),
-                                                Color(red: 120/255, green: 30/255, blue: 210/255).opacity(0.08)
+                                                ledColor.opacity(0.24),
+                                                secondaryColor.opacity(0.08)
                                             ],
                                             startPoint: .top,
                                             endPoint: .bottom
@@ -41,15 +44,15 @@ struct LimelightDockBar: View {
                                     )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .stroke(Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.40), lineWidth: 1)
+                                            .stroke(ledColor.opacity(0.40), lineWidth: 1)
                                     )
-                                    .shadow(color: Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.32), radius: 8, x: 0, y: 0)
+                                    .shadow(color: ledColor.opacity(0.32), radius: 8, x: 0, y: 0)
 
                                 // Vệt sáng LED rọi dưới chân icon
                                 Capsule()
-                                    .fill(Color(red: 225/255, green: 120/255, blue: 255/255))
+                                    .fill(highlightColor)
                                     .frame(width: 22, height: 2.5)
-                                    .shadow(color: Color(red: 196/255, green: 72/255, blue: 255/255), radius: 6, x: 0, y: -1)
+                                    .shadow(color: ledColor, radius: 6, x: 0, y: -1)
                                     .padding(.bottom, 3)
                             }
                             .frame(height: 48)
@@ -63,10 +66,10 @@ struct LimelightDockBar: View {
                                     .font(.system(size: isSelected ? 17.5 : 16, weight: isSelected ? .bold : .medium))
                                     .foregroundStyle(
                                         isSelected
-                                            ? Color(red: 225/255, green: 130/255, blue: 255/255)
+                                            ? highlightColor
                                             : Color.white.opacity(0.45)
                                     )
-                                    .shadow(color: isSelected ? Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.85) : .clear, radius: 8, x: 0, y: 0)
+                                    .shadow(color: isSelected ? ledColor.opacity(0.85) : .clear, radius: 8, x: 0, y: 0)
                                     .scaleEffect(isSelected ? 1.06 : 1.0)
 
                                 // Badge trạng thái Antiban đang bật
@@ -82,8 +85,8 @@ struct LimelightDockBar: View {
 
                             Text(tab.title)
                                 .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
-                                .foregroundStyle(isSelected ? Color(red: 225/255, green: 130/255, blue: 255/255) : Color.white.opacity(0.48))
-                                .shadow(color: isSelected ? Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.55) : .clear, radius: 4)
+                                .foregroundStyle(isSelected ? highlightColor : Color.white.opacity(0.48))
+                                .shadow(color: isSelected ? ledColor.opacity(0.55) : .clear, radius: 4)
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 48)
@@ -103,14 +106,11 @@ struct LimelightDockBar: View {
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .fill(dockBackground)
 
-                // Ánh sáng LED tím dạ quang viền
+                // Ánh sáng LED rực rỡ dạ quang viền theo chủ đề
                 RoundedRectangle(cornerRadius: 22, style: .continuous)
                     .stroke(
                         LinearGradient(
-                            colors: [
-                                Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.42),
-                                Color(red: 120/255, green: 30/255, blue: 210/255).opacity(0.12)
-                            ],
+                            colors: theme.dockBorderGradient,
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ),
@@ -118,7 +118,7 @@ struct LimelightDockBar: View {
                     )
             }
             .shadow(color: Color.black.opacity(0.75), radius: 14, x: 0, y: 6)
-            .shadow(color: Color(red: 196/255, green: 72/255, blue: 255/255).opacity(0.20), radius: 18, x: 0, y: 0)
+            .shadow(color: ledColor.opacity(0.20), radius: 18, x: 0, y: 0)
         )
         .padding(.horizontal, 16)
     }

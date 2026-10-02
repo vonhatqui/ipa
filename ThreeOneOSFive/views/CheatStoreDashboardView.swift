@@ -240,27 +240,23 @@ struct CheatStoreDashboardView: View {
     @State private var restoreCompletedSteps: [String] = []
     @State private var isRestoreFinished: Bool = false
 
-    // Venom VN Design Tokens (Royal Void & Neon Purple Glow)
-    private let colorVoid = Color(red: 8/255, green: 3/255, blue: 18/255)
-    private let colorPanel = Color(red: 18/255, green: 8/255, blue: 34/255)
-    private let colorInk = Color(red: 248/255, green: 242/255, blue: 255/255)
-    private let colorMute = Color(red: 175/255, green: 150/255, blue: 200/255)
-    private let accentPurple = Color(red: 186/255, green: 82/255, blue: 253/255)
-    private let glassBg = Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.08)
-    private let glassBorder = Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.22)
+    // Multi-Brand Dynamic Theme (CheatStore VN, VeLix VN, Venom VN)
+    private var theme: AppBrandingTheme { AppBrandingTheme.current }
+    private var colorVoid: Color { theme.colorVoid }
+    private var colorPanel: Color { theme.colorPanel }
+    private var colorInk: Color { theme.colorInk }
+    private var colorMute: Color { theme.colorMute }
+    private var glassBg: Color { theme.glassBg }
+    private var glassBorder: Color { theme.glassBorder }
 
     var body: some View {
         ZStack {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Royal Void & Neon Purple LED ambient glow (Venom VN Theme)
+            // Vầng sáng LED Ambient rực rỡ theo chủ đề
             RadialGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.22),
-                    Color(red: 110/255, green: 20/255, blue: 190/255).opacity(0.08),
-                    Color.clear
-                ]),
+                gradient: Gradient(colors: theme.ambientGlowGradient),
                 center: .top,
                 startRadius: 20,
                 endRadius: 420
@@ -585,7 +581,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandHeaderTitle: String {
-        return "Venom VN"
+        return theme.appTitle
     }
 
     private var auroraGameSubtitle: String {
@@ -593,24 +589,17 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandCenterTag: String {
-        return "Discord: @Venomvn01"
+        return theme.discordTag
     }
 
-// MARK: - Rainbow Animated Text (Chữ 7 màu dạ quang huyền bí hoàng gia theo Logo Venom VN)
+// MARK: - Rainbow Animated Text (Chữ 7 màu dạ quang huyền bí đồng bộ theo thương hiệu)
 struct RainbowText: View {
     let text: String
     @State private var animateGradient: Bool = false
 
-    private let rainbowColors: [Color] = [
-        Color(red: 0.85, green: 0.35, blue: 1.00),  // Bright Neon Violet
-        Color(red: 0.72, green: 0.20, blue: 0.98),  // Electric Purple
-        Color(red: 0.55, green: 0.10, blue: 0.95),  // Deep Royal Violet
-        Color(red: 0.95, green: 0.60, blue: 1.00),  // Glowing Orchid
-        Color(red: 1.00, green: 1.00, blue: 1.00),  // Pure White Shimmer
-        Color(red: 0.80, green: 0.30, blue: 1.00),  // Neon Violet
-        Color(red: 0.65, green: 0.15, blue: 0.92),  // Venom Purple
-        Color(red: 0.85, green: 0.35, blue: 1.00)   // Loop
-    ]
+    private var rainbowColors: [Color] {
+        AppBrandingTheme.current.rainbowColors
+    }
 
     var body: some View {
         Text(text)
@@ -627,7 +616,7 @@ struct RainbowText: View {
                         .font(.system(size: 23, weight: .black, design: .rounded))
                 )
             )
-            .shadow(color: Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.65), radius: 14, x: 0, y: 0)
+            .shadow(color: AppBrandingTheme.current.accentColor.opacity(0.65), radius: 14, x: 0, y: 0)
             .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
             .onAppear {
                 withAnimation(
@@ -643,24 +632,20 @@ struct RainbowText: View {
     // MARK: - Top Header (.main-head bx-head)
     private var topHeaderView: some View {
         HStack(spacing: 12) {
-            Image("PhantomBrand")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 40, height: 40)
-                .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
+            CheatStoreLogoView(size: 40, cornerRadius: 11)
                 .overlay(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.55), lineWidth: 1.2)
+                        .stroke(theme.accentColor.opacity(0.55), lineWidth: 1.2)
                 )
-                .shadow(color: Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.45), radius: 8, x: 0, y: 0)
+                .shadow(color: theme.accentColor.opacity(0.45), radius: 8, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedTab.title.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(3.2)
-                    .foregroundColor(Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.85))
+                    .foregroundColor(theme.accentColor.opacity(0.85))
 
-                Text(licenseManager.featureConfig.app_name.isEmpty ? "Venom VN" : licenseManager.featureConfig.app_name)
+                Text(licenseManager.featureConfig.app_name.isEmpty ? theme.appTitle : licenseManager.featureConfig.app_name)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .tracking(-0.6)
                     .foregroundColor(colorInk)
@@ -698,7 +683,7 @@ struct RainbowText: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Tên Discord (7 màu chạy tới lui) & Mô tả hỗ trợ & 2 icon Zalo / Tele
+            // CHÍNH GIỮA: Tên Discord (7 màu chạy tới lui) & Mô tả hỗ trợ & các icon Zalo / Tele
             VStack(spacing: 8) {
                 RainbowText(text: brandCenterTag)
 
@@ -706,37 +691,68 @@ struct RainbowText: View {
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.65))
 
-                // Nút nhỏ đường dẫn Zalo (tele không có)
+                // Nút nhỏ đường dẫn Zalo / Telegram theo thương hiệu
                 HStack(spacing: 16) {
                     // Nút Zalo
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if let url = URL(string: "https://zalo.me/095826667") {
+                    if let zaloURL = theme.zaloURLString, let url = URL(string: zaloURL) {
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             UIApplication.shared.open(url)
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.05, green: 0.58, blue: 1.0), Color(red: 0.0, green: 0.38, blue: 0.85)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color(red: 0.05, green: 0.58, blue: 1.0), Color(red: 0.0, green: 0.38, blue: 0.85)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
                                     )
-                                )
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
-                                )
-                                .shadow(color: Color.blue.opacity(0.55), radius: 6, x: 0, y: 2)
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
+                                    )
+                                    .shadow(color: Color.blue.opacity(0.55), radius: 6, x: 0, y: 2)
 
-                            Text("Z")
-                                .font(.system(size: 20, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
+                                Text("Z")
+                                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
                         }
+                        .buttonStyle(AuroraScaleButtonStyle())
                     }
-                    .buttonStyle(AuroraScaleButtonStyle())
+
+                    // Nút Telegram (tự động ẩn nếu thương hiệu không có tele)
+                    if let teleURL = theme.telegramURLString, let url = URL(string: teleURL) {
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            UIApplication.shared.open(url)
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        LinearGradient(
+                                            colors: [Color(red: 0.18, green: 0.68, blue: 0.93), Color(red: 0.08, green: 0.50, blue: 0.78)],
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        )
+                                    )
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
+                                    )
+                                    .shadow(color: Color.cyan.opacity(0.55), radius: 6, x: 0, y: 2)
+
+                                Image(systemName: "paperplane.fill")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .offset(x: -1, y: 1)
+                            }
+                        }
+                        .buttonStyle(AuroraScaleButtonStyle())
+                    }
                 }
                 .padding(.top, 6)
             }
@@ -1772,19 +1788,16 @@ struct RainbowText: View {
                 // 1. Thẻ Thông Tin Ứng Dụng & Key
                 VStack(alignment: .leading, spacing: 14) {
                     HStack(spacing: 14) {
-                        Image("PhantomBrand")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        CheatStoreLogoView(size: 48, cornerRadius: 14)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 14)
-                                    .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
+                                    .stroke(theme.accentColor.opacity(0.4), lineWidth: 1.2)
                             )
+                            .shadow(color: theme.accentColor.opacity(0.35), radius: 8, x: 0, y: 0)
 
                         VStack(alignment: .leading, spacing: 3) {
                             HStack(spacing: 6) {
-                                Text("CheatStore VN")
+                                Text(theme.appTitle)
                                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                                     .foregroundColor(colorInk)
                                 Image(systemName: "checkmark.seal.fill")
@@ -1792,9 +1805,9 @@ struct RainbowText: View {
                                     .foregroundColor(.green)
                             }
 
-                            Text("Chủ sở hữu: Võ Nhật Qui (CheatVN)")
+                            Text("Bản quyền: \(theme.appTitle)")
                                 .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(Color.orange)
+                                .foregroundColor(theme.accentColor)
                         }
 
                         Spacer()
@@ -1803,7 +1816,7 @@ struct RainbowText: View {
                     Divider().background(Color.white.opacity(0.08))
 
                     // Tên App
-                    metaRow(label: "Tên App", value: "\(licenseManager.featureConfig.app_name) (v2.0)")
+                    metaRow(label: "Tên App", value: "\(theme.appTitle) (v2.4)")
 
                     Divider().background(Color.white.opacity(0.08))
 
