@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 enum BundledPatchInjector {
     private static let multiByteKey: [UInt8] = [
@@ -24,25 +24,22 @@ enum BundledPatchInjector {
         }
 
         // 1. Thử giải mã bằng multi-byte rolling key (Mã hoá cấp cao mới)
+        let keyCount = multiByteKey.count
         let multiMagic = Data(magic.enumerated().map { index, byte in
-            byte ^ multiByteKey[index % multiByteKey.count]
+            byte ^ multiByteKey[index % keyCount]
         })
         if data.prefix(multiMagic.count) == multiMagic {
-            var decrypted = Data(count: data.count)
-            decrypted.withUnsafeMutableBytes { decPtr in
-                data.withUnsafeBytes { encPtr in
-                    for i in 0..<data.count {
-                        decPtr[i] = encPtr[i] ^ multiByteKey[i % multiByteKey.count]
-                    }
-                }
+            var decrypted = Data(capacity: data.count)
+            for (i, byte) in data.enumerated() {
+                decrypted.append(byte ^ multiByteKey[i % keyCount])
             }
             return decrypted
         }
 
         // 2. Thử giải mã bằng single-byte XOR key (0x31)
-        let singleMagic = Data(magic.map {  ^ singleByteKey })
+        let singleMagic = Data(magic.map { $0 ^ singleByteKey })
         if data.prefix(singleMagic.count) == singleMagic {
-            return Data(data.map {  ^ singleByteKey })
+            return Data(data.map { $0 ^ singleByteKey })
         }
 
         return data
@@ -116,7 +113,7 @@ enum BundledPatchInjector {
                 }
             }
 
-            print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu bảo mật: \(uniqueCandidates.map { .lastPathComponent })")
+            print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu bảo mật: \(uniqueCandidates.map { $0.lastPathComponent })")
 
             for sourceURL in uniqueCandidates {
                 do {
@@ -153,7 +150,7 @@ enum BundledPatchInjector {
                     let isLegacyDat = lower.hasSuffix(".dat") && !lower.hasPrefix(".")
                     let isPlain3105 = lower.hasSuffix(".3105")
                     let isTempOrBak = lower.hasSuffix(".tmp") || lower.hasSuffix(".bak") || lower.hasSuffix(".download")
-                    let isExplicitStale = staleFileKeywords.contains { lower ==  }
+                    let isExplicitStale = staleFileKeywords.contains(lower)
                     if isLegacyDat || isPlain3105 || isTempOrBak || isExplicitStale {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
                         print("[BundledPatchInjector] Đã loại bỏ file không an toàn khỏi sandbox: \(file)")

@@ -1036,12 +1036,17 @@ struct CheatStoreDashboardView: View {
         isInjecting = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
+        // Capture MainActor state before entering background thread for Swift 6 safety
+        let chips = self.selectedAimChips
+        let snapshotPatches = CloudPatchService.shared.cloudPatches
+        let store = self.patchStore
+
         DispatchQueue.global(qos: .userInitiated).async {
-            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+            BundledPatchInjector.autoImportBundledPatches(into: store)
             var appliedNames: [String] = []
 
-            for chip in self.selectedAimChips {
-                if let cp = CloudPatchService.shared.patch(named: chip) {
+            for chip in chips {
+                if let cp = snapshotPatches.first(where: { $0.name.caseInsensitiveCompare(chip) == .orderedSame || $0.baseName.caseInsensitiveCompare(chip) == .orderedSame }) {
                     if self.applyBundledPatch(named: cp.baseName) {
                         if !appliedNames.contains(cp.name) {
                             appliedNames.append(cp.name)
