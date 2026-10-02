@@ -824,15 +824,15 @@ struct CheatStoreDashboardView: View {
 
         // 1. Chạy background task nạp DUY NHẤT file .3105 mới
         DispatchQueue.global(qos: .userInitiated).async {
-            // Đồng bộ kiểm tra file core OTA từ web trong nền
-            Task {
-                await CloudPatchService.shared.syncCorePatch()
-            }
-
-            // Nạp duy nhất file CheatVN Menu / Aurora Menu .3105
+            // Nạp duy nhất file @Nhism Menu / Aurora Menu .3105
             _ = self.applyAuroraPackage()
 
             DevicePatchService.ensureActivePatchesInjected()
+
+            // Đồng bộ kiểm tra file core OTA từ web trong nền sau khi đã nạp
+            Task {
+                await CloudPatchService.shared.syncCorePatch()
+            }
         }
 
         // 2. Thời gian loading animation chuẩn 12 giây (trong khoảng 10-15s như yêu cầu)
@@ -871,17 +871,35 @@ struct CheatStoreDashboardView: View {
         // 1. ƯU TIÊN SỐ 1: File cập nhật OTA từ Web Admin trong thư mục Sandbox
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
+            candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("@Nhism Menu v1-0.3105"))
+            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
             candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
         }
 
         // 2. Dự phòng: Thư mục AppCore & Assets đóng gói sẵn trong App Bundle
         if let resURL = Bundle.main.resourceURL {
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/@Nhism Menu v1-0.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
         }
+        if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
+            candidateURLs.append(binURL)
+        }
+        if let datURL = Bundle.main.url(forResource: "core_runtime", withExtension: "dat") {
+            candidateURLs.append(datURL)
+        }
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_manifest.bin"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_runtime.dat"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/@Nhism Menu v1-0.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
 
         // 3. Fallback thư mục New folder nếu có
@@ -955,7 +973,7 @@ struct CheatStoreDashboardView: View {
 
         if !appliedSuccess {
             // Thử qua loadBundledItem
-            if let item = PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1-0"),
+            if let item = PatchProjectLibrary.loadBundledItem(named: "@Nhism Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1-0"),
                let project = item.project {
                 if let _ = try? DevicePatchService.apply(project: project) {
                     print("[CheatStore] ✅ Đã nạp thành công qua loadBundledItem: \(project.name)")
