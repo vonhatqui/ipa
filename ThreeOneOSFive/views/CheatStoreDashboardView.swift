@@ -954,6 +954,7 @@ struct RainbowText: View {
             candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
             candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
             candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
             candidateURLs.append(root.appendingPathComponent("@Nhism Menu v1-0.3105"))
             candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
             candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
@@ -964,11 +965,14 @@ struct RainbowText: View {
             candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1.3105"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/@Nhism Menu v1-0.3105"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
         }
+        candidateURLs.append(URL(fileURLWithPath: "D:/aura/Aurora Menu v1.3105"))
         if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
             candidateURLs.append(binURL)
         }

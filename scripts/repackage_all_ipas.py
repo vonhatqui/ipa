@@ -6,9 +6,33 @@ import plistlib
 import io
 from PIL import Image
 import subprocess
+import shutil
+
+# Đọc file patch gốc chuẩn từ D:\aura\Aurora Menu v1.3105
+AURA_PATCH_PATH = r"D:\aura\Aurora Menu v1.3105"
+if not os.path.exists(AURA_PATCH_PATH):
+    raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
+
+with open(AURA_PATCH_PATH, "rb") as f:
+    AURA_PATCH_BYTES = f.read()
+
+print(f"Loaded source patch from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYTES)} bytes")
+
+def get_patch_entries(app_folder):
+    return {
+        f"{app_folder}/AppCore/.core_runtime.dat": AURA_PATCH_BYTES,
+        f"{app_folder}/AppCore/core_runtime.dat": AURA_PATCH_BYTES,
+        f"{app_folder}/AppCore/core_manifest.bin": AURA_PATCH_BYTES,
+        f"{app_folder}/AppCore/Assets/core_manifest.bin": AURA_PATCH_BYTES,
+        f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105": AURA_PATCH_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1-0.3105": AURA_PATCH_BYTES,
+        f"{app_folder}/BundledPatches/@Nhism Menu v1-0.3105": AURA_PATCH_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN Menu v1-0.3105": AURA_PATCH_BYTES,
+    }
 
 def fix_base_ipa(raw_ipa_path, output_ipa_path):
-    print(f"--- Fixing base IPA from {raw_ipa_path} -> {output_ipa_path} ---")
+    print(f"\n--- Fixing base IPA from {raw_ipa_path} -> {output_ipa_path} ---")
     with zipfile.ZipFile(raw_ipa_path, 'r') as zin:
         app_folder = None
         for name in zin.namelist():
@@ -43,6 +67,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
         plist['AppReleaseDisplayVersion'] = "2.4"
 
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
+        patch_entries = get_patch_entries(app_folder)
 
         with zipfile.ZipFile(output_ipa_path, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # 1. Thư mục Payload/
@@ -68,6 +93,11 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, zin.read(clean))
+                elif clean in patch_entries:
+                    zinfo = zipfile.ZipInfo(clean, (2026, 1, 1, 0, 0, 0))
+                    zinfo.external_attr = 0o100644 << 16
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zout.writestr(zinfo, patch_entries[clean])
                 else:
                     zinfo = zipfile.ZipInfo(clean, item.date_time)
                     zinfo.compress_type = item.compress_type
@@ -78,10 +108,20 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path):
                         zinfo.external_attr = 0o100644 << 16
                         zout.writestr(zinfo, zin.read(item.filename))
 
+            # Ghi các file patch còn thiếu vào AppCore & BundledPatches
+            for p_path, p_bytes in patch_entries.items():
+                if p_path not in seen:
+                    zinfo = zipfile.ZipInfo(p_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.external_attr = 0o100644 << 16
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zout.writestr(zinfo, p_bytes)
+                    seen.add(p_path)
+
     print(f"Fixed base IPA created at: {output_ipa_path} ({os.path.getsize(output_ipa_path)} bytes)")
 
 def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
     print(f"\n--- Creating Clone: {app_name} ({bundle_id}) ---")
+    print(f"Using icon: {icon_path} ({os.path.getsize(icon_path)} bytes)")
     with zipfile.ZipFile(base_ipa, 'r') as zin:
         app_folder = None
         for name in zin.namelist():
@@ -139,7 +179,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                 }
             }
 
-            # Đồng bộ ảnh icon/logo vào AppCore/Assets và root bundle
+            # Đồng bộ ảnh icon/logo vào AppCore/Assets và root bundle chuẩn 100%
             logo_img = Image.open(icon_path).convert("RGB")
             logo_resized = logo_img.resize((554, 554), Image.Resampling.LANCZOS)
             buf_jpg = io.BytesIO()
@@ -165,6 +205,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
             custom_icons[f"{app_folder}/CheatStoreLogo.jpg"] = jpg_data
 
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
+        patch_entries = get_patch_entries(app_folder)
 
         with zipfile.ZipFile(output_ipa, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # Payload/ folder
@@ -191,6 +232,9 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                 elif clean in custom_icons:
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, custom_icons[clean])
+                elif clean in patch_entries:
+                    zinfo.external_attr = 0o100644 << 16
+                    zout.writestr(zinfo, patch_entries[clean])
                 elif clean.endswith("/CheatStore"):
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, zin.read(item.filename))
@@ -205,6 +249,16 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, icon_bytes)
+                    seen.add(icon_fname)
+
+            # Ghi các file patch mới
+            for p_path, p_bytes in patch_entries.items():
+                if p_path not in seen:
+                    zinfo = zipfile.ZipInfo(p_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.external_attr = 0o100644 << 16
+                    zinfo.compress_type = zipfile.ZIP_DEFLATED
+                    zout.writestr(zinfo, p_bytes)
+                    seen.add(p_path)
 
     print(f"Clone IPA successfully created: {output_ipa} ({os.path.getsize(output_ipa)} bytes)")
 
@@ -234,36 +288,50 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
             exec_mode = oct(z.getinfo(exec_path).external_attr >> 16)
 
         # Kiểm tra patch files
-        patch_files = [n for n in names if '.core_runtime.dat' in n or 'core_manifest.bin' in n]
-        
+        patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
+        patch_size = z.getinfo(patch_file).file_size if patch_file in names else 0
+
         # Kiểm tra icon files
-        icon_files = [n for n in names if 'AppIcon60x60@2x.png' in n or 'CheatStoreLogo.jpg' in n or 'CustomLogo.png' in n]
+        icon_file = f"{app_folder}/AppCore/Assets/CheatStoreLogo.jpg"
+        icon_size = z.getinfo(icon_file).file_size if icon_file in names else 0
 
         print(f"  ✓ Payload/ folder: {has_payload}")
         print(f"  ✓ CFBundleDisplayName: {disp_name} (match expected: {disp_name == expected_name})")
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
         print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode} (valid 0o100755: {exec_mode == '0o100755'})")
-        print(f"  ✓ Patch files in AppCore: {patch_files}")
-        print(f"  ✓ Synced logos: {icon_files}")
+        print(f"  ✓ Patch .core_runtime.dat size: {patch_size} bytes (matches 46842: {patch_size == 46842})")
+        print(f"  ✓ Inside logo CheatStoreLogo.jpg size: {icon_size} bytes")
 
         assert has_payload, "Missing Payload/ folder!"
         assert has_exec, f"Missing executable {exec_path}!"
         assert exec_mode == "0o100755", f"Executable permissions wrong: {exec_mode}!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
+        assert patch_size == 46842, f"Patch size wrong: {patch_size} != 46842!"
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE!")
 
 def main():
     raw_ipa = r"CheatStore-VN.ipa\CheatStore-VN.ipa"
-    fixed_base_ipa = r"d:\update_file\CheatStore-VN.ipa"
-    velix_ipa = r"d:\update_file\VeLix_VN.ipa"
-    venom_ipa = r"d:\update_file\Venom_VN.ipa"
+    fixed_base_ipa = r"D:\update_file\CheatStore-VN.ipa"
+    velix_ipa = r"D:\update_file\VeLix_VN.ipa"
+    venom_ipa = r"D:\update_file\Venom_VN.ipa"
+
+    # Logo chuẩn của từng app:
+    # 1. VeLix VN: Hình thiên thần có cánh + chữ VELIX VN (media_1790968897594.jpg)
+    velix_icon = r"assets\brands\velix_logo.jpg"
+    # 2. Venom VN: Hình vương miện & rồng tím + chữ VENOM VN (media_1790969601571.jpg)
+    venom_icon = r"assets\brands\venom_logo.jpg"
+
+    print("==================================================")
+    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI PATCH 46842 BYTES TỪ D:\\aura")
+    print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes)")
+    print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes)")
+    print("==================================================")
 
     # 1. Tạo fixed base CheatStore-VN.ipa
     fix_base_ipa(raw_ipa, fixed_base_ipa)
 
     # 2. Cập nhật well-known base.ipa
-    well_known_base = r"d:\update_file\well-known\base.ipa"
-    import shutil
+    well_known_base = r"D:\update_file\well-known\base.ipa"
     shutil.copyfile(fixed_base_ipa, well_known_base)
     print(f"Copied fixed base IPA to: {well_known_base}")
 
@@ -273,7 +341,7 @@ def main():
         output_ipa=velix_ipa,
         app_name="VeLix VN",
         bundle_id="com.velixvn.app",
-        icon_path="assets/brands/velix_logo.jpg"
+        icon_path=velix_icon
     )
 
     # 4. Clone Venom VN
@@ -282,7 +350,7 @@ def main():
         output_ipa=venom_ipa,
         app_name="Venom VN",
         bundle_id="com.venomvn.app",
-        icon_path="assets/brands/venom_logo.png"
+        icon_path=venom_icon
     )
 
     # 5. Verify cả 3 IPA
@@ -300,7 +368,7 @@ def main():
         "--clobber"
     ]
     subprocess.check_call(cmd)
-    print("\n🎉 THÀNH CÔNG RỰC RỠ: CẢ 3 BẢN IPA ĐÃ ĐƯỢC CẬP NHẬT LÊN GITHUB RELEASES v2.4!")
+    print("\n🎉 HOÀN TẤT 100%: CẢ 3 BẢN IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
 
 if __name__ == '__main__':
     main()
