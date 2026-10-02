@@ -100,7 +100,7 @@ struct GameSelectionView: View {
             CheatStoreLogoView(size: 38, cornerRadius: 10)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(licenseManager.featureConfig.app_name.isEmpty ? "Venom VN" : licenseManager.featureConfig.app_name)
+                Text(AppBrandingTheme.current.appTitle)
                     .font(.system(size: 17, weight: .heavy, design: .rounded))
                     .foregroundColor(colorInk)
 

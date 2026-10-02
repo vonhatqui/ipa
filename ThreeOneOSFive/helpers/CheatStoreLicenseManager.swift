@@ -31,7 +31,7 @@ public struct FeatureMaintenanceConfig: Codable {
     public var skin: Bool = true                // Mod Skin VIP
     public var swift_ios: Bool = true           // Swift iOS VIP
 
-    public var app_name: String = "Venom VN"
+    public var app_name: String = AppBrandingTheme.current.appTitle
     public var app_subtitle: String = "iOS • External VIP"
     public var announcement: String = ""
     public var is_app_safe: Bool = true         // Trạng thái an toàn toàn bộ app
@@ -49,7 +49,7 @@ public struct FeatureMaintenanceConfig: Codable {
         esp: Bool = true,
         skin: Bool = true,
         swift_ios: Bool = true,
-        app_name: String = "Venom VN",
+        app_name: String = AppBrandingTheme.current.appTitle,
         app_subtitle: String = "iOS • External VIP",
         announcement: String = "",
         is_app_safe: Bool = true,
@@ -707,8 +707,10 @@ final class CheatStoreLicenseManager: ObservableObject {
         var didChange = false
 
         if let name = json["app_name"] as? String, !name.isEmpty {
-            updated.app_name = name
-            didChange = true
+            if AppBrandingTheme.current == .cheatStore {
+                updated.app_name = name
+                didChange = true
+            }
         }
         if let sub = json["app_subtitle"] as? String, !sub.isEmpty {
             updated.app_subtitle = sub

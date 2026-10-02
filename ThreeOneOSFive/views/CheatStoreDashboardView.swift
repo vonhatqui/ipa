@@ -645,7 +645,7 @@ struct RainbowText: View {
                     .tracking(3.2)
                     .foregroundColor(theme.accentColor.opacity(0.85))
 
-                Text(licenseManager.featureConfig.app_name.isEmpty ? theme.appTitle : licenseManager.featureConfig.app_name)
+                Text(theme.appTitle)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .tracking(-0.6)
                     .foregroundColor(colorInk)

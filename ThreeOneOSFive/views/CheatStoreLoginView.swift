@@ -82,7 +82,7 @@ struct CheatStoreLoginView: View {
             CheatStoreLogoView(size: 44, cornerRadius: 12)
 
             ShinyTextView(
-                text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? AppBrandingTheme.current.appTitle : CheatStoreLicenseManager.shared.featureConfig.app_name,
+                text: AppBrandingTheme.current.appTitle,
                 font: .system(size: 21, weight: .bold, design: .rounded),
                 baseColor: Color(red: 0.78, green: 0.78, blue: 0.82),
                 shineColor: .white,
@@ -851,7 +851,7 @@ struct LoginSuccessIntroView: View {
 
             VStack(spacing: 4) {
                 ShinyTextView(
-                    text: CheatStoreLicenseManager.shared.featureConfig.app_name.isEmpty ? AppBrandingTheme.current.appTitle : CheatStoreLicenseManager.shared.featureConfig.app_name,
+                    text: AppBrandingTheme.current.appTitle,
                     font: .system(size: 23, weight: .heavy, design: .rounded),
                     baseColor: Color(white: 0.88),
                     shineColor: .white,
