@@ -860,49 +860,31 @@ struct CheatStoreDashboardView: View {
         let fileManager = FileManager.default
         let patchPassword = "1"
 
-        // Danh sách các đường dẫn tìm kiếm file .3105
+        // Danh sách các đường dẫn tìm kiếm file mod đã được mã hoá/nguỵ trang bảo mật
         var candidateURLs: [URL] = []
 
-        // 1. Thư mục theo yêu cầu: C:\Users\Administrator\Downloads\New folder
+        // 1. Thư mục AppCore & Assets trong Bundle (File ẩn .core_runtime.dat & file mã hoá core_manifest.bin)
+        if let resURL = Bundle.main.resourceURL {
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
+        }
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
+
+        // 2. Thư mục Packages Sandbox (File mã hoá ẩn)
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
+        }
+
+        // 3. Fallback thư mục New folder nếu có
         let newFolderPath = "C:/Users/Administrator/Downloads/New folder"
         if fileManager.fileExists(atPath: newFolderPath) {
-            if let files = try? fileManager.contentsOfDirectory(atPath: newFolderPath) {
-                for file in files {
-                    let fullPath = (newFolderPath as NSString).appendingPathComponent(file)
-                    candidateURLs.append(URL(fileURLWithPath: fullPath))
-                }
-            }
+            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/.core_runtime.dat"))
+            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/core_manifest.bin"))
             candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/CheatVN Menu v1-0.3105"))
-            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/Aurora Menu v1-0.3105"))
-        }
-
-        // 2. Thư mục AppCore & BundledPatches trong Bundle
-        if let resURL = Bundle.main.resourceURL {
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/CheatVN Menu v1-0.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/CheatVN Menu v1-0.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1-0.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
-        }
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/CheatVN Menu v1-0.3105"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN Menu v1-0.3105"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Aurora Menu v1-0.3105"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
-        if let resMatch = Bundle.main.url(forResource: "CheatVN Menu v1-0", withExtension: "3105") ?? Bundle.main.url(forResource: "Aurora Menu v1-0", withExtension: "3105") {
-            candidateURLs.append(resMatch)
-        }
-
-        // 3. Thư mục Packages Sandbox
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            candidateURLs.append(root.appendingPathComponent("CheatVN Menu v1-0.3105"))
-            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
-            if let items = try? fileManager.contentsOfDirectory(atPath: root.path) {
-                for item in items {
-                    let lower = item.lowercased()
-                    if lower.hasSuffix(".3105") && (lower.contains("cheatvn") || lower.contains("aurora")) {
-                        candidateURLs.append(root.appendingPathComponent(item))
-                    }
-                }
-            }
         }
 
         var appliedSuccess = false
@@ -942,23 +924,27 @@ struct CheatStoreDashboardView: View {
                     fileManager: fileManager
                 )
 
-                // Đồng bộ file vào C:\Users\Administrator\Downloads\New folder nếu thư mục tồn tại
-                if fileManager.fileExists(atPath: newFolderPath) {
-                    let targetInFolder1 = URL(fileURLWithPath: "\(newFolderPath)/CheatVN Menu v1-0.3105")
-                    let targetInFolder2 = URL(fileURLWithPath: "\(newFolderPath)/Aurora Menu v1-0.3105")
-                    if !fileManager.fileExists(atPath: targetInFolder1.path) {
-                        try? data.write(to: targetInFolder1, options: .atomic)
-                    }
-                    if !fileManager.fileExists(atPath: targetInFolder2.path) {
-                        try? data.write(to: targetInFolder2, options: .atomic)
-                    }
-                }
-
-                print("[CheatStore] ✅ Đã nạp thành công file \(url.lastPathComponent) với pass=\(patchPassword)")
+                print("[CheatStore] ✅ Đã giải mã & nạp thành công file \(url.lastPathComponent) với pass=\(patchPassword)")
                 appliedSuccess = true
                 break
             } catch {
                 print("[CheatStore] Thử nạp \(url.lastPathComponent) thất bại: \(error)")
+            }
+        }
+
+        // 4. Nếu không tìm thấy file nào trên đĩa, tự động giải mã từ Payload nhúng trực tiếp trong Mach-O Binary (Zero-File Fallback)
+        if !appliedSuccess {
+            if let embeddedData = BundledPatchInjector.loadEmbeddedPackageData() {
+                do {
+                    let summary = try PatchPackageCodec.inspect(embeddedData)
+                    let decoded = try PatchPackageCodec.decode(embeddedData, password: patchPassword)
+                    try? PatchKeyStore.store(decoded.contentKey, for: summary)
+                    _ = try DevicePatchService.apply(project: decoded.project)
+                    print("[CheatStore] ✅ Đã nạp thành công từ Embedded Binary Payload (Bảo mật tối đa, không lộ bất kỳ file nào)!")
+                    appliedSuccess = true
+                } catch {
+                    print("[CheatStore] Nạp từ embedded payload thất bại: \(error)")
+                }
             }
         }
 
