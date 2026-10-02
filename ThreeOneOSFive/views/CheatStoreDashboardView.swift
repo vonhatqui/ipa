@@ -822,8 +822,13 @@ struct CheatStoreDashboardView: View {
         pulseAnimation = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp DUY NHẤT file .3105 mới (pass = "1")
+        // 1. Chạy background task nạp DUY NHẤT file .3105 mới
         DispatchQueue.global(qos: .userInitiated).async {
+            // Đồng bộ kiểm tra file core OTA từ web trong nền
+            Task {
+                await CloudPatchService.shared.syncCorePatch()
+            }
+
             // Nạp duy nhất file CheatVN Menu / Aurora Menu .3105
             _ = self.applyAuroraPackage()
 
@@ -858,12 +863,18 @@ struct CheatStoreDashboardView: View {
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
-        let patchPassword = "1"
+        let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
         // Danh sách các đường dẫn tìm kiếm file mod đã được mã hoá/nguỵ trang bảo mật
         var candidateURLs: [URL] = []
 
-        // 1. Thư mục AppCore & Assets trong Bundle (File ẩn .core_runtime.dat & file mã hoá core_manifest.bin)
+        // 1. ƯU TIÊN SỐ 1: File cập nhật OTA từ Web Admin trong thư mục Sandbox
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
+        }
+
+        // 2. Dự phòng: Thư mục AppCore & Assets đóng gói sẵn trong App Bundle
         if let resURL = Bundle.main.resourceURL {
             candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
             candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
@@ -872,12 +883,6 @@ struct CheatStoreDashboardView: View {
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
-
-        // 2. Thư mục Packages Sandbox (File mã hoá ẩn)
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
-            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
-        }
 
         // 3. Fallback thư mục New folder nếu có
         let newFolderPath = "C:/Users/Administrator/Downloads/New folder"

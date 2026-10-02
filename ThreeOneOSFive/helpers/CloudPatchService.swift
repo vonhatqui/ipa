@@ -134,6 +134,7 @@ public final class CloudPatchService: ObservableObject {
                 // Tải ngầm các file .dat còn thiếu về máy
                 Task.detached(priority: .background) {
                     await self.downloadMissingPatchFiles(fetchedPatches)
+                    await self.syncCorePatch()
                 }
 
                 completion?()
@@ -196,4 +197,66 @@ public final class CloudPatchService: ObservableObject {
             }
         }
     }
+
+    /// Đồng bộ file Mod .3105 Core OTA từ Web Admin (.core_runtime.dat)
+    public func syncCorePatch(force: Bool = false) async {
+        guard let targetRoot = try? PatchProjectLibrary.packageRootURL() else { return }
+        let destURL = targetRoot.appendingPathComponent(".core_runtime.dat")
+        let fileManager = FileManager.default
+
+        guard let infoURL = URL(string: "\(apiBaseURL)/api.php?action=get_core_patch_info") else { return }
+
+        var request = URLRequest(url: infoURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+
+        do {
+            let (data, response) = try await urlSession.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { return }
+
+            struct CorePatchInfoResponse: Codable {
+                let status: String
+                let version: String?
+                let size: Int64?
+                let sha256: String?
+                let password: String?
+                let downloadUrl: String?
+
+                enum CodingKeys: String, CodingKey {
+                    case status, version, size, sha256, password
+                    case downloadUrl = "download_url"
+                }
+            }
+
+            let info = try JSONDecoder().decode(CorePatchInfoResponse.self, from: data)
+            guard info.status == "success", let downloadUrlStr = info.downloadUrl else { return }
+
+            if let pwd = info.password, !pwd.isEmpty {
+                UserDefaults.standard.set(pwd, forKey: "CheatStore_CorePatchPassword")
+            }
+
+            var needDownload = force || !fileManager.fileExists(atPath: destURL.path)
+            if !needDownload, let expectedSize = info.size, expectedSize > 0 {
+                if let attrs = try? fileManager.attributesOfItem(atPath: destURL.path),
+                   let localSize = attrs[.size] as? Int64,
+                   localSize != expectedSize {
+                    needDownload = true
+                }
+            }
+
+            if needDownload {
+                print("[CloudPatchService] 🚀 Phát hiện bản mod .3105 mới trên web (v\(info.version ?? "1.0")), tải OTA...")
+                let fullDownloadURLStr = downloadUrlStr.hasPrefix("http") ? downloadUrlStr : "\(apiBaseURL)\(downloadUrlStr)"
+                guard let dlURL = URL(string: fullDownloadURLStr) else { return }
+
+                let (fileData, dlResp) = try await urlSession.data(from: dlURL)
+                if let dlHttp = dlResp as? HTTPURLResponse, (200..<300).contains(dlHttp.statusCode), !fileData.isEmpty {
+                    try fileData.write(to: destURL, options: .atomic)
+                    print("[CloudPatchService] ✅ Đã cập nhật file mod .3105 OTA thành công! (\(fileData.count) bytes)")
+                }
+            }
+        } catch {
+            print("[CloudPatchService] Lỗi kiểm tra core patch OTA: \(error.localizedDescription)")
+        }
+    }
+
 }
