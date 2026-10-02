@@ -599,6 +599,51 @@ struct CheatStoreDashboardView: View {
         return "Discord: @jinwwostore.vn"
     }
 
+// MARK: - Rainbow Animated Text (Chữ 7 màu chạy tới chạy lui)
+struct RainbowText: View {
+    let text: String
+    @State private var animateGradient: Bool = false
+
+    private let rainbowColors: [Color] = [
+        Color(red: 1.00, green: 0.20, blue: 0.35),  // Đỏ
+        Color(red: 1.00, green: 0.55, blue: 0.05),  // Cam
+        Color(red: 1.00, green: 0.88, blue: 0.12),  // Vàng
+        Color(red: 0.18, green: 0.90, blue: 0.42),  // Lục
+        Color(red: 0.05, green: 0.78, blue: 1.00),  // Lam
+        Color(red: 0.35, green: 0.48, blue: 1.00),  // Chàm
+        Color(red: 0.75, green: 0.28, blue: 1.00),  // Tím
+        Color(red: 1.00, green: 0.30, blue: 0.80),  // Hồng
+        Color(red: 1.00, green: 0.20, blue: 0.35)   // Đỏ (Loop)
+    ]
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 23, weight: .black, design: .rounded))
+            .foregroundColor(.clear)
+            .overlay(
+                LinearGradient(
+                    colors: rainbowColors,
+                    startPoint: animateGradient ? UnitPoint(x: -0.7, y: 0.5) : UnitPoint(x: 0.7, y: 0.5),
+                    endPoint: animateGradient ? UnitPoint(x: 0.5, y: 0.5) : UnitPoint(x: 1.9, y: 0.5)
+                )
+                .mask(
+                    Text(text)
+                        .font(.system(size: 23, weight: .black, design: .rounded))
+                )
+            )
+            .shadow(color: Color.purple.opacity(0.4), radius: 10, x: 0, y: 0)
+            .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
+            .onAppear {
+                withAnimation(
+                    .easeInOut(duration: 2.6)
+                    .repeatForever(autoreverses: true)
+                ) {
+                    animateGradient = true
+                }
+            }
+    }
+}
+
     // MARK: - Top Header (.main-head bx-head)
     private var topHeaderView: some View {
         HStack(spacing: 12) {
@@ -657,62 +702,104 @@ struct CheatStoreDashboardView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Tên Discord & Mô tả hỗ trợ
+            // CHÍNH GIỮA: Tên Discord (7 màu chạy tới lui) & Mô tả hỗ trợ & 2 icon Zalo / Tele
             VStack(spacing: 8) {
-                Text(brandCenterTag)
-                    .font(.system(size: 24, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-                    .shadow(color: Color.white.opacity(0.35), radius: 15, x: 0, y: 0)
-                    .shadow(color: Color.black.opacity(0.8), radius: 10, x: 0, y: 4)
+                RainbowText(text: brandCenterTag)
 
                 Text("Mô tả: Liên hệ khi cần hỗ trợ")
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.65))
+
+                // 2 nút nhỏ đường dẫn Zalo và Telegram (ẩn text sđt/username, chỉ hiện 2 icon nhỏ nhỏ)
+                HStack(spacing: 16) {
+                    // Nút Zalo
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if let url = URL(string: "https://zalo.me/0365829172") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.05, green: 0.58, blue: 1.0), Color(red: 0.0, green: 0.38, blue: 0.85)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
+                                )
+                                .shadow(color: Color.blue.opacity(0.55), radius: 6, x: 0, y: 2)
+
+                            Text("Z")
+                                .font(.system(size: 20, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                    }
+                    .buttonStyle(AuroraScaleButtonStyle())
+
+                    // Nút Telegram
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        if let url = URL(string: "https://t.me/vassco911") {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.18, green: 0.68, blue: 0.93), Color(red: 0.08, green: 0.50, blue: 0.78)],
+                                        startPoint: .top,
+                                        endPoint: .bottom
+                                    )
+                                )
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
+                                )
+                                .shadow(color: Color.cyan.opacity(0.55), radius: 6, x: 0, y: 2)
+
+                            Image(systemName: "paperplane.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.white)
+                                .offset(x: -1, y: 1)
+                        }
+                    }
+                    .buttonStyle(AuroraScaleButtonStyle())
+                }
+                .padding(.top, 6)
             }
             .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
             .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
 
             Spacer()
 
-            // PHÍA DƯỚI: Nút INJECTOR lớn, bo góc, màu tím
+            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn, bo góc
             VStack(spacing: 12) {
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
                 HStack(spacing: 7) {
-                    if isInjecting {
+                    if isInjecting || isRestoringClean {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.85)
                     }
 
                     Text(auroraInstructionText)
-                        .font(.system(size: 13.5, weight: isInjecting ? .semibold : .medium, design: .rounded))
+                        .font(.system(size: 13.5, weight: (isInjecting || isRestoringClean) ? .semibold : .medium, design: .rounded))
                         .foregroundColor(
-                            isInjecting ? Color.white : (isInjected ? Color.green.opacity(0.9) : Color.white.opacity(0.55))
+                            (isInjecting || isRestoringClean) ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.55))
                         )
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
-
-                // Nút phụ khôi phục file gốc nếu đã inject xong
-                if isInjected && !isInjecting {
-                    Button(action: {
-                        performCleanRestore()
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                            isInjected = false
-                        }
-                    }) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 11, weight: .semibold))
-                            Text("Khôi phục file gốc")
-                                .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        }
-                        .foregroundColor(Color.white.opacity(0.5))
-                        .padding(.top, 4)
-                    }
-                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -724,20 +811,23 @@ struct CheatStoreDashboardView: View {
         Button(action: {
             if isInjected {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                handleLaunchGame()
-            } else if !isInjecting {
+                performCleanRestore()
+            } else if !isInjecting && !isRestoringClean {
                 startAuroraInjection()
             }
         }) {
             ZStack {
-                // Nền đen trắng LED bo góc (Black & White Theme)
+                // Nền bo góc: Đỏ thẫm khi đã inject (để Uninject), Trắng LED khi chưa inject (INJECTOR)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
                         isInjected ?
                         LinearGradient(
-                            colors: [
-                                Color(red: 0.15, green: 0.38, blue: 0.22),
-                                Color(red: 0.08, green: 0.24, blue: 0.14)
+                            colors: isRestoringClean ? [
+                                Color(red: 0.65, green: 0.15, blue: 0.18),
+                                Color(red: 0.45, green: 0.08, blue: 0.12)
+                            ] : [
+                                Color(red: 0.85, green: 0.20, blue: 0.24),
+                                Color(red: 0.62, green: 0.10, blue: 0.15)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -757,17 +847,17 @@ struct CheatStoreDashboardView: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(
-                                isInjected ? Color.green.opacity(0.5) : Color.white.opacity(0.5),
+                                isInjected ? Color.red.opacity(0.55) : Color.white.opacity(0.5),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
-                        color: isInjected ? Color.green.opacity(0.3) : Color.white.opacity(0.28),
+                        color: isInjected ? Color.red.opacity(0.35) : Color.white.opacity(0.28),
                         radius: 14,
                         y: 4
                     )
 
-                // Nội dung nút theo 3 trạng thái
+                // Nội dung nút theo các trạng thái
                 HStack(spacing: 10) {
                     if isInjecting {
                         ProgressView()
@@ -777,15 +867,23 @@ struct CheatStoreDashboardView: View {
                         Text("Injecting...")
                             .font(.system(size: 16.5, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
+                    } else if isRestoringClean {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.0)
+
+                        Text("Uninjecting...")
+                            .font(.system(size: 16.5, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
                     } else if isInjected {
-                        Image(systemName: "gamecontroller.fill")
-                            .font(.system(size: 17, weight: .bold))
+                        Image(systemName: "arrow.counterclockwise.circle.fill")
+                            .font(.system(size: 18, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("VÀO GAME")
+                        Text("UNINJECT")
                             .font(.system(size: 16.5, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
-                            .tracking(0.5)
+                            .tracking(1.0)
                     } else {
                         Image(systemName: "syringe.fill")
                             .font(.system(size: 15, weight: .bold))
@@ -802,16 +900,18 @@ struct CheatStoreDashboardView: View {
             .frame(height: 56)
         }
         .buttonStyle(AuroraScaleButtonStyle())
-        .disabled(isInjecting)
+        .disabled(isInjecting || isRestoringClean)
     }
 
     private var auroraInstructionText: String {
         if isInjecting {
-            return "Đang tiến hành"
+            return "Đang nạp file vào game..."
+        } else if isRestoringClean {
+            return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
-            return "Đã nạp file thành công! Đang tự động mở game..."
+            return "Đã nạp mod thành công! Chạm UNINJECT để khôi phục game gốc"
         } else {
-            return "Chạm INJECT để nạp file và vào game"
+            return "Chạm INJECTOR để nạp file và vào game"
         }
     }
 
@@ -2137,6 +2237,7 @@ struct CheatStoreDashboardView: View {
 
             DispatchQueue.main.async {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    self.isInjected = false
                     self.activeAimPatch = nil
                     self.activeEspColor = nil
                     self.selectedAimChips.removeAll()
