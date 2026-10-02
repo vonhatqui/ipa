@@ -240,25 +240,25 @@ struct CheatStoreDashboardView: View {
     @State private var restoreCompletedSteps: [String] = []
     @State private var isRestoreFinished: Bool = false
 
-    // VeLix VN Design Tokens
-    private let colorVoid = Color(red: 2/255, green: 5/255, blue: 18/255)
-    private let colorPanel = Color(red: 8/255, green: 16/255, blue: 34/255)
-    private let colorInk = Color(red: 240/255, green: 248/255, blue: 255/255)
-    private let colorMute = Color(red: 135/255, green: 160/255, blue: 190/255)
-    private let accentCyan = Color(red: 0/255, green: 215/255, blue: 255/255)
-    private let glassBg = Color(red: 0/255, green: 180/255, blue: 255/255).opacity(0.06)
-    private let glassBorder = Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.20)
+    // Venom VN Design Tokens (Royal Void & Neon Purple Glow)
+    private let colorVoid = Color(red: 8/255, green: 3/255, blue: 18/255)
+    private let colorPanel = Color(red: 18/255, green: 8/255, blue: 34/255)
+    private let colorInk = Color(red: 248/255, green: 242/255, blue: 255/255)
+    private let colorMute = Color(red: 175/255, green: 150/255, blue: 200/255)
+    private let accentPurple = Color(red: 186/255, green: 82/255, blue: 253/255)
+    private let glassBg = Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.08)
+    private let glassBorder = Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.22)
 
     var body: some View {
         ZStack {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Celestial Ice Blue LED ambient glow (VeLix VN Theme)
+            // Royal Void & Neon Purple LED ambient glow (Venom VN Theme)
             RadialGradient(
                 gradient: Gradient(colors: [
-                    Color(red: 0/255, green: 200/255, blue: 255/255).opacity(0.20),
-                    Color(red: 0/255, green: 80/255, blue: 220/255).opacity(0.06),
+                    Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.22),
+                    Color(red: 110/255, green: 20/255, blue: 190/255).opacity(0.08),
                     Color.clear
                 ]),
                 center: .top,
@@ -585,7 +585,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandHeaderTitle: String {
-        return "VeLix VN"
+        return "Venom VN"
     }
 
     private var auroraGameSubtitle: String {
@@ -593,23 +593,23 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandCenterTag: String {
-        return "Discord: @fsmediateam"
+        return "Discord: @Venomvn01"
     }
 
-// MARK: - Rainbow Animated Text (Chữ 7 màu dạ quang thiên thần)
+// MARK: - Rainbow Animated Text (Chữ 7 màu dạ quang huyền bí hoàng gia theo Logo Venom VN)
 struct RainbowText: View {
     let text: String
     @State private var animateGradient: Bool = false
 
     private let rainbowColors: [Color] = [
-        Color(red: 0.00, green: 0.88, blue: 1.00),  // Neon Ice Cyan
-        Color(red: 0.20, green: 0.65, blue: 1.00),  // Sky Blue
-        Color(red: 0.45, green: 0.40, blue: 1.00),  // Royal Celestial Indigo
-        Color(red: 0.75, green: 0.35, blue: 1.00),  // Angelic Violet
-        Color(red: 0.95, green: 0.95, blue: 1.00),  // Pure Wing Silver-White
-        Color(red: 0.15, green: 0.85, blue: 1.00),  // Bright Cyan
-        Color(red: 0.00, green: 0.70, blue: 0.95),  // Electric Aqua
-        Color(red: 0.00, green: 0.88, blue: 1.00)   // Loop
+        Color(red: 0.85, green: 0.35, blue: 1.00),  // Bright Neon Violet
+        Color(red: 0.72, green: 0.20, blue: 0.98),  // Electric Purple
+        Color(red: 0.55, green: 0.10, blue: 0.95),  // Deep Royal Violet
+        Color(red: 0.95, green: 0.60, blue: 1.00),  // Glowing Orchid
+        Color(red: 1.00, green: 1.00, blue: 1.00),  // Pure White Shimmer
+        Color(red: 0.80, green: 0.30, blue: 1.00),  // Neon Violet
+        Color(red: 0.65, green: 0.15, blue: 0.92),  // Venom Purple
+        Color(red: 0.85, green: 0.35, blue: 1.00)   // Loop
     ]
 
     var body: some View {
@@ -627,7 +627,7 @@ struct RainbowText: View {
                         .font(.system(size: 23, weight: .black, design: .rounded))
                 )
             )
-            .shadow(color: Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.55), radius: 12, x: 0, y: 0)
+            .shadow(color: Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.65), radius: 14, x: 0, y: 0)
             .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
             .onAppear {
                 withAnimation(
@@ -650,17 +650,17 @@ struct RainbowText: View {
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.55), lineWidth: 1.2)
+                        .stroke(Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.55), lineWidth: 1.2)
                 )
-                .shadow(color: Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.45), radius: 8, x: 0, y: 0)
+                .shadow(color: Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.45), radius: 8, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedTab.title.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(3.2)
-                    .foregroundColor(Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.85))
+                    .foregroundColor(Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.85))
 
-                Text(licenseManager.featureConfig.app_name.isEmpty ? "VeLix VN" : licenseManager.featureConfig.app_name)
+                Text(licenseManager.featureConfig.app_name.isEmpty ? "Venom VN" : licenseManager.featureConfig.app_name)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .tracking(-0.6)
                     .foregroundColor(colorInk)
@@ -706,12 +706,12 @@ struct RainbowText: View {
                     .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundColor(Color.white.opacity(0.65))
 
-                // 2 nút nhỏ đường dẫn Zalo và Telegram (ẩn text sđt/username, chỉ hiện 2 icon nhỏ nhỏ)
+                // Nút nhỏ đường dẫn Zalo (tele không có)
                 HStack(spacing: 16) {
                     // Nút Zalo
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if let url = URL(string: "https://zalo.me/0796668837") {
+                        if let url = URL(string: "https://zalo.me/095826667") {
                             UIApplication.shared.open(url)
                         }
                     }) {
@@ -734,37 +734,6 @@ struct RainbowText: View {
                             Text("Z")
                                 .font(.system(size: 20, weight: .heavy, design: .rounded))
                                 .foregroundColor(.white)
-                        }
-                    }
-                    .buttonStyle(AuroraScaleButtonStyle())
-
-                    // Nút Telegram
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if let url = URL(string: "https://t.me/TNQDai") {
-                            UIApplication.shared.open(url)
-                        }
-                    }) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.18, green: 0.68, blue: 0.93), Color(red: 0.08, green: 0.50, blue: 0.78)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .frame(width: 36, height: 36)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
-                                )
-                                .shadow(color: Color.cyan.opacity(0.55), radius: 6, x: 0, y: 2)
-
-                            Image(systemName: "paperplane.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.white)
-                                .offset(x: -1, y: 1)
                         }
                     }
                     .buttonStyle(AuroraScaleButtonStyle())
