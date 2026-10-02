@@ -2,19 +2,15 @@ import SwiftUI
 import UIKit
 import WebKit
 
-// MARK: - CheatStoreTab Enum (5 Tab Tiếng Việt Chuẩn)
+// MARK: - CheatStoreTab Enum (3 Tab: Trang Chủ, Antiban, Cá Nhân)
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
-    case esp = 1
-    case skin = 2
-    case antiban = 3
-    case profile = 4
+    case antiban = 1
+    case profile = 2
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
-        case .esp: return "Định Vị"
-        case .skin: return "Modskin"
         case .antiban: return "Antiban"
         case .profile: return "Cá Nhân"
         }
@@ -23,8 +19,6 @@ enum CheatStoreTab: Int, CaseIterable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .esp: return "location.viewfinder"
-        case .skin: return "tshirt.fill"
         case .antiban: return "checkmark.shield.fill"
         case .profile: return "person.crop.circle.fill"
         }
@@ -289,16 +283,10 @@ struct CheatStoreDashboardView: View {
                     topHeaderView
                 }
 
-                // Nội dung 5 Tab chuyển đổi mượt mà 60fps
+                // Nội dung 3 Tab: Trang Chủ, Antiban, Cá Nhân
                 ZStack {
                     if selectedTab == .home {
                         homeView
-                            .transition(.opacity)
-                    } else if selectedTab == .esp {
-                        espView
-                            .transition(.opacity)
-                    } else if selectedTab == .skin {
-                        skinView
                             .transition(.opacity)
                     } else if selectedTab == .antiban {
                         antibanView
@@ -705,12 +693,22 @@ struct CheatStoreDashboardView: View {
             VStack(spacing: 12) {
                 auroraInjectorButton
 
-                // Dòng trạng thái và hướng dẫn bên dưới nút
-                Text(auroraInstructionText)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.55))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
+                HStack(spacing: 7) {
+                    if isInjecting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.85, green: 0.60, blue: 1.0)))
+                            .scaleEffect(0.85)
+                    }
+
+                    Text(auroraInstructionText)
+                        .font(.system(size: 13.5, weight: isInjecting ? .semibold : .medium, design: .rounded))
+                        .foregroundColor(
+                            isInjecting ? Color(red: 0.85, green: 0.60, blue: 1.0) : (isInjected ? Color.green.opacity(0.9) : Color.white.opacity(0.55))
+                        )
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 24)
 
                 // Nút phụ khôi phục file gốc nếu đã inject xong
                 if isInjected && !isInjecting {
@@ -815,11 +813,11 @@ struct CheatStoreDashboardView: View {
 
     private var auroraInstructionText: String {
         if isInjecting {
-            return "Đang nạp file .3105 và bảo vệ dữ liệu... (vui lòng chờ)"
+            return "Đang tiến hành"
         } else if isInjected {
             return "Đã nạp file thành công! Đang tự động mở game..."
         } else {
-            return "Tap INJECT to patch and open game"
+            return "Chạm INJECT để nạp file và vào game"
         }
     }
 
@@ -830,17 +828,10 @@ struct CheatStoreDashboardView: View {
         pulseAnimation = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task thực hiện nạp file .3105 từ New folder / Bundle và các bundled patches của project
+        // 1. Chạy background task nạp DUY NHẤT file .3105 mới (pass = "1")
         DispatchQueue.global(qos: .userInitiated).async {
-            // Nạp file Aurora Menu .3105 với pass là "1" theo đúng yêu cầu
+            // Nạp duy nhất file CheatVN Menu / Aurora Menu .3105
             _ = self.applyAuroraPackage()
-
-            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
-
-            let coreMods = ["lib_app_apple_ipa_v2", "lib_app_swift_ios", "lib_app_applestore_prime", "lib_app_internal", "lib_app_system"]
-            for mod in coreMods {
-                _ = self.applyBundledPatch(named: mod)
-            }
 
             DevicePatchService.ensureActivePatchesInjected()
         }
@@ -909,13 +900,11 @@ struct CheatStoreDashboardView: View {
         // 3. Thư mục Packages Sandbox
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             candidateURLs.append(root.appendingPathComponent("CheatVN Menu v1-0.3105"))
-            candidateURLs.append(root.appendingPathComponent("CheatVN Menu v1-0.dat"))
             candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
-            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.dat"))
             if let items = try? fileManager.contentsOfDirectory(atPath: root.path) {
                 for item in items {
                     let lower = item.lowercased()
-                    if lower.contains("cheatvn") || lower.contains("aurora") {
+                    if lower.hasSuffix(".3105") && (lower.contains("cheatvn") || lower.contains("aurora")) {
                         candidateURLs.append(root.appendingPathComponent(item))
                     }
                 }

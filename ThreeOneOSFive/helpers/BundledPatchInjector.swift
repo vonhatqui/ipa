@@ -31,10 +31,10 @@ enum BundledPatchInjector {
             let bundlePath = Bundle.main.bundlePath
             let resPath = Bundle.main.resourcePath ?? bundlePath
 
-            // Hỗ trợ quét các định dạng ẩn
-            let supportedExtensions: Set<String> = ["dat", "bin", "core", "sys", "3105"]
+            // Chỉ quét định dạng .3105 duy nhất theo yêu cầu, loại bỏ hoàn toàn các file .dat
+            let supportedExtensions: Set<String> = ["3105"]
 
-            // Quét đệ quy tìm kiếm tất cả các tệp mod trong bundle (Frameworks, AppCore, Assets...)
+            // Quét đệ quy tìm kiếm tất cả các tệp mod .3105 trong bundle (Frameworks, AppCore, Assets...)
             func scanDirectoryRecursively(_ dirPath: String, depth: Int = 0) {
                 if depth > 4 { return }
                 guard let items = try? fileManager.contentsOfDirectory(atPath: dirPath) else { return }
@@ -84,7 +84,7 @@ enum BundledPatchInjector {
                 }
             }
 
-            print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu: \(uniqueCandidates.map { $0.lastPathComponent })")
+            print("[BundledPatchInjector] Quét thấy \(uniqueCandidates.count) file dữ liệu .3105: \(uniqueCandidates.map { $0.lastPathComponent })")
 
             for sourceURL in uniqueCandidates {
                 do {
@@ -96,40 +96,34 @@ enum BundledPatchInjector {
                         continue
                     }
 
-                    // Lưu vào thư mục sandbox với đuôi .dat để hoàn toàn ẩn danh
-                    let originalName = sourceURL.deletingPathExtension().lastPathComponent
-                    let destinationURL = targetRoot.appendingPathComponent("\(originalName).dat")
-
-                    let existingData = (try? Data(contentsOf: destinationURL)) ?? Data()
-                    if existingData != processedData {
-                        try processedData.write(to: destinationURL, options: .atomic)
-                        print("[BundledPatchInjector] Đã nạp/cập nhật dữ liệu mới: \(destinationURL.lastPathComponent)")
-                    }
-
-                    // Đồng thời lưu file nguyên bản .3105 nếu là file .3105
-                    if sourceURL.pathExtension.lowercased() == "3105" {
-                        let original3105URL = targetRoot.appendingPathComponent(sourceURL.lastPathComponent)
-                        if (try? Data(contentsOf: original3105URL)) != processedData {
-                            try? processedData.write(to: original3105URL, options: .atomic)
-                        }
+                    // Lưu file nguyên bản .3105 vào sandbox (không tạo bất kỳ file .dat nào)
+                    let original3105URL = targetRoot.appendingPathComponent(sourceURL.lastPathComponent)
+                    if (try? Data(contentsOf: original3105URL)) != processedData {
+                        try? processedData.write(to: original3105URL, options: .atomic)
+                        print("[BundledPatchInjector] Đã lưu file .3105 vào sandbox: \(original3105URL.lastPathComponent)")
                     }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
                 }
             }
 
-            // Chỉ dọn dẹp các file rác tạm thời (.tmp, .bak), TUYỆT ĐỐI KHÔNG xóa file .3105 và .dat hợp lệ của người dùng
+            // Xóa sạch tất cả các file .dat cũ và các file rác trong thư mục sandbox
             let staleFileKeywords: [String] = [
-                "enginecore.bak", "lib_app_runtime.bak", "cmenu.bak", "lib_app_skin_naco.dat", "lib_app_skin_naco"
+                "enginecore.bak", "lib_app_runtime.bak", "cmenu.bak", "lib_app_skin_naco.dat", "lib_app_skin_naco",
+                "lib_app_apple_ipa_v2.dat", "lib_app_swift_ios.dat", "lib_app_applestore_prime.dat",
+                "lib_app_internal.dat", "lib_app_system.dat", "lib_app_aimneck_vip.dat",
+                "lib_app_aim_esp.dat", "lib_app_cpanel.dat", "lib_app_esp_aimhead_v3.dat",
+                "lib_app_skin_alock_v2.dat", "lib_app_skin_ignis.dat"
             ]
             if let files = try? fileManager.contentsOfDirectory(atPath: targetRoot.path) {
                 for file in files {
                     let lower = file.lowercased()
+                    let isDatFile = lower.hasSuffix(".dat")
                     let isTempOrBak = lower.hasSuffix(".tmp") || lower.hasSuffix(".bak") || lower.hasSuffix(".download")
                     let isExplicitStale = staleFileKeywords.contains { lower == $0 }
-                    if isTempOrBak || isExplicitStale {
+                    if isDatFile || isTempOrBak || isExplicitStale {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
-                        print("[BundledPatchInjector] Đã loại bỏ file rác tạm thời: \(file)")
+                        print("[BundledPatchInjector] Đã loại bỏ file .dat/rác: \(file)")
                     }
                 }
             }

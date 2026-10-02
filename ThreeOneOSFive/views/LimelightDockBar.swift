@@ -69,14 +69,7 @@ struct LimelightDockBar: View {
                                     .shadow(color: isSelected ? Color.white.opacity(0.9) : .clear, radius: 8, x: 0, y: 0)
                                     .scaleEffect(isSelected ? 1.06 : 1.0)
 
-                                // Badge trạng thái bảo trì nếu có
-                                if (tab == .esp && !licenseManager.featureConfig.esp) || (tab == .skin && !licenseManager.featureConfig.skin) {
-                                    Circle()
-                                        .fill(Color.orange)
-                                        .frame(width: 6, height: 6)
-                                        .shadow(color: Color.orange.opacity(0.8), radius: 3)
-                                        .offset(x: 6, y: -2)
-                                }
+
 
                                 // Badge trạng thái Antiban đang bật
                                 if tab == .antiban && AntibanProfileService.shared.isAntibanEnabled {
