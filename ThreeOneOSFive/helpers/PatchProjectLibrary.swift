@@ -57,7 +57,7 @@ enum PatchProjectLibrary {
         return root
     }
 
-    private static let knownPasswords: [String?] = [nil, "OG", "Canhcupin", "og", "canhcupin"]
+    private static let knownPasswords: [String?] = [nil, "1", "OG", "Canhcupin", "og", "canhcupin"]
     private static var decodedCache: [UUID: DecodedPatchPackage] = [:]
     private static let cacheLock = NSLock()
 
@@ -207,7 +207,16 @@ enum PatchProjectLibrary {
         var candidateURLs: [URL] = []
         let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
         let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore")
-        for dir in [coreDir1, resURL].compactMap({ $0 }) {
+        let patchDir1 = Bundle.main.bundleURL.appendingPathComponent("BundledPatches")
+        let patchDir2 = Bundle.main.resourceURL?.appendingPathComponent("BundledPatches")
+        let externalDir = URL(fileURLWithPath: "C:/Users/Administrator/Downloads/New folder")
+        
+        var searchDirs: [URL] = [coreDir1, resURL, patchDir1, patchDir2, externalDir].compactMap({ $0 })
+        if let root = try? packageRootURL(fileManager: fileManager) {
+            searchDirs.append(root)
+        }
+        for dir in searchDirs {
+            candidateURLs.append(dir.appendingPathComponent(name))
             for ext in ["dat", "bin", "3105"] {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
             }

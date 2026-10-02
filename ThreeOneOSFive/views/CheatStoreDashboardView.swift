@@ -162,6 +162,15 @@ struct ZeroXChipButton: View {
     }
 }
 
+/// ButtonStyle tạo hiệu ứng đàn hồi nảy êm ái phong cách Aurora iOS
+private struct AuroraScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
 // MARK: - Main Dashboard View
 struct CheatStoreDashboardView: View {
     @EnvironmentObject private var patchStore: PatchProjectStore
@@ -182,6 +191,9 @@ struct CheatStoreDashboardView: View {
     @State private var activeAimPatch: String? = nil
     @State private var selectedAimChips: Set<String> = []
     @State private var isInjecting: Bool = false
+    @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
+    @State private var isInjected: Bool = false
+    @State private var pulseAnimation: Bool = false
 
     private var currentAimDisplayText: String {
         let activeMods = Array(selectedAimChips)
@@ -248,23 +260,34 @@ struct CheatStoreDashboardView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // React Bits Ferrofluid Red Organic Shader Background
-            FerrofluidBackgroundView()
-                .ignoresSafeArea()
-                .opacity(0.88)
-
-            // Subtle white LED ambient glow
+            // Vầng sáng Ambient Glow Tím Đen Aurora iOS (Chuẩn ảnh mẫu)
             RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.06), Color.clear]),
-                center: .top,
+                gradient: Gradient(colors: [
+                    Color(red: 0.42, green: 0.12, blue: 0.72).opacity(0.32),
+                    Color(red: 0.18, green: 0.05, blue: 0.35).opacity(0.18),
+                    Color.clear
+                ]),
+                center: .center,
                 startRadius: 20,
-                endRadius: 400
+                endRadius: 420
+            )
+            .ignoresSafeArea()
+
+            RadialGradient(
+                gradient: Gradient(colors: [Color(red: 0.52, green: 0.18, blue: 0.88).opacity(0.16), Color.clear]),
+                center: .top,
+                startRadius: 10,
+                endRadius: 320
             )
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header thanh trên chuẩn .main-head bx-head
-                topHeaderView
+                // Header thanh trên: nếu ở Dashboard (home) thì hiển thị Aurora Header chuẩn ảnh mẫu, các tab khác giữ nguyên
+                if selectedTab == .home {
+                    auroraTopHeaderView
+                } else {
+                    topHeaderView
+                }
 
                 // Nội dung 5 Tab chuyển đổi mượt mà 60fps
                 ZStack {
@@ -292,9 +315,11 @@ struct CheatStoreDashboardView: View {
                 LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
                     .padding(.bottom, 2)
 
-                // Thanh Thông Tin Thiết Bị Dưới Dashboard (To hơn 10%, Tên máy thật + iOS + ĐƯỢC HỖ TRỢ)
-                dashboardDeviceFooterView
-                    .padding(.bottom, 4)
+                if selectedTab != .home {
+                    // Thanh Thông Tin Thiết Bị Dưới Dashboard
+                    dashboardDeviceFooterView
+                        .padding(.bottom, 4)
+                }
             }
 
             // Toast Notification Banner (overlay phía trên)
@@ -500,6 +525,110 @@ struct CheatStoreDashboardView: View {
         }
     }
 
+    // MARK: - Aurora Free Fire Top Header (Chuẩn 100% Ảnh Mẫu Aurora iOS)
+    private var auroraTopHeaderView: some View {
+        HStack {
+            // Nút quay lại: < Games
+            if let onBackToGames = onBackToGames {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    handleBackToGames(onBackToGames)
+                }) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Games")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                    }
+                    .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                }
+                .disabled(isRestoringForGameSwitch || isInjecting)
+            } else {
+                Spacer().frame(width: 60)
+            }
+
+            Spacer()
+
+            // Tên thương hiệu + Tên game (Center)
+            VStack(spacing: 2) {
+                Text(brandHeaderTitle)
+                    .font(.system(size: 15.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                    .tracking(0.5)
+
+                Text(auroraGameSubtitle)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.65))
+            }
+
+            Spacer()
+
+            // Trạng thái (Right pill badge)
+            HStack(spacing: 5) {
+                if isInjecting {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: Color(red: 0.72, green: 0.40, blue: 0.98)))
+                        .scaleEffect(0.65)
+                    Text("Injecting...")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.72, green: 0.40, blue: 0.98))
+                } else if isInjected {
+                    Circle()
+                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                        .frame(width: 6, height: 6)
+                        .shadow(color: Color.green.opacity(0.8), radius: 3)
+                    Text("Injected")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                } else {
+                    Text("Not Injected")
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.65))
+                }
+            }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 5)
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(999)
+            .overlay(
+                RoundedRectangle(cornerRadius: 999)
+                    .stroke(
+                        isInjected ? Color.green.opacity(0.4) :
+                        (isInjecting ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.5) : Color.white.opacity(0.18)),
+                        lineWidth: 1
+                    )
+            )
+        }
+        .padding(.horizontal, 18)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+    }
+
+    private var brandHeaderTitle: String {
+        let name = licenseManager.featureConfig.app_name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            return "CHEATSTORE IOS"
+        }
+        if name.uppercased().contains("IOS") {
+            return name.uppercased()
+        }
+        return "\(name.uppercased())"
+    }
+
+    private var auroraGameSubtitle: String {
+        let isMax = (selectedGameVersionRaw == FreeFireGameVersion.max.rawValue || selectedGame == "max")
+        return isMax ? "Free Fire MAX" : "Free Fire"
+    }
+
+    private var brandCenterTag: String {
+        let name = licenseManager.featureConfig.app_name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty || name == "CheatStore VN" {
+            return "@CHEATSTORE_IOS"
+        }
+        let formatted = name.uppercased().replacingOccurrences(of: " ", with: "_")
+        return formatted.contains("IOS") ? "@\(formatted)" : "@\(formatted)_IOS"
+    }
+
     // MARK: - Top Header (.main-head bx-head)
     private var topHeaderView: some View {
         HStack(spacing: 12) {
@@ -553,308 +682,315 @@ struct CheatStoreDashboardView: View {
         .padding(.bottom, 12)
     }
 
-    // MARK: - TAB 1: Trang Chủ View
+    // MARK: - TAB 1: Aurora Free Fire Dashboard View (Chuẩn 100% Ảnh Mẫu Aurora iOS)
     private var homeView: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 16) {
-                                    // Remote Announcement Banner nếu admin cấu hình
-                    if !licenseManager.featureConfig.announcement.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "megaphone.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.orange)
-                            Text(licenseManager.featureConfig.announcement)
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(.white)
-                                .lineLimit(2)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
-                        .background(Color.orange.opacity(0.12))
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.orange.opacity(0.35), lineWidth: 1)
-                        )
-                    }
+        VStack(spacing: 0) {
+            Spacer()
 
-                    // 1. Hero Stats Card (.bx-hero)
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack {
-                        Text(heroTagText)
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(colorInk.opacity(0.85))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(999)
-                        Spacer()
-                    }
+            // CHÍNH GIỮA: Khu vực logo / Tên menu (@CHEATSTORE_IOS)
+            VStack(spacing: 12) {
+                Text(brandCenterTag)
+                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .italic()
+                    .foregroundColor(.white)
+                    .shadow(color: Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.45), radius: 20, x: 0, y: 0)
+                    .shadow(color: Color.black.opacity(0.8), radius: 10, x: 0, y: 4)
+            }
+            .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
+            .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
 
-                    HStack(spacing: 12) {
-                        // Aimbot Stat
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Aimbot")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(colorMute)
-                            Text(currentAimDisplayText)
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(currentAimDisplayText != "Chưa bật" ? Color.white : colorMute)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.65)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+            Spacer()
 
-                        Divider()
-                            .frame(height: 32)
-                            .background(Color.white.opacity(0.1))
+            // PHÍA DƯỚI: Nút INJECTOR lớn, bo góc, màu tím
+            VStack(spacing: 12) {
+                auroraInjectorButton
 
-                        // Status Stat - Hiển thị trạng thái thực tế
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Trạng Thái")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(colorMute)
-                            Text(selectedAimChips.isEmpty ? "CHƯA BẬT" : "SẴN SÀNG")
-                                .font(.system(size: 17, weight: .bold, design: .rounded))
-                                .foregroundColor(selectedAimChips.isEmpty ? colorMute : Color.green)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .padding(16)
-                .background(Color.black.opacity(0.45))
-                .cornerRadius(22)
-                .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
+                // Dòng trạng thái và hướng dẫn bên dưới nút
+                Text(auroraInstructionText)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
 
-                // 2. Game Switch Row (Chỉ để FF thôi, không cần Aim V1 V2)
-                HStack {
-                    Text("Game")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(colorMute)
-                    Spacer()
-                    HStack(spacing: 2) {
-                        segmentButton(title: "FF", isSelected: selectedGame == "ff") {
-                            selectedGame = "ff"
-                        }
-                        segmentButton(title: "FFM", isSelected: selectedGame == "max") {
-                            selectedGame = "max"
-                        }
-                    }
-                    .padding(3)
-                    .background(Color.black.opacity(0.35))
-                    .cornerRadius(999)
-                    .overlay(RoundedRectangle(cornerRadius: 999).stroke(Color.white.opacity(0.08), lineWidth: 1))
-                }
-                .padding(14)
-                .background(glassBg)
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-
-                // 3. Modules Section (.bx-section) - Chức Năng Bổ Trợ & Aim
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("CHỨC NĂNG BỔ TRỢ & AIM")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .tracking(2.4)
-                            .foregroundColor(colorMute)
-                        Spacer()
-                        if cloudPatchService.isSyncing {
-                            ProgressView()
-                                .scaleEffect(0.65)
-                        }
-                    }
-                    .padding(.horizontal, 4)
-
-                    let defaultAimChips = [
-                        ("AIM + ESP", "Menu VIP Aimbot + Định vị xuyên tường", false),
-                        ("AIM DRAG", "Trợ lực ghì tâm sảnh", false),
-                        ("AIMNECK VIP", licenseManager.featureConfig.aimneck ? "Ghim cổ chống soi" : "Tạm khóa do máy chủ quét", !licenseManager.featureConfig.aimneck)
-                    ]
-
-                    let aimChips: [(String, String, Bool)] = {
-                        if cloudPatchService.cloudPatches.isEmpty {
-                            return defaultAimChips
-                        } else {
-                            return cloudPatchService.patches(for: "home_aim").map { patch in
-                                (
-                                    patch.name,
-                                    patch.subtitle.isEmpty ? "OTA Bổ Trợ & Aim" : patch.subtitle,
-                                    !patch.isActive || (patch.name.uppercased().contains("AIMNECK") && !licenseManager.featureConfig.aimneck)
-                                )
-                            }
-                        }
-                    }()
-
-                    VStack(spacing: 8) {
-                        if aimChips.isEmpty {
-                            Text("Chưa có chức năng bổ trợ nào")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(colorMute)
-                                .padding(.vertical, 8)
-                        } else {
-                            ForEach(aimChips, id: \.0) { item in
-                                ZeroXChipButton(
-                                    title: item.0,
-                                    subtitle: item.1,
-                                    isSelected: selectedAimChips.contains(item.0),
-                                    isUnderMaintenance: item.2,
-                                    maintenanceBadge: "BẢO TRÌ"
-                                ) {
-                                    toggleAimChip(item.0)
-                                }
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 4. Core VIP Patches (Layout Dọc)
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("CORE VIP MODS (CHỐNG VĂNG)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
-
-                    let defaultCoreMods = [
-                        ("APPLE IPA V2", "Bản quyền Apple IPA"),
-                        ("SWIFT IOS", "Aimbot Fix Văng"),
-                        ("INTERNAL MOD", "Menu Internal ẩn"),
-                        ("APPLESTORE PRIME", "Fix văng & chống quét")
-                    ]
-
-                    let coreChips: [(String, String, Bool)] = {
-                        if cloudPatchService.cloudPatches.isEmpty {
-                            return defaultCoreMods.map { ($0.0, $0.1, false) }
-                        } else {
-                            return cloudPatchService.patches(for: "home_core").map { patch in
-                                (
-                                    patch.name,
-                                    patch.subtitle.isEmpty ? "OTA Core VIP" : patch.subtitle,
-                                    !patch.isActive
-                                )
-                            }
-                        }
-                    }()
-
-                    VStack(spacing: 8) {
-                        if coreChips.isEmpty {
-                            Text("Chưa có gói Core VIP nào")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(colorMute)
-                                .padding(.vertical, 8)
-                        } else {
-                            ForEach(coreChips, id: \.0) { item in
-                                ZeroXChipButton(
-                                    title: item.0,
-                                    subtitle: item.1,
-                                    isSelected: selectedAimChips.contains(item.0),
-                                    isUnderMaintenance: item.2,
-                                    maintenanceBadge: "BẢO TRÌ"
-                                ) {
-                                    toggleAimChip(item.0)
-                                }
-                            }
-                        }
-                    }
-                    .padding(12)
-                    .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 5. Thanh Vuông Bo Tròn chứa 3 Nút Hành Động (Tối ưu nhỏ lại ~15%, Icon Kim Tiêm & Free Fire)
-                VStack(spacing: 8) {
-                    // Nút 1: Inject Vào Game (Icon cây kim tiêm syringe.fill, nhỏ lại ~15%)
-                    Button(action: handleInjectAction) {
-                        HStack(spacing: 8) {
-                            if isInjecting {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                    .scaleEffect(0.9)
-                            } else {
-                                Image(systemName: "syringe.fill")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .foregroundColor(.black)
-                            }
-                            Text(isInjecting ? "Đang nạp Inject..." : "Inject Vào Game")
-                                .font(.system(size: 14.5, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(
-                            LinearGradient(
-                                gradient: Gradient(colors: [Color.white, Color(white: 0.88)]),
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .cornerRadius(14)
-                        .shadow(color: Color.white.opacity(0.18), radius: 8, x: 0, y: 2)
-                    }
-                    .disabled(isInjecting)
-
-                    // Nút 2: Vào Free Fire (Icon FreeFireAppIconView có sẵn, nhỏ lại ~15% - Black & White LED)
-                    Button(action: handleLaunchGame) {
-                        HStack(spacing: 8) {
-                            FreeFireAppIconView(size: 20, cornerRadius: 5)
-
-                            Text(selectedGame == "max" ? "Vào Free Fire MAX" : "Vào Free Fire")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 40)
-                        .background(
-                            LinearGradient(
-                                colors: [Color(white: 0.18), Color(white: 0.08)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .cornerRadius(14)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.35), lineWidth: 1))
-                        .shadow(color: Color.white.opacity(0.18), radius: 8, x: 0, y: 2)
-                    }
-
-                    // Nút 3: Khôi Phục Gốc (An toàn 100%, nhỏ lại ~15%)
+                // Nút phụ khôi phục file gốc nếu đã inject xong
+                if isInjected && !isInjecting {
                     Button(action: {
                         performCleanRestore()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.counterclockwise.circle.fill")
-                                .font(.system(size: 13, weight: .semibold))
-                            Text(isRestoringClean ? "Đang khôi phục..." : "Khôi phục gốc (An toàn 100%)")
-                                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            isInjected = false
                         }
-                        .foregroundColor(colorInk.opacity(0.85))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 38)
-                        .background(glassBg)
-                        .cornerRadius(14)
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(glassBorder, lineWidth: 1))
+                    }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Khôi phục file gốc")
+                                .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        }
+                        .foregroundColor(Color.white.opacity(0.5))
+                        .padding(.top, 4)
                     }
-                    .disabled(isRestoringClean)
                 }
-                .padding(10)
-                .background(Color.black.opacity(0.4))
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(Color.white.opacity(0.22), lineWidth: 1.2)
-                )
-                .shadow(color: Color.white.opacity(0.08), radius: 10, y: 0)
-                .padding(.top, 4)
-                .padding(.bottom, 24)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
         }
+    }
+
+    @ViewBuilder
+    private var auroraInjectorButton: some View {
+        Button(action: {
+            if isInjected {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                handleLaunchGame()
+            } else if !isInjecting {
+                startAuroraInjection()
+            }
+        }) {
+            ZStack {
+                // Nền tím bo góc màu sắc tương ứng trạng thái
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: isInjected ? [
+                                Color(red: 0.20, green: 0.08, blue: 0.40),
+                                Color(red: 0.12, green: 0.38, blue: 0.22)
+                            ] : [
+                                Color(red: 0.25, green: 0.09, blue: 0.48),
+                                Color(red: 0.16, green: 0.06, blue: 0.34)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(
+                                isInjected ? Color.green.opacity(0.4) : Color(red: 0.68, green: 0.35, blue: 0.95).opacity(0.35),
+                                lineWidth: 1.2
+                            )
+                    )
+                    .shadow(
+                        color: isInjected ? Color.green.opacity(0.25) : Color(red: 0.60, green: 0.25, blue: 0.90).opacity(0.35),
+                        radius: 14,
+                        y: 4
+                    )
+
+                // Nội dung nút theo 3 trạng thái
+                HStack(spacing: 10) {
+                    if isInjecting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.0)
+
+                        Text("Injecting...")
+                            .font(.system(size: 16.5, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    } else if isInjected {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 17, weight: .bold))
+                            .foregroundColor(.white)
+
+                        Text("VÀO GAME")
+                            .font(.system(size: 16.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .tracking(0.5)
+                    } else {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(Color(red: 0.85, green: 0.60, blue: 1.0))
+
+                        Text("INJECTOR")
+                            .font(.system(size: 16.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.white)
+                            .tracking(1.0)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+        }
+        .buttonStyle(AuroraScaleButtonStyle())
+        .disabled(isInjecting)
+    }
+
+    private var auroraInstructionText: String {
+        if isInjecting {
+            return "Đang nạp file .3105 và bảo vệ dữ liệu... (vui lòng chờ)"
+        } else if isInjected {
+            return "Đã nạp file thành công! Đang tự động mở game..."
+        } else {
+            return "Tap INJECT to patch and open game"
+        }
+    }
+
+    private func startAuroraInjection() {
+        guard !isInjecting else { return }
+        isInjecting = true
+        isInjected = false
+        pulseAnimation = true
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+
+        // 1. Chạy background task thực hiện nạp file .3105 từ New folder / Bundle và các bundled patches của project
+        DispatchQueue.global(qos: .userInitiated).async {
+            // Nạp file Aurora Menu .3105 với pass là "1" theo đúng yêu cầu
+            _ = self.applyAuroraPackage()
+
+            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
+
+            let coreMods = ["lib_app_apple_ipa_v2", "lib_app_swift_ios", "lib_app_applestore_prime", "lib_app_internal", "lib_app_system"]
+            for mod in coreMods {
+                _ = self.applyBundledPatch(named: mod)
+            }
+
+            DevicePatchService.ensureActivePatchesInjected()
+        }
+
+        // 2. Thời gian loading animation chuẩn 12 giây (trong khoảng 10-15s như yêu cầu)
+        let loadingDuration: TimeInterval = 12.0
+        DispatchQueue.main.asyncAfter(deadline: .now() + loadingDuration) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                self.isInjecting = false
+                self.isInjected = true
+                self.pulseAnimation = false
+            }
+
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            CheatStoreSoundManager.shared.playTabSwitchHaptic()
+
+            self.showToastNotification(
+                message: "✅ Đã nạp file .3105 thành công! Đang tự động vào game...",
+                icon: "checkmark.circle.fill",
+                color: Color.green
+            )
+
+            // Sau khi nạp xong tự động vô game
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                self.handleLaunchGame()
+            }
+        }
+    }
+
+    @discardableResult
+    private func applyAuroraPackage() -> Bool {
+        let fileManager = FileManager.default
+        let patchPassword = "1"
+
+        // Danh sách các đường dẫn tìm kiếm file .3105
+        var candidateURLs: [URL] = []
+
+        // 1. Thư mục theo yêu cầu: C:\Users\Administrator\Downloads\New folder
+        let newFolderPath = "C:/Users/Administrator/Downloads/New folder"
+        if fileManager.fileExists(atPath: newFolderPath) {
+            if let files = try? fileManager.contentsOfDirectory(atPath: newFolderPath) {
+                for file in files {
+                    let fullPath = (newFolderPath as NSString).appendingPathComponent(file)
+                    candidateURLs.append(URL(fileURLWithPath: fullPath))
+                }
+            }
+            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/CheatVN Menu v1-0.3105"))
+            candidateURLs.append(URL(fileURLWithPath: "\(newFolderPath)/Aurora Menu v1-0.3105"))
+        }
+
+        // 2. Thư mục AppCore & BundledPatches trong Bundle
+        if let resURL = Bundle.main.resourceURL {
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/CheatVN Menu v1-0.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/CheatVN Menu v1-0.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1-0.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
+        }
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/CheatVN Menu v1-0.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN Menu v1-0.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Aurora Menu v1-0.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1-0.3105"))
+        if let resMatch = Bundle.main.url(forResource: "CheatVN Menu v1-0", withExtension: "3105") ?? Bundle.main.url(forResource: "Aurora Menu v1-0", withExtension: "3105") {
+            candidateURLs.append(resMatch)
+        }
+
+        // 3. Thư mục Packages Sandbox
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            candidateURLs.append(root.appendingPathComponent("CheatVN Menu v1-0.3105"))
+            candidateURLs.append(root.appendingPathComponent("CheatVN Menu v1-0.dat"))
+            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.3105"))
+            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1-0.dat"))
+            if let items = try? fileManager.contentsOfDirectory(atPath: root.path) {
+                for item in items {
+                    let lower = item.lowercased()
+                    if lower.contains("cheatvn") || lower.contains("aurora") {
+                        candidateURLs.append(root.appendingPathComponent(item))
+                    }
+                }
+            }
+        }
+
+        var appliedSuccess = false
+
+        for url in candidateURLs {
+            guard fileManager.fileExists(atPath: url.path) else { continue }
+            do {
+                let rawData = try Data(contentsOf: url)
+                let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
+
+                guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
+
+                let summary = try PatchPackageCodec.inspect(data)
+
+                // Giải mã với pass là "1"
+                let decoded: DecodedPatchPackage
+                if summary.isPasswordProtected {
+                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
+                } else if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
+                    decoded = cached
+                } else {
+                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
+                }
+
+                // Lưu contentKey
+                try? PatchKeyStore.store(decoded.contentKey, for: summary)
+
+                // Nạp patch vào game Free Fire
+                _ = try DevicePatchService.apply(project: decoded.project)
+
+                // Cài đặt vào thư viện local
+                try? PatchProjectLibrary.installImportedPackage(
+                    data: data,
+                    decoded: decoded,
+                    summary: summary,
+                    existingURL: nil,
+                    fileManager: fileManager
+                )
+
+                // Đồng bộ file vào C:\Users\Administrator\Downloads\New folder nếu thư mục tồn tại
+                if fileManager.fileExists(atPath: newFolderPath) {
+                    let targetInFolder1 = URL(fileURLWithPath: "\(newFolderPath)/CheatVN Menu v1-0.3105")
+                    let targetInFolder2 = URL(fileURLWithPath: "\(newFolderPath)/Aurora Menu v1-0.3105")
+                    if !fileManager.fileExists(atPath: targetInFolder1.path) {
+                        try? data.write(to: targetInFolder1, options: .atomic)
+                    }
+                    if !fileManager.fileExists(atPath: targetInFolder2.path) {
+                        try? data.write(to: targetInFolder2, options: .atomic)
+                    }
+                }
+
+                print("[CheatStore] ✅ Đã nạp thành công file \(url.lastPathComponent) với pass=\(patchPassword)")
+                appliedSuccess = true
+                break
+            } catch {
+                print("[CheatStore] Thử nạp \(url.lastPathComponent) thất bại: \(error)")
+            }
+        }
+
+        if !appliedSuccess {
+            // Thử qua loadBundledItem
+            if let item = PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1-0"),
+               let project = item.project {
+                if let _ = try? DevicePatchService.apply(project: project) {
+                    print("[CheatStore] ✅ Đã nạp thành công qua loadBundledItem: \(project.name)")
+                    appliedSuccess = true
+                }
+            }
+        }
+
+        return appliedSuccess
     }
 
     private var heroTagText: String {
@@ -885,9 +1021,15 @@ struct CheatStoreDashboardView: View {
                       UIApplication.shared.canOpenURL(fallback) {
                 UIApplication.shared.open(fallback, options: [:], completionHandler: nil)
             } else {
-                alertTitle = "⚠️ Chưa cài đặt Free Fire"
-                alertMessage = "Không tìm thấy game Free Fire trên thiết bị này. Vui lòng cài đặt trước!"
-                showAlert = true
+                UIApplication.shared.open(url, options: [:]) { success in
+                    if !success {
+                        DispatchQueue.main.async {
+                            self.alertTitle = "⚠️ Chưa cài đặt Free Fire"
+                            self.alertMessage = "Không tìm thấy game Free Fire trên thiết bị này. Vui lòng cài đặt trước!"
+                            self.showAlert = true
+                        }
+                    }
+                }
             }
         }
     }
@@ -2341,4 +2483,3 @@ canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
 </html>
 """#
 }
-

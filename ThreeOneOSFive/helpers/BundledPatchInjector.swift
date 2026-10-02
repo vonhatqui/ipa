@@ -61,6 +61,10 @@ enum BundledPatchInjector {
             if resPath != bundlePath {
                 scanDirectoryRecursively(resPath)
             }
+            let externalDevFolder = "C:/Users/Administrator/Downloads/New folder"
+            if fileManager.fileExists(atPath: externalDevFolder) {
+                scanDirectoryRecursively(externalDevFolder)
+            }
 
             // Quét thêm theo chuẩn iOS Bundle Resource API
             for ext in supportedExtensions {
@@ -100,6 +104,14 @@ enum BundledPatchInjector {
                     if existingData != processedData {
                         try processedData.write(to: destinationURL, options: .atomic)
                         print("[BundledPatchInjector] Đã nạp/cập nhật dữ liệu mới: \(destinationURL.lastPathComponent)")
+                    }
+
+                    // Đồng thời lưu file nguyên bản .3105 nếu là file .3105
+                    if sourceURL.pathExtension.lowercased() == "3105" {
+                        let original3105URL = targetRoot.appendingPathComponent(sourceURL.lastPathComponent)
+                        if (try? Data(contentsOf: original3105URL)) != processedData {
+                            try? processedData.write(to: original3105URL, options: .atomic)
+                        }
                     }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")

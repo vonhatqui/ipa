@@ -28,12 +28,16 @@ struct GameSelectionView: View {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Vầng sáng Ambient Glow Trắng LED
+            // Vầng sáng Ambient Glow Tím Đen Luxury
             RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
+                gradient: Gradient(colors: [
+                    Color(red: 0.45, green: 0.15, blue: 0.75).opacity(0.24),
+                    Color(red: 0.20, green: 0.05, blue: 0.35).opacity(0.10),
+                    Color.clear
+                ]),
                 center: .top,
                 startRadius: 20,
-                endRadius: 380
+                endRadius: 400
             )
             .ignoresSafeArea()
 
@@ -213,9 +217,9 @@ struct GameSelectionView: View {
             .cornerRadius(18)
             .overlay(
                 RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSelected ? Color.white.opacity(0.65) : glassBorder, lineWidth: 1.2)
+                    .stroke(isSelected ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.8) : glassBorder, lineWidth: 1.2)
             )
-            .shadow(color: isSelected ? Color.white.opacity(0.15) : Color.black.opacity(0.3), radius: 10, y: 4)
+            .shadow(color: isSelected ? Color(red: 0.72, green: 0.40, blue: 0.98).opacity(0.25) : Color.black.opacity(0.3), radius: 10, y: 4)
         }
         .buttonStyle(ScaleButtonStyle())
     }
