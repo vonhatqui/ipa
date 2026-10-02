@@ -787,7 +787,7 @@ struct CheatStoreDashboardView: View {
                             .foregroundColor(.white)
                             .tracking(0.5)
                     } else {
-                        Image(systemName: "bolt.fill")
+                        Image(systemName: "syringe.fill")
                             .font(.system(size: 15, weight: .bold))
                             .foregroundColor(.black)
 
