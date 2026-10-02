@@ -31,7 +31,7 @@ public struct FeatureMaintenanceConfig: Codable {
     public var skin: Bool = true                // Mod Skin VIP
     public var swift_ios: Bool = true           // Swift iOS VIP
 
-    public var app_name: String = "CheatStore VN"
+    public var app_name: String = "VeLix VN"
     public var app_subtitle: String = "iOS • External VIP"
     public var announcement: String = ""
     public var is_app_safe: Bool = true         // Trạng thái an toàn toàn bộ app
@@ -49,7 +49,7 @@ public struct FeatureMaintenanceConfig: Codable {
         esp: Bool = true,
         skin: Bool = true,
         swift_ios: Bool = true,
-        app_name: String = "CheatStore VN",
+        app_name: String = "VeLix VN",
         app_subtitle: String = "iOS • External VIP",
         announcement: String = "",
         is_app_safe: Bool = true,

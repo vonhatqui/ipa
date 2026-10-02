@@ -240,26 +240,30 @@ struct CheatStoreDashboardView: View {
     @State private var restoreCompletedSteps: [String] = []
     @State private var isRestoreFinished: Bool = false
 
-    // 0xCheats Design Tokens
-    private let colorVoid = Color.black
-    private let colorPanel = Color(red: 22/255, green: 22/255, blue: 24/255)
-    private let colorInk = Color(red: 244/255, green: 241/255, blue: 234/255)
-    private let colorMute = Color(red: 141/255, green: 136/255, blue: 128/255)
-    private let accentRed = Color(red: 255/255, green: 48/255, blue: 48/255)
-    private let glassBg = Color.white.opacity(0.05)
-    private let glassBorder = Color.white.opacity(0.12)
+    // VeLix VN Design Tokens
+    private let colorVoid = Color(red: 2/255, green: 5/255, blue: 18/255)
+    private let colorPanel = Color(red: 8/255, green: 16/255, blue: 34/255)
+    private let colorInk = Color(red: 240/255, green: 248/255, blue: 255/255)
+    private let colorMute = Color(red: 135/255, green: 160/255, blue: 190/255)
+    private let accentCyan = Color(red: 0/255, green: 215/255, blue: 255/255)
+    private let glassBg = Color(red: 0/255, green: 180/255, blue: 255/255).opacity(0.06)
+    private let glassBorder = Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.20)
 
     var body: some View {
         ZStack {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
 
-            // Subtle white LED ambient glow (Black & White Theme)
+            // Celestial Ice Blue LED ambient glow (VeLix VN Theme)
             RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.08), Color.clear]),
+                gradient: Gradient(colors: [
+                    Color(red: 0/255, green: 200/255, blue: 255/255).opacity(0.20),
+                    Color(red: 0/255, green: 80/255, blue: 220/255).opacity(0.06),
+                    Color.clear
+                ]),
                 center: .top,
                 startRadius: 20,
-                endRadius: 400
+                endRadius: 420
             )
             .ignoresSafeArea()
 
@@ -581,14 +585,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandHeaderTitle: String {
-        let name = licenseManager.featureConfig.app_name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if name.isEmpty {
-            return "CHEATSTORE IOS"
-        }
-        if name.uppercased().contains("IOS") {
-            return name.uppercased()
-        }
-        return "\(name.uppercased())"
+        return "VeLix VN"
     }
 
     private var auroraGameSubtitle: String {
@@ -596,24 +593,23 @@ struct CheatStoreDashboardView: View {
     }
 
     private var brandCenterTag: String {
-        return "Discord: @jinwwostore.vn"
+        return "Discord: @fsmediateam"
     }
 
-// MARK: - Rainbow Animated Text (Chữ 7 màu chạy tới chạy lui)
+// MARK: - Rainbow Animated Text (Chữ 7 màu dạ quang thiên thần)
 struct RainbowText: View {
     let text: String
     @State private var animateGradient: Bool = false
 
     private let rainbowColors: [Color] = [
-        Color(red: 1.00, green: 0.20, blue: 0.35),  // Đỏ
-        Color(red: 1.00, green: 0.55, blue: 0.05),  // Cam
-        Color(red: 1.00, green: 0.88, blue: 0.12),  // Vàng
-        Color(red: 0.18, green: 0.90, blue: 0.42),  // Lục
-        Color(red: 0.05, green: 0.78, blue: 1.00),  // Lam
-        Color(red: 0.35, green: 0.48, blue: 1.00),  // Chàm
-        Color(red: 0.75, green: 0.28, blue: 1.00),  // Tím
-        Color(red: 1.00, green: 0.30, blue: 0.80),  // Hồng
-        Color(red: 1.00, green: 0.20, blue: 0.35)   // Đỏ (Loop)
+        Color(red: 0.00, green: 0.88, blue: 1.00),  // Neon Ice Cyan
+        Color(red: 0.20, green: 0.65, blue: 1.00),  // Sky Blue
+        Color(red: 0.45, green: 0.40, blue: 1.00),  // Royal Celestial Indigo
+        Color(red: 0.75, green: 0.35, blue: 1.00),  // Angelic Violet
+        Color(red: 0.95, green: 0.95, blue: 1.00),  // Pure Wing Silver-White
+        Color(red: 0.15, green: 0.85, blue: 1.00),  // Bright Cyan
+        Color(red: 0.00, green: 0.70, blue: 0.95),  // Electric Aqua
+        Color(red: 0.00, green: 0.88, blue: 1.00)   // Loop
     ]
 
     var body: some View {
@@ -631,7 +627,7 @@ struct RainbowText: View {
                         .font(.system(size: 23, weight: .black, design: .rounded))
                 )
             )
-            .shadow(color: Color.purple.opacity(0.4), radius: 10, x: 0, y: 0)
+            .shadow(color: Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.55), radius: 12, x: 0, y: 0)
             .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
             .onAppear {
                 withAnimation(
@@ -654,17 +650,17 @@ struct RainbowText: View {
                 .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 11, style: .continuous)
-                        .stroke(Color.white.opacity(0.28), lineWidth: 1.2)
+                        .stroke(Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.55), lineWidth: 1.2)
                 )
-                .shadow(color: Color.white.opacity(0.25), radius: 8, x: 0, y: 0)
+                .shadow(color: Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.45), radius: 8, x: 0, y: 0)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(selectedTab.title.uppercased())
                     .font(.system(size: 10, weight: .bold, design: .rounded))
                     .tracking(3.2)
-                    .foregroundColor(Color.white.opacity(0.70))
+                    .foregroundColor(Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.85))
 
-                Text(licenseManager.featureConfig.app_name.isEmpty ? "CheatStore VN" : licenseManager.featureConfig.app_name)
+                Text(licenseManager.featureConfig.app_name.isEmpty ? "VeLix VN" : licenseManager.featureConfig.app_name)
                     .font(.system(size: 24, weight: .heavy, design: .rounded))
                     .tracking(-0.6)
                     .foregroundColor(colorInk)
@@ -715,7 +711,7 @@ struct RainbowText: View {
                     // Nút Zalo
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if let url = URL(string: "https://zalo.me/0365829172") {
+                        if let url = URL(string: "https://zalo.me/0796668837") {
                             UIApplication.shared.open(url)
                         }
                     }) {
@@ -745,7 +741,7 @@ struct RainbowText: View {
                     // Nút Telegram
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        if let url = URL(string: "https://t.me/vassco911") {
+                        if let url = URL(string: "https://t.me/TNQDai") {
                             UIApplication.shared.open(url)
                         }
                     }) {
