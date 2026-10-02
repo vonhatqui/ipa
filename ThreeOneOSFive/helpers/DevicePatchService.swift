@@ -233,6 +233,35 @@ enum DevicePatchService {
             // Dọn dẹp receipt cũ của chính project này
             forceCleanupReceipts(projectID: project.id)
 
+            // ★ FIX DESYNC: Xoá triệt để file runtime cũ + cache game trước khi apply lại
+            // Khi thoát game, game có thể ghi đè/sửa localConfig.json và cache dữ liệu cũ
+            // Nếu không dọn sạch, lần apply thứ 2 sẽ bị desync (địch đứng yên, di chuyển bù)
+            for (_, containerRoot) in allContainers {
+                let docDir = containerRoot.appendingPathComponent("Documents", isDirectory: true)
+                let runtimeFiles = [
+                    "localConfig.json",
+                    "Assembly-CSharp-patch.bytes",
+                    "patch_cache",
+                    "mod_signature.bin"
+                ]
+                for fileName in runtimeFiles {
+                    let fileURL = docDir.appendingPathComponent(fileName)
+                    if fileManager.fileExists(atPath: fileURL.path) {
+                        try? fileManager.removeItem(at: fileURL)
+                        log("patch: [DesyncFix] Đã xoá file runtime cũ trước khi re-apply: \(fileName)")
+                    }
+                }
+                // Xoá game cache để tránh game đọc dữ liệu cũ bị kẹt
+                let cacheDir = containerRoot.appendingPathComponent("Library/Caches", isDirectory: true)
+                if let cacheItems = try? fileManager.contentsOfDirectory(atPath: cacheDir.path) {
+                    for cItem in cacheItems {
+                        let cURL = cacheDir.appendingPathComponent(cItem)
+                        try? fileManager.removeItem(at: cURL)
+                    }
+                    log("patch: [DesyncFix] Đã dọn sạch Library/Caches trong container game")
+                }
+            }
+
             // Khử trùng lặp rule theo relativePath trước khi apply (phòng thủ tuyệt đối chống lỗi duplicateTarget)
             var sanitizedRules: [PatchRule] = []
             var seenRelPaths = Set<String>()
@@ -296,6 +325,29 @@ enum DevicePatchService {
                 }
             }
 
+            // ★ FIX DESYNC: Sau khi apply, ghi lại localConfig.json mới hoàn toàn (ghi đè)
+            // Đảm bảo game đọc config sạch 100%, không bị ảnh hưởng bởi session trước
+            for (_, containerRoot) in allContainers {
+                let docDir = containerRoot.appendingPathComponent("Documents", isDirectory: true)
+                let patchFile = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let configFile = docDir.appendingPathComponent("localConfig.json")
+                if fileManager.fileExists(atPath: patchFile.path) {
+                    // Luôn ghi đè localConfig.json với nội dung mới, không giữ lại file cũ
+                    let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                    try? configData.write(to: configFile, options: .atomic)
+                    // Đặt quyền và loại trừ backup
+                    var url1 = patchFile
+                    var url2 = configFile
+                    var resourceValues = URLResourceValues()
+                    resourceValues.isExcludedFromBackup = true
+                    try? url1.setResourceValues(resourceValues)
+                    try? url2.setResourceValues(resourceValues)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: patchFile.path)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: configFile.path)
+                    log("patch: [DesyncFix] Đã ghi lại localConfig.json sạch sau apply")
+                }
+            }
+
             // 0xCheats Ledger: Ghi chép inject ledger vào container game
             recordInjectLedger(project: project, containers: allContainers, fileManager: fileManager)
 
@@ -317,12 +369,11 @@ enum DevicePatchService {
                 let patchFile = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
                 let configFile = docDir.appendingPathComponent("localConfig.json")
                 
-                // Đảm bảo localConfig.json luôn luôn tồn tại với testCodePatch: true khi patch đang có
+                // ★ FIX DESYNC: LUÔN ghi đè localConfig.json (không chỉ khi thiếu)
+                // Game có thể sửa/xoá file này sau mỗi phiên chơi, gây desync lần sau
                 if fileManager.fileExists(atPath: patchFile.path) {
-                    if !fileManager.fileExists(atPath: configFile.path) {
-                        let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
-                        try? configData.write(to: configFile, options: .atomic)
-                    }
+                    let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                    try? configData.write(to: configFile, options: .atomic)
                     // Đặt quyền posix và loại trừ backup để chống bị iOS / Game dọn cache khi chuyển cảnh vào trận
                     var url1 = patchFile
                     var url2 = configFile
