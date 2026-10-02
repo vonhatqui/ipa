@@ -1216,7 +1216,7 @@ struct KeyNotificationModalView: View {
                         VStack(spacing: 12) {
                             // Nút TẢI XUỐNG to, nổi bật
                             Button {
-                                let downloadUrl = AppUpdateChecker.shared.updateInfo?.update_url ?? "https://cheatingenginexyz.online/update.php"
+                                let downloadUrl = AppUpdateChecker.shared.updateInfo?.update_url ?? CheatStoreServerConfig.updateURL
                                 if let url = URL(string: downloadUrl) {
                                     UIApplication.shared.open(url)
                                 }

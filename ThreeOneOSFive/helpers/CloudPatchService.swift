@@ -43,7 +43,7 @@ public final class CloudPatchService: ObservableObject {
     @Published public private(set) var isSyncing: Bool = false
     @Published public private(set) var lastSyncDate: Date? = nil
 
-    private let apiBaseURL = "https://cheatingenginexyz.online"
+    private var apiBaseURL: String { CheatStoreServerConfig.apiBaseURL }
     private let urlSession: URLSession
 
     private init() {

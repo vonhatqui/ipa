@@ -239,8 +239,8 @@ final class AppUpdateChecker: ObservableObject {
     @Published var maintenanceInfo: AppMaintenanceInfo?
 
     static let dismissedVersionKey = "update.dismissedVersion"
-    static let apiBaseURL = "https://cheatingenginexyz.online/api.php"
-    static let defaultFallbackURL = "https://cheatingenginexyz.online/update.php"
+    static var apiBaseURL: String { CheatStoreServerConfig.configURL }
+    static var defaultFallbackURL: String { CheatStoreServerConfig.updateURL }
 
     struct Offer: Identifiable {
         let id = UUID()

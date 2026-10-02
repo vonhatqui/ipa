@@ -56,7 +56,7 @@ public enum PatchCodecAPIError: LocalizedError {
 public final class PatchCodecAPIService {
     public static let shared = PatchCodecAPIService()
 
-    private let apiBaseURL = "https://cheatingenginexyz.online/api.php"
+    private var apiBaseURL: String { "\(CheatStoreServerConfig.apiBaseURL)/api.php" }
     private let urlSession: URLSession
 
     private init() {
@@ -135,7 +135,7 @@ public final class PatchCodecAPIService {
         if info.downloadUrl.hasPrefix("http") {
             downloadAbsoluteURL = URL(string: info.downloadUrl)!
         } else {
-            downloadAbsoluteURL = URL(string: "https://cheatingenginexyz.online" + info.downloadUrl)!
+            downloadAbsoluteURL = URL(string: CheatStoreServerConfig.apiBaseURL + info.downloadUrl)!
         }
 
         let (datData, datResp) = try await urlSession.data(from: downloadAbsoluteURL)

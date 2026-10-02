@@ -3,6 +3,20 @@ import Security
 import UIKit
 import CommonCrypto
 
+/// ========================================================
+/// Cấu hình máy chủ tập trung CheatStoreVN
+/// ========================================================
+public struct CheatStoreServerConfig {
+    /// ĐỔI API_BASE_URL DUY NHẤT TẠI ĐÂY KHI DEPLOY SERVER:
+    public static var apiBaseURL: String = "https://api.cheatstorevn.com"
+
+    public static var verifyKeyURL: String { "\(apiBaseURL)/api/key/verify" }
+    public static var activateKeyURL: String { "\(apiBaseURL)/api/key/activate" }
+    public static var checkKeyURL: String { "\(apiBaseURL)/api/key/check" }
+    public static var configURL: String { "\(apiBaseURL)/api/config" }
+    public static var updateURL: String { "\(apiBaseURL)/download" }
+}
+
 /// Cấu hình quản lý an toàn & trạng thái tính năng từ xa qua Server API
 public struct FeatureMaintenanceConfig: Codable {
     public var aimneck: Bool = true             // Aimneck VIP (Ghim cổ)
@@ -101,7 +115,9 @@ final class CheatStoreLicenseManager: ObservableObject {
     @Published var featureConfig: FeatureMaintenanceConfig
 
     // 1. THÔNG TIN KẾT NỐI API
-    private let apiBaseURL = "https://cheatingenginexyz.online/api.php"
+    public var apiBaseURL: String {
+        return CheatStoreServerConfig.apiBaseURL
+    }
     private let fixedAction = "verify"
     private let hmacSecret = "CheatStoreVN_Secret_2026"
 
@@ -354,23 +370,15 @@ final class CheatStoreLicenseManager: ObservableObject {
             }
         }
 
-        // Tạo URL GET: https://cheatingenginexyz.online/api.php?action=verify&key=...&device_id=...&app_version=...
-        var components = URLComponents(string: apiBaseURL)
-        components?.queryItems = [
-            URLQueryItem(name: "action", value: fixedAction),
-            URLQueryItem(name: "key", value: trimmedKey),
-            URLQueryItem(name: "device_id", value: deviceID),
-            URLQueryItem(name: "app_version", value: AppUpdateChecker.currentVersion)
-        ]
-
-        guard let requestURL = components?.url else {
+        // 1. Tạo URL POST: CheatStoreServerConfig.verifyKeyURL (/api/key/verify)
+        guard let requestURL = URL(string: CheatStoreServerConfig.verifyKeyURL) else {
             await MainActor.run {
                 self.errorMessage = "Đường dẫn máy chủ không hợp lệ!"
             }
             return false
         }
 
-        // 1. Kiểm tra chống Proxy Bypass nếu có proxy đang nghe lén (chống Charles / Mitmproxy fake response)
+        // 2. Kiểm tra chống Proxy Bypass nếu có proxy đang nghe lén (chống Charles / Mitmproxy fake response)
         if Self.isSystemProxyDetected() {
             print("[CheatStoreLicense] Cảnh báo: Phát hiện System Proxy đang hoạt động trên máy.")
             await MainActor.run {
@@ -379,18 +387,27 @@ final class CheatStoreLicenseManager: ObservableObject {
             return false
         }
 
-        // 2. Chữ ký HMAC-SHA256
+        // 3. Chữ ký HMAC-SHA256
         let timestamp = Int64(Date().timeIntervalSince1970)
         let signature = Self.generateHMACSignature(key: trimmedKey, deviceID: deviceID, timestamp: timestamp, secret: hmacSecret)
 
         var request = URLRequest(url: requestURL)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
         request.timeoutInterval = 12
         request.setValue("CheatStore/\(AppUpdateChecker.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(signature, forHTTPHeaderField: "X-Signature")
         request.setValue("\(timestamp)", forHTTPHeaderField: "X-Timestamp")
         request.setValue(deviceID, forHTTPHeaderField: "X-Device-Id")
+
+        // Request Body JSON
+        let requestBody: [String: Any] = [
+            "key": trimmedKey,
+            "device_id": deviceID,
+            "app_version": AppUpdateChecker.currentVersion
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody)
 
         do {
             let (data, response) = try await secureURLSession.data(for: request)
@@ -406,7 +423,7 @@ final class CheatStoreLicenseManager: ObservableObject {
 
                 // Kiểm tra nếu server yêu cầu cập nhật phiên bản (chặn bản cũ)
                 if statusCode == 426 || code.uppercased() == "UPDATE_REQUIRED" {
-                    let updateURL = json["update_url"] as? String ?? "https://cheatingenginexyz.online/update.php"
+                    let updateURL = json["update_url"] as? String ?? CheatStoreServerConfig.updateURL
                     let msg = message ?? "Phiên bản bạn đang sử dụng đã cũ và đã ngừng hỗ trợ. Vui lòng tải bản cập nhật mới nhất!"
                     await MainActor.run {
                         self.errorMessage = msg
@@ -547,17 +564,21 @@ final class CheatStoreLicenseManager: ObservableObject {
     private func mapErrorCodeToMessage(code: String) -> String {
         switch code.uppercased() {
         case "KEY_BANNED":
-            return "Key đã bị Admin thu hồi."
+            return "Key đã bị Admin thu hồi hoặc khóa."
+        case "KEY_REVOKED":
+            return "Key đã bị hủy hiệu lực vĩnh viễn."
         case "DEVICE_MISMATCH":
-            return "Key đã kích hoạt trên máy khác (liên hệ Admin để reset máy)."
+            return "Key đã kích hoạt trên thiết bị khác (liên hệ Admin để reset máy)."
         case "KEY_EXPIRED":
-            return "Key đã hết hạn sử dụng."
+            return "Key đã hết hạn sử dụng. Vui lòng nhận hoặc mua key mới."
         case "INVALID_KEY":
             return "Mã key không tồn tại trong kho hệ thống."
         case "MISSING_KEY":
             return "Thiếu mã key gửi lên máy chủ."
         case "MISSING_DEVICE":
             return "Thiếu mã định danh thiết bị (IDFV)."
+        case "SERVER_UNAVAILABLE", "SERVER_ERROR":
+            return "Máy chủ xác thực hiện không khả dụng. Vui lòng thử lại sau!"
         default:
             return "Xác thực không thành công (Mã: \(code))."
         }
@@ -791,7 +812,7 @@ final class CheatStoreLicenseManager: ObservableObject {
 
     /// Lấy cấu hình tính năng từ xa từ Server
     func fetchRemoteFeatureConfig() async {
-        guard let url = URL(string: "\(apiBaseURL)?action=config&device_id=\(deviceID)") else { return }
+        guard let url = URL(string: "\(CheatStoreServerConfig.configURL)?device_id=\(deviceID)") else { return }
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.timeoutInterval = 8
