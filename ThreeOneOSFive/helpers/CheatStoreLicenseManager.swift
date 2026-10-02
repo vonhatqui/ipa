@@ -7,8 +7,9 @@ import CommonCrypto
 /// Cấu hình máy chủ tập trung CheatStoreVN
 /// ========================================================
 public struct CheatStoreServerConfig {
-    /// ĐỔI API_BASE_URL DUY NHẤT TẠI ĐÂY KHI DEPLOY SERVER:
-    public static var apiBaseURL: String = "https://api.cheatstorevn.com"
+    /// Domain máy chủ CheatStoreVN của bạn:
+    public static var apiBaseURL: String = "http://cheatingenginexyz.online"
+    public static var secureBaseURL: String = "https://cheatingenginexyz.online"
 
     public static var verifyKeyURL: String { "\(apiBaseURL)/api/key/verify" }
     public static var activateKeyURL: String { "\(apiBaseURL)/api/key/activate" }
