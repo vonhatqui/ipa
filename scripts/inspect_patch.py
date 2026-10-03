@@ -62,5 +62,3 @@ for k, v in proj.items():
         print(f'{k}: bytes len={len(v)}')
     else:
         print(f'{k}: {v}')
-
-

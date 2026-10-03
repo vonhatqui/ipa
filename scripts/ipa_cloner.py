@@ -179,10 +179,34 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                 else:
                     exec_name = plist.get('CFBundleExecutable', 'CheatStore')
                     if clean_name.endswith(f"/{exec_name}") or clean_name == f"{app_folder}/{exec_name}":
+                        bin_data = zin.read(item.filename)
+                        if "velix" in (app_name or "").lower():
+                            bin_data = bin_data.replace(
+                                'Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                                'Quốc Đại (VeLix VN)'.encode('utf-8')
+                            ).replace(
+                                'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                                'Chủ sở hữu: Quốc Đại (VeLix VN)'.encode('utf-8')
+                            ).replace(
+                                'Liên hệ Zalo: 0365829172'.encode('utf-8'),
+                                'Liên hệ Zalo: 0796668837'.encode('utf-8')
+                            )
+                        elif "venom" in (app_name or "").lower():
+                            bin_data = bin_data.replace(
+                                'Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                                'Trương Thành Trọng '.encode('utf-8')
+                            ).replace(
+                                'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                                'Chủ sở hữu: Trương Thành Trọng '.encode('utf-8')
+                            ).replace(
+                                'Liên hệ Zalo: 0365829172'.encode('utf-8'),
+                                'Liên hệ Zalo: 095826667 '.encode('utf-8')
+                            )
                         zinfo.external_attr = 0o100755 << 16
+                        zout.writestr(zinfo, bin_data)
                     else:
                         zinfo.external_attr = 0o100644 << 16
-                    zout.writestr(zinfo, zin.read(item.filename))
+                        zout.writestr(zinfo, zin.read(item.filename))
 
             for icon_fname, icon_bytes in custom_icons.items():
                 if icon_fname not in seen_entries:

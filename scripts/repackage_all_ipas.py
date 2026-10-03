@@ -238,8 +238,8 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
     os.rename(temp_output, output_ipa_path)
     print(f"Fixed base IPA created at: {output_ipa_path} ({os.path.getsize(output_ipa_path)} bytes)")
 
-def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
-    print(f"\n--- Creating Clone: {app_name} ({bundle_id}) ---")
+def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_name=None):
+    print(f"\n--- Creating Clone: {app_name} ({bundle_id}) [Owner: {owner_name}] ---")
     print(f"Using icon: {icon_path} ({os.path.getsize(icon_path)} bytes)")
     with zipfile.ZipFile(base_ipa, 'r') as zin:
         app_folder = None
@@ -258,6 +258,8 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
         plist['CFBundleShortVersionString'] = "2.4"
         plist['CFBundleVersion'] = "10"
         plist['AppReleaseDisplayVersion'] = "2.4"
+        if owner_name:
+            plist['AppOwner'] = owner_name
 
         custom_icons = generate_custom_icons(icon_path, app_folder, plist)
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
@@ -300,8 +302,33 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, patch_entries[clean])
                 elif clean.endswith("/CheatStore"):
+                    bin_data = zin.read(item.filename)
+                    if "velix" in app_name.lower():
+                        print("  [PATCH BINARY] VeLix VN -> Chủ sở hữu: Quốc Đại (VeLix VN)")
+                        bin_data = bin_data.replace(
+                            'Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                            'Quốc Đại (VeLix VN)'.encode('utf-8')
+                        ).replace(
+                            'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                            'Chủ sở hữu: Quốc Đại (VeLix VN)'.encode('utf-8')
+                        ).replace(
+                            'Liên hệ Zalo: 0365829172'.encode('utf-8'),
+                            'Liên hệ Zalo: 0796668837'.encode('utf-8')
+                        )
+                    elif "venom" in app_name.lower():
+                        print("  [PATCH BINARY] Venom VN -> Chủ sở hữu: Trương Thành Trọng")
+                        bin_data = bin_data.replace(
+                            'Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                            'Trương Thành Trọng '.encode('utf-8')
+                        ).replace(
+                            'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
+                            'Chủ sở hữu: Trương Thành Trọng '.encode('utf-8')
+                        ).replace(
+                            'Liên hệ Zalo: 0365829172'.encode('utf-8'),
+                            'Liên hệ Zalo: 095826667 '.encode('utf-8')
+                        )
                     zinfo.external_attr = 0o100755 << 16
-                    zout.writestr(zinfo, zin.read(item.filename))
+                    zout.writestr(zinfo, bin_data)
                 else:
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, zin.read(item.filename))
@@ -331,7 +358,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
     os.rename(temp_output, output_ipa)
     print(f"Clone IPA successfully created: {output_ipa} ({os.path.getsize(output_ipa)} bytes)")
 
-def verify_ipa(ipa_path, expected_name, expected_bundle_id):
+def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None):
     print(f"\n[VERIFY] Checking {ipa_path}...")
     import tempfile
     with zipfile.ZipFile(ipa_path, 'r') as z:
@@ -353,7 +380,6 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         name_set = set(names)
         for n in names:
             if not n.endswith('/'):
-                # Kiểm tra xem có mục nào khác bắt đầu bằng n + '/'
                 sub_entries = [other for other in names if other != n and other.startswith(n + '/')]
                 assert len(sub_entries) == 0, f"FATAL UNZIP ERROR: File '{n}' collides with sub-entries: {sub_entries}"
         print("  ✓ File-as-Directory collision check: PASSED (Zero collisions!)")
@@ -377,6 +403,12 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         if has_exec:
             exec_mode = oct(z.getinfo(exec_path).external_attr >> 16)
             exec_sys = z.getinfo(exec_path).create_system
+
+        # Kiểm tra chuỗi chủ sở hữu trong binary
+        if expected_owner:
+            bin_data = z.read(exec_path)
+            assert expected_owner.encode('utf-8') in bin_data, f"Binary missing expected owner '{expected_owner}'!"
+            print(f"  ✓ Binary owner verified: '{expected_owner}'")
 
         # Kiểm tra patch files
         patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
@@ -430,9 +462,9 @@ def main():
 
     print("==================================================")
     print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI 2 FILE NẠP DỮ LIỆU & MHA-C2")
-    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes)")
-    print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes)")
-    print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes)")
+    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes) [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
+    print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes) [Chủ sở hữu: Quốc Đại]")
+    print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes) [Chủ sở hữu: Trương Thành Trọng]")
     print("==================================================")
 
     # 1. Tạo fixed base CheatStore-VN.ipa với icon CheatStore chuẩn
@@ -443,28 +475,30 @@ def main():
     shutil.copyfile(fixed_base_ipa, well_known_base)
     print(f"Copied fixed base IPA to: {well_known_base}")
 
-    # 3. Clone VeLix VN (Bảo tồn bundle-id com.apple.mobile.MobileHouseArrest để MHA-C2 hoạt động)
+    # 3. Clone VeLix VN (Chủ sở hữu: Quốc Đại)
     create_clone(
         base_ipa=fixed_base_ipa,
         output_ipa=velix_ipa,
         app_name="VeLix VN",
         bundle_id="com.apple.mobile.MobileHouseArrest",
-        icon_path=velix_icon
+        icon_path=velix_icon,
+        owner_name="Quốc Đại"
     )
 
-    # 4. Clone Venom VN (Bảo tồn bundle-id com.apple.mobile.MobileHouseArrest để MHA-C2 hoạt động)
+    # 4. Clone Venom VN (Chủ sở hữu: Trương Thành Trọng)
     create_clone(
         base_ipa=fixed_base_ipa,
         output_ipa=venom_ipa,
         app_name="Venom VN",
         bundle_id="com.apple.mobile.MobileHouseArrest",
-        icon_path=venom_icon
+        icon_path=venom_icon,
+        owner_name="Trương Thành Trọng"
     )
 
     # 5. Verify cả 3 IPA
-    verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest")
-    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest")
-    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest")
+    verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui")
+    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại")
+    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng")
 
     # 6. Upload lên GitHub Release v2.4
     print("\n--- Uploading all 3 IPAs to GitHub Release v2.4 ---")

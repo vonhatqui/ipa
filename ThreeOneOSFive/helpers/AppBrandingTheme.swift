@@ -30,6 +30,14 @@ enum AppBrandingTheme {
         }
     }
 
+    var ownerName: String {
+        switch self {
+        case .cheatStore: return "Võ Nhật Qui (CheatVN)"
+        case .veLix: return "Quốc Đại"
+        case .venom: return "Trương Thành Trọng"
+        }
+    }
+
     var discordTag: String {
         switch self {
         case .cheatStore: return "Discord: @jinwwostore.vn"

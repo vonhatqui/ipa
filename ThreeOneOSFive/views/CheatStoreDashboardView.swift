@@ -1879,7 +1879,7 @@ struct RainbowText: View {
                     Divider().background(Color.white.opacity(0.08))
 
                     // Chủ sở hữu
-                    metaRow(label: "Chủ sở hữu", value: "Võ Nhật Qui (CheatVN)")
+                    metaRow(label: "Chủ sở hữu", value: theme.ownerName)
 
                     Divider().background(Color.white.opacity(0.08))
 
@@ -2136,7 +2136,7 @@ struct RainbowText: View {
                             Text("Liên hệ Zalo: 0365829172")
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundColor(colorInk)
-                            Text("Chủ sở hữu: Võ Nhật Qui (CheatVN)")
+                            Text("Chủ sở hữu: \(theme.ownerName)")
                                 .font(.system(size: 11))
                                 .foregroundColor(colorMute)
                         }
