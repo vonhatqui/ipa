@@ -175,11 +175,37 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
-      - name: Lưu trữ file IPA lên GitHub Artifacts
+      - name: Đóng gói 2 bản clone VeLix VN & Venom VN
+        run: |
+          echo "📦 Cài đặt thư viện Python (Pillow)..."
+          python3 -m pip install --upgrade pip Pillow
+
+          echo "🚀 Đang clone VeLix VN..."
+          python3 scripts/ipa_cloner.py \
+            --base-ipa "$IPA_PATH" \
+            --output "VeLix_VN.ipa" \
+            --app-name "VeLix VN" \
+            --bundle-id "com.velixvn.app" \
+            --version "2.4" \
+            --icon "assets/brands/velix_logo.jpg"
+
+          echo "🚀 Đang clone Venom VN..."
+          python3 scripts/ipa_cloner.py \
+            --base-ipa "$IPA_PATH" \
+            --output "Venom_VN.ipa" \
+            --app-name "Venom VN" \
+            --bundle-id "com.venomvn.app" \
+            --version "2.4" \
+            --icon "assets/brands/venom_logo.png"
+
+          echo "📋 Danh sách các file IPA đã đóng gói hoàn tất:"
+          ls -la *.ipa
+
+      - name: Lưu trữ tất cả file IPA lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.IPA_PATH }}
-          path: ${{ env.IPA_PATH }}
+          name: CheatStore-All-IPAs
+          path: "*.ipa"
           if-no-files-found: error
           retention-days: 30
 
