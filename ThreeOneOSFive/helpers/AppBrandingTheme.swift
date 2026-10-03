@@ -49,7 +49,7 @@ enum AppBrandingTheme {
     var zaloURLString: String? {
         switch self {
         case .cheatStore: return "https://zalo.me/0365829172"
-        case .veLix: return "https://zalo.me/0796668837"
+        case .veLix: return "https://zalo.me/0796668836"
         case .venom: return "https://zalo.me/095826667"
         }
     }

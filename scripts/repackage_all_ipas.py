@@ -313,7 +313,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
                             'Chủ sở hữu: Quốc Đại (VeLix VN)'.encode('utf-8')
                         ).replace(
                             'Liên hệ Zalo: 0365829172'.encode('utf-8'),
-                            'Liên hệ Zalo: 0796668837'.encode('utf-8')
+                            'Liên hệ Zalo: 0796668836'.encode('utf-8')
                         )
                     elif "venom" in app_name.lower():
                         print("  [PATCH BINARY] Venom VN -> Chủ sở hữu: Trương Thành Trọng")
@@ -358,7 +358,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
     os.rename(temp_output, output_ipa)
     print(f"Clone IPA successfully created: {output_ipa} ({os.path.getsize(output_ipa)} bytes)")
 
-def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None):
+def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None, expected_phone=None):
     print(f"\n[VERIFY] Checking {ipa_path}...")
     import tempfile
     with zipfile.ZipFile(ipa_path, 'r') as z:
@@ -404,11 +404,15 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None)
             exec_mode = oct(z.getinfo(exec_path).external_attr >> 16)
             exec_sys = z.getinfo(exec_path).create_system
 
-        # Kiểm tra chuỗi chủ sở hữu trong binary
-        if expected_owner:
+        # Kiểm tra chuỗi chủ sở hữu và số điện thoại trong binary
+        if expected_owner or expected_phone:
             bin_data = z.read(exec_path)
-            assert expected_owner.encode('utf-8') in bin_data, f"Binary missing expected owner '{expected_owner}'!"
-            print(f"  ✓ Binary owner verified: '{expected_owner}'")
+            if expected_owner:
+                assert expected_owner.encode('utf-8') in bin_data, f"Binary missing expected owner '{expected_owner}'!"
+                print(f"  ✓ Binary owner verified: '{expected_owner}'")
+            if expected_phone:
+                assert expected_phone.encode('utf-8') in bin_data, f"Binary missing expected phone '{expected_phone}'!"
+                print(f"  ✓ Binary phone verified: '{expected_phone}'")
 
         # Kiểm tra patch files
         patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
@@ -496,9 +500,9 @@ def main():
     )
 
     # 5. Verify cả 3 IPA
-    verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui")
-    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại")
-    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng")
+    verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
+    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại", expected_phone="0796668836")
+    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng", expected_phone="095826667")
 
     # 6. Upload lên GitHub Release v2.4
     print("\n--- Uploading all 3 IPAs to GitHub Release v2.4 ---")

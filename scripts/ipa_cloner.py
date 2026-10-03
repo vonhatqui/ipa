@@ -189,7 +189,7 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                                 'Chủ sở hữu: Quốc Đại (VeLix VN)'.encode('utf-8')
                             ).replace(
                                 'Liên hệ Zalo: 0365829172'.encode('utf-8'),
-                                'Liên hệ Zalo: 0796668837'.encode('utf-8')
+                                'Liên hệ Zalo: 0796668836'.encode('utf-8')
                             )
                         elif "venom" in (app_name or "").lower():
                             bin_data = bin_data.replace(
