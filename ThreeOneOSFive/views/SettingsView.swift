@@ -8,6 +8,7 @@ struct SettingsView: View {
     @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
     @AppStorage(FeatureVisibility.developerModeStorageKey)
     private var developerModeEnabled = false
+    @State private var showCompatList = false
 
     var body: some View {
         NavigationStack {
@@ -22,8 +23,26 @@ struct SettingsView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
+                        Spacer()
+                        // Nút nhỏ danh sách tương thích CheatStoreVN
+                        Button {
+                            showCompatList = true
+                        } label: {
+                            Label("iOS", systemImage: "checkmark.shield.fill")
+                                .font(.caption2.weight(.semibold))
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(appState.isSupported ? Color.green.opacity(0.18) : Color.red.opacity(0.18), in: Capsule())
+                                .foregroundStyle(appState.isSupported ? Color.green : Color.red)
+                                .overlay(Capsule().stroke(appState.isSupported ? Color.green.opacity(0.4) : Color.red.opacity(0.4), lineWidth: 0.8))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Danh sách tương thích CheatStoreVN")
                     }
                     .padding(.vertical, 4)
+                }
+                .sheet(isPresented: $showCompatList) {
+                    IOSCompatibilityListView()
                 }
 
                 Section(language.text("settings.language")) {
@@ -77,22 +96,58 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    // Trạng thái thiết bị hiện tại
                     HStack {
                         Text(language.text("settings.current_version"))
                         Spacer()
-                        Text(language.text(appState.isSupported ? "settings.supported" : "settings.unsupported"))
+                        Label(
+                            language.text(appState.isSupported ? "settings.supported" : "settings.unsupported"),
+                            systemImage: appState.isSupported ? "checkmark.circle.fill" : "xmark.circle.fill"
+                        )
+                        .font(.subheadline.weight(.semibold))
                         .foregroundStyle(appState.isSupported ? Color.green : Color.red)
                     }
-                    LabeledContent("iOS 17", value: ExploitSupportPolicy.verifiedIOS17Range)
-                    LabeledContent("iOS 18", value: ExploitSupportPolicy.verifiedIOS18Range)
-                    LabeledContent("iOS 26", value: ExploitSupportPolicy.verifiedIOS26Range)
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("iOS 27.0")
-                            .font(.body)
+
+                    // iOS 17: 17.0 – 17.7.x (tương thích)
+                    iosRangeRow(
+                        label: "iOS 17",
+                        range: ExploitSupportPolicy.verifiedIOS17Range,
+                        compatible: true
+                    )
+                    // iOS 18: 18.0 – 18.7.1 (tương thích)
+                    iosRangeRow(
+                        label: "iOS 18",
+                        range: ExploitSupportPolicy.verifiedIOS18Range,
+                        compatible: true
+                    )
+                    // iOS 19 – 25: không hỗ trợ
+                    iosRangeRow(
+                        label: "iOS 19–25",
+                        range: "Không hỗ trợ",
+                        compatible: false
+                    )
+                    // iOS 26: 26.0 – 26.6.1 (tương thích)
+                    iosRangeRow(
+                        label: "iOS 26",
+                        range: ExploitSupportPolicy.verifiedIOS26Range,
+                        compatible: true
+                    )
+                    // iOS 27 Beta: 27.0 Beta 1–4 (tương thích)
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Label("iOS 27 Beta", systemImage: "checkmark.circle.fill")
+                                .font(.subheadline)
+                                .foregroundStyle(Color.green)
+                            Spacer()
+                            Text("27.0 Beta 1–4")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                         ForEach(ExploitSupportPolicy.verifiedIOS27Builds, id: \.build) { version in
                             Text(versionLabel(version))
-                            .font(.caption.monospaced())
-                            .foregroundStyle(.secondary)
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .padding(.leading, 22)
                         }
                     }
                     .padding(.vertical, 2)
@@ -201,6 +256,70 @@ struct SettingsView: View {
                 .contentShape(Rectangle())
             }
             .accessibilityLabel(language.text("accessibility.open_profile", name))
+        }
+    }
+
+    /// Row hiển thị một iOS range với badge tương thích / không tương thích
+    @ViewBuilder
+    private func iosRangeRow(label: String, range: String, compatible: Bool) -> some View {
+        HStack {
+            Label(label, systemImage: compatible ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.subheadline)
+                .foregroundStyle(compatible ? Color.green : Color.red)
+            Spacer()
+            Text(range)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+// MARK: - IOSCompatibilityListView
+
+/// Sheet hiển thị toàn bộ danh sách iOS tương thích / không tương thích với CheatStoreVN
+struct IOSCompatibilityListView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    private let rows: [(label: String, range: String, compatible: Bool)] = [
+        ("iOS 17.0–17.7.x",  "Tương thích",     true),
+        ("iOS 18.0–18.7.1",  "Tương thích",     true),
+        ("iOS 19–25",        "Không hỗ trợ",    false),
+        ("iOS 26.0–26.6.1",  "Tương thích",     true),
+        ("iOS 27.0 Beta 1",  "Tương thích",     true),
+        ("iOS 27.0 Beta 2",  "Tương thích",     true),
+        ("iOS 27.0 Beta 3",  "Tương thích (PB1)", true),
+        ("iOS 27.0 Beta 4",  "Tương thích (PB2)", true),
+        ("iOS 27.0 Beta 5+", "Chưa xác nhận",   false)
+    ]
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(rows, id: \.label) { row in
+                        HStack {
+                            Label(row.label, systemImage: row.compatible ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundStyle(row.compatible ? Color.green : Color.red)
+                                .font(.subheadline)
+                            Spacer()
+                            Text(row.range)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Danh sách tương thích CheatStoreVN")
+                } footer: {
+                    Text("Dựa trên exploit 3105 của YangJiii. Chỉ các phiên bản được liệt kê mới được hỗ trợ.")
+                }
+            }
+            .navigationTitle("Tương thích iOS")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Đóng") { dismiss() }.fontWeight(.semibold)
+                }
+            }
         }
     }
 }

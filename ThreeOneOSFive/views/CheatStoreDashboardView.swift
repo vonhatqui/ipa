@@ -219,6 +219,7 @@ struct CheatStoreDashboardView: View {
     @State private var enableHaptic: Bool = true
     @State private var autoCleanOnExit: Bool = true
     @State private var selectedLanguage: String = "Tiếng Việt"
+    @State private var showCompatList: Bool = false
 
     // Common Alerts & Status
     @State private var alertTitle: String = ""
@@ -481,6 +482,9 @@ struct CheatStoreDashboardView: View {
                 message: Text(alertMessage ?? ""),
                 dismissButton: .default(Text("Đóng"))
             )
+        }
+        .sheet(isPresented: $showCompatList) {
+            IOSCompatibilityListView()
         }
         .onAppear {
             cloudPatchService.syncCloudPatches()
@@ -951,6 +955,56 @@ struct RainbowText: View {
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
         let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
+
+        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json mới
+        var rawSearchDirs: [URL] = []
+        if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
+        }
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105/Documents"))
+            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
+            rawSearchDirs.append(root)
+        }
+
+        for dir in rawSearchDirs {
+            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
+
+            if let patchSrc = patchSrc {
+                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
+                let c2 = dir.appendingPathComponent("localConfig.json")
+                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
+
+                let allContainers = DevicePatchService.allAvailableFreeFireContainers()
+                for (_, root) in allContainers {
+                    let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                    try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+                    let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                    let dstConfig = docDir.appendingPathComponent("localConfig.json")
+
+                    try? fileManager.removeItem(at: dstPatch)
+                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+
+                    if let configSrc = configSrc {
+                        try? fileManager.removeItem(at: dstConfig)
+                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
+                    } else {
+                        let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                        try? configData.write(to: dstConfig, options: .atomic)
+                    }
+                }
+                print("[CheatStore] ✅ Đã nạp thành công raw patch Assembly-CSharp-patch.bytes & localConfig.json")
+                return true
+            }
+        }
 
         // Danh sách các đường dẫn tìm kiếm file mod gốc chuẩn
         var candidateURLs: [URL] = []
@@ -1864,11 +1918,43 @@ struct RainbowText: View {
 
                 // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("THIẾT BỊ & HỆ THỐNG")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
+                    HStack {
+                        Text("THIẾT BỊ & HỆ THỐNG")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(2.4)
+                            .foregroundColor(colorMute)
+                            .padding(.horizontal, 4)
+
+                        Spacer()
+
+                        // Nút nhỏ danh sách tương thích CheatStoreVN
+                        Button {
+                            showCompatList = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.shield.fill")
+                                    .font(.system(size: 10))
+                                Text("Danh sách tương thích")
+                                    .font(.system(size: 10, weight: .bold))
+                            }
+                            .foregroundColor(theme.accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(theme.accentColor.opacity(0.12))
+                            .cornerRadius(999)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 999)
+                                    .stroke(theme.accentColor.opacity(0.35), lineWidth: 0.8)
+                            )
+                        }
+                    }
+
+                    let isDeviceCompat = ExploitSupportPolicy.isSupported(
+                        major: AppInfo.versionTuple.major,
+                        minor: AppInfo.versionTuple.minor,
+                        patch: AppInfo.versionTuple.patch,
+                        build: AppInfo.osBuild
+                    )
 
                     VStack(spacing: 12) {
                         // Dòng Máy iPhone Thật
@@ -1884,15 +1970,15 @@ struct RainbowText: View {
                             Spacer()
                             HStack(spacing: 4) {
                                 Circle()
-                                    .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                    .fill(isDeviceCompat ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color.red)
                                     .frame(width: 6, height: 6)
-                                Text("Tương thích 100%")
+                                Text(isDeviceCompat ? "Tương thích" : "Không tương thích")
                                     .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                    .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                    .foregroundColor(isDeviceCompat ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color.red)
                             }
                             .padding(.horizontal, 8)
                             .padding(.vertical, 3.5)
-                            .background(Color.green.opacity(0.12))
+                            .background((isDeviceCompat ? Color.green : Color.red).opacity(0.12))
                             .cornerRadius(8)
                         }
 
@@ -1904,7 +1990,28 @@ struct RainbowText: View {
                         Divider().background(Color.white.opacity(0.08))
 
                         // Hệ điều hành ios
-                        metaRow(label: "Hệ điều hành iOS", value: "iOS " + UIDevice.current.systemVersion)
+                        HStack {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Hệ điều hành iOS")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(colorMute)
+                                Text("iOS " + UIDevice.current.systemVersion + " (\(AppInfo.osBuild))")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(colorInk)
+                            }
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Image(systemName: isDeviceCompat ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .font(.system(size: 11))
+                                Text(isDeviceCompat ? "Được hỗ trợ" : "Chưa hỗ trợ")
+                                    .font(.system(size: 11, weight: .bold))
+                            }
+                            .foregroundColor(isDeviceCompat ? .green : .red)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background((isDeviceCompat ? Color.green : Color.red).opacity(0.1))
+                            .cornerRadius(6)
+                        }
 
                         Divider().background(Color.white.opacity(0.08))
 

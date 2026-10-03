@@ -119,13 +119,16 @@ jobs:
             plutil -replace AppReleaseDisplayVersion -string "2.3" "$TARGET_APP/Info.plist" 2>/dev/null || true
           fi
 
-          # 3. Gom toàn bộ file mod .dat vào DUY NHẤT thư mục AppCore/
-          # Tuyệt đối KHÔNG copy .dat ra ngoài root
+          # 3. Gom toàn bộ file mod và cấu hình vào thư mục AppCore/ và BundledPatches/
           mkdir -p "$TARGET_APP/AppCore"
           if [ -d "ThreeOneOSFive/AppCore" ]; then
-            echo "📂 Đang copy AppCore/*.dat và *.3105 vào $TARGET_APP/AppCore/..."
-            cp -v ThreeOneOSFive/AppCore/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
-            cp -v ThreeOneOSFive/AppCore/*.3105 "$TARGET_APP/AppCore/" 2>/dev/null || true
+            echo "📂 Đang copy toàn bộ AppCore vào $TARGET_APP/AppCore/..."
+            cp -rv ThreeOneOSFive/AppCore/* "$TARGET_APP/AppCore/" 2>/dev/null || true
+          fi
+          if [ -d "ThreeOneOSFive/BundledPatches" ]; then
+            echo "📂 Đang copy BundledPatches vào $TARGET_APP/BundledPatches/..."
+            mkdir -p "$TARGET_APP/BundledPatches"
+            cp -rv ThreeOneOSFive/BundledPatches/* "$TARGET_APP/BundledPatches/" 2>/dev/null || true
           fi
           if [ -d "ThreeOneOSFive/EngineData" ]; then
             cp -v ThreeOneOSFive/EngineData/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
@@ -142,7 +145,7 @@ jobs:
             fi
           done
 
-          # 5. DỌN DẸP TRIỆT ĐỂ ROOT: Xóa sạch toàn bộ file bừa bãi và lộ liễu
+          # 5. DỌN DẸP TRIỆT ĐỂ ROOT: Xóa sạch toàn bộ file bừa bãi và lộ liễu ở root bundle
           echo "🧹 Dọn dẹp sạch sẽ thư mục gốc cheatstorevip.app..."
           rm -f "$TARGET_APP"/*.dat 2>/dev/null || true
           rm -f "$TARGET_APP"/*.3105 2>/dev/null || true
@@ -150,7 +153,6 @@ jobs:
           rm -f "$TARGET_APP"/*.log 2>/dev/null || true
           rm -f "$TARGET_APP"/CheatLogo.png "$TARGET_APP"/CheatStoreLogo.jpg "$TARGET_APP"/FreeFireIcon.png 2>/dev/null || true
           rm -f "$TARGET_APP"/skin_ignis.jpeg "$TARGET_APP"/skin_naco.png 2>/dev/null || true
-          rm -rf "$TARGET_APP"/BundledPatches 2>/dev/null || true
 
           echo "📋 Danh sách các file trong app sau khi tối ưu gọn gàng:"
           ls -la "$TARGET_APP"
