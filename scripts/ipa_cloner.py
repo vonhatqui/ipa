@@ -119,7 +119,6 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             extra_entries[f"{app_folder}/AppCore/core_manifest.bin"] = aura_bytes
             extra_entries[f"{app_folder}/AppCore/Assets/core_manifest.bin"] = aura_bytes
             extra_entries[f"{app_folder}/AppCore/Aurora Menu v1.3105"] = aura_bytes
-            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105"] = aura_bytes
 
         if os.path.exists(raw_patch_path) and os.path.exists(raw_config_path):
             with open(raw_patch_path, "rb") as f:
@@ -150,6 +149,7 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                     break
             if not has_payload_dir:
                 p_info = zipfile.ZipInfo("Payload/", (2026, 1, 1, 0, 0, 0))
+                p_info.create_system = 3
                 p_info.external_attr = 0o40755 << 16
                 zout.writestr(p_info, b'')
 
@@ -158,13 +158,16 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                 clean_name = item.filename.replace('\\', '/')
                 if clean_name in seen_entries:
                     continue
+                # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
+                if clean_name.endswith("BundledPatches/Aurora Menu v1.3105") and not clean_name.endswith('/'):
+                    continue
                 seen_entries.add(clean_name)
                 
                 zinfo = zipfile.ZipInfo(clean_name, item.date_time)
+                zinfo.create_system = 3
                 zinfo.compress_type = item.compress_type
-                zinfo.external_attr = item.external_attr
                 
-                if item.is_dir():
+                if item.is_dir() or clean_name.endswith('/'):
                     zinfo.external_attr = 0o40755 << 16
                     zout.writestr(zinfo, b'')
                 elif clean_name == plist_name:
@@ -177,16 +180,18 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                     exec_name = plist.get('CFBundleExecutable', 'CheatStore')
                     if clean_name.endswith(f"/{exec_name}") or clean_name == f"{app_folder}/{exec_name}":
                         zinfo.external_attr = 0o100755 << 16
-                    elif zinfo.external_attr == 0:
+                    else:
                         zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, zin.read(item.filename))
 
             for icon_fname, icon_bytes in custom_icons.items():
                 if icon_fname not in seen_entries:
                     zinfo = zipfile.ZipInfo(icon_fname, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, icon_bytes)
+                    seen_entries.add(icon_fname)
 
         if os.path.exists(output_ipa):
             os.remove(output_ipa)

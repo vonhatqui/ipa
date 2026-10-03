@@ -40,7 +40,6 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/core_manifest.bin": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Assets/core_manifest.bin": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
@@ -164,6 +163,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
         with zipfile.ZipFile(temp_output, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # 1. Thư mục Payload/
             p_info = zipfile.ZipInfo("Payload/", (2026, 1, 1, 0, 0, 0))
+            p_info.create_system = 3
             p_info.external_attr = 0o40755 << 16
             zout.writestr(p_info, b'')
 
@@ -174,32 +174,39 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
                     continue
                 if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
                     continue
+                # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
+                if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
+                    continue
                 seen.add(clean)
 
                 if clean == plist_path:
                     zinfo = zipfile.ZipInfo(plist_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, updated_plist_bytes)
                 elif clean == exec_cand:
                     # Ghi binary với tên CheatStore và quyền 0o100755
                     dest_exec_path = f"{app_folder}/{target_exec_name}"
                     zinfo = zipfile.ZipInfo(dest_exec_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, zin.read(clean))
                 elif clean in custom_icons:
                     zinfo = zipfile.ZipInfo(clean, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, custom_icons[clean])
                 elif clean in patch_entries:
                     zinfo = zipfile.ZipInfo(clean, (2026, 1, 1, 0, 0, 0))
-                    zinfo.external_attr = 0o100644 << 16
+                    zinfo.create_system = 3
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, patch_entries[clean])
                 else:
                     zinfo = zipfile.ZipInfo(clean, item.date_time)
+                    zinfo.create_system = 3
                     zinfo.compress_type = item.compress_type
-                    if item.is_dir():
+                    if item.is_dir() or clean.endswith('/'):
                         zinfo.external_attr = 0o40755 << 16
                         zout.writestr(zinfo, b'')
                     else:
@@ -210,6 +217,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
             for icon_fname, icon_bytes in custom_icons.items():
                 if icon_fname not in seen:
                     zinfo = zipfile.ZipInfo(icon_fname, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, icon_bytes)
@@ -219,6 +227,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
             for p_path, p_bytes in patch_entries.items():
                 if p_path not in seen:
                     zinfo = zipfile.ZipInfo(p_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, p_bytes)
@@ -258,6 +267,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
         with zipfile.ZipFile(temp_output, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # Payload/ folder
             p_info = zipfile.ZipInfo("Payload/", (2026, 1, 1, 0, 0, 0))
+            p_info.create_system = 3
             p_info.external_attr = 0o40755 << 16
             zout.writestr(p_info, b'')
 
@@ -268,12 +278,16 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                     continue
                 if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
                     continue
+                # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
+                if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
+                    continue
                 seen.add(clean)
 
                 zinfo = zipfile.ZipInfo(clean, item.date_time)
+                zinfo.create_system = 3
                 zinfo.compress_type = item.compress_type
 
-                if item.is_dir():
+                if item.is_dir() or clean.endswith('/'):
                     zinfo.external_attr = 0o40755 << 16
                     zout.writestr(zinfo, b'')
                 elif clean == plist_path:
@@ -296,6 +310,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
             for icon_fname, icon_bytes in custom_icons.items():
                 if icon_fname not in seen:
                     zinfo = zipfile.ZipInfo(icon_fname, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, icon_bytes)
@@ -305,6 +320,7 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
             for p_path, p_bytes in patch_entries.items():
                 if p_path not in seen:
                     zinfo = zipfile.ZipInfo(p_path, (2026, 1, 1, 0, 0, 0))
+                    zinfo.create_system = 3
                     zinfo.external_attr = 0o100644 << 16
                     zinfo.compress_type = zipfile.ZIP_DEFLATED
                     zout.writestr(zinfo, p_bytes)
@@ -317,7 +333,13 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
 
 def verify_ipa(ipa_path, expected_name, expected_bundle_id):
     print(f"\n[VERIFY] Checking {ipa_path}...")
+    import tempfile
     with zipfile.ZipFile(ipa_path, 'r') as z:
+        # 1. Kiểm tra testzip
+        bad_file = z.testzip()
+        assert bad_file is None, f"Corrupted file in zip: {bad_file}"
+        print("  ✓ testzip() integrity check: PASSED")
+
         names = z.namelist()
         has_payload = "Payload/" in names
         app_folder = None
@@ -326,6 +348,20 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
             if len(parts) >= 2 and parts[0] == 'Payload' and parts[1].endswith('.app'):
                 app_folder = f"Payload/{parts[1]}"
                 break
+        
+        # 2. Kiểm tra xung đột File vs Thư mục (nguyên nhân gây Unzip fail trên ESign)
+        name_set = set(names)
+        for n in names:
+            if not n.endswith('/'):
+                # Kiểm tra xem có mục nào khác bắt đầu bằng n + '/'
+                sub_entries = [other for other in names if other != n and other.startswith(n + '/')]
+                assert len(sub_entries) == 0, f"FATAL UNZIP ERROR: File '{n}' collides with sub-entries: {sub_entries}"
+        print("  ✓ File-as-Directory collision check: PASSED (Zero collisions!)")
+
+        # 3. Thử nghiệm giải nén thực tế (Full extraction test)
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            z.extractall(tmp_dir)
+            print("  ✓ Full zip extractall test: PASSED (No Unzip fail!)")
         
         plist_data = z.read(f"{app_folder}/Info.plist")
         plist = plistlib.loads(plist_data)
@@ -337,8 +373,10 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         exec_path = f"{app_folder}/{exec_name}"
         has_exec = exec_path in names
         exec_mode = None
+        exec_sys = None
         if has_exec:
             exec_mode = oct(z.getinfo(exec_path).external_attr >> 16)
+            exec_sys = z.getinfo(exec_path).create_system
 
         # Kiểm tra patch files
         patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
@@ -357,7 +395,7 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         print(f"  ✓ Payload/ folder: {has_payload}")
         print(f"  ✓ CFBundleDisplayName: {disp_name} (match expected: {disp_name == expected_name})")
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
-        print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode} (valid 0o100755: {exec_mode == '0o100755'})")
+        print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode}, create_system={exec_sys} (valid UNIX: {exec_sys == 3})")
         print(f"  ✓ Patch .core_runtime.dat size: {patch_size} bytes (matches 46842: {patch_size == 46842})")
         print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes")
         print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes")
@@ -366,6 +404,7 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         assert has_payload, "Missing Payload/ folder!"
         assert has_exec, f"Missing executable {exec_path}!"
         assert exec_mode == "0o100755", f"Executable permissions wrong: {exec_mode}!"
+        assert exec_sys == 3, f"Executable create_system wrong: {exec_sys} != 3 (UNIX)!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
         assert b_id == expected_bundle_id, f"Bundle ID mismatch: {b_id} != {expected_bundle_id}!"
         assert patch_size == 46842, f"Patch size wrong: {patch_size} != 46842!"
