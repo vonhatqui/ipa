@@ -33,8 +33,10 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
         if app_name:
             plist['CFBundleDisplayName'] = app_name
             plist['CFBundleName'] = app_name
-        if bundle_id:
-            plist['CFBundleIdentifier'] = bundle_id
+        # Luôn bảo tồn com.apple.mobile.MobileHouseArrest để quyền can thiệp container (MHA-C2) hoạt động trên iOS
+        if bundle_id and bundle_id != "com.apple.mobile.MobileHouseArrest":
+            print(f"[MHA-C2] Overriding requested bundle ID '{bundle_id}' with 'com.apple.mobile.MobileHouseArrest' to ensure MobileContainerManager access!")
+        plist['CFBundleIdentifier'] = "com.apple.mobile.MobileHouseArrest"
         if version:
             plist['CFBundleShortVersionString'] = version
             plist['CFBundleVersion'] = version
@@ -102,6 +104,38 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             custom_icons[f"{app_folder}/PhantomBrand.png"] = png_data
             custom_icons[f"{app_folder}/CheatLogo.png"] = png_data
             custom_icons[f"{app_folder}/CheatStoreLogo.jpg"] = jpg_data
+
+        # Đồng bộ 2 file nạp dữ liệu trực tiếp và file patch 3105 vào AppCore & BundledPatches
+        extra_entries = {}
+        aura_path = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
+        raw_patch_path = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
+        raw_config_path = r"ThreeOneOSFive\AppCore\localConfig.json"
+
+        if os.path.exists(aura_path):
+            with open(aura_path, "rb") as f:
+                aura_bytes = f.read()
+            extra_entries[f"{app_folder}/AppCore/.core_runtime.dat"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/core_runtime.dat"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/core_manifest.bin"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/Assets/core_manifest.bin"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/Aurora Menu v1.3105"] = aura_bytes
+            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105"] = aura_bytes
+
+        if os.path.exists(raw_patch_path) and os.path.exists(raw_config_path):
+            with open(raw_patch_path, "rb") as f:
+                raw_patch_bytes = f.read()
+            with open(raw_config_path, "rb") as f:
+                raw_config_bytes = f.read()
+            extra_entries[f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/AppCore/localConfig.json"] = raw_config_bytes
+            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json"] = raw_config_bytes
+            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json"] = raw_config_bytes
+            extra_entries[f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/AppCore/Assets/localConfig.json"] = raw_config_bytes
+
+        custom_icons.update(extra_entries)
 
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
 

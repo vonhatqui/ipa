@@ -5,22 +5,27 @@ import zipfile
 import shutil
 
 def main():
-    base_ipa = "CheatStore-VN.ipa"
+    base_ipa = r"d:\update_file\CheatStore-VN.ipa"
     if not os.path.exists(base_ipa):
-        print(f"Error: {base_ipa} not found!")
+        base_ipa = "CheatStore-VN.ipa"
+    if not os.path.exists(base_ipa):
+        print(f"Error: base IPA not found!")
         sys.exit(1)
 
     print(f"=== SỬ DỤNG BASE IPA: {base_ipa} ({os.path.getsize(base_ipa)} bytes) ===")
 
     # 1. Cập nhật base.ipa vào d:\update_file\well-known\base.ipa
     dest_base = r"d:\update_file\well-known\base.ipa"
-    shutil.copyfile(base_ipa, dest_base)
-    print(f"Đã cập nhật base.ipa tại: {dest_base}")
+    if os.path.abspath(base_ipa) != os.path.abspath(dest_base):
+        shutil.copyfile(base_ipa, dest_base)
+        print(f"Đã cập nhật base.ipa tại: {dest_base}")
 
-    # Copy ra thư mục gốc d:\update_file\CheatStore-VN.ipa
-    shutil.copyfile(base_ipa, r"d:\update_file\CheatStore-VN.ipa")
+    # Copy ra thư mục gốc d:\update_file\CheatStore-VN.ipa nếu khác
+    dest_cs = r"d:\update_file\CheatStore-VN.ipa"
+    if os.path.abspath(base_ipa) != os.path.abspath(dest_cs):
+        shutil.copyfile(base_ipa, dest_cs)
 
-    # 2. Tạo bản clone VeLix VN
+    # 2. Tạo bản clone VeLix VN (Bảo tồn com.apple.mobile.MobileHouseArrest cho MHA-C2)
     print("\n--- Đang đóng gói VeLix VN ---")
     velix_icon = "assets/brands/velix_logo.jpg"
     velix_output = r"d:\update_file\VeLix_VN.ipa"
@@ -29,22 +34,22 @@ def main():
         "--base-ipa", base_ipa,
         "--output", velix_output,
         "--app-name", "VeLix VN",
-        "--bundle-id", "com.velixvn.app",
+        "--bundle-id", "com.apple.mobile.MobileHouseArrest",
         "--version", "2.4",
         "--icon", velix_icon
     ]
     subprocess.check_call(cmd_velix)
 
-    # 3. Tạo bản clone Venom VN
+    # 3. Tạo bản clone Venom VN (Bảo tồn com.apple.mobile.MobileHouseArrest cho MHA-C2)
     print("\n--- Đang đóng gói Venom VN ---")
-    venom_icon = "assets/brands/venom_logo.png"
+    venom_icon = "assets/brands/venom_logo.jpg"
     venom_output = r"d:\update_file\Venom_VN.ipa"
     cmd_venom = [
         sys.executable, "scripts/ipa_cloner.py",
         "--base-ipa", base_ipa,
         "--output", venom_output,
         "--app-name", "Venom VN",
-        "--bundle-id", "com.venomvn.app",
+        "--bundle-id", "com.apple.mobile.MobileHouseArrest",
         "--version", "2.4",
         "--icon", venom_icon
     ]
@@ -78,7 +83,8 @@ def main():
         r"d:\update_file\CheatStore-VN.ipa",
         velix_output,
         venom_output,
-        "--clobber"
+        "--clobber",
+        "--repo", "vonhatqui/ipa"
     ]
     subprocess.check_call(upload_cmd)
     print("\n✅ Hoàn tất upload cả 3 file IPA lên GitHub Release v2.4!")

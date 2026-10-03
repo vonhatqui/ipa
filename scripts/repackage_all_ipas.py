@@ -8,7 +8,7 @@ from PIL import Image
 import subprocess
 import shutil
 
-# Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105
+# 1. Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105 (46842 bytes)
 AURA_PATCH_PATH = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
 if not os.path.exists(AURA_PATCH_PATH):
     raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
@@ -16,7 +16,22 @@ if not os.path.exists(AURA_PATCH_PATH):
 with open(AURA_PATCH_PATH, "rb") as f:
     AURA_PATCH_BYTES = f.read()
 
-print(f"Loaded source patch from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYTES)} bytes")
+# 2. Đọc 2 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes & localConfig.json)
+RAW_ASSEMBLY_PATH = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
+RAW_CONFIG_PATH = r"ThreeOneOSFive\AppCore\localConfig.json"
+
+if not os.path.exists(RAW_ASSEMBLY_PATH) or not os.path.exists(RAW_CONFIG_PATH):
+    raise FileNotFoundError(f"Missing {RAW_ASSEMBLY_PATH} or {RAW_CONFIG_PATH}")
+
+with open(RAW_ASSEMBLY_PATH, "rb") as f:
+    RAW_ASSEMBLY_BYTES = f.read()
+
+with open(RAW_CONFIG_PATH, "rb") as f:
+    RAW_CONFIG_BYTES = f.read()
+
+print(f"Loaded source patch envelope from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYTES)} bytes")
+print(f"Loaded raw Assembly-CSharp-patch.bytes: {len(RAW_ASSEMBLY_BYTES)} bytes")
+print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     return {
@@ -26,6 +41,14 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/core_manifest.bin": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105": AURA_PATCH_BYTES,
+        f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
     }
 
 def generate_custom_icons(icon_path, app_folder, plist):
@@ -137,7 +160,8 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
         patch_entries = get_patch_entries(app_folder)
 
-        with zipfile.ZipFile(output_ipa_path, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
+        temp_output = output_ipa_path + ".tmp"
+        with zipfile.ZipFile(temp_output, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # 1. Thư mục Payload/
             p_info = zipfile.ZipInfo("Payload/", (2026, 1, 1, 0, 0, 0))
             p_info.external_attr = 0o40755 << 16
@@ -200,6 +224,9 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
                     zout.writestr(zinfo, p_bytes)
                     seen.add(p_path)
 
+    if os.path.exists(output_ipa_path):
+        os.remove(output_ipa_path)
+    os.rename(temp_output, output_ipa_path)
     print(f"Fixed base IPA created at: {output_ipa_path} ({os.path.getsize(output_ipa_path)} bytes)")
 
 def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
@@ -227,7 +254,8 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
         updated_plist_bytes = plistlib.dumps(plist, fmt=plistlib.FMT_BINARY)
         patch_entries = get_patch_entries(app_folder)
 
-        with zipfile.ZipFile(output_ipa, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
+        temp_output = output_ipa + ".tmp"
+        with zipfile.ZipFile(temp_output, 'w', compression=zipfile.ZIP_DEFLATED) as zout:
             # Payload/ folder
             p_info = zipfile.ZipInfo("Payload/", (2026, 1, 1, 0, 0, 0))
             p_info.external_attr = 0o40755 << 16
@@ -282,6 +310,9 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path):
                     zout.writestr(zinfo, p_bytes)
                     seen.add(p_path)
 
+    if os.path.exists(output_ipa):
+        os.remove(output_ipa)
+    os.rename(temp_output, output_ipa)
     print(f"Clone IPA successfully created: {output_ipa} ({os.path.getsize(output_ipa)} bytes)")
 
 def verify_ipa(ipa_path, expected_name, expected_bundle_id):
@@ -313,6 +344,12 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
         patch_size = z.getinfo(patch_file).file_size if patch_file in names else 0
 
+        # Kiểm tra 2 file nạp dữ liệu trực tiếp
+        raw_patch_file = f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes"
+        raw_patch_size = z.getinfo(raw_patch_file).file_size if raw_patch_file in names else 0
+        raw_config_file = f"{app_folder}/AppCore/localConfig.json"
+        raw_config_size = z.getinfo(raw_config_file).file_size if raw_config_file in names else 0
+
         # Kiểm tra icon files
         icon_file = f"{app_folder}/AppCore/Assets/CheatStoreLogo.jpg"
         icon_size = z.getinfo(icon_file).file_size if icon_file in names else 0
@@ -322,31 +359,38 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id):
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
         print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode} (valid 0o100755: {exec_mode == '0o100755'})")
         print(f"  ✓ Patch .core_runtime.dat size: {patch_size} bytes (matches 46842: {patch_size == 46842})")
+        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes")
+        print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes")
         print(f"  ✓ Inside logo CheatStoreLogo.jpg size: {icon_size} bytes")
 
         assert has_payload, "Missing Payload/ folder!"
         assert has_exec, f"Missing executable {exec_path}!"
         assert exec_mode == "0o100755", f"Executable permissions wrong: {exec_mode}!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
+        assert b_id == expected_bundle_id, f"Bundle ID mismatch: {b_id} != {expected_bundle_id}!"
         assert patch_size == 46842, f"Patch size wrong: {patch_size} != 46842!"
-        print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE!")
+        assert raw_patch_size > 40000, f"Raw patch missing or wrong size: {raw_patch_size}!"
+        assert raw_config_size > 0, f"Raw config missing: {raw_config_size}!"
+        print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
-    raw_ipa = r"CheatStore-VN.ipa\CheatStore-VN.ipa"
+    raw_ipa = r"D:\update_file\well-known\base.ipa"
+    if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
+        raw_ipa = r"D:\update_file\CheatStore-VN.ipa"
+    if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
+        raw_ipa = r"CheatStore-VN.ipa\CheatStore-VN.ipa"
+
     fixed_base_ipa = r"D:\update_file\CheatStore-VN.ipa"
     velix_ipa = r"D:\update_file\VeLix_VN.ipa"
     venom_ipa = r"D:\update_file\Venom_VN.ipa"
 
     # Logo chuẩn của từng app:
-    # 0. CheatStore VN: Logo CheatStore gốc (ThreeOneOSFive/CheatLogo.png)
     cheatstore_icon = r"assets\brands\cheatstore_logo.png"
-    # 1. VeLix VN: Hình thiên thần có cánh + chữ VELIX VN (media_1790968897594.jpg)
     velix_icon = r"assets\brands\velix_logo.jpg"
-    # 2. Venom VN: Hình vương miện & rồng tím + chữ VENOM VN (media_1790969601571.jpg)
     venom_icon = r"assets\brands\venom_logo.jpg"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI PATCH 46842 BYTES TỪ D:\\aaaaaaaaacc")
+    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI 2 FILE NẠP DỮ LIỆU & MHA-C2")
     print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes)")
     print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes)")
     print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes)")
@@ -360,28 +404,28 @@ def main():
     shutil.copyfile(fixed_base_ipa, well_known_base)
     print(f"Copied fixed base IPA to: {well_known_base}")
 
-    # 3. Clone VeLix VN
+    # 3. Clone VeLix VN (Bảo tồn bundle-id com.apple.mobile.MobileHouseArrest để MHA-C2 hoạt động)
     create_clone(
         base_ipa=fixed_base_ipa,
         output_ipa=velix_ipa,
         app_name="VeLix VN",
-        bundle_id="com.velixvn.app",
+        bundle_id="com.apple.mobile.MobileHouseArrest",
         icon_path=velix_icon
     )
 
-    # 4. Clone Venom VN
+    # 4. Clone Venom VN (Bảo tồn bundle-id com.apple.mobile.MobileHouseArrest để MHA-C2 hoạt động)
     create_clone(
         base_ipa=fixed_base_ipa,
         output_ipa=venom_ipa,
         app_name="Venom VN",
-        bundle_id="com.venomvn.app",
+        bundle_id="com.apple.mobile.MobileHouseArrest",
         icon_path=venom_icon
     )
 
     # 5. Verify cả 3 IPA
     verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest")
-    verify_ipa(velix_ipa, "VeLix VN", "com.velixvn.app")
-    verify_ipa(venom_ipa, "Venom VN", "com.venomvn.app")
+    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest")
+    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest")
 
     # 6. Upload lên GitHub Release v2.4
     print("\n--- Uploading all 3 IPAs to GitHub Release v2.4 ---")
@@ -390,7 +434,8 @@ def main():
         fixed_base_ipa,
         velix_ipa,
         venom_ipa,
-        "--clobber"
+        "--clobber",
+        "--repo", "vonhatqui/ipa"
     ]
     subprocess.check_call(cmd)
     print("\n🎉 HOÀN TẤT 100%: CẢ 3 BẢN IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
