@@ -10,6 +10,26 @@ enum DevicePatchService {
     private static var appliedProjectsCache: Set<UUID>? = nil
     private static let cacheLock = NSLock()
 
+    // MARK: - Motion Blur & Graphics Safety (FF thường & Metal Pipeline)
+    /// Cấu hình an toàn tương thích đồ họa Motion Blur trên FF thường và Metal API
+    static let motionBlurSafeConfigJSON: String = """
+    {
+      "testCodePatch": true,
+      "motionBlur": true,
+      "motionBlurSafeMode": true,
+      "safeRenderMode": true,
+      "cameraStabilizer": true,
+      "bypassMotionBlurCrash": true
+    }
+    """
+
+    private static let preferenceBundleTargets: [(bundleID: String, relativePath: String)] = [
+        ("com.dts.freefireth", "Library/Preferences/com.dts.freefireth.plist"),
+        ("com.dts.freefirevn", "Library/Preferences/com.dts.freefirevn.plist"),
+        ("com.dts.freefire", "Library/Preferences/com.dts.freefire.plist"),
+        ("com.dts.freefiremax", "Library/Preferences/com.dts.freefiremax.plist")
+    ]
+
     // MARK: - Golden Snapshots (Bản sao lưu nguyên bản vĩnh viễn)
     /// Thư mục lưu trữ bản sao lưu nguyên bản (Golden Snapshots) của game Free Fire sạch trước khi mod
     private static func goldenSnapshotsDirectory(fileManager: FileManager = .default) throws -> URL {
@@ -191,16 +211,20 @@ enum DevicePatchService {
                 }
             }
 
-            // Đồng thời chụp Golden Snapshot cho cả com.dts.freefiremax.plist nếu có
+            // Chụp Golden Snapshot cho Preferences của FF thường (com.dts.freefireth) và các biến thể nếu có
             for (_, root) in allContainers {
-                let maxPlist = root.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
-                captureGoldenSnapshotIfNeeded(
-                    targetURL: maxPlist,
-                    bundleID: "com.dts.freefiremax",
-                    relativePath: "Library/Preferences/com.dts.freefiremax.plist",
-                    replacementData: nil,
-                    fileManager: fileManager
-                )
+                for target in preferenceBundleTargets {
+                    let plistURL = root.appendingPathComponent(target.relativePath)
+                    if fileManager.fileExists(atPath: plistURL.path) {
+                        captureGoldenSnapshotIfNeeded(
+                            targetURL: plistURL,
+                            bundleID: target.bundleID,
+                            relativePath: target.relativePath,
+                            replacementData: nil,
+                            fileManager: fileManager
+                        )
+                    }
+                }
             }
 
             // 2. Tự động chuyển đổi thông minh: Khôi phục project nào có target file TRÙNG LẶP trực tiếp
@@ -317,10 +341,19 @@ enum DevicePatchService {
                 let patchFile = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
                 let configFile = docDir.appendingPathComponent("localConfig.json")
                 
-                // Đảm bảo localConfig.json luôn luôn tồn tại với testCodePatch: true khi patch đang có
+                // Đảm bảo localConfig.json luôn luôn tồn tại với cấu hình an toàn cho Motion Blur khi patch đang có
                 if fileManager.fileExists(atPath: patchFile.path) {
+                    let shouldWriteConfig: Bool
                     if !fileManager.fileExists(atPath: configFile.path) {
-                        let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                        shouldWriteConfig = true
+                    } else if let existingData = try? Data(contentsOf: configFile),
+                              let str = String(data: existingData, encoding: .utf8),
+                              !str.contains("motionBlurSafeMode") {
+                        shouldWriteConfig = true
+                    } else {
+                        shouldWriteConfig = false
+                    }
+                    if shouldWriteConfig, let configData = motionBlurSafeConfigJSON.data(using: .utf8) {
                         try? configData.write(to: configFile, options: .atomic)
                     }
                     // Đặt quyền posix và loại trừ backup để chống bị iOS / Game dọn cache khi chuyển cảnh vào trận
@@ -427,16 +460,20 @@ enum DevicePatchService {
             }
         }
 
-        // Đảm bảo phục hồi cả com.dts.freefiremax.plist
-        if let maxRoot = allContainers["com.dts.freefiremax"] {
-            let maxPlist = maxRoot.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
-            _ = restoreFromGoldenSnapshot(
-                targetURL: maxPlist,
-                bundleID: "com.dts.freefiremax",
-                relativePath: "Library/Preferences/com.dts.freefiremax.plist",
-                modData: nil,
-                fileManager: fileManager
-            )
+        // Đảm bảo phục hồi cả com.dts.freefireth.plist và preferences liên quan
+        for (_, root) in allContainers {
+            for target in preferenceBundleTargets {
+                let plistURL = root.appendingPathComponent(target.relativePath)
+                if fileManager.fileExists(atPath: plistURL.path) {
+                    _ = restoreFromGoldenSnapshot(
+                        targetURL: plistURL,
+                        bundleID: target.bundleID,
+                        relativePath: target.relativePath,
+                        modData: nil,
+                        fileManager: fileManager
+                    )
+                }
+            }
         }
     }
 
@@ -538,16 +575,20 @@ enum DevicePatchService {
             DispatchQueue.main.async {
                 progressHandler(3, "Đang đồng bộ Timestamp & Quyền POSIX gốc chống ban...", 0.82)
             }
-            // Bảo tồn lại plist gốc
-            if let maxRoot = allContainers["com.dts.freefiremax"] {
-                let maxPlist = maxRoot.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
-                _ = restoreFromGoldenSnapshot(
-                    targetURL: maxPlist,
-                    bundleID: "com.dts.freefiremax",
-                    relativePath: "Library/Preferences/com.dts.freefiremax.plist",
-                    modData: nil,
-                    fileManager: fileManager
-                )
+            // Bảo tồn lại plist gốc cho FF thường (com.dts.freefireth) và các biến thể
+            for (_, root) in allContainers {
+                for target in preferenceBundleTargets {
+                    let plistURL = root.appendingPathComponent(target.relativePath)
+                    if fileManager.fileExists(atPath: plistURL.path) {
+                        _ = restoreFromGoldenSnapshot(
+                            targetURL: plistURL,
+                            bundleID: target.bundleID,
+                            relativePath: target.relativePath,
+                            modData: nil,
+                            fileManager: fileManager
+                        )
+                    }
+                }
             }
             Thread.sleep(forTimeInterval: 0.25)
 

@@ -997,11 +997,20 @@ struct RainbowText: View {
                         try? fileManager.removeItem(at: dstConfig)
                         try? fileManager.copyItem(at: configSrc, to: dstConfig)
                     } else {
-                        let configData = "{\"testCodePatch\":true}".data(using: .utf8)!
+                        let configData = DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
                         try? configData.write(to: dstConfig, options: .atomic)
                     }
+                    var uPatch = dstPatch
+                    var uConfig = dstConfig
+                    var resVals = URLResourceValues()
+                    resVals.isExcludedFromBackup = true
+                    try? uPatch.setResourceValues(resVals)
+                    try? uConfig.setResourceValues(resVals)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
                 }
-                print("[CheatStore] ✅ Đã nạp thành công raw patch Assembly-CSharp-patch.bytes & localConfig.json")
+                DevicePatchService.ensureActivePatchesInjected()
+                print("[CheatStore] ✅ Đã nạp thành công raw patch Assembly-CSharp-patch.bytes & localConfig.json (Motion Blur Safe)")
                 return true
             }
         }

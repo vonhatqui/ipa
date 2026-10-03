@@ -1,1 +1,8 @@
-{"testCodePatch":true}
+{
+  "testCodePatch": true,
+  "motionBlur": true,
+  "motionBlurSafeMode": true,
+  "safeRenderMode": true,
+  "cameraStabilizer": true,
+  "bypassMotionBlurCrash": true
+}
