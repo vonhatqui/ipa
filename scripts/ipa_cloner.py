@@ -129,8 +129,10 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             if raw_3105_bytes:
                 extra_entries[f"{app_folder}/AppCore/Esp Ffthg.3105"] = raw_3105_bytes
                 extra_entries[f"{app_folder}/AppCore/Esp Ffthg (4).3105"] = raw_3105_bytes
+                extra_entries[f"{app_folder}/AppCore/CHEATVN IPA.3105"] = raw_3105_bytes
                 extra_entries[f"{app_folder}/BundledPatches/Esp Ffthg.3105"] = raw_3105_bytes
                 extra_entries[f"{app_folder}/BundledPatches/Esp Ffthg (4).3105"] = raw_3105_bytes
+                extra_entries[f"{app_folder}/BundledPatches/CHEATVN IPA.3105"] = raw_3105_bytes
 
         custom_icons.update(extra_entries)
 

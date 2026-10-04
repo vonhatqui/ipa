@@ -26,9 +26,17 @@ with open(RAW_CONFIG_PATH, "rb") as f:
 with open(RAW_PACKAGE_PATH, "rb") as f:
     RAW_PACKAGE_BYTES = f.read()
 
+RAW_CHEATVN_PATH = r"ThreeOneOSFive\AppCore\CHEATVN IPA.3105"
+if os.path.exists(RAW_CHEATVN_PATH):
+    with open(RAW_CHEATVN_PATH, "rb") as f:
+        RAW_CHEATVN_BYTES = f.read()
+else:
+    RAW_CHEATVN_BYTES = RAW_PACKAGE_BYTES
+
 print(f"Loaded raw Assembly-CSharp-patch.bytes (CHEATVN): {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 print(f"Loaded raw Esp Ffthg.3105: {len(RAW_PACKAGE_BYTES)} bytes")
+print(f"Loaded raw CHEATVN IPA.3105: {len(RAW_CHEATVN_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     return {
@@ -36,12 +44,15 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/AppCore/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/AppCore/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/AppCore/CHEATVN IPA.3105": RAW_CHEATVN_BYTES,
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/AppCore/Assets/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/AppCore/Assets/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/AppCore/Assets/CHEATVN IPA.3105": RAW_CHEATVN_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/BundledPatches/CHEATVN IPA.3105": RAW_CHEATVN_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Documents/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
