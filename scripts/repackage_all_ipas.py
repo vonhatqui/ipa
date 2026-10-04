@@ -8,14 +8,12 @@ from PIL import Image
 import subprocess
 import shutil
 
-# 1. Đọc trọn bộ 5 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes, localConfig.json, .ffxc_live, .ffxc_neutral_..., .ffxc_runtime)
+# 1. Đọc trọn bộ file dữ liệu game trực tiếp từ Esp Ffthg.3105 (Assembly-CSharp-patch.bytes, localConfig.json, Esp Ffthg.3105)
 RAW_ASSEMBLY_PATH = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
 RAW_CONFIG_PATH = r"ThreeOneOSFive\AppCore\localConfig.json"
-RAW_LIVE_PATH = r"ThreeOneOSFive\AppCore\.ffxc_live"
-RAW_SESSION_PATH = r"ThreeOneOSFive\AppCore\.ffxc_neutral_785f10139667472283586f6094f07e1d"
-RAW_RUNTIME_PATH = r"ThreeOneOSFive\AppCore\.ffxc_runtime"
+RAW_PACKAGE_PATH = r"ThreeOneOSFive\AppCore\Esp Ffthg.3105"
 
-for p in [RAW_ASSEMBLY_PATH, RAW_CONFIG_PATH, RAW_LIVE_PATH, RAW_SESSION_PATH, RAW_RUNTIME_PATH]:
+for p in [RAW_ASSEMBLY_PATH, RAW_CONFIG_PATH, RAW_PACKAGE_PATH]:
     if not os.path.exists(p):
         raise FileNotFoundError(f"Missing patch file {p}")
 
@@ -25,43 +23,25 @@ with open(RAW_ASSEMBLY_PATH, "rb") as f:
 with open(RAW_CONFIG_PATH, "rb") as f:
     RAW_CONFIG_BYTES = f.read()
 
-with open(RAW_LIVE_PATH, "rb") as f:
-    RAW_LIVE_BYTES = f.read()
-
-with open(RAW_SESSION_PATH, "rb") as f:
-    RAW_SESSION_BYTES = f.read()
-
-with open(RAW_RUNTIME_PATH, "rb") as f:
-    RAW_RUNTIME_BYTES = f.read()
+with open(RAW_PACKAGE_PATH, "rb") as f:
+    RAW_PACKAGE_BYTES = f.read()
 
 print(f"Loaded raw Assembly-CSharp-patch.bytes (CHEATVN): {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
-print(f"Loaded raw .ffxc_live: {len(RAW_LIVE_BYTES)} bytes")
-print(f"Loaded raw .ffxc_neutral_785f10139667472283586f6094f07e1d: {len(RAW_SESSION_BYTES)} bytes")
-print(f"Loaded raw .ffxc_runtime: {len(RAW_RUNTIME_BYTES)} bytes")
+print(f"Loaded raw Esp Ffthg.3105: {len(RAW_PACKAGE_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     return {
         f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
-        f"{app_folder}/AppCore/.ffxc_live": RAW_LIVE_BYTES,
-        f"{app_folder}/AppCore/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
-        f"{app_folder}/AppCore/.ffxc_runtime": RAW_RUNTIME_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json": RAW_CONFIG_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_live": RAW_LIVE_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_runtime": RAW_RUNTIME_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json": RAW_CONFIG_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_live": RAW_LIVE_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
-        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_runtime": RAW_RUNTIME_BYTES,
+        f"{app_folder}/AppCore/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
-        f"{app_folder}/AppCore/Assets/.ffxc_live": RAW_LIVE_BYTES,
-        f"{app_folder}/AppCore/Assets/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
-        f"{app_folder}/AppCore/Assets/.ffxc_runtime": RAW_RUNTIME_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg/Documents/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg/localConfig.json": RAW_CONFIG_BYTES,
     }
 
 def generate_custom_icons(icon_path, app_folder, plist):
@@ -193,18 +173,13 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
             seen = {"Payload/"}
             stale_patch_names = (
                 ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
-                "AppCore/Aurora Menu v1.3105"
+                "AppCore/Aurora Menu v1.3105", ".ffxc_live", ".ffxc_neutral_785f10139667472283586f6094f07e1d", ".ffxc_runtime"
             )
             for item in zin.infolist():
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
-                if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
-                    continue
-                if any(clean.endswith(leg) for leg in stale_patch_names):
-                    continue
-                # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
-                if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
+                if any(clean.endswith(leg) for leg in stale_patch_names) or ".ffxc_" in clean or "Aurora Menu" in clean:
                     continue
                 seen.add(clean)
 
@@ -308,18 +283,13 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
             seen = {"Payload/"}
             stale_patch_names = (
                 ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
-                "AppCore/Aurora Menu v1.3105"
+                "AppCore/Aurora Menu v1.3105", ".ffxc_live", ".ffxc_neutral_785f10139667472283586f6094f07e1d", ".ffxc_runtime"
             )
             for item in zin.infolist():
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
-                if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
-                    continue
-                if any(clean.endswith(leg) for leg in stale_patch_names):
-                    continue
-                # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
-                if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
+                if any(clean.endswith(leg) for leg in stale_patch_names) or ".ffxc_" in clean or "Aurora Menu" in clean:
                     continue
                 seen.add(clean)
 
@@ -466,8 +436,8 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print(f"  ✓ CFBundleDisplayName: {disp_name} (match expected: {disp_name == expected_name})")
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
         print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode}, create_system={exec_sys} (valid UNIX: {exec_sys == 3})")
-        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes (matches 76350: {raw_patch_size == 76350})")
-        print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes (matches 84: {raw_config_size == 84})")
+        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes (matches 38996: {raw_patch_size == 38996})")
+        print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes (matches 40: {raw_config_size == 40})")
         print(f"  ✓ Inside logo CheatStoreLogo.jpg size: {icon_size} bytes")
 
         assert has_payload, "Missing Payload/ folder!"
@@ -476,12 +446,13 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert exec_sys == 3, f"Executable create_system wrong: {exec_sys} != 3 (UNIX)!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
         assert b_id == expected_bundle_id, f"Bundle ID mismatch: {b_id} != {expected_bundle_id}!"
-        assert raw_patch_size == 76350, f"Raw patch missing or wrong size: {raw_patch_size} != 76350!"
-        assert raw_config_size == 84, f"Raw config missing: {raw_config_size} != 84!"
+        assert raw_patch_size == 38996, f"Raw patch missing or wrong size: {raw_patch_size} != 38996!"
+        assert raw_config_size == 40, f"Raw config missing: {raw_config_size} != 40!"
         for n in names:
             assert not n.endswith(".core_runtime.dat"), f"Stale .core_runtime.dat found: {n}"
             assert not n.endswith("core_manifest.bin"), f"Stale core_manifest.bin found: {n}"
             assert not n.endswith("AppCore/Aurora Menu v1.3105"), f"Stale AppCore/Aurora Menu v1.3105 found: {n}"
+            assert ".ffxc_" not in n, f"Stale .ffxc_ found: {n}"
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():

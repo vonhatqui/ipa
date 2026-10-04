@@ -17,12 +17,12 @@ def get_local_ip():
     return ip
 
 def main():
-    service_name = "DELTA PROXY"
+    service_name = "CHEATVN IPA"
     port = 49152
     local_ip = get_local_ip()
 
     print("=" * 60)
-    print("      DELTA PROXY - RemotePairing Server for iOS 27+")
+    print("      CHEATVN IPA - RemotePairing Server for iOS 27+")
     print("=" * 60)
     print(f"[*] Địa chỉ PC IP : {local_ip}")
     print(f"[*] Cổng dịch vụ  : {port}")

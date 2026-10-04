@@ -1,9 +1,9 @@
 @echo off
 chcp 65001 >nul
-title DELTA PROXY - Máy Chủ Ghép Đôi iOS
+title CHEATVN IPA - Máy Chủ Ghép Đôi iOS
 cls
 echo ========================================================
-echo       DELTA PROXY - REMOTE PAIRING HOST FOR iOS
+echo       CHEATVN IPA - REMOTE PAIRING HOST FOR iOS
 echo ========================================================
 echo.
 echo Đang kiểm tra môi trường Python...
@@ -22,6 +22,6 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo Đang khởi động máy chủ DELTA PROXY...
+echo Đang khởi động máy chủ CHEATVN IPA...
 python "%~dp0delta_proxy_pc.py"
 pause

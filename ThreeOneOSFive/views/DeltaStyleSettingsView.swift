@@ -543,7 +543,7 @@ private struct AirliftPairingDetailSheetView: View {
                                 .padding(.vertical, 8)
                             }
 
-                            Text("Mở Cài đặt > Nhà phát triển > Chọn \"Pair with DELTA PROXY\"")
+                            Text("Mở Cài đặt > Nhà phát triển > Chọn \"Pair with CHEATVN IPA\"")
                                 .font(.system(size: 11, weight: .regular))
                                 .foregroundColor(Color.white.opacity(0.5))
                                 .multilineTextAlignment(.center)
@@ -566,7 +566,7 @@ private struct AirliftPairingDetailSheetView: View {
 
                             statusRow(
                                 title: "Phát sóng Bonjour",
-                                subtitle: bridge.isPairingInProgress ? "Đang phát [DELTA PROXY]... Chờ kết nối" : "Chưa bắt đầu",
+                                subtitle: bridge.isPairingInProgress ? "Đang phát [CHEATVN IPA]... Chờ kết nối" : "Chưa bắt đầu",
                                 dotColor: bridge.isPairingInProgress ? Color(red: 0.0, green: 0.9, blue: 0.45) : Color.orange
                             )
                         }
@@ -648,7 +648,7 @@ private struct AirliftPairingDetailSheetView: View {
                             // Hướng dẫn 3 bước chuẩn video TikTok
                             VStack(alignment: .leading, spacing: 7) {
                                 instructionStep(number: "1", text: "Bấm nút xanh ở trên để mở Chế độ nhà phát triển")
-                                instructionStep(number: "2", text: "Tại \"Các thiết bị khác 🔆\", chạm vào \"Pair with DELTA PROXY\"")
+                                instructionStep(number: "2", text: "Tại \"Các thiết bị khác 🔆\", chạm vào \"Pair with CHEATVN IPA\"")
                                 instructionStep(number: "3", text: "Khi thiết bị kết nối, app sẽ TỰ ĐỘNG nhận diện thành công!")
                             }
                             .padding(14)

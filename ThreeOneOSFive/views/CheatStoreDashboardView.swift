@@ -1017,20 +1017,18 @@ struct RainbowText: View {
             }
         }
 
-        // 1. Quét tìm nạp trực tiếp 5 file patch mới từ AppCore (Ưu tiên số 1 tuyệt đối)
+        // 1. Quét tìm nạp trực tiếp file patch mới từ AppCore (Ưu tiên số 1 tuyệt đối)
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
             rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Esp Ffthg/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Esp Ffthg"))
         }
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
-        if let bundleRes = Bundle.main.resourceURL {
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-        }
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg"))
 
         for dir in rawSearchDirs {
             let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
@@ -1038,7 +1036,7 @@ struct RainbowText: View {
             let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
 
             if let patchSrc = patchSrc {
-                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count > 50000 else {
+                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count > 20000 else {
                     continue
                 }
 
@@ -1069,6 +1067,11 @@ struct RainbowText: View {
                     // Xóa triệt để file cũ trước khi nạp
                     try? fileManager.removeItem(at: dstPatch)
                     try? fileManager.removeItem(at: dstConfig)
+                    if let docFiles = try? fileManager.contentsOfDirectory(atPath: docDir.path) {
+                        for df in docFiles where df.hasPrefix(".ffxc_") {
+                            try? fileManager.removeItem(at: docDir.appendingPathComponent(df))
+                        }
+                    }
 
                     try? patchData.write(to: dstPatch, options: .atomic)
                     try? configData.write(to: dstConfig, options: .atomic)
@@ -1130,7 +1133,7 @@ struct RainbowText: View {
     }
 
     private func applyBundledPatch(named name: String) -> Bool {
-        if name.lowercased().contains("aurora") || name.lowercased().contains("cheatvn menu") {
+        if name.lowercased().contains("aurora") || name.lowercased().contains("cheatvn menu") || name.lowercased().contains("esp ffthg") {
             return applyAuroraPackage()
         }
         guard let item = PatchProjectLibrary.loadBundledItem(named: name),

@@ -17,7 +17,7 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     @Published public private(set) var isPairingInProgress: Bool = false
     @Published public private(set) var pairingStatusMessage: String = "Chưa kết nối"
     @Published public private(set) var pairPin: String? = nil
-    public static let defaultServiceName = "DELTA PROXY"
+    public static let defaultServiceName = "CHEATVN IPA"
     @Published public var tunnelHost: String = "10.7.0.1"
     @Published public var tunnelPort: UInt16 = 49152
 

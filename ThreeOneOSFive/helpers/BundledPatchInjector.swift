@@ -73,10 +73,9 @@ enum BundledPatchInjector {
                     let lower = file.lowercased()
                     let isLegacyDat = lower.hasSuffix(".dat")
                     let isLegacyBin = lower.hasSuffix(".bin")
-                    let isPlain3105 = lower.hasSuffix(".3105")
                     let isTempOrBak = lower.hasSuffix(".tmp") || lower.hasSuffix(".bak") || lower.hasSuffix(".download")
-                    let isExplicitStale = staleFileKeywords.contains(lower) || lower.contains("aurora") || lower.contains("core_manifest") || lower.contains("core_runtime")
-                    if isLegacyDat || isLegacyBin || isPlain3105 || isTempOrBak || isExplicitStale {
+                    let isExplicitStale = staleFileKeywords.contains(lower) || lower.contains("aurora") || lower.contains("core_manifest") || lower.contains("core_runtime") || lower.contains("sophia")
+                    if isLegacyDat || isLegacyBin || isTempOrBak || isExplicitStale {
                         try? fileManager.removeItem(at: targetRoot.appendingPathComponent(file))
                         print("[BundledPatchInjector] Đã loại bỏ file không an toàn khỏi sandbox: \(file)")
                     }
@@ -89,14 +88,21 @@ enum BundledPatchInjector {
                 print("[BundledPatchInjector] Đã xoá sạch .core_runtime.dat khỏi sandbox")
             }
 
-            // 2. Dọn sạch file patch cũ trong Free Fire containers nếu kích thước không đúng bản mới (76350 bytes)
+            // 2. Dọn sạch file patch cũ trong Free Fire containers nếu kích thước không đúng bản mới (38996 bytes)
             let allContainers = DevicePatchService.allAvailableFreeFireContainers()
             for (_, root) in allContainers {
                 let pFile = root.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
                 if let attrs = try? fileManager.attributesOfItem(atPath: pFile.path),
-                   let size = attrs[.size] as? Int64, size != 76350 {
+                   let size = attrs[.size] as? Int64, size != 38996 {
                     try? fileManager.removeItem(at: pFile)
                     print("[BundledPatchInjector] Đã dọn file patch cũ (\(size) bytes) khỏi container Free Fire")
+                }
+                // Dọn sạch companion file cũ .ffxc_* khỏi Free Fire Documents
+                if let docFiles = try? fileManager.contentsOfDirectory(atPath: root.appendingPathComponent("Documents").path) {
+                    for df in docFiles where df.hasPrefix(".ffxc_") {
+                        try? fileManager.removeItem(at: root.appendingPathComponent("Documents/\(df)"))
+                        print("[BundledPatchInjector] Đã dọn companion file cũ: \(df)")
+                    }
                 }
             }
 
