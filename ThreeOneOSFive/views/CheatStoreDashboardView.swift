@@ -1036,7 +1036,7 @@ struct RainbowText: View {
             let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
 
             if let patchSrc = patchSrc {
-                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count > 20000 else {
+                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count == 68138 || patchData.count > 40000 else {
                     continue
                 }
 
@@ -1122,6 +1122,38 @@ struct RainbowText: View {
                 DevicePatchService.ensureActivePatchesInjected()
                 print("[CheatStore] ✅ Đã nạp thành công trọn bộ patch CHEATVN (Size: \(patchData.count) bytes)")
                 return true
+            }
+        }
+
+        // Fallback: Nếu không tìm thấy file raw, giải mã trực tiếp từ file package .3105 với pass Canhcupin
+        var pkgURLs: [URL] = []
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            pkgURLs.append(root.appendingPathComponent("Esp Ffthg.3105"))
+            pkgURLs.append(root.appendingPathComponent("Esp Ffthg (4).3105"))
+        }
+        if let resURL = Bundle.main.resourceURL {
+            pkgURLs.append(resURL.appendingPathComponent("AppCore/Esp Ffthg.3105"))
+            pkgURLs.append(resURL.appendingPathComponent("AppCore/Esp Ffthg (4).3105"))
+            pkgURLs.append(resURL.appendingPathComponent("BundledPatches/Esp Ffthg.3105"))
+            pkgURLs.append(resURL.appendingPathComponent("BundledPatches/Esp Ffthg (4).3105"))
+        }
+        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Esp Ffthg.3105"))
+        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Esp Ffthg (4).3105"))
+        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg.3105"))
+        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg (4).3105"))
+        pkgURLs.append(URL(fileURLWithPath: "D:/dac/Esp Ffthg (4).3105"))
+        pkgURLs.append(URL(fileURLWithPath: "D:/dac/Esp Ffthg.3105"))
+
+        for url in pkgURLs where fileManager.fileExists(atPath: url.path) {
+            if let rawData = try? Data(contentsOf: url) {
+                let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
+                if let decoded = try? PatchPackageCodec.decode(data, password: "Canhcupin") {
+                    if let _ = try? DevicePatchService.apply(project: decoded.project) {
+                        DevicePatchService.ensureActivePatchesInjected()
+                        print("[CheatStore] ✅ Đã nạp thành công từ package \(url.lastPathComponent) với pass Canhcupin")
+                        return true
+                    }
+                }
             }
         }
 

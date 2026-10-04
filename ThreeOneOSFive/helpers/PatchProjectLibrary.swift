@@ -194,7 +194,9 @@ enum PatchProjectLibrary {
                     // Tự động lưu vào local sandbox để các lần sau có sẵn
                     if let root = try? packageRootURL(fileManager: fileManager) {
                         let dest = root.appendingPathComponent(fileURL.lastPathComponent)
-                        if !fileManager.fileExists(atPath: dest.path) {
+                        if let existing = try? Data(contentsOf: dest), existing.count == data.count {
+                            // File đã cập nhật mới nhất
+                        } else {
                             try? data.write(to: dest, options: .atomic)
                         }
                     }
@@ -239,11 +241,13 @@ enum PatchProjectLibrary {
             candidateURLs.append(dir.appendingPathComponent(name))
             for ext in ["dat", "bin", "3105"] {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
+                candidateURLs.append(dir.appendingPathComponent("\(name) (4).\(ext)"))
             }
         }
         if let root = try? packageRootURL(fileManager: fileManager) {
             for ext in ["dat", "bin", "3105"] {
                 candidateURLs.append(root.appendingPathComponent("\(name).\(ext)"))
+                candidateURLs.append(root.appendingPathComponent("\(name) (4).\(ext)"))
             }
         }
         for url in candidateURLs where fileManager.fileExists(atPath: url.path) {

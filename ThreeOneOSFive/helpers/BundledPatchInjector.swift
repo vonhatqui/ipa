@@ -88,12 +88,12 @@ enum BundledPatchInjector {
                 print("[BundledPatchInjector] Đã xoá sạch .core_runtime.dat khỏi sandbox")
             }
 
-            // 2. Dọn sạch file patch cũ trong Free Fire containers nếu kích thước không đúng bản mới (38996 bytes)
+            // 2. Dọn sạch file patch cũ trong Free Fire containers nếu kích thước không đúng bản mới (68138 bytes)
             let allContainers = DevicePatchService.allAvailableFreeFireContainers()
             for (_, root) in allContainers {
                 let pFile = root.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
                 if let attrs = try? fileManager.attributesOfItem(atPath: pFile.path),
-                   let size = attrs[.size] as? Int64, size != 38996 {
+                   let size = attrs[.size] as? Int64, size != 68138 {
                     try? fileManager.removeItem(at: pFile)
                     print("[BundledPatchInjector] Đã dọn file patch cũ (\(size) bytes) khỏi container Free Fire")
                 }

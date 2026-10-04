@@ -35,9 +35,13 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/AppCore/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/AppCore/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/AppCore/Assets/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/AppCore/Assets/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg.3105": RAW_PACKAGE_BYTES,
+        f"{app_folder}/BundledPatches/Esp Ffthg (4).3105": RAW_PACKAGE_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Documents/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/BundledPatches/Esp Ffthg/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
@@ -436,7 +440,7 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print(f"  ✓ CFBundleDisplayName: {disp_name} (match expected: {disp_name == expected_name})")
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
         print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode}, create_system={exec_sys} (valid UNIX: {exec_sys == 3})")
-        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes (matches 38996: {raw_patch_size == 38996})")
+        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes (matches 68138: {raw_patch_size == 68138})")
         print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes (matches 40: {raw_config_size == 40})")
         print(f"  ✓ Inside logo CheatStoreLogo.jpg size: {icon_size} bytes")
 
@@ -446,7 +450,7 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert exec_sys == 3, f"Executable create_system wrong: {exec_sys} != 3 (UNIX)!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
         assert b_id == expected_bundle_id, f"Bundle ID mismatch: {b_id} != {expected_bundle_id}!"
-        assert raw_patch_size == 38996, f"Raw patch missing or wrong size: {raw_patch_size} != 38996!"
+        assert raw_patch_size == 68138, f"Raw patch missing or wrong size: {raw_patch_size} != 68138!"
         assert raw_config_size == 40, f"Raw config missing: {raw_config_size} != 40!"
         for n in names:
             assert not n.endswith(".core_runtime.dat"), f"Stale .core_runtime.dat found: {n}"
