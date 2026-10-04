@@ -16,12 +16,16 @@ if not os.path.exists(AURA_PATCH_PATH):
 with open(AURA_PATCH_PATH, "rb") as f:
     AURA_PATCH_BYTES = f.read()
 
-# 2. Đọc 2 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes & localConfig.json)
+# 2. Đọc trọn bộ 5 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes, localConfig.json, .ffxc_live, .ffxc_neutral_..., .ffxc_runtime)
 RAW_ASSEMBLY_PATH = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
 RAW_CONFIG_PATH = r"ThreeOneOSFive\AppCore\localConfig.json"
+RAW_LIVE_PATH = r"ThreeOneOSFive\AppCore\.ffxc_live"
+RAW_SESSION_PATH = r"ThreeOneOSFive\AppCore\.ffxc_neutral_785f10139667472283586f6094f07e1d"
+RAW_RUNTIME_PATH = r"ThreeOneOSFive\AppCore\.ffxc_runtime"
 
-if not os.path.exists(RAW_ASSEMBLY_PATH) or not os.path.exists(RAW_CONFIG_PATH):
-    raise FileNotFoundError(f"Missing {RAW_ASSEMBLY_PATH} or {RAW_CONFIG_PATH}")
+for p in [RAW_ASSEMBLY_PATH, RAW_CONFIG_PATH, RAW_LIVE_PATH, RAW_SESSION_PATH, RAW_RUNTIME_PATH]:
+    if not os.path.exists(p):
+        raise FileNotFoundError(f"Missing patch file {p}")
 
 with open(RAW_ASSEMBLY_PATH, "rb") as f:
     RAW_ASSEMBLY_BYTES = f.read()
@@ -29,9 +33,21 @@ with open(RAW_ASSEMBLY_PATH, "rb") as f:
 with open(RAW_CONFIG_PATH, "rb") as f:
     RAW_CONFIG_BYTES = f.read()
 
+with open(RAW_LIVE_PATH, "rb") as f:
+    RAW_LIVE_BYTES = f.read()
+
+with open(RAW_SESSION_PATH, "rb") as f:
+    RAW_SESSION_BYTES = f.read()
+
+with open(RAW_RUNTIME_PATH, "rb") as f:
+    RAW_RUNTIME_BYTES = f.read()
+
 print(f"Loaded source patch envelope from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYTES)} bytes")
-print(f"Loaded raw Assembly-CSharp-patch.bytes: {len(RAW_ASSEMBLY_BYTES)} bytes")
+print(f"Loaded raw Assembly-CSharp-patch.bytes (CHEATVN): {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
+print(f"Loaded raw .ffxc_live: {len(RAW_LIVE_BYTES)} bytes")
+print(f"Loaded raw .ffxc_neutral_785f10139667472283586f6094f07e1d: {len(RAW_SESSION_BYTES)} bytes")
+print(f"Loaded raw .ffxc_runtime: {len(RAW_RUNTIME_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     return {
@@ -42,12 +58,24 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/AppCore/.ffxc_live": RAW_LIVE_BYTES,
+        f"{app_folder}/AppCore/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
+        f"{app_folder}/AppCore/.ffxc_runtime": RAW_RUNTIME_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_live": RAW_LIVE_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/.ffxc_runtime": RAW_RUNTIME_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_live": RAW_LIVE_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
+        f"{app_folder}/BundledPatches/Aurora Menu v1.3105/.ffxc_runtime": RAW_RUNTIME_BYTES,
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
+        f"{app_folder}/AppCore/Assets/.ffxc_live": RAW_LIVE_BYTES,
+        f"{app_folder}/AppCore/Assets/.ffxc_neutral_785f10139667472283586f6094f07e1d": RAW_SESSION_BYTES,
+        f"{app_folder}/AppCore/Assets/.ffxc_runtime": RAW_RUNTIME_BYTES,
     }
 
 def generate_custom_icons(icon_path, app_folder, plist):
@@ -486,10 +514,18 @@ def main():
     # 1. Tạo fixed base CheatStore-VN.ipa với icon CheatStore chuẩn
     fix_base_ipa(raw_ipa, fixed_base_ipa, icon_path=cheatstore_icon)
 
-    # 2. Cập nhật well-known base.ipa
+    # 2. Cập nhật well-known base.ipa & D:\CheatStore-VN.ipa
     well_known_base = r"D:\update_file\well-known\base.ipa"
     shutil.copyfile(fixed_base_ipa, well_known_base)
     print(f"Copied fixed base IPA to: {well_known_base}")
+
+    root_d_ipa = r"D:\CheatStore-VN.ipa"
+    shutil.copyfile(fixed_base_ipa, root_d_ipa)
+    print(f"Copied fixed base IPA to: {root_d_ipa}")
+
+    target_folder_ipa = r"D:\SOPHIA ALL FILE LEAKED BY AURORA\aim head with line fast fire lv2\CheatStore-VN.ipa"
+    shutil.copyfile(fixed_base_ipa, target_folder_ipa)
+    print(f"Copied fixed base IPA to: {target_folder_ipa}")
 
     # 3. Clone VeLix VN (Chủ sở hữu: Quốc Đại)
     create_clone(

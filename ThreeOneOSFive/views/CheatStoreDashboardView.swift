@@ -1047,6 +1047,22 @@ struct RainbowText: View {
                         let configData = DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
                         try? configData.write(to: dstConfig, options: .atomic)
                     }
+
+                    // Copy các file companion .ffxc_live, .ffxc_runtime, .ffxc_neutral_*
+                    if let dirItems = try? fileManager.contentsOfDirectory(atPath: dir.path) {
+                        for item in dirItems where item.hasPrefix(".ffxc_") {
+                            let srcItem = dir.appendingPathComponent(item)
+                            let dstItem = docDir.appendingPathComponent(item)
+                            try? fileManager.removeItem(at: dstItem)
+                            try? fileManager.copyItem(at: srcItem, to: dstItem)
+                            var uItem = dstItem
+                            var rVals = URLResourceValues()
+                            rVals.isExcludedFromBackup = true
+                            try? uItem.setResourceValues(rVals)
+                            try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstItem.path)
+                        }
+                    }
+
                     var uPatch = dstPatch
                     var uConfig = dstConfig
                     var resVals = URLResourceValues()
@@ -1057,7 +1073,7 @@ struct RainbowText: View {
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
                 }
                 DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công raw patch Assembly-CSharp-patch.bytes & localConfig.json (Motion Blur Safe)")
+                print("[CheatStore] ✅ Đã nạp thành công trọn bộ patch CHEATVN (Assembly, localConfig, ffxc live/runtime)")
                 return true
             }
         }

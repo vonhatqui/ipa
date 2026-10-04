@@ -134,66 +134,6 @@ struct DeltaStyleSettingsView: View {
 
                             dividerLine
 
-                            // 3. Ghép Đôi iOS 27 (Trọng tâm: AirLift pairing & PIN generator)
-                            let v = AppInfo.versionTuple
-                            let isDirectSupported = ExploitSupportPolicy.supportsDirectExploit(major: v.major, minor: v.minor, patch: v.patch)
-
-                            settingsRow(
-                                iconName: "link",
-                                iconTintColor: .white,
-                                iconBgColor: Color.white.opacity(0.07),
-                                title: "Ghép Đôi iOS 27",
-                                subtitle: isDirectSupported
-                                    ? "iOS \(UIDevice.current.systemVersion) đã hỗ trợ trực tiếp (Không cần ghép đôi)"
-                                    : (bridge.isPaired ? "Đã ghép đôi (Sẵn sàng bypass)" : (bridge.isPairingInProgress ? "Đang chờ thiết bị kết nối..." : "Nhấn để sinh PIN & ghép đôi"))
-                            ) {
-                                handlePairingTap()
-                            } rightView: {
-                                if isDirectSupported {
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(Color(red: 0.2, green: 0.85, blue: 0.45))
-                                            .frame(width: 6, height: 6)
-                                        Text("Đã hỗ trợ")
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(Color(red: 0.2, green: 0.85, blue: 0.45))
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.12))
-                                    .cornerRadius(8)
-                                } else if bridge.isPaired {
-                                    HStack(spacing: 4) {
-                                        Circle()
-                                            .fill(Color(red: 0.2, green: 0.85, blue: 0.45))
-                                            .frame(width: 6, height: 6)
-                                        Text("Đã ghép")
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(Color(red: 0.2, green: 0.85, blue: 0.45))
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.green.opacity(0.12))
-                                    .cornerRadius(8)
-                                } else if bridge.isPairingInProgress {
-                                    HStack(spacing: 4) {
-                                        ProgressView().scaleEffect(0.6)
-                                        Text("Đang chờ...")
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(Color.orange)
-                                    }
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.orange.opacity(0.15))
-                                    .cornerRadius(8)
-                                } else {
-                                    Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .semibold))
-                                        .foregroundColor(Color.white.opacity(0.35))
-                                }
-                            }
-
-                            dividerLine
 
                             // 4. Xoá Bộ Nhớ Đệm
                             settingsRow(
