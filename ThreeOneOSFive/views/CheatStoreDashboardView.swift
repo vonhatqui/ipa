@@ -1001,66 +1001,87 @@ struct RainbowText: View {
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
-        let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json mới
+        // 0. Xóa sạch các file/thư mục mod cũ trong sandbox tránh nạp đè file cũ
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            let staleFolders = [
+                "Aurora Menu v1.3105",
+                "cheatvn menu v1-0.3105",
+                "aurora menu v1-0.3105",
+                ".core_runtime.dat",
+                "core_manifest.bin",
+                "core_runtime.dat"
+            ]
+            for s in staleFolders {
+                try? fileManager.removeItem(at: root.appendingPathComponent(s))
+            }
+        }
+
+        // 1. Quét tìm nạp trực tiếp 5 file patch mới từ AppCore (Ưu tiên số 1 tuyệt đối)
         var rawSearchDirs: [URL] = []
+        if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
+        }
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
         if let bundleRes = Bundle.main.resourceURL {
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
         }
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
-            rawSearchDirs.append(root)
-        }
 
         for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
             let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
 
             if let patchSrc = patchSrc {
-                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-                let c2 = dir.appendingPathComponent("localConfig.json")
-                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
+                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count > 50000 else {
+                    continue
+                }
 
+                let c1 = dir.appendingPathComponent("localConfig.json")
+                let c2 = dir.appendingPathComponent("Documents/localConfig.json")
+                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
+                let configData = (try? Data(contentsOf: configSrc ?? c1)) ?? DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
+
+                // Đọc các file companion .ffxc_*
+                var companionFiles: [(name: String, data: Data)] = []
+                if let dirItems = try? fileManager.contentsOfDirectory(atPath: dir.path) {
+                    for item in dirItems where item.hasPrefix(".ffxc_") {
+                        if let d = try? Data(contentsOf: dir.appendingPathComponent(item)) {
+                            companionFiles.append((item, d))
+                        }
+                    }
+                }
+
+                // 2. Nạp trực tiếp vào Container Filesystem
                 let allContainers = DevicePatchService.allAvailableFreeFireContainers()
                 for (_, root) in allContainers {
                     let docDir = root.appendingPathComponent("Documents", isDirectory: true)
                     try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+
                     let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
                     let dstConfig = docDir.appendingPathComponent("localConfig.json")
 
+                    // Xóa triệt để file cũ trước khi nạp
                     try? fileManager.removeItem(at: dstPatch)
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+                    try? fileManager.removeItem(at: dstConfig)
 
-                    if let configSrc = configSrc {
-                        try? fileManager.removeItem(at: dstConfig)
-                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
-                    } else {
-                        let configData = DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
-                        try? configData.write(to: dstConfig, options: .atomic)
-                    }
+                    try? patchData.write(to: dstPatch, options: .atomic)
+                    try? configData.write(to: dstConfig, options: .atomic)
 
-                    // Copy các file companion .ffxc_live, .ffxc_runtime, .ffxc_neutral_*
-                    if let dirItems = try? fileManager.contentsOfDirectory(atPath: dir.path) {
-                        for item in dirItems where item.hasPrefix(".ffxc_") {
-                            let srcItem = dir.appendingPathComponent(item)
-                            let dstItem = docDir.appendingPathComponent(item)
-                            try? fileManager.removeItem(at: dstItem)
-                            try? fileManager.copyItem(at: srcItem, to: dstItem)
-                            var uItem = dstItem
-                            var rVals = URLResourceValues()
-                            rVals.isExcludedFromBackup = true
-                            try? uItem.setResourceValues(rVals)
-                            try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstItem.path)
-                        }
+                    for comp in companionFiles {
+                        let dstComp = docDir.appendingPathComponent(comp.name)
+                        try? fileManager.removeItem(at: dstComp)
+                        try? comp.data.write(to: dstComp, options: .atomic)
+                        var uComp = dstComp
+                        var rVals = URLResourceValues()
+                        rVals.isExcludedFromBackup = true
+                        try? uComp.setResourceValues(rVals)
+                        try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstComp.path)
                     }
 
                     var uPatch = dstPatch
@@ -1072,119 +1093,36 @@ struct RainbowText: View {
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
                 }
+
+                // 3. Đồng bộ bổ trợ qua Airlift / HouseArrest AFC (Loopback VPN)
+                let freeFireBundleIDs = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefirevn", "com.dts.freefire"]
+                for bID in freeFireBundleIDs {
+                    try? AirliftBridge.shared.writeContainerFile(
+                        bundleID: bID,
+                        relativePath: "Documents/Assembly-CSharp-patch.bytes",
+                        data: patchData
+                    )
+                    try? AirliftBridge.shared.writeContainerFile(
+                        bundleID: bID,
+                        relativePath: "Documents/localConfig.json",
+                        data: configData
+                    )
+                    for comp in companionFiles {
+                        try? AirliftBridge.shared.writeContainerFile(
+                            bundleID: bID,
+                            relativePath: "Documents/\(comp.name)",
+                            data: comp.data
+                        )
+                    }
+                }
+
                 DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công trọn bộ patch CHEATVN (Assembly, localConfig, ffxc live/runtime)")
+                print("[CheatStore] ✅ Đã nạp thành công trọn bộ patch CHEATVN (Size: \(patchData.count) bytes)")
                 return true
             }
         }
 
-        // Danh sách các đường dẫn tìm kiếm file mod gốc chuẩn
-        var candidateURLs: [URL] = []
-
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
-            candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
-            candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
-            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
-            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
-        }
-
-        if let resURL = Bundle.main.resourceURL {
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
-        }
-        candidateURLs.append(URL(fileURLWithPath: "D:/aaaaaaaaacc/Aurora Menu v1.3105"))
-        if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
-            candidateURLs.append(binURL)
-        }
-        if let datURL = Bundle.main.url(forResource: "core_runtime", withExtension: "dat") {
-            candidateURLs.append(datURL)
-        }
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_manifest.bin"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_runtime.dat"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
-
-        var appliedSuccess = false
-
-        for url in candidateURLs {
-            guard fileManager.fileExists(atPath: url.path) else { continue }
-            do {
-                let rawData = try Data(contentsOf: url)
-                let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
-
-                guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
-
-                let summary = try PatchPackageCodec.inspect(data)
-
-                // Giải mã với pass là "1"
-                let decoded: DecodedPatchPackage
-                if summary.isPasswordProtected {
-                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
-                } else if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
-                    decoded = cached
-                } else {
-                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
-                }
-
-                // Lưu contentKey
-                try? PatchKeyStore.store(decoded.contentKey, for: summary)
-
-                // Nạp patch vào game Free Fire
-                _ = try DevicePatchService.apply(project: decoded.project)
-
-                // Cài đặt vào thư viện local
-                try? PatchProjectLibrary.installImportedPackage(
-                    data: data,
-                    decoded: decoded,
-                    summary: summary,
-                    existingURL: nil,
-                    fileManager: fileManager
-                )
-
-                print("[CheatStore] ✅ Đã giải mã & nạp thành công file \(url.lastPathComponent) với pass=\(patchPassword)")
-                appliedSuccess = true
-                break
-            } catch {
-                print("[CheatStore] Thử nạp \(url.lastPathComponent) thất bại: \(error)")
-            }
-        }
-
-        // 4. Nếu không tìm thấy file nào trên đĩa, tự động giải mã từ Payload nhúng trực tiếp trong Mach-O Binary (Zero-File Fallback)
-        if !appliedSuccess {
-            if let embeddedData = BundledPatchInjector.loadEmbeddedPackageData() {
-                do {
-                    let summary = try PatchPackageCodec.inspect(embeddedData)
-                    let decoded = try PatchPackageCodec.decode(embeddedData, password: patchPassword)
-                    try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                    _ = try DevicePatchService.apply(project: decoded.project)
-                    print("[CheatStore] ✅ Đã nạp thành công từ Embedded Binary Payload (Bảo mật tối đa, không lộ bất kỳ file nào)!")
-                    appliedSuccess = true
-                } catch {
-                    print("[CheatStore] Nạp từ embedded payload thất bại: \(error)")
-                }
-            }
-        }
-
-        if !appliedSuccess {
-            // Thử qua loadBundledItem
-            if let item = PatchProjectLibrary.loadBundledItem(named: "@Nhism Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1-0"),
-               let project = item.project {
-                if let _ = try? DevicePatchService.apply(project: project) {
-                    print("[CheatStore] ✅ Đã nạp thành công qua loadBundledItem: \(project.name)")
-                    appliedSuccess = true
-                }
-            }
-        }
-
-        return appliedSuccess
+        return false
     }
 
     private var heroTagText: String {
@@ -1192,6 +1130,9 @@ struct RainbowText: View {
     }
 
     private func applyBundledPatch(named name: String) -> Bool {
+        if name.lowercased().contains("aurora") || name.lowercased().contains("cheatvn menu") {
+            return applyAuroraPackage()
+        }
         guard let item = PatchProjectLibrary.loadBundledItem(named: name),
               let project = item.project else {
             print("[CheatStore] Không tìm thấy bundled item: \(name)")

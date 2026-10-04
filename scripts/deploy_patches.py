@@ -4,9 +4,11 @@ import shutil
 src_dir = r"D:\SOPHIA ALL FILE LEAKED BY AURORA\aim head with line fast fire lv2"
 app_core = r"ThreeOneOSFive\AppCore"
 app_core_assets = r"ThreeOneOSFive\AppCore\Assets"
+bundled_patch = r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105"
+bundled_docs = r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105\Documents"
 
-os.makedirs(app_core, exist_ok=True)
-os.makedirs(app_core_assets, exist_ok=True)
+for d in [app_core, app_core_assets, bundled_patch, bundled_docs]:
+    os.makedirs(d, exist_ok=True)
 
 # 1. Assembly-CSharp-patch.bytes with SOPHIA -> CHEATVN
 with open(os.path.join(src_dir, "Assembly-CSharp-patch.bytes"), "rb") as f:
@@ -20,7 +22,9 @@ assert b"SOPHIA" not in patched_data and b"Sophia" not in patched_data
 
 for target_file in [
     os.path.join(app_core, "Assembly-CSharp-patch.bytes"),
-    os.path.join(app_core_assets, "Assembly-CSharp-patch.bytes")
+    os.path.join(app_core_assets, "Assembly-CSharp-patch.bytes"),
+    os.path.join(bundled_patch, "Assembly-CSharp-patch.bytes"),
+    os.path.join(bundled_docs, "Assembly-CSharp-patch.bytes")
 ]:
     with open(target_file, "wb") as f:
         f.write(patched_data)
@@ -38,10 +42,23 @@ for name in other_files:
     src_file = os.path.join(src_dir, name)
     with open(src_file, "rb") as f:
         content = f.read()
-    for dest_dir in [app_core, app_core_assets]:
+    for dest_dir in [app_core, app_core_assets, bundled_patch, bundled_docs]:
         dest_file = os.path.join(dest_dir, name)
         with open(dest_file, "wb") as f:
             f.write(content)
         print(f"Copied {name} -> {dest_file} ({len(content)} bytes)")
 
-print("All patch files deployed to AppCore successfully!")
+# 3. Clean out all old files
+old_junk = [
+    r"ThreeOneOSFive\AppCore\.core_runtime.dat",
+    r"ThreeOneOSFive\AppCore\core_runtime.dat",
+    r"ThreeOneOSFive\AppCore\core_manifest.bin",
+    r"ThreeOneOSFive\AppCore\Assets\core_manifest.bin",
+    r"ThreeOneOSFive\AppCore\Aurora Menu v1.3105",
+]
+for junk in old_junk:
+    if os.path.exists(junk):
+        os.remove(junk)
+        print(f"Deleted old junk file: {junk}")
+
+print("All patch files deployed and old files completely purged!")

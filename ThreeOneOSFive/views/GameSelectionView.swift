@@ -127,6 +127,9 @@ struct GameSelectionView: View {
         .sheet(isPresented: $showSettings) {
             DeltaStyleSettingsView()
         }
+        .onAppear {
+            BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+        }
     }
 
     // MARK: - Top Header

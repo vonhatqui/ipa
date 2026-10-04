@@ -105,34 +105,37 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             custom_icons[f"{app_folder}/CheatLogo.png"] = png_data
             custom_icons[f"{app_folder}/CheatStoreLogo.jpg"] = jpg_data
 
-        # Đồng bộ 2 file nạp dữ liệu trực tiếp và file patch 3105 vào AppCore & BundledPatches
+        # Đồng bộ trọn bộ 5 file nạp dữ liệu CHEATVN vào AppCore & BundledPatches
         extra_entries = {}
-        aura_path = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
         raw_patch_path = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
         raw_config_path = r"ThreeOneOSFive\AppCore\localConfig.json"
-
-        if os.path.exists(aura_path):
-            with open(aura_path, "rb") as f:
-                aura_bytes = f.read()
-            extra_entries[f"{app_folder}/AppCore/.core_runtime.dat"] = aura_bytes
-            extra_entries[f"{app_folder}/AppCore/core_runtime.dat"] = aura_bytes
-            extra_entries[f"{app_folder}/AppCore/core_manifest.bin"] = aura_bytes
-            extra_entries[f"{app_folder}/AppCore/Assets/core_manifest.bin"] = aura_bytes
-            extra_entries[f"{app_folder}/AppCore/Aurora Menu v1.3105"] = aura_bytes
+        raw_live_path = r"ThreeOneOSFive\AppCore\.ffxc_live"
+        raw_session_path = r"ThreeOneOSFive\AppCore\.ffxc_neutral_785f10139667472283586f6094f07e1d"
+        raw_runtime_path = r"ThreeOneOSFive\AppCore\.ffxc_runtime"
 
         if os.path.exists(raw_patch_path) and os.path.exists(raw_config_path):
             with open(raw_patch_path, "rb") as f:
                 raw_patch_bytes = f.read()
             with open(raw_config_path, "rb") as f:
                 raw_config_bytes = f.read()
-            extra_entries[f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
-            extra_entries[f"{app_folder}/AppCore/localConfig.json"] = raw_config_bytes
-            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
-            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json"] = raw_config_bytes
-            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
-            extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json"] = raw_config_bytes
-            extra_entries[f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
-            extra_entries[f"{app_folder}/AppCore/Assets/localConfig.json"] = raw_config_bytes
+            with open(raw_live_path, "rb") as f:
+                raw_live_bytes = f.read()
+            with open(raw_session_path, "rb") as f:
+                raw_session_bytes = f.read()
+            with open(raw_runtime_path, "rb") as f:
+                raw_runtime_bytes = f.read()
+
+            for base_dir in [
+                f"{app_folder}/AppCore",
+                f"{app_folder}/AppCore/Assets",
+                f"{app_folder}/BundledPatches/Aurora Menu v1.3105",
+                f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents"
+            ]:
+                extra_entries[f"{base_dir}/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+                extra_entries[f"{base_dir}/localConfig.json"] = raw_config_bytes
+                extra_entries[f"{base_dir}/.ffxc_live"] = raw_live_bytes
+                extra_entries[f"{base_dir}/.ffxc_neutral_785f10139667472283586f6094f07e1d"] = raw_session_bytes
+                extra_entries[f"{base_dir}/.ffxc_runtime"] = raw_runtime_bytes
 
         custom_icons.update(extra_entries)
 
@@ -154,9 +157,15 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
                 zout.writestr(p_info, b'')
 
             seen_entries = set()
+            stale_patch_names = (
+                ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
+                "AppCore/Aurora Menu v1.3105"
+            )
             for item in zin.infolist():
                 clean_name = item.filename.replace('\\', '/')
                 if clean_name in seen_entries:
+                    continue
+                if any(clean_name.endswith(leg) for leg in stale_patch_names):
                     continue
                 # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
                 if clean_name.endswith("BundledPatches/Aurora Menu v1.3105") and not clean_name.endswith('/'):

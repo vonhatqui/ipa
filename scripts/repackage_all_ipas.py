@@ -8,15 +8,7 @@ from PIL import Image
 import subprocess
 import shutil
 
-# 1. Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105 (46842 bytes)
-AURA_PATCH_PATH = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
-if not os.path.exists(AURA_PATCH_PATH):
-    raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
-
-with open(AURA_PATCH_PATH, "rb") as f:
-    AURA_PATCH_BYTES = f.read()
-
-# 2. Đọc trọn bộ 5 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes, localConfig.json, .ffxc_live, .ffxc_neutral_..., .ffxc_runtime)
+# 1. Đọc trọn bộ 5 file dữ liệu game trực tiếp (Assembly-CSharp-patch.bytes, localConfig.json, .ffxc_live, .ffxc_neutral_..., .ffxc_runtime)
 RAW_ASSEMBLY_PATH = r"ThreeOneOSFive\AppCore\Assembly-CSharp-patch.bytes"
 RAW_CONFIG_PATH = r"ThreeOneOSFive\AppCore\localConfig.json"
 RAW_LIVE_PATH = r"ThreeOneOSFive\AppCore\.ffxc_live"
@@ -42,7 +34,6 @@ with open(RAW_SESSION_PATH, "rb") as f:
 with open(RAW_RUNTIME_PATH, "rb") as f:
     RAW_RUNTIME_BYTES = f.read()
 
-print(f"Loaded source patch envelope from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYTES)} bytes")
 print(f"Loaded raw Assembly-CSharp-patch.bytes (CHEATVN): {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 print(f"Loaded raw .ffxc_live: {len(RAW_LIVE_BYTES)} bytes")
@@ -51,11 +42,6 @@ print(f"Loaded raw .ffxc_runtime: {len(RAW_RUNTIME_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     return {
-        f"{app_folder}/AppCore/.core_runtime.dat": AURA_PATCH_BYTES,
-        f"{app_folder}/AppCore/core_runtime.dat": AURA_PATCH_BYTES,
-        f"{app_folder}/AppCore/core_manifest.bin": AURA_PATCH_BYTES,
-        f"{app_folder}/AppCore/Assets/core_manifest.bin": AURA_PATCH_BYTES,
-        f"{app_folder}/AppCore/Aurora Menu v1.3105": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/AppCore/.ffxc_live": RAW_LIVE_BYTES,
@@ -205,11 +191,17 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
             zout.writestr(p_info, b'')
 
             seen = {"Payload/"}
+            stale_patch_names = (
+                ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
+                "AppCore/Aurora Menu v1.3105"
+            )
             for item in zin.infolist():
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
                 if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
+                    continue
+                if any(clean.endswith(leg) for leg in stale_patch_names):
                     continue
                 # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
                 if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
@@ -314,11 +306,17 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
             zout.writestr(p_info, b'')
 
             seen = {"Payload/"}
+            stale_patch_names = (
+                ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
+                "AppCore/Aurora Menu v1.3105"
+            )
             for item in zin.infolist():
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
                 if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
+                    continue
+                if any(clean.endswith(leg) for leg in stale_patch_names):
                     continue
                 # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
                 if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
@@ -454,10 +452,6 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
                 assert expected_phone.encode('utf-8') in bin_data, f"Binary missing expected phone '{expected_phone}'!"
                 print(f"  ✓ Binary phone verified: '{expected_phone}'")
 
-        # Kiểm tra patch files
-        patch_file = f"{app_folder}/AppCore/.core_runtime.dat"
-        patch_size = z.getinfo(patch_file).file_size if patch_file in names else 0
-
         # Kiểm tra 2 file nạp dữ liệu trực tiếp
         raw_patch_file = f"{app_folder}/AppCore/Assembly-CSharp-patch.bytes"
         raw_patch_size = z.getinfo(raw_patch_file).file_size if raw_patch_file in names else 0
@@ -472,9 +466,8 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print(f"  ✓ CFBundleDisplayName: {disp_name} (match expected: {disp_name == expected_name})")
         print(f"  ✓ CFBundleIdentifier: {b_id} (match expected: {b_id == expected_bundle_id})")
         print(f"  ✓ Executable: {exec_name} exists={has_exec}, mode={exec_mode}, create_system={exec_sys} (valid UNIX: {exec_sys == 3})")
-        print(f"  ✓ Patch .core_runtime.dat size: {patch_size} bytes (matches 46842: {patch_size == 46842})")
-        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes")
-        print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes")
+        print(f"  ✓ Raw Assembly-CSharp-patch.bytes size: {raw_patch_size} bytes (matches 76350: {raw_patch_size == 76350})")
+        print(f"  ✓ Raw localConfig.json size: {raw_config_size} bytes (matches 84: {raw_config_size == 84})")
         print(f"  ✓ Inside logo CheatStoreLogo.jpg size: {icon_size} bytes")
 
         assert has_payload, "Missing Payload/ folder!"
@@ -483,9 +476,12 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert exec_sys == 3, f"Executable create_system wrong: {exec_sys} != 3 (UNIX)!"
         assert disp_name == expected_name, f"Name mismatch: {disp_name} != {expected_name}!"
         assert b_id == expected_bundle_id, f"Bundle ID mismatch: {b_id} != {expected_bundle_id}!"
-        assert patch_size == 46842, f"Patch size wrong: {patch_size} != 46842!"
-        assert raw_patch_size > 40000, f"Raw patch missing or wrong size: {raw_patch_size}!"
-        assert raw_config_size > 0, f"Raw config missing: {raw_config_size}!"
+        assert raw_patch_size == 76350, f"Raw patch missing or wrong size: {raw_patch_size} != 76350!"
+        assert raw_config_size == 84, f"Raw config missing: {raw_config_size} != 84!"
+        for n in names:
+            assert not n.endswith(".core_runtime.dat"), f"Stale .core_runtime.dat found: {n}"
+            assert not n.endswith("core_manifest.bin"), f"Stale core_manifest.bin found: {n}"
+            assert not n.endswith("AppCore/Aurora Menu v1.3105"), f"Stale AppCore/Aurora Menu v1.3105 found: {n}"
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
