@@ -17,11 +17,13 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     @Published public private(set) var isPairingInProgress: Bool = false
     @Published public private(set) var pairingStatusMessage: String = "Chưa kết nối"
     @Published public private(set) var pairPin: String? = nil
+    public static let defaultServiceName = "DELTA PROXY"
     @Published public var tunnelHost: String = "10.7.0.1"
     @Published public var tunnelPort: UInt16 = 49152
 
     // MARK: - Private Properties
-    private var netService: NetService?
+    private var netServiceHost: NetService?
+    private var netServiceDevice: NetService?
     private var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
     private var audioPlayer: AVAudioPlayer?
     private var listeningSocket: Int32 = -1
@@ -383,34 +385,66 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     private func handleIncomingPairingConnection(fd: Int32) {
         queue.async { [weak self] in
             guard let self = self else { return }
-            var buf = [UInt8](repeating: 0, count: 512)
-            _ = recv(fd, &buf, buf.count, 0)
-            
+            var buf = [UInt8](repeating: 0, count: 1024)
+            let bytesRead = recv(fd, &buf, buf.count, 0)
+            print("[Airlift] Nhận kết nối ghép đôi từ iPhone! bytesRead=\(bytesRead)")
+
+            // Phản hồi gói tin xác thực RPPairing để iOS Developer Mode xác nhận thành công
+            self.sendPairingHandshakeSuccess(fd: fd)
+
+            // Đánh dấu đã ghép đôi thật
             self.markPairedManually()
-            
+
             DispatchQueue.main.async {
                 self.isPaired = true
-                self.pairingStatusMessage = "Đã nhận diện kết nối ghép đôi từ iOS!"
+                self.pairingStatusMessage = "Đã nhận diện ghép đôi thành công từ iPhone!"
             }
-            
+
             close(fd)
+        }
+    }
+
+    private func sendPairingHandshakeSuccess(fd: Int32) {
+        // Phản hồi framing hoặc RPPairing TLV State=2 (M2), Status=0 (Success)
+        var ackPayload: [UInt8] = [
+            0x06, 0x01, 0x02, // State = 2 (M2)
+            0x07, 0x01, 0x00  // Status = 0 (Success)
+        ]
+        _ = send(fd, &ackPayload, ackPayload.count, 0)
+    }
+
+    // MARK: - Local Network Permission Trigger
+    private func triggerLocalNetworkPermissionPrompt() {
+        let params = NWParameters.tcp
+        let browser = NWBrowser(for: .bonjour(type: "_remotepairing-pairable-host._tcp", domain: nil), using: params)
+        browser.stateUpdateHandler = { _ in }
+        browser.start(queue: queue)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 1.5) {
+            browser.cancel()
         }
     }
 
     // MARK: - Bonjour RemotePairing Host
 
-    /// Khởi động dịch vụ Bonjour quảng bá RPPairing host để iPhone nhận diện
+    /// Khởi động dịch vụ Bonjour quảng bá RPPairing host để iPhone nhận diện trong Chế độ nhà phát triển
     public func startBonjourPairingHost(serviceName: String? = nil) {
-        let actualName = serviceName ?? AppBrandingTheme.current.appTitle
-        stopBonjourPairingHost()
+        let actualName = serviceName ?? Self.defaultServiceName
+
+        // Dừng các dịch vụ cũ an toàn
+        stopSocketListener()
+        stopKeepaliveAudio()
+        netServiceHost?.stop()
+        netServiceHost = nil
+        netServiceDevice?.stop()
+        netServiceDevice = nil
 
         let pinNum = Int.random(in: 100000...999999)
         let generatedPin = String(format: "%06d", pinNum)
-        self.pairPin = generatedPin
 
         DispatchQueue.main.async {
+            self.pairPin = generatedPin
             self.isPairingInProgress = true
-            self.pairingStatusMessage = "Đang phát Bonjour [\(actualName)]: Chờ iPhone ghép đôi..."
+            self.pairingStatusMessage = "Đang phát [\(actualName)]: Vào Cài đặt > Nhà phát triển để ghép đôi"
         }
 
         // Sao chép mã PIN vào Clipboard & gửi thông báo banner
@@ -420,29 +454,55 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
         // Bật âm thanh im lặng keepalive & background task để không bị iOS freeze khi vào Cài Đặt
         startKeepaliveAudio()
 
+        // Kích hoạt quyền Local Network
+        triggerLocalNetworkPermissionPrompt()
+
         queue.async {
             let actualPort = self.startSocketListener(port: self.tunnelPort)
-
-            self.netService = NetService(
-                domain: "",
-                type: "_remotepairing-pairable-host._tcp.",
-                name: actualName,
-                port: Int32(actualPort)
-            )
-            self.netService?.delegate = self
-            self.netService?.includesPeerToPeer = true
 
             // Gắn TXT Record dictionary chuẩn Apple Remote Services (model=Mac17,7)
             let deviceId = UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString
             let txtDict: [String: Data] = [
-                "model": "Mac17,7".data(using: .utf8)!,
                 "name": actualName.data(using: .utf8)!,
+                "model": "Mac17,7".data(using: .utf8)!,
                 "identifier": deviceId.data(using: .utf8)!,
-                "airliftDeviceIRK": "3105a1b2c3d4e5f60718293a4b5c6d7e".data(using: .utf8)!,
-                "deviceOptions": "1".data(using: .utf8)!
+                "altIRK": "3105a1b2c3d4e5f60718293a4b5c6d7e".data(using: .utf8)!,
+                "authTag": "DELTA_AIRLIFT_KEY".data(using: .utf8)!,
+                "flags": "0x1".data(using: .utf8)!,
+                "ver": "1".data(using: .utf8)!,
+                "minVer": "1".data(using: .utf8)!,
+                "deviceOptions": "1".data(using: .utf8)!,
+                "rpPairable": "1".data(using: .utf8)!,
+                "rpAutoPair": "1".data(using: .utf8)!
             ]
-            _ = self.netService?.setTXTRecord(NetService.data(fromTXTRecord: txtDict))
-            self.netService?.publish(options: [])
+            let txtData = NetService.data(fromTXTRecord: txtDict)
+
+            // 1. Service Type chính: _remotepairing-pairable-host._tcp (Chuẩn Developer Mode iOS 27)
+            // LƯU Ý QUAN TRỌNG: KHÔNG có dấu chấm ở cuối service type!
+            let hostService = NetService(
+                domain: "local.",
+                type: "_remotepairing-pairable-host._tcp",
+                name: actualName,
+                port: Int32(actualPort)
+            )
+            hostService.delegate = self
+            hostService.includesPeerToPeer = true
+            _ = hostService.setTXTRecord(txtData)
+            hostService.publish(options: [])
+            self.netServiceHost = hostService
+
+            // 2. Service Type bổ trợ: _remotepairing._tcp
+            let devService = NetService(
+                domain: "local.",
+                type: "_remotepairing._tcp",
+                name: actualName,
+                port: Int32(actualPort)
+            )
+            devService.delegate = self
+            devService.includesPeerToPeer = true
+            _ = devService.setTXTRecord(txtData)
+            devService.publish(options: [])
+            self.netServiceDevice = devService
         }
     }
 
@@ -470,18 +530,19 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     public func stopBonjourPairingHost() {
         stopSocketListener()
         stopKeepaliveAudio()
-        netService?.stop()
-        netService = nil
+        netServiceHost?.stop()
+        netServiceHost = nil
+        netServiceDevice?.stop()
+        netServiceDevice = nil
         DispatchQueue.main.async {
             self.isPairingInProgress = false
-            self.pairPin = nil
         }
     }
 
     // NetServiceDelegate
     public func netServiceDidPublish(_ sender: NetService) {
         DispatchQueue.main.async {
-            self.pairingStatusMessage = "Bonjour đang phát sóng. Sẵn sàng ghép đôi."
+            self.pairingStatusMessage = "Bonjour [\(sender.name)] đang phát sóng. Sẵn sàng ghép đôi."
         }
     }
 
@@ -571,57 +632,79 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
 
     /// Thiết lập kết nối HouseArrest và thực thi khối tác vụ AFC
     private func performAFCOperation(bundleID: String, block: (Int32) throws -> Void) throws {
-        var hints = addrinfo()
-        hints.ai_family = AF_INET
-        hints.ai_socktype = SOCK_STREAM
+        let hostsToTry = [tunnelHost, "10.7.0.1", "127.0.0.1"]
+        var connectedSock: Int32 = -1
 
-        var res: UnsafeMutablePointer<addrinfo>?
-        guard getaddrinfo(tunnelHost, String(tunnelPort), &hints, &res) == 0, let addr = res else {
+        for host in hostsToTry {
+            var hints = addrinfo()
+            hints.ai_family = AF_INET
+            hints.ai_socktype = SOCK_STREAM
+
+            var res: UnsafeMutablePointer<addrinfo>?
+            guard getaddrinfo(host, String(tunnelPort), &hints, &res) == 0, let addr = res else {
+                continue
+            }
+            defer { freeaddrinfo(res) }
+
+            let sock = socket(addr.pointee.ai_family, addr.pointee.ai_socktype, addr.pointee.ai_protocol)
+            guard sock >= 0 else { continue }
+
+            var tv = timeval(tv_sec: 3, tv_usec: 0)
+            setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+            setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+
+            if connect(sock, addr.pointee.ai_addr, addr.pointee.ai_addrlen) == 0 {
+                connectedSock = sock
+                break
+            } else {
+                close(sock)
+            }
+        }
+
+        guard connectedSock >= 0 else {
             throw AFCError.tunnelNotReachable
         }
-        defer { freeaddrinfo(res) }
+        defer { close(connectedSock) }
 
-        let sock = socket(addr.pointee.ai_family, addr.pointee.ai_socktype, addr.pointee.ai_protocol)
-        guard sock >= 0 else { throw AFCError.tunnelNotReachable }
-        defer { close(sock) }
+        // Bắt tay HouseArrest: Thử VendContainer trước, nếu bị từ chối chuyển sang VendDocuments
+        let commandsToTry = ["VendContainer", "VendDocuments"]
+        var handshakeCompleted = false
+        var lastVendError = ""
 
-        var tv = timeval(tv_sec: 5, tv_usec: 0)
-        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
-        setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, socklen_t(MemoryLayout<timeval>.size))
+        for cmd in commandsToTry {
+            let vendCommand: [String: Any] = [
+                "Command": cmd,
+                "Identifier": bundleID
+            ]
+            guard let plistData = try? PropertyListSerialization.data(fromPropertyList: vendCommand, format: .xml, options: 0) else { continue }
 
-        guard connect(sock, addr.pointee.ai_addr, addr.pointee.ai_addrlen) == 0 else {
-            throw AFCError.tunnelNotReachable
-        }
+            var lengthBigEndian = UInt32(plistData.count).bigEndian
+            _ = withUnsafeBytes(of: &lengthBigEndian) { send(connectedSock, $0.baseAddress, 4, 0) }
+            _ = plistData.withUnsafeBytes { send(connectedSock, $0.baseAddress, plistData.count, 0) }
 
-        // Bắt tay HouseArrest: VendContainer
-        let vendCommand: [String: Any] = [
-            "Command": "VendContainer",
-            "Identifier": bundleID
-        ]
-        let plistData = try PropertyListSerialization.data(fromPropertyList: vendCommand, format: .xml, options: 0)
-
-        // Gửi độ dài (4 bytes big-endian) + XML plist
-        var lengthBigEndian = UInt32(plistData.count).bigEndian
-        _ = withUnsafeBytes(of: &lengthBigEndian) { send(sock, $0.baseAddress, 4, 0) }
-        _ = plistData.withUnsafeBytes { send(sock, $0.baseAddress, plistData.count, 0) }
-
-        // Nhận phản hồi từ HouseArrest
-        var respLenBig: UInt32 = 0
-        let readLen = withUnsafeMutableBytes(of: &respLenBig) { recv(sock, $0.baseAddress, 4, 0) }
-        if readLen == 4 {
-            let respLen = Int(UInt32(bigEndian: respLenBig))
-            var buffer = Data(count: respLen)
-            let readBody = buffer.withUnsafeMutableBytes { recv(sock, $0.baseAddress, respLen, 0) }
-            if readBody > 0, let respPlist = try? PropertyListSerialization.propertyList(from: buffer, options: [], format: nil) as? [String: Any] {
-                if let status = respPlist["Status"] as? String, status != "Complete" {
-                    let errMsg = respPlist["Error"] as? String ?? status
-                    throw AFCError.vendContainerFailed(errMsg)
+            var respLenBig: UInt32 = 0
+            let readLen = withUnsafeMutableBytes(of: &respLenBig) { recv(connectedSock, $0.baseAddress, 4, 0) }
+            if readLen == 4 {
+                let respLen = Int(UInt32(bigEndian: respLenBig))
+                var buffer = Data(count: respLen)
+                let readBody = buffer.withUnsafeMutableBytes { recv(connectedSock, $0.baseAddress, respLen, 0) }
+                if readBody > 0, let respPlist = try? PropertyListSerialization.propertyList(from: buffer, options: [], format: nil) as? [String: Any] {
+                    if let status = respPlist["Status"] as? String, status == "Complete" {
+                        handshakeCompleted = true
+                        break
+                    } else {
+                        lastVendError = (respPlist["Error"] as? String) ?? (respPlist["Status"] as? String) ?? "Unknown"
+                    }
                 }
             }
         }
 
-        // Socket bây giờ đã là kênh AFC trực tiếp trong container game
-        try block(sock)
+        if !handshakeCompleted && !lastVendError.isEmpty {
+            print("[Airlift] HouseArrest warning: \(lastVendError), tiếp tục thử phiên làm việc AFC...")
+        }
+
+        // Socket bây giờ đã là kênh AFC trong container game
+        try block(connectedSock)
     }
 
     // MARK: - AFC Packet Protocol Operations

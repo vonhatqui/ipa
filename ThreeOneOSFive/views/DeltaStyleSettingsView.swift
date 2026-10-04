@@ -594,13 +594,16 @@ private struct AirliftPairingDetailSheetView: View {
                                     }
                                 }
                             } else {
-                                Text("------")
-                                    .font(.system(size: 34, weight: .heavy, design: .monospaced))
-                                    .foregroundColor(Color.white.opacity(0.3))
-                                    .tracking(4)
+                                HStack(spacing: 8) {
+                                    ProgressView().scaleEffect(0.8)
+                                    Text("Đang khởi tạo mã PIN...")
+                                        .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                        .foregroundColor(Color.white.opacity(0.6))
+                                }
+                                .padding(.vertical, 8)
                             }
 
-                            Text("Nhấn nút bên dưới để sinh mã PIN, sau đó vào Cài đặt > Nhà phát triển để ghép đôi")
+                            Text("Mở Cài đặt > Nhà phát triển > Chọn \"Pair with DELTA PROXY\"")
                                 .font(.system(size: 11, weight: .regular))
                                 .foregroundColor(Color.white.opacity(0.5))
                                 .multilineTextAlignment(.center)
@@ -623,7 +626,7 @@ private struct AirliftPairingDetailSheetView: View {
 
                             statusRow(
                                 title: "Phát sóng Bonjour",
-                                subtitle: bridge.isPairingInProgress ? "Đang phát sóng... Chờ thiết bị kết nối" : "Chưa bắt đầu",
+                                subtitle: bridge.isPairingInProgress ? "Đang phát [DELTA PROXY]... Chờ kết nối" : "Chưa bắt đầu",
                                 dotColor: bridge.isPairingInProgress ? Color(red: 0.0, green: 0.9, blue: 0.45) : Color.orange
                             )
                         }
@@ -632,9 +635,33 @@ private struct AirliftPairingDetailSheetView: View {
                         .cornerRadius(18)
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.12), lineWidth: 1))
 
-                        // Chỉ 2 nút chính
+                        // Các nút hành động chính
                         VStack(spacing: 10) {
-                            // 1. Sinh Mã PIN & Bắt Đầu Ghép
+                            // 1. Nút mở nhanh Cài Đặt iPhone
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                AirliftBridge.openDeveloperSettings()
+                            }) {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "arrow.up.forward.app.fill")
+                                        .font(.system(size: 15, weight: .bold))
+                                    Text("Mở Cài Đặt (Chế Độ Nhà Phát Triển)")
+                                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 44)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.10, green: 0.50, blue: 1.0), Color(red: 0.0, green: 0.35, blue: 0.90)],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(12)
+                            }
+
+                            // 2. Nút Bắt đầu / Dừng phát sóng
                             Button(action: {
                                 if bridge.isPairingInProgress {
                                     bridge.stopBonjourPairingHost()
@@ -648,18 +675,18 @@ private struct AirliftPairingDetailSheetView: View {
                             }) {
                                 HStack(spacing: 8) {
                                     Image(systemName: bridge.isPairingInProgress ? "stop.circle.fill" : "antenna.radiowaves.left.and.right")
-                                        .font(.system(size: 15, weight: .bold))
-                                    Text(bridge.isPairingInProgress ? "Dừng Phát Sóng" : "Sinh Mã PIN & Bắt Đầu Ghép")
-                                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                                        .font(.system(size: 14, weight: .semibold))
+                                    Text(bridge.isPairingInProgress ? "Dừng Phát Sóng" : "Sinh Lại Mã PIN")
+                                        .font(.system(size: 13.5, weight: .semibold, design: .rounded))
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(Color.white.opacity(0.85))
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 44)
-                                .background(bridge.isPairingInProgress ? Color.red.opacity(0.75) : Color(red: 0.15, green: 0.45, blue: 0.98))
-                                .cornerRadius(12)
+                                .frame(height: 38)
+                                .background(bridge.isPairingInProgress ? Color.red.opacity(0.65) : Color.white.opacity(0.12))
+                                .cornerRadius(11)
                             }
 
-                            // 2. Xác Nhận Đã Ghép Đôi Thành Công
+                            // 3. Nút kích hoạt thủ công (nếu cần)
                             Button(action: {
                                 bridge.markPairedManually()
                                 UINotificationFeedbackGenerator().notificationOccurred(.success)
@@ -667,33 +694,38 @@ private struct AirliftPairingDetailSheetView: View {
                             }) {
                                 HStack(spacing: 8) {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 15, weight: .bold))
-                                    Text("Xác Nhận Đã Ghép Đôi Thành Công")
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                                        .font(.system(size: 14, weight: .semibold))
+                                    Text("Kích Hoạt Ghép Đôi Thủ Công")
+                                        .font(.system(size: 13.5, weight: .semibold, design: .rounded))
                                 }
-                                .foregroundColor(.white)
+                                .foregroundColor(Color(red: 0.2, green: 0.85, blue: 0.45))
                                 .frame(maxWidth: .infinity)
-                                .frame(height: 42)
-                                .background(Color(red: 0.12, green: 0.68, blue: 0.35))
-                                .cornerRadius(12)
+                                .frame(height: 36)
+                                .background(Color.green.opacity(0.12))
+                                .cornerRadius(10)
                             }
 
-                            // Hướng dẫn ngắn gọn
-                            VStack(alignment: .leading, spacing: 6) {
-                                instructionStep(number: "1", text: "Nhấn \"Sinh Mã PIN & Bắt Đầu Ghép\" ở trên")
-                                instructionStep(number: "2", text: "Vào Cài đặt > Nhà phát triển > Chọn thiết bị > Dán mã PIN")
-                                instructionStep(number: "3", text: "Ghép đôi xong, quay lại nhấn \"Xác Nhận Đã Ghép Đôi\"")
+                            // Hướng dẫn 3 bước chuẩn video TikTok
+                            VStack(alignment: .leading, spacing: 7) {
+                                instructionStep(number: "1", text: "Bấm nút xanh ở trên để mở Chế độ nhà phát triển")
+                                instructionStep(number: "2", text: "Tại \"Các thiết bị khác 🔆\", chạm vào \"Pair with DELTA PROXY\"")
+                                instructionStep(number: "3", text: "Khi thiết bị kết nối, app sẽ TỰ ĐỘNG nhận diện thành công!")
                             }
                             .padding(14)
                             .background(Color.white.opacity(0.04))
                             .cornerRadius(14)
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.08), lineWidth: 1))
                         }
-                        .padding(.top, 6)
+                        .padding(.top, 4)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 24)
                 }
+            }
+        }
+        .onAppear {
+            if bridge.pairPin == nil || !bridge.isPairingInProgress {
+                bridge.startBonjourPairingHost()
             }
         }
         // Tự động đóng sheet khi ghép đôi thành công

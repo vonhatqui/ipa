@@ -122,6 +122,7 @@
     <array>
         <string>_remotepairing-pairable-host._tcp</string>
         <string>_remotepairing._tcp</string>
+        <string>_remotepairing-manual-pairing._tcp</string>
     </array>
     <key>NSLocalNetworkUsageDescription</key>
     <string>CheatStore cần quyền mạng cục bộ để ghép nối thiết bị và hỗ trợ mod trên iOS 18.7+ và iOS 27+.</string>
