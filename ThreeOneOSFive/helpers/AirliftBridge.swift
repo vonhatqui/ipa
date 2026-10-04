@@ -29,7 +29,7 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     private var listeningSocket: Int32 = -1
     private var listenerSource: DispatchSourceRead?
     private let queue = DispatchQueue(label: "vip.cheatstore.airlift", qos: .userInitiated)
-    private let pairingFilenames = ["delta_pairing.plist", "airlift_pairing.plist", "pairing.plist"]
+    private let pairingFilenames = ["cheatvn_pairing.plist", "delta_pairing.plist", "hely_pairing.plist", "airlift_pairing.plist", "pairing.plist"]
 
     private override init() {
         super.init()
@@ -107,7 +107,7 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
     }
 
     /// Lưu pairing record mới tạo hoặc do người dùng nhập vào
-    public func savePairingRecord(data: Data, filename: String = "delta_pairing.plist") throws {
+    public func savePairingRecord(data: Data, filename: String = "cheatvn_pairing.plist") throws {
         let dest = documentsDirectory.appendingPathComponent(filename)
         try data.write(to: dest, options: .atomic)
         refreshState()
@@ -889,7 +889,7 @@ public final class AirliftBridge: NSObject, ObservableObject, NetServiceDelegate
 
         var msg = ""
         if !paired {
-            msg = "Chưa tìm thấy file ghép đôi (delta_pairing.plist). Hãy nhấn 'Bắt đầu ghép đôi'."
+            msg = "Chưa tìm thấy file ghép đôi (cheatvn_pairing.plist / pairing.plist). Hãy nhấn 'Bắt đầu ghép đôi'."
         } else if !tunnel {
             msg = "Đã có chứng chỉ ghép đôi nhưng Loopback VPN (10.7.0.1) chưa bật. Vui lòng bật LocalDevVPN."
         } else {
