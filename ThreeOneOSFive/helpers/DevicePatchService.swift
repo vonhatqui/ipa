@@ -1,0 +1,841 @@
+import CryptoKit
+import Foundation
+
+enum DevicePatchService {
+    // MARK: - Concurrency & Synchronization
+    /// Serial Queue đảm bảo các thao tác Apply / Restore / Cleanup diễn ra tuần tự, triệt tiêu hoàn toàn Race Condition
+    private static let serialQueue = DispatchQueue(label: "com.threeoneosfive.devicepatch.serial", qos: .userInitiated)
+
+    /// In-memory cache lưu trạng thái các project đã kích hoạt để UI kiểm tra tức thì, không gây lag đọc ổ đĩa
+    private static var appliedProjectsCache: Set<UUID>? = nil
+    private static let cacheLock = NSLock()
+
+    // MARK: - Motion Blur & Graphics Safety (FF thường & Metal Pipeline)
+    /// Cấu hình an toàn tương thích đồ họa Motion Blur trên FF thường và Metal API
+    static let motionBlurSafeConfigJSON: String = """
+    {
+      "testCodePatch": true,
+      "motionBlur": true,
+      "motionBlurSafeMode": true,
+      "safeRenderMode": true,
+      "cameraStabilizer": true,
+      "bypassMotionBlurCrash": true
+    }
+    """
+
+    private static let preferenceBundleTargets: [(bundleID: String, relativePath: String)] = [
+        ("com.dts.freefireth", "Library/Preferences/com.dts.freefireth.plist"),
+        ("com.dts.freefirevn", "Library/Preferences/com.dts.freefirevn.plist"),
+        ("com.dts.freefire", "Library/Preferences/com.dts.freefire.plist"),
+        ("com.dts.freefiremax", "Library/Preferences/com.dts.freefiremax.plist")
+    ]
+
+    // MARK: - Golden Snapshots (Bản sao lưu nguyên bản vĩnh viễn)
+    /// Thư mục lưu trữ bản sao lưu nguyên bản (Golden Snapshots) của game Free Fire sạch trước khi mod
+    private static func goldenSnapshotsDirectory(fileManager: FileManager = .default) throws -> URL {
+        let backupRoot = try PatchProjectLibrary.backupRootURL(fileManager: fileManager)
+        let goldenDir = backupRoot.appendingPathComponent("GoldenSnapshots", isDirectory: true)
+        if !fileManager.fileExists(atPath: goldenDir.path) {
+            try fileManager.createDirectory(at: goldenDir, withIntermediateDirectories: true)
+        }
+        return goldenDir
+    }
+
+    private static func snapshotKey(bundleID: String, relativePath: String) -> String {
+        let safePath = relativePath.replacingOccurrences(of: "/", with: "___")
+        return "\(bundleID)___\(safePath)"
+    }
+
+    /// Chụp lại bản sao lưu nguyên bản (Golden Snapshot) trước khi bất kỳ mod nào can thiệp
+    static func captureGoldenSnapshotIfNeeded(
+        targetURL: URL,
+        bundleID: String,
+        relativePath: String,
+        replacementData: Data?,
+        fileManager: FileManager = .default
+    ) {
+        do {
+            let goldenDir = try goldenSnapshotsDirectory(fileManager: fileManager)
+            let key = snapshotKey(bundleID: bundleID, relativePath: relativePath)
+            let goldenFileURL = goldenDir.appendingPathComponent("\(key).golden")
+            let notExistedMarkerURL = goldenDir.appendingPathComponent("\(key).not_existed")
+
+            // Nếu đã từng lưu snapshot nguyên bản thì KHÔNG BAO GIỜ ghi đè, bảo tồn vĩnh viễn
+            if fileManager.fileExists(atPath: goldenFileURL.path) || fileManager.fileExists(atPath: notExistedMarkerURL.path) {
+                return
+            }
+
+            if fileManager.fileExists(atPath: targetURL.path) {
+                // Kiểm tra xem file hiện tại có phải là file mod bị kẹt từ trước không
+                if let modData = replacementData, let currentData = try? Data(contentsOf: targetURL) {
+                    if currentData == modData {
+                        // File hiện tại đã là file mod! Đánh dấu ban đầu nó KHÔNG TỒN TẠI ở game sạch
+                        try? "".write(to: notExistedMarkerURL, atomically: true, encoding: .utf8)
+                        log("patch: [GoldenSnapshot] File \(relativePath) hiện tại là mod, đánh dấu not_existed")
+                        return
+                    }
+                }
+                // File này nguyên bản sạch, lưu vào Golden Snapshot
+                try? fileManager.copyItem(at: targetURL, to: goldenFileURL)
+                log("patch: [GoldenSnapshot] Đã chụp thành công file gốc: \(relativePath)")
+            } else {
+                // File gốc vốn không tồn tại trong game sạch (ví dụ Assembly-CSharp-patch.bytes, config.bin)
+                try? "".write(to: notExistedMarkerURL, atomically: true, encoding: .utf8)
+                log("patch: [GoldenSnapshot] Đánh dấu file mới không tồn tại ở game gốc: \(relativePath)")
+            }
+        } catch {
+            log("patch: [GoldenSnapshot] Lỗi chụp snapshot: \(error)")
+        }
+    }
+
+    /// Khôi phục 100% dữ liệu nguyên bản từ Golden Snapshot
+    static func restoreFromGoldenSnapshot(
+        targetURL: URL,
+        bundleID: String,
+        relativePath: String,
+        modData: Data?,
+        fileManager: FileManager = .default
+    ) -> Bool {
+        guard let goldenDir = try? goldenSnapshotsDirectory(fileManager: fileManager) else { return false }
+        let key = snapshotKey(bundleID: bundleID, relativePath: relativePath)
+        let goldenFileURL = goldenDir.appendingPathComponent("\(key).golden")
+        let notExistedMarkerURL = goldenDir.appendingPathComponent("\(key).not_existed")
+
+        if fileManager.fileExists(atPath: goldenFileURL.path) {
+            // File gốc có tồn tại -> Khôi phục đè lại file gốc sạch
+            try? fileManager.removeItem(at: targetURL)
+            let parent = targetURL.deletingLastPathComponent()
+            try? fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+            do {
+                try fileManager.copyItem(at: goldenFileURL, to: targetURL)
+                if let goldenAttrs = try? fileManager.attributesOfItem(atPath: goldenFileURL.path),
+                   let modDate = goldenAttrs[.modificationDate] as? Date {
+                    try? fileManager.setAttributes([.modificationDate: modDate], ofItemAtPath: targetURL.path)
+                }
+                log("patch: [GoldenSnapshot] Đã phục hồi 100% file gốc: \(relativePath)")
+                return true
+            } catch {
+                log("patch: [GoldenSnapshot] Lỗi copy file gốc: \(error)")
+            }
+        } else if fileManager.fileExists(atPath: notExistedMarkerURL.path) {
+            // File gốc vốn không tồn tại -> Xoá sạch file mod
+            if fileManager.fileExists(atPath: targetURL.path) {
+                try? fileManager.removeItem(at: targetURL)
+                log("patch: [GoldenSnapshot] Đã xoá bỏ hoàn toàn file inject: \(relativePath)")
+            }
+            return true
+        } else {
+            // Chưa có marker, nhưng nếu file hiện tại giống modData -> Xoá đi
+            if let modData = modData, let currentData = try? Data(contentsOf: targetURL), currentData == modData {
+                try? fileManager.removeItem(at: targetURL)
+                log("patch: [GoldenSnapshot] Xoá file trùng khớp mod: \(relativePath)")
+                return true
+            }
+        }
+        return false
+    }
+
+    // MARK: - Quản lý Container Cả Hai Bản Free Fire & Free Fire MAX
+    private static var cachedContainers: [String: URL] = [:]
+    private static let containerCacheLock = NSLock()
+
+    /// Lấy danh sách tất cả thư mục container của Free Fire (cả Standard lẫn MAX)
+    static func allAvailableFreeFireContainers() -> [String: URL] {
+        containerCacheLock.lock()
+        if !cachedContainers.isEmpty {
+            let res = cachedContainers
+            containerCacheLock.unlock()
+            return res
+        }
+        containerCacheLock.unlock()
+
+        var result: [String: URL] = [:]
+
+        // Fast path 1: Ưu tiên đọc trực tiếp từ LaunchServices (< 1ms)
+        if let ffPath = findFreeFireContainerPath(), ContainerStore.isApplicationContainerPath(ffPath) {
+            let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            result["com.dts.freefireth"] = canonical
+            result["com.dts.freefiremax"] = canonical
+            result["com.dts.freefire"] = canonical
+            result["com.dts.freefirevn"] = canonical
+            containerCacheLock.lock()
+            cachedContainers = result
+            containerCacheLock.unlock()
+            return result
+        }
+
+        // Fast path 2: Quét qua ContainerStore
+        let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        for bID in targets {
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
+                result[bID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+            }
+        }
+        if result.isEmpty, let ffPath = findFreeFireContainerPath() {
+            let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            result["com.dts.freefireth"] = canonical
+            result["com.dts.freefiremax"] = canonical
+        }
+
+        if !result.isEmpty {
+            containerCacheLock.lock()
+            cachedContainers = result
+            containerCacheLock.unlock()
+        }
+        return result
+    }
+
+    // MARK: - Apply (Bật chức năng)
+    static func apply(project: PatchProject) throws -> PatchTransactionReceipt {
+        try serialQueue.sync {
+            let bundleIDs = orderedBundleIdentifiers(in: project)
+            let roots = try resolveContainers(bundleIDs: bundleIDs)
+            let fileManager = FileManager.default
+            let allContainers = allAvailableFreeFireContainers()
+
+            // 1. Chụp Golden Snapshot cho TOÀN BỘ file mục tiêu trước khi áp dụng
+            for rule in project.rules {
+                for (bID, root) in allContainers {
+                    if let target = try? PatchPathValidator.resolveContainedTargetURL(
+                        relativePath: rule.relativePath,
+                        containerRoot: root
+                    ) {
+                        captureGoldenSnapshotIfNeeded(
+                            targetURL: target,
+                            bundleID: bID,
+                            relativePath: rule.relativePath,
+                            replacementData: rule.replacementData,
+                            fileManager: fileManager
+                        )
+                    }
+                }
+            }
+
+            // Chụp Golden Snapshot cho Preferences của FF thường (com.dts.freefireth) và các biến thể nếu có
+            for (_, root) in allContainers {
+                for target in preferenceBundleTargets {
+                    let plistURL = root.appendingPathComponent(target.relativePath)
+                    if fileManager.fileExists(atPath: plistURL.path) {
+                        captureGoldenSnapshotIfNeeded(
+                            targetURL: plistURL,
+                            bundleID: target.bundleID,
+                            relativePath: target.relativePath,
+                            replacementData: nil,
+                            fileManager: fileManager
+                        )
+                    }
+                }
+            }
+
+            // 2. Tự động chuyển đổi thông minh: Khôi phục project nào có target file TRÙNG LẶP trực tiếp
+            let backupRoot = try PatchProjectLibrary.backupRootURL()
+            let incomingRelPaths = Set(project.rules.map { $0.relativePath })
+            
+            // Quét triệt để mọi receipt đang active để tìm các project trùng target file
+            let conflictingPIDs = PatchTransaction.conflictingProjectIDs(
+                relativePaths: incomingRelPaths,
+                backupRoot: backupRoot,
+                excludingProjectID: project.id,
+                fileManager: fileManager
+            )
+            for conflictPID in conflictingPIDs {
+                if let conflictReceipt = PatchTransaction.latestReceipt(projectID: conflictPID, backupRoot: backupRoot, fileManager: fileManager) {
+                    try? PatchTransaction.restore(receipt: conflictReceipt, allowChangedTargets: true, containerResolver: { bID in
+                        roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
+                    })
+                }
+                forceCleanupReceipts(projectID: conflictPID)
+                setProjectAppliedInMemory(projectID: conflictPID, applied: false)
+            }
+
+            // Nếu chính project này có receipt cũ, dọn sạch trước khi apply lại
+            if let existingReceipt = PatchTransaction.latestReceipt(projectID: project.id, backupRoot: backupRoot) {
+                try? PatchTransaction.restore(receipt: existingReceipt, allowChangedTargets: true, containerResolver: { bID in
+                    roots[bID] ?? allContainers[bID] ?? URL(fileURLWithPath: "/")
+                })
+            }
+            // Dọn dẹp receipt cũ của chính project này
+            forceCleanupReceipts(projectID: project.id)
+
+            // Khử trùng lặp rule theo relativePath trước khi apply (phòng thủ tuyệt đối chống lỗi duplicateTarget)
+            var sanitizedRules: [PatchRule] = []
+            var seenRelPaths = Set<String>()
+            for rule in project.rules {
+                if seenRelPaths.insert(rule.relativePath).inserted {
+                    sanitizedRules.append(rule)
+                }
+            }
+            var sanitizedProject = project
+            sanitizedProject.rules = sanitizedRules
+
+            // 3. Thực hiện Apply chuẩn qua PatchTransaction
+            let receipt = try PatchTransaction.apply(
+                project: sanitizedProject,
+                backupRoot: backupRoot,
+                containerResolver: { bundleID in
+                    guard let root = roots[bundleID] else {
+                        throw PatchPackageError.targetAppUnavailable(bundleID)
+                    }
+                    return root
+                }
+            )
+
+            // 4. Đồng bộ file sang Free Fire MAX nếu máy cài cả hai bản
+            if let maxRoot = allContainers["com.dts.freefiremax"], roots["com.dts.freefireth"] != nil {
+                for rule in project.rules {
+                    if let maxTarget = try? PatchPathValidator.resolveContainedTargetURL(
+                        relativePath: rule.relativePath,
+                        containerRoot: maxRoot
+                    ) {
+                        let parent = maxTarget.deletingLastPathComponent()
+                        try? fileManager.createDirectory(at: parent, withIntermediateDirectories: true)
+                        
+                        // BẢO TỒN TIMESTAMP CHỐNG BAN CHO BẢN MAX
+                        let origAttrs = try? fileManager.attributesOfItem(atPath: maxTarget.path)
+                        let origModDate = origAttrs?[.modificationDate] as? Date
+                        let origCreationDate = origAttrs?[.creationDate] as? Date
+
+                        try? rule.replacementData.write(to: maxTarget, options: .atomic)
+
+                        if let origModDate {
+                            var attrs: [FileAttributeKey: Any] = [.modificationDate: origModDate]
+                            if let cDate = origCreationDate { attrs[.creationDate] = cDate }
+                            try? fileManager.setAttributes(attrs, ofItemAtPath: maxTarget.path)
+                        }
+                    }
+                }
+                // Đồng bộ plist kèm bảo tồn timestamp
+                if let thRoot = roots["com.dts.freefireth"] {
+                    let thPlist = thRoot.appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
+                    let maxPlist = maxRoot.appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                    if fileManager.fileExists(atPath: thPlist.path) {
+                        let origPlistAttrs = try? fileManager.attributesOfItem(atPath: maxPlist.path)
+                        let origModDate = origPlistAttrs?[.modificationDate] as? Date
+                        try? fileManager.removeItem(at: maxPlist)
+                        try? fileManager.copyItem(at: thPlist, to: maxPlist)
+                        if let origModDate {
+                            try? fileManager.setAttributes([.modificationDate: origModDate], ofItemAtPath: maxPlist.path)
+                        }
+                    }
+                }
+            }
+
+            // 0xCheats Ledger: Ghi chép inject ledger vào container game
+            recordInjectLedger(project: project, containers: allContainers, fileManager: fileManager)
+
+            // Cập nhật in-memory cache
+            setProjectAppliedInMemory(projectID: project.id, applied: true)
+            return receipt
+        }
+    }
+
+    // MARK: - Duy trì nạp Injector vào Game & Vào Trận
+    /// Tự động xác thực và khóa dữ liệu injector vào game đảm bảo cả khi vào game lẫn vào trận đều không bị mất dữ liệu
+    static func ensureActivePatchesInjected() {
+        serialQueue.async {
+            let allContainers = allAvailableFreeFireContainers()
+            let fileManager = FileManager.default
+            
+            for (_, root) in allContainers {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                let patchFile = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let configFile = docDir.appendingPathComponent("localConfig.json")
+                
+                // Đảm bảo localConfig.json luôn luôn tồn tại với cấu hình an toàn cho Motion Blur khi patch đang có
+                if fileManager.fileExists(atPath: patchFile.path) {
+                    let shouldWriteConfig: Bool
+                    if !fileManager.fileExists(atPath: configFile.path) {
+                        shouldWriteConfig = true
+                    } else if let existingData = try? Data(contentsOf: configFile),
+                              let str = String(data: existingData, encoding: .utf8),
+                              !str.contains("motionBlurSafeMode") {
+                        shouldWriteConfig = true
+                    } else {
+                        shouldWriteConfig = false
+                    }
+                    if shouldWriteConfig, let configData = motionBlurSafeConfigJSON.data(using: .utf8) {
+                        try? configData.write(to: configFile, options: .atomic)
+                    }
+                    // Đặt quyền posix và loại trừ backup để chống bị iOS / Game dọn cache khi chuyển cảnh vào trận
+                    var url1 = patchFile
+                    var url2 = configFile
+                    var resourceValues = URLResourceValues()
+                    resourceValues.isExcludedFromBackup = true
+                    try? url1.setResourceValues(resourceValues)
+                    try? url2.setResourceValues(resourceValues)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: patchFile.path)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: configFile.path)
+                }
+            }
+        }
+    }
+
+    // MARK: - Restore & Rollback (Tắt chức năng)
+    static func restore(
+        receipt: PatchTransactionReceipt,
+        project: PatchProject? = nil,
+        allowChangedTargets: Bool = true
+    ) throws {
+        try serialQueue.sync {
+            let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
+            let roots = (try? resolveContainers(bundleIDs: bundleIDs)) ?? [:]
+
+            // 1. Thử restore chuẩn qua PatchTransaction
+            do {
+                try PatchTransaction.restore(
+                    receipt: receipt,
+                    allowChangedTargets: allowChangedTargets,
+                    containerResolver: { bundleID in
+                        guard let root = roots[bundleID] else {
+                            throw PatchPackageError.targetAppUnavailable(bundleID)
+                        }
+                        return root
+                    }
+                )
+            } catch {
+                log("patch: PatchTransaction.restore gặp lỗi: \(error), tiến hành khôi phục sâu qua Golden Snapshots...")
+            }
+
+            // 2. PHỤC HỒI TRIỆT ĐỂ: Chỉ khôi phục các file thuộc về project này từ Golden Snapshot
+            let resolvedProject = project ?? (try? PatchProjectLibrary.load(fileManager: FileManager.default).first(where: { $0.id == receipt.projectID }))?.project
+            restoreAllGoldenSnapshots(for: resolvedProject)
+
+            // 3. Dọn dẹp receipt & cập nhật cache
+            forceCleanupReceipts(projectID: receipt.projectID)
+            setProjectAppliedInMemory(projectID: receipt.projectID, applied: false)
+        }
+    }
+
+    /// Khôi phục toàn bộ các file từ Golden Snapshot
+    static func restoreAllGoldenSnapshots(for project: PatchProject? = nil) {
+        let fileManager = FileManager.default
+        let allContainers = allAvailableFreeFireContainers()
+
+        if let project = project {
+            for rule in project.rules {
+                for (bID, root) in allContainers {
+                    if let target = try? PatchPathValidator.resolveContainedTargetURL(
+                        relativePath: rule.relativePath,
+                        containerRoot: root
+                    ) {
+                        _ = restoreFromGoldenSnapshot(
+                            targetURL: target,
+                            bundleID: bID,
+                            relativePath: rule.relativePath,
+                            modData: rule.replacementData,
+                            fileManager: fileManager
+                        )
+                    }
+                }
+            }
+        } else {
+            guard let goldenDir = try? goldenSnapshotsDirectory(fileManager: fileManager),
+                  let items = try? fileManager.contentsOfDirectory(atPath: goldenDir.path) else { return }
+
+            for item in items {
+                let isGolden = item.hasSuffix(".golden")
+                let isNotExisted = item.hasSuffix(".not_existed")
+                guard isGolden || isNotExisted else { continue }
+
+                let filenameWithoutExt = (item as NSString).deletingPathExtension
+                let parts = filenameWithoutExt.components(separatedBy: "___")
+                guard parts.count >= 2 else { continue }
+
+                let bID = parts[0]
+                let relativePath = parts.dropFirst().joined(separator: "/")
+
+                guard let root = allContainers[bID] else { continue }
+                guard let target = try? PatchPathValidator.resolveContainedTargetURL(
+                    relativePath: relativePath,
+                    containerRoot: root
+                ) else { continue }
+
+                _ = restoreFromGoldenSnapshot(
+                    targetURL: target,
+                    bundleID: bID,
+                    relativePath: relativePath,
+                    modData: nil,
+                    fileManager: fileManager
+                )
+            }
+        }
+
+        // Đảm bảo phục hồi cả com.dts.freefireth.plist và preferences liên quan
+        for (_, root) in allContainers {
+            for target in preferenceBundleTargets {
+                let plistURL = root.appendingPathComponent(target.relativePath)
+                if fileManager.fileExists(atPath: plistURL.path) {
+                    _ = restoreFromGoldenSnapshot(
+                        targetURL: plistURL,
+                        bundleID: target.bundleID,
+                        relativePath: target.relativePath,
+                        modData: nil,
+                        fileManager: fileManager
+                    )
+                }
+            }
+        }
+    }
+
+    /// Phục hồi cưỡng chế khi restore bình thường bị lỗi (file bị khóa, game đang mở, digest thay đổi, container thay đổi)
+    static func forceRestoreAndCleanup(receipt: PatchTransactionReceipt?, project: PatchProject?) {
+        serialQueue.sync {
+            let projectID = project?.id ?? receipt?.projectID
+
+            // 1. Nếu có receipt, thử restore
+            if let receipt = receipt {
+                let bundleIDs = (try? PatchTransaction.requiredBundleIdentifiers(for: receipt)) ?? []
+                if let roots = try? resolveContainers(bundleIDs: bundleIDs) {
+                    try? PatchTransaction.restore(
+                        receipt: receipt,
+                        allowChangedTargets: true,
+                        containerResolver: { roots[$0] ?? URL(fileURLWithPath: "/") }
+                    )
+                }
+            }
+
+            // 2. Khôi phục từ Golden Snapshots cho mọi rule của project
+            restoreAllGoldenSnapshots(for: project)
+
+            // 3. Xoá receipt & cập nhật cache
+            if let projectID = projectID {
+                forceCleanupReceipts(projectID: projectID)
+                setProjectAppliedInMemory(projectID: projectID, applied: false)
+            }
+        }
+    }
+
+    /// Dọn dẹp sạch file mod khi không tìm thấy receipt
+    static func forceCleanup(project: PatchProject?) {
+        serialQueue.sync {
+            restoreAllGoldenSnapshots(for: project)
+            if let project = project {
+                forceCleanupReceipts(projectID: project.id)
+                setProjectAppliedInMemory(projectID: project.id, applied: false)
+            }
+        }
+    }
+
+    /// 1-Chạm Khôi phục sạch toàn bộ dữ liệu game Free Fire & Free Fire MAX từ Golden Snapshots
+    @discardableResult
+    static func cleanRestoreAllModifications() -> Bool {
+        return cleanRestoreWithProgress { _, _, _ in }
+    }
+
+    /// Khôi phục an toàn 100% có báo cáo từng bước chi tiết cho giao diện UI
+    @discardableResult
+    static func cleanRestoreWithProgress(
+        progressHandler: @escaping (_ stepIndex: Int, _ stepTitle: String, _ progress: Double) -> Void
+    ) -> Bool {
+        return serialQueue.sync {
+            let fileManager = FileManager.default
+
+            // BƯỚC 1: Quét và nhận diện container game
+            DispatchQueue.main.async {
+                progressHandler(0, "Đang quét nhận diện container Free Fire & FF MAX...", 0.15)
+            }
+            let allContainers = allAvailableFreeFireContainers()
+            Thread.sleep(forTimeInterval: 0.25)
+
+            // BƯỚC 2: Quét cưỡng chế & dọn sạch toàn bộ file can thiệp, file rác, inject ledgers
+            DispatchQueue.main.async {
+                progressHandler(1, "Đang quét và dọn sạch file can thiệp (Assembly, config, ledger)...", 0.38)
+            }
+
+            let junkFileNames = [
+                "Assembly-CSharp-patch.bytes",
+                "localConfig.json",
+                "patch_cache",
+                "mod_signature.bin",
+                ".0xfixa.ledger"
+            ]
+
+            for (_, root) in allContainers {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                for junk in junkFileNames {
+                    let junkURL = docDir.appendingPathComponent(junk)
+                    if fileManager.fileExists(atPath: junkURL.path) {
+                        try? fileManager.removeItem(at: junkURL)
+                        log("patch: [SafeRestore] Đã xoá bỏ file rác: \(junk)")
+                    }
+                }
+            }
+
+            cleanupInjectLedgers(containers: allContainers, fileManager: fileManager)
+            Thread.sleep(forTimeInterval: 0.3)
+
+            // BƯỚC 3: Phục hồi nguyên tử 100% file gốc từ Golden Snapshot
+            DispatchQueue.main.async {
+                progressHandler(2, "Đang phục hồi nguyên tử các file gốc từ Golden Snapshot...", 0.65)
+            }
+            restoreAllGoldenSnapshots(for: nil)
+            Thread.sleep(forTimeInterval: 0.3)
+
+            // BƯỚC 4: Khôi phục Timestamp & Quyền POSIX nguyên bản (Chống ban)
+            DispatchQueue.main.async {
+                progressHandler(3, "Đang đồng bộ Timestamp & Quyền POSIX gốc chống ban...", 0.82)
+            }
+            // Bảo tồn lại plist gốc cho FF thường (com.dts.freefireth) và các biến thể
+            for (_, root) in allContainers {
+                for target in preferenceBundleTargets {
+                    let plistURL = root.appendingPathComponent(target.relativePath)
+                    if fileManager.fileExists(atPath: plistURL.path) {
+                        _ = restoreFromGoldenSnapshot(
+                            targetURL: plistURL,
+                            bundleID: target.bundleID,
+                            relativePath: target.relativePath,
+                            modData: nil,
+                            fileManager: fileManager
+                        )
+                    }
+                }
+            }
+            Thread.sleep(forTimeInterval: 0.25)
+
+            // BƯỚC 5: Dọn sạch cache tạm và Receipts/Journal (bảo tồn vĩnh viễn GoldenSnapshots)
+            DispatchQueue.main.async {
+                progressHandler(4, "Đang dọn sạch cache tạm thời & Đặt lại trạng thái sạch...", 0.95)
+            }
+            for (_, root) in allContainers {
+                let cacheDir = root.appendingPathComponent("Library/Caches", isDirectory: true)
+                if let cacheItems = try? fileManager.contentsOfDirectory(atPath: cacheDir.path) {
+                    for cItem in cacheItems {
+                        let cURL = cacheDir.appendingPathComponent(cItem)
+                        try? fileManager.removeItem(at: cURL)
+                    }
+                }
+            }
+
+            if let backupRoot = try? PatchProjectLibrary.backupRootURL(),
+               let entries = try? fileManager.contentsOfDirectory(atPath: backupRoot.path) {
+                for entry in entries {
+                    if entry == "GoldenSnapshots" { continue }
+                    let dir = backupRoot.appendingPathComponent(entry)
+                    try? fileManager.removeItem(at: dir)
+                }
+            }
+
+            // BƯỚC 6: Hoàn tất 100%
+            invalidateAppliedCache()
+            log("patch: [SafeRestore] Đã hoàn tất 100% khôi phục sạch toàn bộ dữ liệu game.")
+
+            DispatchQueue.main.async {
+                progressHandler(5, "Đã khôi phục dữ liệu gốc an toàn 100%! Game sạch hoàn toàn.", 1.0)
+            }
+            Thread.sleep(forTimeInterval: 0.25)
+            return true
+        }
+    }
+
+    static func inspectRestore(receipt: PatchTransactionReceipt) throws -> PatchRestoreInspection {
+        let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
+        return try withResolvedContainers(bundleIDs: bundleIDs) { roots in
+            try PatchTransaction.inspectRestore(
+                receipt: receipt,
+                containerResolver: { bundleID in
+                    guard let root = roots[bundleID] else {
+                        throw PatchPackageError.targetAppUnavailable(bundleID)
+                    }
+                    return root
+                }
+            )
+        }
+    }
+
+    static func resetToAppliedState(
+        receipt: PatchTransactionReceipt,
+        project: PatchProject
+    ) throws {
+        let bundleIDs = try PatchTransaction.requiredBundleIdentifiers(for: receipt)
+        try withResolvedContainers(bundleIDs: bundleIDs) { roots in
+            try PatchTransaction.resetToAppliedState(
+                receipt: receipt,
+                fallbackProject: project,
+                containerResolver: { bundleID in
+                    guard let root = roots[bundleID] else {
+                        throw PatchPackageError.targetAppUnavailable(bundleID)
+                    }
+                    return root
+                }
+            )
+        }
+    }
+
+    // MARK: - State Tracking (In-Memory & Disk)
+    static func latestReceipt(projectID: UUID) -> PatchTransactionReceipt? {
+        guard let backupRoot = try? PatchProjectLibrary.backupRootURL() else { return nil }
+        return PatchTransaction.latestReceipt(projectID: projectID, backupRoot: backupRoot)
+    }
+
+    static func allAppliedProjectIDs() -> Set<UUID> {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        var set = Set<UUID>()
+        if let backupRoot = try? PatchProjectLibrary.backupRootURL() {
+            if let entries = try? FileManager.default.contentsOfDirectory(atPath: backupRoot.path) {
+                for entry in entries {
+                    if let pid = UUID(uuidString: entry),
+                       PatchTransaction.latestReceipt(projectID: pid, backupRoot: backupRoot) != nil {
+                        set.insert(pid)
+                    }
+                }
+            }
+        }
+        appliedProjectsCache = set
+        return set
+    }
+
+    static func isProjectApplied(projectID: UUID) -> Bool {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+
+        if let cache = appliedProjectsCache {
+            return cache.contains(projectID)
+        }
+
+        // Khởi tạo cache từ disk lần đầu
+        var set = Set<UUID>()
+        if let backupRoot = try? PatchProjectLibrary.backupRootURL() {
+            if let entries = try? FileManager.default.contentsOfDirectory(atPath: backupRoot.path) {
+                for entry in entries {
+                    if let pid = UUID(uuidString: entry),
+                       PatchTransaction.latestReceipt(projectID: pid, backupRoot: backupRoot) != nil {
+                        set.insert(pid)
+                    }
+                }
+            }
+        }
+        appliedProjectsCache = set
+        return set.contains(projectID)
+    }
+
+    private static func setProjectAppliedInMemory(projectID: UUID, applied: Bool) {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        if appliedProjectsCache == nil {
+            appliedProjectsCache = Set<UUID>()
+        }
+        if applied {
+            appliedProjectsCache?.insert(projectID)
+        } else {
+            appliedProjectsCache?.remove(projectID)
+        }
+    }
+
+    static func invalidateAppliedCache() {
+        cacheLock.lock()
+        defer { cacheLock.unlock() }
+        appliedProjectsCache = nil
+    }
+
+    /// Xoá sạch toàn bộ journal/receipt cũ bị kẹt của project để tránh lỗi projectAlreadyApplied
+    static func forceCleanupReceipts(projectID: UUID) {
+        guard let backupRoot = try? PatchProjectLibrary.backupRootURL() else { return }
+        let projectDirectory = backupRoot.appendingPathComponent(projectID.uuidString, isDirectory: true)
+        try? FileManager.default.removeItem(at: projectDirectory)
+    }
+
+    private static func orderedBundleIdentifiers(in project: PatchProject) -> [String] {
+        project.allBundleIdentifiers
+    }
+
+    // MARK: - Quản lý Phiên bản Free Fire Ưu tiên
+    static var preferredVersion: FreeFireGameVersion = .standard
+
+    static func resolveContainers(bundleIDs: [String]) throws -> [String: URL] {
+        var roots: [String: URL] = [:]
+
+        // Pre-resolve Free Fire container if needed (fast path)
+        var detectedFreeFireURL: URL? = nil
+        if let ffPath = findFreeFireContainerPath(), ContainerStore.isApplicationContainerPath(ffPath) {
+            detectedFreeFireURL = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+        }
+
+        if detectedFreeFireURL == nil {
+            let ffCandidates: [String] = preferredVersion == .max
+                ? ["com.dts.freefiremax", "com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire"]
+                : ["com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire", "com.dts.freefiremax"]
+            for c in ffCandidates {
+                if let p = ContainerStore.resolveAppContainerPath(bundleID: c) {
+                    detectedFreeFireURL = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: p, isDirectory: true))
+                    break
+                }
+            }
+        }
+
+        for bundleID in bundleIDs {
+            let isFF = bundleID.lowercased().contains("freefire") || bundleID.lowercased().contains("dts")
+            if isFF, let ffURL = detectedFreeFireURL {
+                roots[bundleID] = ffURL
+                continue
+            }
+
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bundleID) {
+                roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+            } else if isFF, let ffURL = detectedFreeFireURL {
+                log("patch: mapped \(bundleID) to detected Free Fire container \(ffURL.path)")
+                roots[bundleID] = ffURL
+            } else if let alt = ContainerStore.alternativeBundleID(for: bundleID),
+                      let path = ContainerStore.resolveAppContainerPath(bundleID: alt) {
+                log("patch: mapped \(bundleID) to alternative container \(alt)")
+                roots[bundleID] = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+            } else if let ffURL = detectedFreeFireURL {
+                log("patch: fallback mapped \(bundleID) to Free Fire container \(ffURL.path)")
+                roots[bundleID] = ffURL
+            } else {
+                throw PatchPackageError.targetAppUnavailable(bundleID)
+            }
+        }
+        return roots
+    }
+
+    private static func withResolvedContainers<T>(
+        bundleIDs: [String],
+        operation: ([String: URL]) throws -> T
+    ) throws -> T {
+        let roots = try resolveContainers(bundleIDs: bundleIDs)
+        return try operation(roots)
+    }
+
+    // MARK: - 0xCheats Ledger System (.0xfixa-inject/ledger.json)
+    private static func recordInjectLedger(project: PatchProject, containers: [String: URL], fileManager: FileManager = .default) {
+        for (bundleID, root) in containers {
+            let ledgerDir = root.appendingPathComponent(".0xfixa-inject", isDirectory: true)
+            try? fileManager.createDirectory(at: ledgerDir, withIntermediateDirectories: true)
+            
+            var fileRecords: [[String: Any]] = []
+            for rule in project.rules {
+                fileRecords.append([
+                    "target": rule.relativePath,
+                    "bundle_id": bundleID,
+                    "size": rule.replacementData.count,
+                    "sha256": SHA256.hash(data: rule.replacementData).compactMap { String(format: "%02x", $0) }.joined()
+                ])
+            }
+            
+            let ledgerDict: [String: Any] = [
+                "timestamp": Int64(Date().timeIntervalSince1970),
+                "owner_stamp": "\(bundleID).0xfixa.ledger",
+                "project_id": project.id.uuidString,
+                "project_name": project.name,
+                "injected_files": fileRecords
+            ]
+            
+            let ledgerFile = ledgerDir.appendingPathComponent("ledger.json")
+            if let data = try? JSONSerialization.data(withJSONObject: ledgerDict, options: [.prettyPrinted]) {
+                try? data.write(to: ledgerFile, options: .atomic)
+            }
+        }
+    }
+
+    private static func cleanupInjectLedgers(containers: [String: URL], fileManager: FileManager = .default) {
+        for (_, root) in containers {
+            let ledgerDir = root.appendingPathComponent(".0xfixa-inject", isDirectory: true)
+            if fileManager.fileExists(atPath: ledgerDir.path) {
+                try? fileManager.removeItem(at: ledgerDir)
+            }
+        }
+    }
+
+}

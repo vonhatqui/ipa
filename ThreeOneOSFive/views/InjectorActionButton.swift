@@ -1,0 +1,132 @@
+import SwiftUI
+import UIKit
+
+/// ButtonStyle tạo hiệu ứng nhấn nhẹ cho nút Inject/Un-inject
+private struct InjectorScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+    }
+}
+
+/// Nút bấm chuyển trạng thái INJECT / UN-INJECT phong cách Gaming Tool chuyên nghiệp
+struct InjectorActionButton: View {
+    let isApplied: Bool
+    let isWorking: Bool
+    var isUnderMaintenance: Bool = false
+    let onToggle: (Bool) -> Void
+
+    @ViewBuilder
+    var body: some View {
+        if isWorking {
+            HStack(spacing: 5) {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(0.7)
+                Text(isApplied ? "Đang gỡ..." : "Injecting...")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(Color.white.opacity(0.12))
+            .clipShape(Capsule())
+        } else if isUnderMaintenance {
+            if isApplied {
+                // Nếu đang không an toàn mà trước đó đã lỡ Inject -> Nút gỡ bỏ khẩn cấp
+                Button {
+                    CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                    onToggle(false)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 9.5))
+                        Text("GỠ RỦI RO")
+                            .font(.system(size: 10.5, weight: .black, design: .rounded))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.85))
+                    .clipShape(Capsule())
+                }
+                .buttonStyle(InjectorScaleButtonStyle())
+            } else {
+                // Trạng thái Không an toàn -> Hiển thị huy hiệu cảnh báo
+                Button {
+                    CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                    onToggle(true)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "exclamationmark.shield.fill")
+                            .font(.system(size: 9.5))
+                        Text("KHÔNG AN TOÀN")
+                            .font(.system(size: 10, weight: .black, design: .rounded))
+                    }
+                    .foregroundStyle(Color(red: 239/255, green: 68/255, blue: 68/255))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5.5)
+                    .background(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.12))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color(red: 239/255, green: 68/255, blue: 68/255).opacity(0.4), lineWidth: 0.8)
+                    )
+                }
+                .buttonStyle(InjectorScaleButtonStyle())
+            }
+        } else if isApplied {
+            // ĐÃ INJECT -> Nút UN-INJECT (Khôi phục / Gỡ bỏ)
+            Button {
+                CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                onToggle(false)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.counterclockwise.circle.fill")
+                        .font(.system(size: 10.5, weight: .bold))
+                    Text("UN-INJECT")
+                        .font(.system(size: 10.5, weight: .black, design: .rounded))
+                }
+                .foregroundStyle(Color.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.white.opacity(0.12))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule().stroke(Color.white.opacity(0.4), lineWidth: 1)
+                )
+                .shadow(color: Color.white.opacity(0.15), radius: 5)
+            }
+            .buttonStyle(InjectorScaleButtonStyle())
+        } else {
+            // CHƯA INJECT -> Nút INJECT (Bơm vào game - Silver/White LED Glow)
+            Button {
+                CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                onToggle(true)
+            } label: {
+                HStack(spacing: 4.5) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 10, weight: .bold))
+                    Text("INJECT")
+                        .font(.system(size: 11, weight: .black, design: .rounded))
+                }
+                .foregroundStyle(.black)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(
+                    LinearGradient(
+                        colors: [Color.white, Color(white: 0.88)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .clipShape(Capsule())
+                .shadow(color: Color.white.opacity(0.35), radius: 6, x: 0, y: 1)
+                .overlay(
+                    Capsule().stroke(Color.white, lineWidth: 0.8)
+                )
+            }
+            .buttonStyle(InjectorScaleButtonStyle())
+        }
+    }
+}

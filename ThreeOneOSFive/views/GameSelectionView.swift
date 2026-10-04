@@ -1,0 +1,476 @@
+import SwiftUI
+import UIKit
+
+/// GameSelectionView: Màn hình chọn ứng dụng phong cách Delta Proxy (Đồng bộ chuẩn 100% với clip TikTok)
+/// Logic ghép đôi:
+/// - iOS được hỗ trợ trực tiếp (iOS 26.1, 17.0–17.7, 18.0–18.7.1, 27 Beta 1–4):
+///   -> Hiển thị ỨNG DỤNG (2) gồm Free Fire Max & Free Fire ngay lập tức sau khi nhập key, KHÔNG hiện ghép đôi!
+/// - iOS cao chưa hỗ trợ exploit (iOS 18.7.2+, iOS 27 chính thức, iOS 28+):
+///   -> Hiển thị ỨNG DỤNG (0), ẩn Free Fire cho đến khi ghép đôi thành công qua Cài đặt ⚙️ > Ghép Đôi iOS 27.
+struct GameSelectionView: View {
+    @EnvironmentObject private var patchStore: PatchProjectStore
+    @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
+    @ObservedObject var bridge = AirliftBridge.shared
+
+    let onSelectFreeFire: () -> Void
+
+    @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
+    @State private var isLaunchingGame: Bool = false
+    @State private var launchingVersionTitle: String = ""
+    @State private var showSettings: Bool = false
+
+    private var currentGameVersion: FreeFireGameVersion {
+        FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
+    }
+
+    private var theme: AppBrandingTheme {
+        AppBrandingTheme.current
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "2.4"
+    }
+
+    // Kiểm tra xem game có sẵn sàng hiển thị không
+    private var isGameAvailable: Bool {
+        let v = AppInfo.versionTuple
+        if ExploitSupportPolicy.supportsDirectExploit(major: v.major, minor: v.minor, patch: v.patch) {
+            return true // iOS 26.1 và các bản được hỗ trợ trực tiếp: LUÔN HIỆN FREE FIRE NGAY LẬP TỨC
+        }
+        return bridge.isPaired // iOS cao: chỉ hiện sau khi ghép đôi thành công
+    }
+
+    // Design Tokens (Deep Void Luxury • Snapchat Liquid Mesh)
+    private let colorVoid = Color(red: 0.05, green: 0.06, blue: 0.09)
+    private let colorCardBg = Color(red: 0.11, green: 0.13, blue: 0.18).opacity(0.88)
+    private let colorCardBorder = Color.white.opacity(0.12)
+    private let colorInk = Color.white
+    private let colorMute = Color(red: 0.58, green: 0.62, blue: 0.70)
+    private let greenBadge = Color(red: 0.0, green: 0.90, blue: 0.46) // Neon Green • Có Hỗ Trợ
+    private let cyanAccent = Color(red: 0.0, green: 0.82, blue: 1.0)  // Vivid Cyan READY
+
+    var body: some View {
+        ZStack {
+            // Nền chảy Snapchat Liquid Mesh Gradient lượn sóng huyền ảo
+            SnapchatFluidLiquidBackgroundView()
+
+            VStack(spacing: 0) {
+                // 1. Header thanh trên (Logo + Tên App + Nút Cài đặt ⚙️)
+                topHeaderView
+
+                // 2. Bộ 3 thẻ trạng thái hệ thống (Thiết bị • Hệ điều hành • Tương thích)
+                systemStatsRowView
+
+                // 3. Danh sách ứng dụng (Ứng dụng 2 hoặc 0)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        // Tiêu đề mục: ỨNG DỤNG (2) hoặc (0)
+                        HStack {
+                            Text("ỨNG DỤNG (\(isGameAvailable ? 2 : 0))")
+                                .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                                .tracking(1.8)
+                                .foregroundColor(Color.white.opacity(0.65))
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.top, 14)
+
+                        if isGameAvailable {
+                            // Cả 2 bản Free Fire Max & Free Fire Thường đều sẵn sàng
+                            gameCardView(
+                                title: "Free Fire Max",
+                                bundleId: "com.dts.freefiremax",
+                                version: .max
+                            )
+                            .padding(.horizontal, 16)
+
+                            gameCardView(
+                                title: "Free Fire",
+                                bundleId: "com.dts.freefireth",
+                                version: .standard
+                            )
+                            .padding(.horizontal, 16)
+                        } else {
+                            // Trạng thái iOS cao chưa ghép đôi (như iOS 27.0 trong clip TikTok)
+                            airliftPairingPromptCard
+                                .padding(.horizontal, 16)
+                        }
+                    }
+                    .padding(.bottom, 20)
+                }
+
+                Spacer(minLength: 0)
+
+                // 4. Thanh Ticker Marquee ("... Mãi Đỉnh, Em Yêu ... <3")
+                marqueeBannerView
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 8)
+
+                // 5. Thanh Key Info Bar dưới cùng
+                keyStatusBarView
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+            }
+
+            // Loading overlay khi nạp game
+            if isLaunchingGame {
+                ZStack {
+                    Color.black.opacity(0.8).ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(1.2)
+                        Text("Đang nạp dữ liệu \(launchingVersionTitle)...")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    }
+                    .padding(26)
+                    .background(Color(red: 22/255, green: 22/255, blue: 28/255))
+                    .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(colorCardBorder, lineWidth: 1))
+                }
+                .transition(.opacity)
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            DeltaStyleSettingsView()
+        }
+    }
+
+    // MARK: - Top Header
+    private var topHeaderView: some View {
+        HStack(spacing: 12) {
+            CheatStoreLogoView(size: 34, cornerRadius: 9)
+
+            HStack(spacing: 6) {
+                Text(theme.appTitle)
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .foregroundColor(colorInk)
+
+                Text("v\(appVersion)")
+                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.55))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.white.opacity(0.1))
+                    .cornerRadius(6)
+            }
+
+            Spacer()
+
+            // Nút Cài đặt (Gear shape) mở Modal 7 mục chuẩn Delta
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showSettings = true
+            } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 38, height: 38)
+                    .background(Color.white.opacity(0.10))
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.white.opacity(0.18), lineWidth: 1))
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 12)
+        .background(Color.black.opacity(0.35))
+    }
+
+    // MARK: - Bộ 3 thẻ thông số hệ thống
+    private var systemStatsRowView: some View {
+        let v = AppInfo.versionTuple
+        let isDirect = ExploitSupportPolicy.supportsDirectExploit(major: v.major, minor: v.minor, patch: v.patch)
+        let isSupported = isDirect || bridge.isPaired
+
+        return HStack(spacing: 8) {
+            statBox(
+                title: "THIẾT BỊ",
+                value: AppInfo.hardwareDisplayName,
+                valueColor: colorInk
+            )
+
+            statBox(
+                title: "HỆ ĐIỀU HÀNH",
+                value: "iOS \(UIDevice.current.systemVersion)",
+                valueColor: colorInk
+            )
+
+            statBox(
+                title: "TƯƠNG THÍCH",
+                value: isSupported ? "• Có Hỗ Trợ" : "• Cần ghép đôi",
+                valueColor: isSupported ? greenBadge : Color.orange
+            )
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 12)
+    }
+
+    private func statBox(title: String, value: String, valueColor: Color) -> some View {
+        VStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                .tracking(1.0)
+                .foregroundColor(Color.white.opacity(0.5))
+
+            Text(value)
+                .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                .foregroundColor(valueColor)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .padding(.horizontal, 6)
+        .background(colorCardBg)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(colorCardBorder, lineWidth: 1)
+        )
+    }
+
+    // MARK: - Game Card View (Free Fire Max / Free Fire)
+    private func gameCardView(title: String, bundleId: String, version: FreeFireGameVersion) -> some View {
+        Button {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            selectedGameVersionRaw = version.rawValue
+            DevicePatchService.preferredVersion = version
+            BundledPatchInjector.autoImportBundledPatches(into: patchStore)
+
+            launchingVersionTitle = title
+            withAnimation(.easeInOut(duration: 0.2)) {
+                isLaunchingGame = true
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                isLaunchingGame = false
+                onSelectFreeFire()
+            }
+        } label: {
+            HStack(spacing: 14) {
+                // Icon Free Fire
+                FreeFireAppIconView(size: 50, cornerRadius: 13)
+
+                // Tên & Bundle ID
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(title)
+                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .foregroundColor(colorInk)
+
+                    Text(bundleId)
+                        .font(.system(size: 11.5, weight: .medium, design: .monospaced))
+                        .foregroundColor(colorMute)
+                }
+
+                Spacer()
+
+                // Huy hiệu READY chuẩn Delta
+                Text("READY")
+                    .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(cyanAccent)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4.5)
+                    .background(cyanAccent.opacity(0.14))
+                    .cornerRadius(7)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(cyanAccent.opacity(0.35), lineWidth: 1)
+                    )
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color.white.opacity(0.4))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(colorCardBg)
+            .cornerRadius(18)
+            .overlay(
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(colorCardBorder, lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.35), radius: 10, y: 4)
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+
+    // MARK: - Thẻ Nhắc Nhở Ghép Đôi AirLift (Khi iOS cao chưa ghép đôi)
+    private var airliftPairingPromptCard: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Image(systemName: "link.badge.plus")
+                    .font(.system(size: 24, weight: .bold))
+                    .foregroundColor(Color.orange)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Thiết Bị Cần Ghép Đôi AirLift")
+                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+
+                    Text("Phiên bản iOS \(UIDevice.current.systemVersion) cần ghép đôi để nạp game. Nhấn nút bên dưới hoặc biểu tượng Cài đặt ⚙️ góc trên để bắt đầu ghép đôi.")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(Color.white.opacity(0.7))
+                        .lineSpacing(2)
+                }
+            }
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                showSettings = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                    Text("Bắt Đầu Ghép Đôi iOS")
+                        .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 40)
+                .background(Color(red: 0.22, green: 0.45, blue: 0.95))
+                .cornerRadius(12)
+            }
+        }
+        .padding(16)
+        .background(Color.orange.opacity(0.08))
+        .cornerRadius(18)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.orange.opacity(0.35), lineWidth: 1.2)
+        )
+    }
+
+    // MARK: - Banner Marquee Ticker
+    private var marqueeBannerView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "megaphone.fill")
+                .font(.system(size: 12))
+                .foregroundColor(cyanAccent)
+
+            Text("\(theme.appTitle) Mãi Đỉnh, Em Yêu \(theme.appTitle) <3")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(colorInk.opacity(0.85))
+                .lineLimit(1)
+
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.05))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+    }
+
+    // MARK: - Key Status Bar
+    private var keyStatusBarView: some View {
+        HStack(spacing: 10) {
+            Circle()
+                .fill(greenBadge)
+                .frame(width: 8, height: 8)
+                .shadow(color: greenBadge.opacity(0.8), radius: 3)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("KEY: \(maskedKey)")
+                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                    .foregroundColor(.white)
+
+                Text(licenseManager.formattedRemainingTime.isEmpty ? "Còn 30 ngày 0 giờ" : licenseManager.formattedRemainingTime)
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundColor(greenBadge)
+            }
+
+            Spacer()
+
+            Image(systemName: "shield.fill")
+                .font(.system(size: 14))
+                .foregroundColor(Color.white.opacity(0.6))
+
+            Image(systemName: "info.circle")
+                .font(.system(size: 14))
+                .foregroundColor(Color.white.opacity(0.6))
+
+            Button {
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                licenseManager.deactivate()
+            } label: {
+                Text("Đổi Key")
+                    .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.2), lineWidth: 1))
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(Color(red: 0.12, green: 0.13, blue: 0.18).opacity(0.95))
+        .cornerRadius(16)
+        .overlay(RoundedRectangle(cornerRadius: 16).stroke(colorCardBorder, lineWidth: 1))
+    }
+
+    private var maskedKey: String {
+        let k = licenseManager.activeKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard k.count >= 8 else {
+            return k.isEmpty ? "VIP••••2026" : k
+        }
+        let prefix = String(k.prefix(4))
+        let suffix = String(k.suffix(4))
+        return "\(prefix)••••\(suffix)"
+    }
+}
+
+// MARK: - FreeFireAppIconView
+struct FreeFireAppIconView: View {
+    let size: CGFloat
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        Group {
+            if let img = loadIconImage() {
+                Image(uiImage: img)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                ZStack {
+                    LinearGradient(
+                        colors: [Color.orange, Color.red],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: size * 0.5))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+        )
+    }
+
+    private func loadIconImage() -> UIImage? {
+        if let img = UIImage(named: "FreeFireIcon") ?? UIImage(named: "freefire") {
+            return img
+        }
+        if let path = Bundle.main.path(forResource: "FreeFireIcon", ofType: "png") ??
+                      Bundle.main.path(forResource: "FreeFireIcon", ofType: "jpg"),
+           let img = UIImage(contentsOfFile: path) {
+            return img
+        }
+        return nil
+    }
+}
+
+// MARK: - Scale Button Style
+private struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
