@@ -72,8 +72,8 @@ struct LimelightDockBar: View {
                                     .shadow(color: isSelected ? ledColor.opacity(0.85) : .clear, radius: 8, x: 0, y: 0)
                                     .scaleEffect(isSelected ? 1.06 : 1.0)
 
-                                // Badge trạng thái Antiban đang bật
-                                if tab == .antiban && AntibanProfileService.shared.isAntibanEnabled {
+                                // Badge trạng thái Modskin đang bật
+                                if tab == .modskin && ModSkinService.shared.isAnySkinActive {
                                     Circle()
                                         .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
                                         .frame(width: 6, height: 6)

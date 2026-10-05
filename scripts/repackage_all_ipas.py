@@ -71,9 +71,11 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
     }
-    # Thêm Mod Skin vào BundledPatches nếu có
+    # Thêm Mod Skin vào BundledPatches và AppCore nếu có
     if MOD_SKIN_BYTES is not None:
         entries[f"{app_folder}/BundledPatches/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
+        entries[f"{app_folder}/AppCore/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
+        entries[f"{app_folder}/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
     return entries
 
 def generate_custom_icons(icon_path, app_folder, plist):

@@ -2,16 +2,16 @@ import SwiftUI
 import UIKit
 import WebKit
 
-// MARK: - CheatStoreTab Enum (3 Tab: Trang Chủ, Antiban, Cá Nhân)
+// MARK: - CheatStoreTab Enum (3 Tab: Trang Chủ, Modskin, Cá Nhân)
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
-    case antiban = 1
+    case modskin = 1
     case profile = 2
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
-        case .antiban: return "Antiban"
+        case .modskin: return "Modskin"
         case .profile: return "Cá Nhân"
         }
     }
@@ -19,9 +19,175 @@ enum CheatStoreTab: Int, CaseIterable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .antiban: return "checkmark.shield.fill"
+        case .modskin: return "tshirt.fill"
         case .profile: return "person.crop.circle.fill"
         }
+    }
+}
+
+// MARK: - ModSkinService (Quản lý Mod Skin chuẩn Filza cho Free Fire & Free Fire MAX)
+public final class ModSkinService: ObservableObject {
+    public static let shared = ModSkinService()
+
+    public static let alockSkinFileName = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
+
+    // Các đường dẫn đích mà Free Fire & Filza dùng để load avatar bundle
+    public static let skinTargetRelativePaths = [
+        "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles",
+        "Documents/contentcache/Optional/ios/gameassetbundles",
+        "Documents/contentcache/Compulsory/ios/gameassetbundles/avatar",
+        "Documents/contentcache/Compulsory/ios/gameassetbundles"
+    ]
+
+    private let alockKey = "cheatstore_modskin_alock_enabled"
+
+    @Published public var isAlockEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isAlockEnabled, forKey: alockKey)
+        }
+    }
+
+    @Published public var lastStatusMessage: String = ""
+
+    public var isAnySkinActive: Bool {
+        return isAlockEnabled
+    }
+
+    private init() {
+        self.isAlockEnabled = UserDefaults.standard.bool(forKey: alockKey)
+    }
+
+    /// Tìm URL nguồn của file skin trong app bundle hoặc container app
+    public func resolveSkinSourceURL(filename: String = alockSkinFileName) -> URL? {
+        let fm = FileManager.default
+        let searchCandidates: [URL] = [
+            Bundle.main.bundleURL.appendingPathComponent("BundledPatches").appendingPathComponent(filename),
+            Bundle.main.bundleURL.appendingPathComponent("AppCore").appendingPathComponent(filename),
+            Bundle.main.bundleURL.appendingPathComponent(filename),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("BundledPatches").appendingPathComponent(filename),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent(filename),
+            fm.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(filename) ?? Bundle.main.bundleURL
+        ]
+
+        for url in searchCandidates {
+            if fm.fileExists(atPath: url.path) {
+                return url
+            }
+        }
+        return nil
+    }
+
+    /// Nạp file skin vào tất cả container theo chuẩn Filza
+    @discardableResult
+    public func injectAlockSkin() -> (success: Bool, message: String) {
+        let fm = FileManager.default
+        guard let sourceURL = resolveSkinSourceURL() else {
+            let msg = "Không tìm thấy file skin \(Self.alockSkinFileName) trong gói ứng dụng"
+            print("[ModSkin] ⚠️ \(msg)")
+            DispatchQueue.main.async {
+                self.lastStatusMessage = msg
+            }
+            return (false, msg)
+        }
+
+        let containers = DevicePatchService.allAvailableFreeFireContainers()
+        guard !containers.isEmpty else {
+            let msg = "Không tìm thấy thư mục cài đặt của Free Fire hoặc Free Fire MAX"
+            print("[ModSkin] ⚠️ \(msg)")
+            DispatchQueue.main.async {
+                self.lastStatusMessage = msg
+            }
+            return (false, msg)
+        }
+
+        var injectedCount = 0
+
+        for (bundleID, rootURL) in containers {
+            for relDir in Self.skinTargetRelativePaths {
+                let targetDir = rootURL.appendingPathComponent(relDir, isDirectory: true)
+                let targetFile = targetDir.appendingPathComponent(Self.alockSkinFileName)
+
+                do {
+                    // 1. Tạo đầy đủ cây thư mục giống Filza
+                    try fm.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
+
+                    // 2. Lưu Golden Snapshot / backup nếu có file gốc
+                    let backupFile = targetDir.appendingPathComponent(Self.alockSkinFileName + ".filza_backup")
+                    if fm.fileExists(atPath: targetFile.path) && !fm.fileExists(atPath: backupFile.path) {
+                        try? fm.copyItem(at: targetFile, to: backupFile)
+                    }
+
+                    // 3. Xoá file cũ nếu có và copy đè file mod mới
+                    if fm.fileExists(atPath: targetFile.path) {
+                        try fm.removeItem(at: targetFile)
+                    }
+                    try fm.copyItem(at: sourceURL, to: targetFile)
+
+                    // 4. Phân quyền và đánh dấu loại trừ iCloud backup
+                    var resVals = URLResourceValues()
+                    resVals.isExcludedFromBackup = true
+                    var mutableFile = targetFile
+                    try? mutableFile.setResourceValues(resVals)
+                    try? fm.setAttributes([.posixPermissions: 0o644], ofItemAtPath: targetFile.path)
+
+                    injectedCount += 1
+                    print("[ModSkin] ✅ Đã nạp Alock V1 vào: [\(bundleID)] \(relDir)")
+                } catch {
+                    print("[ModSkin] ⚠️ Lỗi nạp vào [\(bundleID)] \(relDir): \(error)")
+                }
+            }
+        }
+
+        let success = injectedCount > 0
+        let msg = success
+            ? "Đã nạp Alock Thất Tỉnh V1 thành công vào \(injectedCount) thư mục game (Chuẩn Filza)"
+            : "Lỗi ghi dữ liệu vào container Free Fire"
+
+        DispatchQueue.main.async {
+            self.isAlockEnabled = true
+            self.lastStatusMessage = msg
+        }
+        return (success, msg)
+    }
+
+    /// Gỡ bỏ file skin và khôi phục game gốc an toàn
+    @discardableResult
+    public func removeAlockSkin() -> (success: Bool, message: String) {
+        let fm = FileManager.default
+        let containers = DevicePatchService.allAvailableFreeFireContainers()
+        var restoredCount = 0
+
+        for (bundleID, rootURL) in containers {
+            for relDir in Self.skinTargetRelativePaths {
+                let targetDir = rootURL.appendingPathComponent(relDir, isDirectory: true)
+                let targetFile = targetDir.appendingPathComponent(Self.alockSkinFileName)
+                let backupFile = targetDir.appendingPathComponent(Self.alockSkinFileName + ".filza_backup")
+
+                do {
+                    if fm.fileExists(atPath: backupFile.path) {
+                        if fm.fileExists(atPath: targetFile.path) {
+                            try fm.removeItem(at: targetFile)
+                        }
+                        try fm.moveItem(at: backupFile, to: targetFile)
+                        restoredCount += 1
+                        print("[ModSkin] 🔄 Đã khôi phục file gốc từ backup: [\(bundleID)] \(relDir)")
+                    } else if fm.fileExists(atPath: targetFile.path) {
+                        try fm.removeItem(at: targetFile)
+                        restoredCount += 1
+                        print("[ModSkin] 🗑️ Đã xóa file mod: [\(bundleID)] \(relDir)")
+                    }
+                } catch {
+                    print("[ModSkin] ⚠️ Lỗi gỡ bỏ skin tại [\(bundleID)] \(relDir): \(error)")
+                }
+            }
+        }
+
+        let msg = "Đã gỡ bỏ Alock Thất Tỉnh V1, khôi phục game gốc an toàn"
+        DispatchQueue.main.async {
+            self.isAlockEnabled = false
+            self.lastStatusMessage = msg
+        }
+        return (true, msg)
     }
 }
 
@@ -175,6 +341,7 @@ struct CheatStoreDashboardView: View {
     @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
     @ObservedObject private var antibanService = AntibanProfileService.shared
     @ObservedObject private var cloudPatchService = CloudPatchService.shared
+    @ObservedObject private var modSkinService = ModSkinService.shared
     var onBackToGames: (() -> Void)? = nil
 
     // Tab state
@@ -279,13 +446,13 @@ struct CheatStoreDashboardView: View {
                     topHeaderView
                 }
 
-                // Nội dung 3 Tab: Trang Chủ, Antiban, Cá Nhân
+                // Nội dung 3 Tab: Trang Chủ, Modskin, Cá Nhân
                 ZStack {
                     if selectedTab == .home {
                         homeView
                             .transition(.opacity)
-                    } else if selectedTab == .antiban {
-                        antibanView
+                    } else if selectedTab == .modskin {
+                        modskinView
                             .transition(.opacity)
                     } else if selectedTab == .profile {
                         profileView
@@ -836,37 +1003,6 @@ struct RainbowText: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
-    }
-
-    private struct AuroraButtonLedSweep: View {
-        var cornerRadius: CGFloat = 18
-        var duration: Double = 2.4
-        @State private var offset: CGFloat = -1.0
-
-        var body: some View {
-            GeometryReader { geo in
-                let w = geo.size.width
-                LinearGradient(
-                    colors: [
-                        Color.clear,
-                        Color.white.opacity(0.04),
-                        Color.white.opacity(0.28),
-                        Color.white.opacity(0.04),
-                        Color.clear
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: max(60, w * 0.42))
-                .offset(x: offset * (w + 80) - 40)
-                .blendMode(.screen)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
-            .onAppear {
-                withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
-                    offset = 1.6
-                }
-            }
         }
     }
 
@@ -1211,58 +1347,10 @@ struct RainbowText: View {
         return appliedSuccess
     }
 
-    /// Nạp file Mod Skin optionalab_avatar_66 vào đúng đường dẫn contentcache của tất cả container Free Fire
+    /// Nạp file Mod Skin nếu tính năng đang được bật
     private func applyModSkin() {
-        let fileManager = FileManager.default
-        let skinFileName = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
-        let skinRelativePath = "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles"
-
-        // Tìm file skin từ bundle
-        var skinSourceURL: URL? = nil
-
-        // Thử tìm trong BundledPatches của bundle
-        let searchBases: [URL] = [
-            Bundle.main.bundleURL.appendingPathComponent("BundledPatches"),
-            Bundle.main.bundleURL,
-            Bundle.main.resourceURL ?? Bundle.main.bundleURL
-        ]
-        for base in searchBases {
-            let candidate = base.appendingPathComponent(skinFileName)
-            if fileManager.fileExists(atPath: candidate.path) {
-                skinSourceURL = candidate
-                break
-            }
-        }
-
-        guard let srcURL = skinSourceURL else {
-            print("[CheatStore] ⚠️ Không tìm thấy file Mod Skin: \(skinFileName)")
-            return
-        }
-
-        let allContainers = DevicePatchService.allAvailableFreeFireContainers()
-        var skinInjected = 0
-        for (_, root) in allContainers {
-            let destDir = root.appendingPathComponent(skinRelativePath, isDirectory: true)
-            let destFile = destDir.appendingPathComponent(skinFileName)
-            do {
-                try fileManager.createDirectory(at: destDir, withIntermediateDirectories: true)
-                if fileManager.fileExists(atPath: destFile.path) {
-                    try fileManager.removeItem(at: destFile)
-                }
-                try fileManager.copyItem(at: srcURL, to: destFile)
-                var resVals = URLResourceValues()
-                resVals.isExcludedFromBackup = true
-                var mutableDest = destFile
-                try? mutableDest.setResourceValues(resVals)
-                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: destFile.path)
-                skinInjected += 1
-                print("[CheatStore] ✅ Đã nạp Mod Skin vào: \(destFile.path)")
-            } catch {
-                print("[CheatStore] ⚠️ Lỗi nạp Mod Skin vào \(destDir.path): \(error)")
-            }
-        }
-        if skinInjected > 0 {
-            print("[CheatStore] ✅ Mod Skin đã được nạp thành công vào \(skinInjected) container(s)")
+        if modSkinService.isAlockEnabled {
+            _ = modSkinService.injectAlockSkin()
         }
     }
 
@@ -1828,151 +1916,280 @@ struct RainbowText: View {
         }
     }
 
-    // MARK: - TAB 4: Antiban View
-    private var antibanView: some View {
+    // MARK: - TAB 2: Modskin View (Chuẩn Filza 100%)
+    private var modskinView: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 14) {
-                // 1. Antiban Safe Shield Card (.bx-pass)
-                VStack(spacing: 12) {
-                    HStack(spacing: 14) {
-                        Image(systemName: "checkmark.shield.fill")
-                            .font(.system(size: 38))
-                            .foregroundColor(antibanService.isAntibanEnabled ? Color(red: 0.20, green: 0.88, blue: 0.45) : colorMute)
+            VStack(alignment: .leading, spacing: 16) {
+                // 1. Thẻ thông tin giới thiệu Modskin
+                HStack(spacing: 12) {
+                    Image(systemName: "tshirt.fill")
+                        .font(.system(size: 24))
+                        .foregroundColor(theme.accentColor)
+                        .frame(width: 44, height: 44)
+                        .background(theme.accentColor.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(theme.accentColor.opacity(0.3), lineWidth: 1))
 
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text("CheatStoreVN Antiban Safe Shield")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text("KHO MODSKIN VIP")
+                                .font(.system(size: 15, weight: .black, design: .rounded))
                                 .foregroundColor(colorInk)
-                            Text("Ledger Safe Injection & Lifecycle Auto-Restore")
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundColor(colorMute)
-                            Text(antibanService.isAntibanEnabled ? "BẢO VỆ 100% ONLINE" : "CHƯA KÍCH HOẠT")
-                                .font(.system(size: 10, weight: .black))
-                                .foregroundColor(antibanService.isAntibanEnabled ? Color.green : Color.orange)
+                            Text("FILZA ENGINE")
+                                .font(.system(size: 9, weight: .heavy))
+                                .foregroundColor(theme.accentColor)
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background((antibanService.isAntibanEnabled ? Color.green : Color.orange).opacity(0.12))
-                                .cornerRadius(4)
+                                .background(theme.accentColor.opacity(0.15))
+                                .cornerRadius(5)
                         }
+
+                        Text("Tự động nạp file skin vào contentcache như Filza, không cần jailbreak")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(colorMute)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                }
+                .padding(14)
+                .background(glassBg)
+                .cornerRadius(18)
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+
+                // Section: Danh Sách Trang Phục VIP
+                HStack {
+                    Text("DANH SÁCH TRANG PHỤC")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .tracking(2.4)
+                        .foregroundColor(colorMute)
+                    Spacer()
+                    if modSkinService.isAlockEnabled {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 6, height: 6)
+                            Text("1 SKIN ĐANG BẬT")
+                                .font(.system(size: 10, weight: .heavy))
+                                .foregroundColor(Color.green)
+                        }
+                    }
+                }
+                .padding(.horizontal, 4)
+
+                // 2. Chức năng Skin Đầu Tiên: Alock Thất Tỉnh V1 (Nút bật tắt)
+                VStack(spacing: 12) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    modSkinService.isAlockEnabled
+                                        ? LinearGradient(colors: [theme.accentColor.opacity(0.3), theme.accentColor.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                        : LinearGradient(colors: [Color.white.opacity(0.08), Color.white.opacity(0.03)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                )
+                                .frame(width: 46, height: 46)
+                                .overlay(
+                                    Circle().stroke(modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.6) : Color.white.opacity(0.1), lineWidth: 1.2)
+                                )
+                                .shadow(color: modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.5) : Color.clear, radius: 8)
+
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 22, weight: .bold))
+                                .foregroundColor(modSkinService.isAlockEnabled ? theme.accentColor : colorMute)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 6) {
+                                Text("Alock Thất Tỉnh V1")
+                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .foregroundColor(colorInk)
+
+                                Text("VIP")
+                                    .font(.system(size: 9, weight: .black))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 5)
+                                    .padding(.vertical, 1.5)
+                                    .background(
+                                        LinearGradient(colors: [Color(red: 1.0, green: 0.25, blue: 0.3), Color(red: 0.8, green: 0.1, blue: 0.15)], startPoint: .leading, endPoint: .trailing)
+                                    )
+                                    .cornerRadius(4)
+                            }
+
+                            Text("Mod Skin Alok Thức Tỉnh VIP (Avatar 66)")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(colorMute)
+
+                            HStack(spacing: 6) {
+                                Text(modSkinService.isAlockEnabled ? "ĐÃ KÍCH HOẠT" : "CHƯA BẬT")
+                                    .font(.system(size: 10, weight: .heavy))
+                                    .foregroundColor(modSkinService.isAlockEnabled ? Color.green : Color.orange)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background((modSkinService.isAlockEnabled ? Color.green : Color.orange).opacity(0.12))
+                                    .cornerRadius(4)
+
+                                Text("Documents/.../optionalavatarres")
+                                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                                    .foregroundColor(colorMute.opacity(0.7))
+                            }
+                        }
+
                         Spacer()
 
+                        // Nút Bật Tắt
                         Toggle("", isOn: Binding(
-                            get: { antibanService.isAntibanEnabled },
-                            set: { _ in antibanService.toggleAntiban() }
+                            get: { modSkinService.isAlockEnabled },
+                            set: { newValue in
+                                if newValue {
+                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    let result = modSkinService.injectAlockSkin()
+                                    if result.success {
+                                        showToastNotification(message: "✅ Đã nạp Alock Thất Tỉnh V1 vào game (Chuẩn Filza)!", icon: "checkmark.circle.fill", color: .green)
+                                    } else {
+                                        showToastNotification(message: "⚠️ \(result.message)", icon: "exclamationmark.triangle.fill", color: .orange)
+                                    }
+                                } else {
+                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                    let result = modSkinService.removeAlockSkin()
+                                    showToastNotification(message: "🔄 Đã gỡ bỏ Alock Thất Tỉnh V1, khôi phục game gốc!", icon: "arrow.counterclockwise.circle.fill", color: .cyan)
+                                }
+                            }
                         ))
                         .labelsHidden()
-                        .toggleStyle(SwitchToggleStyle(tint: Color.green))
+                        .toggleStyle(SwitchToggleStyle(tint: theme.accentColor))
                     }
 
                     Divider().background(Color.white.opacity(0.08))
 
-                    // Buttons to Setup Profile & Open Settings
-                    HStack(spacing: 10) {
-                        Button(action: {
-                            antibanService.setupAntiban()
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.down.doc.fill")
-                                    .font(.system(size: 12))
-                                Text(antibanService.isSettingUp ? "Đang gửi hồ sơ..." : "Cài Đặt Hồ Sơ Antiban")
-                                    .font(.system(size: 12, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 38)
-                            .background(Color.white.opacity(0.12))
-                            .cornerRadius(12)
-                        }
-                        .disabled(antibanService.isSettingUp)
-
-                        Button(action: {
-                            antibanService.openIOSSettings()
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "gearshape.fill")
-                                    .font(.system(size: 12))
-                                Text("Cài Đặt iOS")
-                                    .font(.system(size: 12, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 38)
-                            .background(Color.white.opacity(0.08))
-                            .cornerRadius(12)
-                        }
-                    }
-
-                    if let notice = antibanService.statusNotice {
-                        Text(notice)
+                    // Trạng thái container chi tiết
+                    HStack {
+                        Image(systemName: "folder.badge.gearshape")
+                            .font(.system(size: 12))
+                            .foregroundColor(colorMute)
+                        Text("Đường dẫn nạp:")
                             .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(Color.yellow)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(colorMute)
+                        Spacer()
+                        Text("FF & FF MAX ContentCache")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(theme.accentColor)
                     }
                 }
                 .padding(16)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [antibanService.isAntibanEnabled ? Color.green.opacity(0.10) : Color.white.opacity(0.04), Color.black.opacity(0.55)]),
+                        gradient: Gradient(colors: [
+                            modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.12) : Color.white.opacity(0.04),
+                            Color.black.opacity(0.60)
+                        ]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
                 .cornerRadius(22)
-                .overlay(RoundedRectangle(cornerRadius: 22).stroke(glassBorder, lineWidth: 1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22)
+                        .stroke(modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.45) : glassBorder, lineWidth: 1)
+                )
 
-                // 2. Game Switch
-                VStack(spacing: 8) {
-                    HStack {
-                        Text("Game")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(colorMute)
-                        Spacer()
-                        HStack(spacing: 2) {
-                            segmentButton(title: "FF", isSelected: miscGame == "ff") {
-                                miscGame = "ff"
-                            }
-                            segmentButton(title: "FFM", isSelected: miscGame == "max") {
-                                miscGame = "max"
-                            }
+                // 3. Card Skin Dự Bị (Thẻ Vô Cực Vàng Mùa 1)
+                VStack(spacing: 10) {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white.opacity(0.05))
+                                .frame(width: 40, height: 40)
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color.yellow.opacity(0.7))
                         }
-                        .padding(3)
-                        .background(Color.black.opacity(0.35))
-                        .cornerRadius(999)
-                        .overlay(RoundedRectangle(cornerRadius: 999).stroke(Color.white.opacity(0.08), lineWidth: 1))
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Skin Thẻ Vô Cực Vàng Mùa 1")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(colorInk.opacity(0.7))
+                            Text("Gói trang phục thẻ vô cực mùa 1 huyền thoại")
+                                .font(.system(size: 11))
+                                .foregroundColor(colorMute)
+                        }
+                        Spacer()
+                        Text("SẮP RA MẮT")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color.orange)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.orange.opacity(0.15))
+                            .cornerRadius(5)
                     }
                 }
                 .padding(14)
                 .background(glassBg)
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
+                .cornerRadius(18)
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
 
-                // 3. Action Buttons (Clean Restore)
-                Button(action: {
-                    performCleanRestore()
-                }) {
-                    HStack(spacing: 8) {
-                        if isRestoringClean {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                // 4. Quick Actions (Nạp Lại / Khôi Phục Gốc)
+                HStack(spacing: 10) {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        let res = modSkinService.injectAlockSkin()
+                        if res.success {
+                            showToastNotification(message: "✅ Đã đồng bộ lại file skin vào game!", icon: "checkmark.circle.fill", color: .green)
+                        } else {
+                            showToastNotification(message: "⚠️ \(res.message)", icon: "exclamationmark.triangle.fill", color: .orange)
                         }
-                        Text(isRestoringClean ? "Đang khôi phục sạch..." : "Khôi phục sạch 100% (Reset all)")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                                .font(.system(size: 12, weight: .bold))
+                            Text("Nạp Lại Skin")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(Color.white.opacity(0.12))
+                        .cornerRadius(12)
                     }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(red: 239/255, green: 68/255, blue: 68/255), Color(red: 185/255, green: 28/255, blue: 28/255)]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(18)
-                    .shadow(color: Color.red.opacity(0.3), radius: 10, x: 0, y: 4)
+
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        _ = modSkinService.removeAlockSkin()
+                        showToastNotification(message: "🔄 Đã xoá sạch skin mod, trở về game sạch!", icon: "trash.circle.fill", color: .cyan)
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash.fill")
+                                .font(.system(size: 12, weight: .bold))
+                            Text("Khôi Phục Gốc")
+                                .font(.system(size: 12, weight: .bold))
+                        }
+                        .foregroundColor(Color(red: 1.0, green: 0.45, blue: 0.45))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(Color(red: 0.8, green: 0.1, blue: 0.1).opacity(0.15))
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 1.0, green: 0.3, blue: 0.3).opacity(0.25), lineWidth: 1))
+                    }
                 }
-                .disabled(isRestoringClean)
-                .padding(.top, 8)
+                .padding(.top, 4)
+
+                // 5. Lưu ý khi dùng giống Filza
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "info.circle.fill")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(theme.accentColor)
+                        Text("LƯU Ý KHI DÙNG CHUẨN FILZA")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(colorInk)
+                    }
+                    Text("• App tự động ghi file trực tiếp vào container Free Fire (cả bản Thường và MAX).\n• Sau khi bật, bạn có thể mở Free Fire vào trận để trải nghiệm skin Alock Thất Tỉnh V1 ngay lập tức.\n• Khi không muốn dùng, chỉ cần gạt Tắt để game quay về diện mạo ban đầu.")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(colorMute)
+                        .lineSpacing(3)
+                }
+                .padding(14)
+                .background(glassBg)
+                .cornerRadius(18)
+                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
 
                 Spacer(minLength: 40)
             }
@@ -2467,6 +2684,7 @@ struct RainbowText: View {
             }
 
             _ = self.antibanPatchService.removeAntibanPatch()
+            _ = ModSkinService.shared.removeAlockSkin()
 
             DispatchQueue.main.async {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -2476,6 +2694,7 @@ struct RainbowText: View {
                     self.selectedAimChips.removeAll()
                     self.selectedEspChips.removeAll()
                     self.selectedSpecialSkins.removeAll()
+                    self.modSkinService.isAlockEnabled = false
                     self.isRestoringClean = false
                     self.isRestoreFinished = true
                     self.restoreProgressValue = 1.0

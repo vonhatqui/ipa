@@ -75,3 +75,36 @@ extension View {
         )
     }
 }
+
+// MARK: - Dải LED quét tia sáng ngang chạy liên tục (Dùng cho nút bấm)
+struct AuroraButtonLedSweep: View {
+    var cornerRadius: CGFloat = 18
+    var duration: Double = 2.4
+    @State private var offset: CGFloat = -1.0
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Color.white.opacity(0.04),
+                    Color.white.opacity(0.28),
+                    Color.white.opacity(0.04),
+                    Color.clear
+                ],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+            .frame(width: max(60, w * 0.42))
+            .offset(x: offset * (w + 80) - 40)
+            .blendMode(.screen)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .onAppear {
+            withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
+                offset = 1.6
+            }
+        }
+    }
+}
