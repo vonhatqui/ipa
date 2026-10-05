@@ -96,6 +96,11 @@
 		3105M299 /* AntibanPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M199; };
 		3105M214 /* antiban.mobileconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3105M114; };
 		3105M218 /* AppBrandingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M118; };
+		3105M220 /* AirliftBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M120; };
+		3105M221 /* AirliftPairingGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M121; };
+		3105M222 /* AirliftPairingSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M122; };
+		3105M223 /* DeltaStyleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M123; };
+		3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M124; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -206,6 +211,11 @@
 		3105M199 /* AntibanPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanPatchService.swift; sourceTree = "<group>"; };
 		3105M114 /* antiban.mobileconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = antiban.mobileconfig; sourceTree = "<group>"; };
 		3105M118 /* AppBrandingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrandingTheme.swift; sourceTree = "<group>"; };
+		3105M120 /* AirliftBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftBridge.swift; sourceTree = "<group>"; };
+		3105M121 /* AirliftPairingGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingGateView.swift; sourceTree = "<group>"; };
+		3105M122 /* AirliftPairingSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingSectionView.swift; sourceTree = "<group>"; };
+		3105M123 /* DeltaStyleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeltaStyleSettingsView.swift; sourceTree = "<group>"; };
+		3105M124 /* SnapchatFluidLiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapchatFluidLiquidBackgroundView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -296,6 +306,10 @@
 				3105M108 /* LimelightDockBar.swift */,
 				3105M109 /* ShinyTextView.swift */,
 				3105M112 /* InjectorActionButton.swift */,
+				3105M121 /* AirliftPairingGateView.swift */,
+				3105M122 /* AirliftPairingSectionView.swift */,
+				3105M123 /* DeltaStyleSettingsView.swift */,
+				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -303,6 +317,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105M120 /* AirliftBridge.swift */,
 				3105M118 /* AppBrandingTheme.swift */,
 				3105M117 /* CloudPatchService.swift */,
 				3105M115 /* PatchCodecAPIService.swift */,
@@ -518,6 +533,11 @@
 				3105M212,
 				3105M213,
 				3105M299,
+				3105M220 /* AirliftBridge.swift in Sources */,
+				3105M221 /* AirliftPairingGateView.swift in Sources */,
+				3105M222 /* AirliftPairingSectionView.swift in Sources */,
+				3105M223 /* DeltaStyleSettingsView.swift in Sources */,
+				3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
