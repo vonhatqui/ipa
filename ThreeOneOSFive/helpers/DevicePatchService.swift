@@ -348,7 +348,7 @@ enum DevicePatchService {
                         shouldWriteConfig = true
                     } else if let existingData = try? Data(contentsOf: configFile),
                               let str = String(data: existingData, encoding: .utf8),
-                              !str.contains("motionBlurSafeMode") && !str.contains("_ffxc_session") && !str.contains("testCodePatch") {
+                              !str.contains("motionBlurSafeMode") {
                         shouldWriteConfig = true
                     } else {
                         shouldWriteConfig = false
@@ -545,9 +545,6 @@ enum DevicePatchService {
             let junkFileNames = [
                 "Assembly-CSharp-patch.bytes",
                 "localConfig.json",
-                ".ffxc_live",
-                ".ffxc_runtime",
-                ".ffxc_neutral_785f10139667472283586f6094f07e1d",
                 "patch_cache",
                 "mod_signature.bin",
                 ".0xfixa.ledger"
@@ -560,13 +557,6 @@ enum DevicePatchService {
                     if fileManager.fileExists(atPath: junkURL.path) {
                         try? fileManager.removeItem(at: junkURL)
                         log("patch: [SafeRestore] Đã xoá bỏ file rác: \(junk)")
-                    }
-                }
-                if let items = try? fileManager.contentsOfDirectory(atPath: docDir.path) {
-                    for item in items where item.hasPrefix(".ffxc_") {
-                        let itemURL = docDir.appendingPathComponent(item)
-                        try? fileManager.removeItem(at: itemURL)
-                        log("patch: [SafeRestore] Đã xoá bỏ file companion: \(item)")
                     }
                 }
             }

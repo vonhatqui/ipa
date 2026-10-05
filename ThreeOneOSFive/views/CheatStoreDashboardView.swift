@@ -220,7 +220,6 @@ struct CheatStoreDashboardView: View {
     @State private var autoCleanOnExit: Bool = true
     @State private var selectedLanguage: String = "Tiếng Việt"
     @State private var showCompatList: Bool = false
-    @State private var showDeltaSettingsSheet: Bool = false
 
     // Common Alerts & Status
     @State private var alertTitle: String = ""
@@ -487,9 +486,6 @@ struct CheatStoreDashboardView: View {
         .sheet(isPresented: $showCompatList) {
             IOSCompatibilityListView()
         }
-        .sheet(isPresented: $showDeltaSettingsSheet) {
-            DeltaStyleSettingsView()
-        }
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
@@ -547,64 +543,41 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
-            // Trạng thái (Right pill badge) + Nút Cài Đặt bên phải cạnh chữ Not Injected
-            HStack(spacing: 8) {
-                HStack(spacing: 5) {
-                    if isInjecting {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(0.65)
-                        Text("Injecting...")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                    } else if isInjected {
-                        Circle()
-                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
-                            .frame(width: 6, height: 6)
-                            .shadow(color: Color.green.opacity(0.8), radius: 3)
-                        Text("Injected")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-                    } else {
-                        Text("Not Injected")
-                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                            .foregroundColor(Color.white.opacity(0.65))
-                    }
+            // Trạng thái (Right pill badge)
+            HStack(spacing: 5) {
+                if isInjecting {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        .scaleEffect(0.65)
+                    Text("Injecting...")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+                } else if isInjected {
+                    Circle()
+                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                        .frame(width: 6, height: 6)
+                        .shadow(color: Color.green.opacity(0.8), radius: 3)
+                    Text("Injected")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                } else {
+                    Text("Not Injected")
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.65))
                 }
-                .padding(.horizontal, 11)
-                .padding(.vertical, 5)
-                .background(Color.white.opacity(0.06))
-                .cornerRadius(999)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 999)
-                        .stroke(
-                            isInjected ? Color.green.opacity(0.4) :
-                            (isInjecting ? Color.white.opacity(0.5) : Color.white.opacity(0.18)),
-                            lineWidth: 1
-                        )
-                )
-
-                // Nút Cài Đặt (Settings button) nằm ngay bên phải cạnh chữ Not Injected
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showDeltaSettingsSheet = true
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 28, height: 28)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                            )
-
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(Color.white.opacity(0.85))
-                    }
-                }
-                .buttonStyle(AuroraScaleButtonStyle())
             }
+            .padding(.horizontal, 11)
+            .padding(.vertical, 5)
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(999)
+            .overlay(
+                RoundedRectangle(cornerRadius: 999)
+                    .stroke(
+                        isInjected ? Color.green.opacity(0.4) :
+                        (isInjecting ? Color.white.opacity(0.5) : Color.white.opacity(0.18)),
+                        lineWidth: 1
+                    )
+            )
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
@@ -694,45 +667,25 @@ struct RainbowText: View {
             }
             Spacer()
 
-            HStack(spacing: 8) {
-                if let onBackToGames = onBackToGames {
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        handleBackToGames(onBackToGames)
-                    }) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "gamecontroller.fill")
-                                .font(.system(size: 12))
-                            Text("Đổi Game")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(colorInk)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
-                    }
-                    .disabled(isRestoringForGameSwitch)
-                }
-
+            if let onBackToGames = onBackToGames {
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showDeltaSettingsSheet = true
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    handleBackToGames(onBackToGames)
                 }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 30, height: 30)
-                            .overlay(
-                                Circle()
-                                    .stroke(glassBorder, lineWidth: 1)
-                            )
-                        Image(systemName: "gearshape.fill")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(colorInk)
+                    HStack(spacing: 5) {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 12))
+                        Text("Đổi Game")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                     }
+                    .foregroundColor(colorInk)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
                 }
+                .disabled(isRestoringForGameSwitch)
             }
         }
         .padding(.horizontal, 20)
@@ -1001,92 +954,52 @@ struct RainbowText: View {
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
+        let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 0. Xóa sạch các file/thư mục mod cũ trong sandbox tránh nạp đè file cũ
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            let staleFolders = [
-                "Aurora Menu v1.3105",
-                "cheatvn menu v1-0.3105",
-                "aurora menu v1-0.3105",
-                ".core_runtime.dat",
-                "core_manifest.bin",
-                "core_runtime.dat"
-            ]
-            for s in staleFolders {
-                try? fileManager.removeItem(at: root.appendingPathComponent(s))
-            }
-        }
-
-        // 1. Quét tìm nạp trực tiếp file patch mới từ AppCore (Ưu tiên số 1 tuyệt đối)
+        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json mới
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Esp Ffthg/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Esp Ffthg"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
         }
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg"))
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105/Documents"))
+            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
+            rawSearchDirs.append(root)
+        }
 
         for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
             let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
 
             if let patchSrc = patchSrc {
-                guard let patchData = try? Data(contentsOf: patchSrc), patchData.count == 68138 || patchData.count > 40000 else {
-                    continue
-                }
-
-                let c1 = dir.appendingPathComponent("localConfig.json")
-                let c2 = dir.appendingPathComponent("Documents/localConfig.json")
+                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
+                let c2 = dir.appendingPathComponent("localConfig.json")
                 let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
-                let configData = (try? Data(contentsOf: configSrc ?? c1)) ?? DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
 
-                // Đọc các file companion .ffxc_*
-                var companionFiles: [(name: String, data: Data)] = []
-                if let dirItems = try? fileManager.contentsOfDirectory(atPath: dir.path) {
-                    for item in dirItems where item.hasPrefix(".ffxc_") {
-                        if let d = try? Data(contentsOf: dir.appendingPathComponent(item)) {
-                            companionFiles.append((item, d))
-                        }
-                    }
-                }
-
-                // 2. Nạp trực tiếp vào Container Filesystem
                 let allContainers = DevicePatchService.allAvailableFreeFireContainers()
                 for (_, root) in allContainers {
                     let docDir = root.appendingPathComponent("Documents", isDirectory: true)
                     try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-
                     let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
                     let dstConfig = docDir.appendingPathComponent("localConfig.json")
 
-                    // Xóa triệt để file cũ trước khi nạp
                     try? fileManager.removeItem(at: dstPatch)
-                    try? fileManager.removeItem(at: dstConfig)
-                    if let docFiles = try? fileManager.contentsOfDirectory(atPath: docDir.path) {
-                        for df in docFiles where df.hasPrefix(".ffxc_") {
-                            try? fileManager.removeItem(at: docDir.appendingPathComponent(df))
-                        }
+                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+
+                    if let configSrc = configSrc {
+                        try? fileManager.removeItem(at: dstConfig)
+                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
+                    } else {
+                        let configData = DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
+                        try? configData.write(to: dstConfig, options: .atomic)
                     }
-
-                    try? patchData.write(to: dstPatch, options: .atomic)
-                    try? configData.write(to: dstConfig, options: .atomic)
-
-                    for comp in companionFiles {
-                        let dstComp = docDir.appendingPathComponent(comp.name)
-                        try? fileManager.removeItem(at: dstComp)
-                        try? comp.data.write(to: dstComp, options: .atomic)
-                        var uComp = dstComp
-                        var rVals = URLResourceValues()
-                        rVals.isExcludedFromBackup = true
-                        try? uComp.setResourceValues(rVals)
-                        try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstComp.path)
-                    }
-
                     var uPatch = dstPatch
                     var uConfig = dstConfig
                     var resVals = URLResourceValues()
@@ -1096,68 +1009,119 @@ struct RainbowText: View {
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
                 }
-
-                // 3. Đồng bộ bổ trợ qua Airlift / HouseArrest AFC (Loopback VPN)
-                let freeFireBundleIDs = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefirevn", "com.dts.freefire"]
-                for bID in freeFireBundleIDs {
-                    try? AirliftBridge.shared.writeContainerFile(
-                        bundleID: bID,
-                        relativePath: "Documents/Assembly-CSharp-patch.bytes",
-                        data: patchData
-                    )
-                    try? AirliftBridge.shared.writeContainerFile(
-                        bundleID: bID,
-                        relativePath: "Documents/localConfig.json",
-                        data: configData
-                    )
-                    for comp in companionFiles {
-                        try? AirliftBridge.shared.writeContainerFile(
-                            bundleID: bID,
-                            relativePath: "Documents/\(comp.name)",
-                            data: comp.data
-                        )
-                    }
-                }
-
                 DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công trọn bộ patch CHEATVN (Size: \(patchData.count) bytes)")
+                print("[CheatStore] ✅ Đã nạp thành công raw patch Assembly-CSharp-patch.bytes & localConfig.json (Motion Blur Safe)")
                 return true
             }
         }
 
-        // Fallback: Nếu không tìm thấy file raw, giải mã trực tiếp từ file package .3105 với pass Canhcupin
-        var pkgURLs: [URL] = []
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            pkgURLs.append(root.appendingPathComponent("Esp Ffthg.3105"))
-            pkgURLs.append(root.appendingPathComponent("Esp Ffthg (4).3105"))
-        }
-        if let resURL = Bundle.main.resourceURL {
-            pkgURLs.append(resURL.appendingPathComponent("AppCore/Esp Ffthg.3105"))
-            pkgURLs.append(resURL.appendingPathComponent("AppCore/Esp Ffthg (4).3105"))
-            pkgURLs.append(resURL.appendingPathComponent("BundledPatches/Esp Ffthg.3105"))
-            pkgURLs.append(resURL.appendingPathComponent("BundledPatches/Esp Ffthg (4).3105"))
-        }
-        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Esp Ffthg.3105"))
-        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Esp Ffthg (4).3105"))
-        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg.3105"))
-        pkgURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Esp Ffthg (4).3105"))
-        pkgURLs.append(URL(fileURLWithPath: "D:/dac/Esp Ffthg (4).3105"))
-        pkgURLs.append(URL(fileURLWithPath: "D:/dac/Esp Ffthg.3105"))
+        // Danh sách các đường dẫn tìm kiếm file mod gốc chuẩn
+        var candidateURLs: [URL] = []
 
-        for url in pkgURLs where fileManager.fileExists(atPath: url.path) {
-            if let rawData = try? Data(contentsOf: url) {
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
+            candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
+            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
+            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
+        }
+
+        if let resURL = Bundle.main.resourceURL {
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
+        }
+        candidateURLs.append(URL(fileURLWithPath: "D:/aaaaaaaaacc/Aurora Menu v1.3105"))
+        if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
+            candidateURLs.append(binURL)
+        }
+        if let datURL = Bundle.main.url(forResource: "core_runtime", withExtension: "dat") {
+            candidateURLs.append(datURL)
+        }
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_manifest.bin"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_runtime.dat"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
+
+        var appliedSuccess = false
+
+        for url in candidateURLs {
+            guard fileManager.fileExists(atPath: url.path) else { continue }
+            do {
+                let rawData = try Data(contentsOf: url)
                 let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
-                if let decoded = try? PatchPackageCodec.decode(data, password: "Canhcupin") {
-                    if let _ = try? DevicePatchService.apply(project: decoded.project) {
-                        DevicePatchService.ensureActivePatchesInjected()
-                        print("[CheatStore] ✅ Đã nạp thành công từ package \(url.lastPathComponent) với pass Canhcupin")
-                        return true
-                    }
+
+                guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
+
+                let summary = try PatchPackageCodec.inspect(data)
+
+                // Giải mã với pass là "1"
+                let decoded: DecodedPatchPackage
+                if summary.isPasswordProtected {
+                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
+                } else if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
+                    decoded = cached
+                } else {
+                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
+                }
+
+                // Lưu contentKey
+                try? PatchKeyStore.store(decoded.contentKey, for: summary)
+
+                // Nạp patch vào game Free Fire
+                _ = try DevicePatchService.apply(project: decoded.project)
+
+                // Cài đặt vào thư viện local
+                try? PatchProjectLibrary.installImportedPackage(
+                    data: data,
+                    decoded: decoded,
+                    summary: summary,
+                    existingURL: nil,
+                    fileManager: fileManager
+                )
+
+                print("[CheatStore] ✅ Đã giải mã & nạp thành công file \(url.lastPathComponent) với pass=\(patchPassword)")
+                appliedSuccess = true
+                break
+            } catch {
+                print("[CheatStore] Thử nạp \(url.lastPathComponent) thất bại: \(error)")
+            }
+        }
+
+        // 4. Nếu không tìm thấy file nào trên đĩa, tự động giải mã từ Payload nhúng trực tiếp trong Mach-O Binary (Zero-File Fallback)
+        if !appliedSuccess {
+            if let embeddedData = BundledPatchInjector.loadEmbeddedPackageData() {
+                do {
+                    let summary = try PatchPackageCodec.inspect(embeddedData)
+                    let decoded = try PatchPackageCodec.decode(embeddedData, password: patchPassword)
+                    try? PatchKeyStore.store(decoded.contentKey, for: summary)
+                    _ = try DevicePatchService.apply(project: decoded.project)
+                    print("[CheatStore] ✅ Đã nạp thành công từ Embedded Binary Payload (Bảo mật tối đa, không lộ bất kỳ file nào)!")
+                    appliedSuccess = true
+                } catch {
+                    print("[CheatStore] Nạp từ embedded payload thất bại: \(error)")
                 }
             }
         }
 
-        return false
+        if !appliedSuccess {
+            // Thử qua loadBundledItem
+            if let item = PatchProjectLibrary.loadBundledItem(named: "@Nhism Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1-0") ?? PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1-0"),
+               let project = item.project {
+                if let _ = try? DevicePatchService.apply(project: project) {
+                    print("[CheatStore] ✅ Đã nạp thành công qua loadBundledItem: \(project.name)")
+                    appliedSuccess = true
+                }
+            }
+        }
+
+        return appliedSuccess
     }
 
     private var heroTagText: String {
@@ -1165,9 +1129,6 @@ struct RainbowText: View {
     }
 
     private func applyBundledPatch(named name: String) -> Bool {
-        if name.lowercased().contains("aurora") || name.lowercased().contains("cheatvn menu") || name.lowercased().contains("esp ffthg") {
-            return applyAuroraPackage()
-        }
         guard let item = PatchProjectLibrary.loadBundledItem(named: name),
               let project = item.project else {
             print("[CheatStore] Không tìm thấy bundled item: \(name)")

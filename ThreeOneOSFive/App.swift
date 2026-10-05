@@ -9,7 +9,6 @@ struct ThreeOneOSFiveApp: App {
     @StateObject private var patchStore = PatchProjectStore()
     @StateObject private var repositoryStore = PackageRepositoryStore()
     @StateObject private var licenseManager = CheatStoreLicenseManager.shared
-    @ObservedObject private var bridge = AirliftBridge.shared
     @StateObject private var updateChecker = AppUpdateChecker.shared
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
     @State private var showOnboarding = false

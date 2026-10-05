@@ -1,4 +1,4 @@
-import Foundation
+﻿import Foundation
 
 /// Chính sách tương thích iOS cho exploit 3105
 /// Nguồn: https://github.com/YangJiiii/3105 (đồng bộ chính xác với repo gốc)
@@ -26,63 +26,34 @@ enum ExploitSupportPolicy {
         verifiedIOS27Builds.first { $0.build == build }?.publicBeta
     }
 
-    // MARK: - Direct Exploit Support (iOS 17, 18, 26, 27 Beta)
-    /// Kiểm tra xem phiên bản iOS có được exploit 3105 hỗ trợ trực tiếp không (không cần AirLift pairing)
-    static func supportsDirectExploit(major: Int, minor: Int, patch: Int, build: String = AppInfo.osBuild) -> Bool {
+    // MARK: - Kernel exploit support (iOS 17 & 18)
+    static func supportsKernelExploit(major: Int, minor: Int, patch: Int) -> Bool {
         guard minor >= 0, patch >= 0 else { return false }
 
-        // iOS 17.0 – 17.7.x
         if major == 17 {
             return minor <= 7
         }
 
-        // iOS 18.0 – 18.7.1
         if major == 18 {
             return minor < 7 || (minor == 7 && patch <= 1)
-        }
-
-        // iOS 26.0 – 26.6.1 (Bao gồm iOS 26.1 của thiết bị người dùng)
-        if major == 26 {
-            return minor < 6 || (minor == 6 && patch <= 1)
-        }
-
-        // iOS 27.0 Beta 1–4
-        if major == 27 && minor == 0 && patch == 0 {
-            return iOS27BetaNumber(for: build) != nil
         }
 
         return false
     }
 
-    /// Giữ lại hàm tương thích ngược
-    static func supportsKernelExploit(major: Int, minor: Int, patch: Int) -> Bool {
-        return supportsDirectExploit(major: major, minor: minor, patch: patch)
-    }
-
-    // MARK: - isSupported (iOS 17, 18, 26, 27 beta & AirLift RemotePairing)
-    static func isSupported(major: Int, minor: Int, patch: Int, build: String = AppInfo.osBuild) -> Bool {
-        // Nếu thiết bị đã ghép nối qua AirLift (RemotePairing / HouseArrest), hỗ trợ toàn bộ các phiên bản iOS cao
-        if AirliftBridge.shared.isPaired || AirliftBridge.shared.hasActivePairing {
+    // MARK: - isSupported (iOS 17, 18, 26, 27 beta)
+    static func isSupported(major: Int, minor: Int, patch: Int, build: String) -> Bool {
+        if supportsKernelExploit(major: major, minor: minor, patch: patch) {
             return true
         }
 
-        return supportsDirectExploit(major: major, minor: minor, patch: patch, build: build)
-    }
-
-    // MARK: - Kiểm tra xem thiết bị có cần bắt buộc ghép đôi AirLift không
-    /// CHỈ CẦN khi phiên bản iOS KHÔNG được exploit hỗ trợ trực tiếp!
-    static func requiresAirliftPairing(major: Int, minor: Int, patch: Int, build: String = AppInfo.osBuild) -> Bool {
-        return !supportsDirectExploit(major: major, minor: minor, patch: patch, build: build)
-    }
-
-    /// Thiết bị có cần chặn ở màn hình ghép đôi không (iOS cao mà chưa ghép đôi thành công)
-    static var isHighIOSPairingRequired: Bool {
-        let v = AppInfo.versionTuple
-        if !requiresAirliftPairing(major: v.major, minor: v.minor, patch: v.patch) {
-            return false // iOS 26.1, 17.x, 18.0-18.7.1, 27 beta đã hỗ trợ trực tiếp -> KHÔNG BAO GIỜ CẦN GHÉP ĐÔI!
+        if major == 26 {
+            guard minor >= 0, patch >= 0 else { return false }
+            return minor < 6 || (minor == 6 && patch <= 1)
         }
-        // iOS cao không hỗ trợ (18.7.2+, 27 chính thức, 28+): nếu chưa ghép đôi thì bắt buộc phải ghép đôi trước khi vào Free Fire
-        return !AirliftBridge.shared.isPaired
+
+        guard major == 27, minor == 0, patch == 0 else { return false }
+        return iOS27BetaNumber(for: build) != nil
     }
 
     // MARK: - Danh sách tất cả range tương thích (dùng cho UI CheatStoreVN)
@@ -103,10 +74,14 @@ enum ExploitSupportPolicy {
     }
 
     /// Kiểm tra thiết bị hiện tại có trong range tương thích không
-    static func compatibilityStatus(major: Int, minor: Int, patch: Int, build: String = AppInfo.osBuild) -> String {
+    static func compatibilityStatus(major: Int, minor: Int, patch: Int, build: String) -> String {
         if isSupported(major: major, minor: minor, patch: patch, build: build) {
-            return "Có Hỗ Trợ"
+            if major == 17 { return "Tương thích (\(verifiedIOS17Range))" }
+            if major == 18 { return "Tương thích (\(verifiedIOS18Range))" }
+            if major == 26 { return "Tương thích (\(verifiedIOS26Range))" }
+            if major == 27 { return "Tương thích (iOS 27.0 Beta 1–4)" }
+            return "Tương thích"
         }
-        return "Cần ghép đôi"
+        return "Không tương thích"
     }
 }

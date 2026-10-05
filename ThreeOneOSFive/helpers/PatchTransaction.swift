@@ -243,17 +243,8 @@ enum PatchTransaction {
                 var originalDigest: Data?
                 if let backupFilename {
                     let backupURL = transactionDirectory.appendingPathComponent(backupFilename)
-                    do {
-                        try fileManager.copyItem(at: resolved.target, to: backupURL)
-                    } catch {
-                        if AirliftBridge.shared.hasActivePairing,
-                           let originalData = try? AirliftBridge.shared.readContainerFile(bundleID: resolved.rule.bundleID, relativePath: resolved.rule.relativePath) {
-                            try? originalData.write(to: backupURL, options: .atomic)
-                        } else {
-                            throw error
-                        }
-                    }
-                    originalDigest = try? digestFile(backupURL)
+                    try fileManager.copyItem(at: resolved.target, to: backupURL)
+                    originalDigest = try digestFile(backupURL)
                 }
                 let replacementDigest = digest(resolved.rule.replacementData)
                 if let appliedFilename {
@@ -314,12 +305,9 @@ enum PatchTransaction {
                     resolved.rule.replacementData,
                     to: resolved.target,
                     preservingExistingAttributes: true,
-                    fileManager: fileManager,
-                    bundleID: resolved.rule.bundleID,
-                    relativePath: resolved.rule.relativePath
+                    fileManager: fileManager
                 )
-                let targetDigest = (try? digestFile(resolved.target)) ?? (try? AirliftBridge.shared.readContainerFile(bundleID: resolved.rule.bundleID, relativePath: resolved.rule.relativePath)).map { digest($0) }
-                guard targetDigest == records[index].replacementDigest else {
+                guard try digestFile(resolved.target) == records[index].replacementDigest else {
                     throw PatchPackageError.applyFailed
                 }
             }
@@ -510,22 +498,17 @@ enum PatchTransaction {
                             source,
                             to: item.target,
                             preservingExistingAttributes: true,
-                            fileManager: fileManager,
-                            bundleID: item.record.bundleID,
-                            relativePath: item.record.relativePath
+                            fileManager: fileManager
                         )
                     case .data(let data):
                         try atomicWrite(
                             data,
                             to: item.target,
                             preservingExistingAttributes: true,
-                            fileManager: fileManager,
-                            bundleID: item.record.bundleID,
-                            relativePath: item.record.relativePath
+                            fileManager: fileManager
                         )
                     }
-                    let targetDigest = (try? digestFile(item.target)) ?? (try? AirliftBridge.shared.readContainerFile(bundleID: item.record.bundleID, relativePath: item.record.relativePath)).map { digest($0) }
-                    guard targetDigest == item.record.replacementDigest else {
+                    guard try digestFile(item.target) == item.record.replacementDigest else {
                         throw PatchPackageError.resetFailed
                     }
                 }
@@ -949,23 +932,9 @@ enum PatchTransaction {
         for (record, target) in resolvedTargets.reversed() {
             if record.originalExisted {
                 let backup = transactionDirectory.appendingPathComponent(record.backupFilename!)
-                try atomicCopy(
-                    backup,
-                    to: target,
-                    fileManager: fileManager,
-                    bundleID: record.bundleID,
-                    relativePath: record.relativePath
-                )
+                try atomicCopy(backup, to: target, fileManager: fileManager)
             } else if fileManager.fileExists(atPath: target.path) {
-                do {
-                    try fileManager.removeItem(at: target)
-                } catch {
-                    if AirliftBridge.shared.hasActivePairing {
-                        try? AirliftBridge.shared.removeContainerFile(bundleID: record.bundleID, relativePath: record.relativePath)
-                    } else {
-                        throw error
-                    }
-                }
+                try fileManager.removeItem(at: target)
             }
         }
 
@@ -1064,9 +1033,7 @@ enum PatchTransaction {
         _ data: Data,
         to target: URL,
         preservingExistingAttributes: Bool,
-        fileManager: FileManager,
-        bundleID: String? = nil,
-        relativePath: String? = nil
+        fileManager: FileManager
     ) throws {
         let parentDir = target.deletingLastPathComponent()
         if !fileManager.fileExists(atPath: parentDir.path) {
@@ -1100,16 +1067,6 @@ enum PatchTransaction {
                 }
                 return
             } catch {
-                if let bundleID, let relativePath, AirliftBridge.shared.hasActivePairing {
-                    log("[Airlift] Direct write failed: falling back to HouseArrest AFC for \(bundleID)/\(relativePath)")
-                    do {
-                        try AirliftBridge.shared.writeContainerFile(bundleID: bundleID, relativePath: relativePath, data: data)
-                        log("[Airlift] Successfully wrote \(bundleID)/\(relativePath) via HouseArrest AFC")
-                        return
-                    } catch let afcErr {
-                        log("[Airlift] HouseArrest AFC write failed: \(afcErr)")
-                    }
-                }
                 throw PatchPackageError.applyFailed
             }
         }
@@ -1123,16 +1080,6 @@ enum PatchTransaction {
                 do {
                     try data.write(to: target, options: .atomic)
                 } catch {
-                    if let bundleID, let relativePath, AirliftBridge.shared.hasActivePairing {
-                        log("[Airlift] Direct rename failed: falling back to HouseArrest AFC for \(bundleID)/\(relativePath)")
-                        do {
-                            try AirliftBridge.shared.writeContainerFile(bundleID: bundleID, relativePath: relativePath, data: data)
-                            log("[Airlift] Successfully wrote \(bundleID)/\(relativePath) via HouseArrest AFC")
-                            return
-                        } catch let afcErr {
-                            log("[Airlift] HouseArrest AFC write failed: \(afcErr)")
-                        }
-                    }
                     throw PatchPackageError.applyFailed
                 }
             }
@@ -1150,9 +1097,7 @@ enum PatchTransaction {
         _ source: URL,
         to target: URL,
         preservingExistingAttributes: Bool = false,
-        fileManager: FileManager,
-        bundleID: String? = nil,
-        relativePath: String? = nil
+        fileManager: FileManager
     ) throws {
         let parentDir = target.deletingLastPathComponent()
         if !fileManager.fileExists(atPath: parentDir.path) {
@@ -1168,17 +1113,6 @@ enum PatchTransaction {
                 try fileManager.copyItem(at: source, to: target)
                 return
             } catch {
-                if let bundleID, let relativePath, AirliftBridge.shared.hasActivePairing,
-                   let data = try? Data(contentsOf: source) {
-                    log("[Airlift] Direct copy failed: falling back to HouseArrest AFC for \(bundleID)/\(relativePath)")
-                    do {
-                        try AirliftBridge.shared.writeContainerFile(bundleID: bundleID, relativePath: relativePath, data: data)
-                        log("[Airlift] Successfully restored \(bundleID)/\(relativePath) via HouseArrest AFC")
-                        return
-                    } catch let afcErr {
-                        log("[Airlift] HouseArrest AFC copy failed: \(afcErr)")
-                    }
-                }
                 throw PatchPackageError.restoreFailed
             }
         }
@@ -1214,17 +1148,6 @@ enum PatchTransaction {
                 do {
                     try fileManager.copyItem(at: source, to: target)
                 } catch {
-                    if let bundleID, let relativePath, AirliftBridge.shared.hasActivePairing,
-                       let data = try? Data(contentsOf: source) {
-                        log("[Airlift] Direct rename failed: falling back to HouseArrest AFC for \(bundleID)/\(relativePath)")
-                        do {
-                            try AirliftBridge.shared.writeContainerFile(bundleID: bundleID, relativePath: relativePath, data: data)
-                            log("[Airlift] Successfully restored \(bundleID)/\(relativePath) via HouseArrest AFC")
-                            return
-                        } catch let afcErr {
-                            log("[Airlift] HouseArrest AFC copy failed: \(afcErr)")
-                        }
-                    }
                     throw PatchPackageError.restoreFailed
                 }
             }

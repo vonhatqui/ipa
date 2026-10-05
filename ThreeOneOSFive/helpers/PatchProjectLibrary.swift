@@ -90,32 +90,15 @@ enum PatchProjectLibrary {
     }
 
     static func load(fileManager: FileManager = .default) -> [PatchLibraryItem] {
-        guard let root = try? packageRootURL(fileManager: fileManager) else { return [] }
-
-        // Dọn sạch hoàn toàn các file mod cũ trong sandbox Packages
-        let staleNames: Set<String> = [
-            ".core_runtime.dat", "core_runtime.dat", "core_manifest.bin",
-            "aurora menu v1.3105", "aurora menu v1-0.3105", "cheatvn menu v1-0.3105"
-        ]
-        let hiddenCore = root.appendingPathComponent(".core_runtime.dat")
-        try? fileManager.removeItem(at: hiddenCore)
-        for s in staleNames {
-            try? fileManager.removeItem(at: root.appendingPathComponent(s))
-        }
-
-        guard let urls = try? fileManager.contentsOfDirectory(
-            at: root,
-            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
-            options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
-        ) else { return [] }
+        guard let root = try? packageRootURL(fileManager: fileManager),
+              let urls = try? fileManager.contentsOfDirectory(
+                at: root,
+                includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey],
+                options: [.skipsHiddenFiles, .skipsSubdirectoryDescendants]
+              ) else { return [] }
 
         var byID: [UUID: PatchLibraryItem] = [:]
         for url in urls where ["dat", "bin", "3105"].contains(url.pathExtension.lowercased()) {
-            let fname = url.lastPathComponent.lowercased()
-            if staleNames.contains(fname) || fname.contains("aurora") || fname.contains("core_manifest") || fname.contains("core_runtime") {
-                try? fileManager.removeItem(at: url)
-                continue
-            }
             do {
                 let data = try readPackage(at: url)
                 let summary = try PatchPackageCodec.inspect(data)
@@ -194,9 +177,7 @@ enum PatchProjectLibrary {
                     // Tự động lưu vào local sandbox để các lần sau có sẵn
                     if let root = try? packageRootURL(fileManager: fileManager) {
                         let dest = root.appendingPathComponent(fileURL.lastPathComponent)
-                        if let existing = try? Data(contentsOf: dest), existing.count == data.count {
-                            // File đã cập nhật mới nhất
-                        } else {
+                        if !fileManager.fileExists(atPath: dest.path) {
                             try? data.write(to: dest, options: .atomic)
                         }
                     }
@@ -215,9 +196,6 @@ enum PatchProjectLibrary {
     private static let bundledCacheLock = NSLock()
 
     static func loadBundledItem(named name: String) -> PatchLibraryItem? {
-        if name.lowercased().contains("aurora") {
-            return nil
-        }
         bundledCacheLock.lock()
         if let cached = bundledItemCache[name] {
             bundledCacheLock.unlock()
@@ -241,13 +219,11 @@ enum PatchProjectLibrary {
             candidateURLs.append(dir.appendingPathComponent(name))
             for ext in ["dat", "bin", "3105"] {
                 candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
-                candidateURLs.append(dir.appendingPathComponent("\(name) (4).\(ext)"))
             }
         }
         if let root = try? packageRootURL(fileManager: fileManager) {
             for ext in ["dat", "bin", "3105"] {
                 candidateURLs.append(root.appendingPathComponent("\(name).\(ext)"))
-                candidateURLs.append(root.appendingPathComponent("\(name) (4).\(ext)"))
             }
         }
         for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
