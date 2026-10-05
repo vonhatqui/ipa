@@ -10,9 +10,8 @@ import UserNotifications
 ///   2. Kiểm Tra Cập Nhật (So sánh với server)
 ///   3. Ghép Đôi iOS 27 (Sinh PIN & ghép đôi AirLift bypass sandbox)
 ///   4. Xoá Bộ Nhớ Đệm (File tạm + ảnh đã tải)
-///   5. Chia Sẻ Ứng Dụng (Gửi link tải cho bạn bè)
-///   6. Thông Tin Ứng Dụng (Phiên bản • Thiết bị • ID)
-///   7. Chặn Quảng Cáo (Nhấn để cài DNS Profile qua Toggle switch)
+///   5. Thông Tin Ứng Dụng (Phiên bản • Thiết bị • ID)
+///   6. Chặn Quảng Cáo (Nhấn để cài DNS Profile qua Toggle switch)
 /// - Tự động thay thế tên DELTA IPA VN thành tên thương hiệu tương ứng (CheatStore VN, VeLix VN, Venom VN)
 struct DeltaStyleSettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -152,24 +151,7 @@ struct DeltaStyleSettingsView: View {
 
                             dividerLine
 
-                            // 5. Chia Sẻ Ứng Dụng
-                            settingsRow(
-                                iconName: "square.and.arrow.up",
-                                iconTintColor: .white,
-                                iconBgColor: Color.white.opacity(0.07),
-                                title: "Chia Sẻ Ứng Dụng",
-                                subtitle: "Gửi link tải cho bạn bè"
-                            ) {
-                                shareAppAction()
-                            } rightView: {
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(Color.white.opacity(0.35))
-                            }
-
-                            dividerLine
-
-                            // 6. Thông Tin Ứng Dụng
+                            // 5. Thông Tin Ứng Dụng
                             settingsRow(
                                 iconName: "person.crop.circle",
                                 iconTintColor: .white,
@@ -449,36 +431,6 @@ struct DeltaStyleSettingsView: View {
         cacheClearedMessage = "Đã dọn dẹp sạch sẽ toàn bộ \(previousSize) dữ liệu đệm và giải phóng bộ nhớ RAM/Disk!"
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         showCacheAlert = true
-    }
-
-    private func shareAppAction() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        
-        let shareText = "Tải \(theme.appTitle) v\(appVersion) cho iOS - Hỗ trợ ghép đôi bypass iOS 18 & iOS 27: https://github.com/vonhatqui/ipa/releases"
-        let shareURL = URL(string: "https://github.com/vonhatqui/ipa/releases")!
-        let activityVC = UIActivityViewController(activityItems: [shareText, shareURL], applicationActivities: nil)
-        
-        // Tìm UIViewController đang hiển thị trên cùng (Topmost ViewController)
-        guard let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene ??
-                                UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first else {
-            return
-        }
-
-        var topController = window.rootViewController
-        while let presented = topController?.presentedViewController {
-            topController = presented
-        }
-
-        guard let presenter = topController else { return }
-
-        if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = presenter.view
-            popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 0, height: 0)
-            popover.permittedArrowDirections = []
-        }
-        
-        presenter.present(activityVC, animated: true)
     }
 }
 

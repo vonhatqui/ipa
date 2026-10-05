@@ -145,12 +145,14 @@ enum AppBrandingTheme {
         switch self {
         case .cheatStore:
             return [
-                Color(red: 0.00, green: 0.85, blue: 1.00), // Cyan Neon
-                Color(red: 0.15, green: 0.55, blue: 1.00), // Electric Blue
+                Color(red: 1.00, green: 0.15, blue: 0.25), // Đỏ Rực
+                Color(red: 1.00, green: 0.55, blue: 0.00), // Cam Neon
+                Color(red: 1.00, green: 0.90, blue: 0.05), // Vàng Rực
+                Color(red: 0.10, green: 0.95, blue: 0.35), // Lục Dạ Quang
+                Color(red: 0.00, green: 0.85, blue: 1.00), // Lam / Cyan
                 Color(red: 0.35, green: 0.40, blue: 1.00), // Chàm Neon
-                Color(red: 0.00, green: 0.70, blue: 1.00), // Azure
-                Color(red: 0.75, green: 0.90, blue: 1.00), // Băng Lam
-                Color(red: 0.00, green: 0.85, blue: 1.00)
+                Color(red: 0.85, green: 0.20, blue: 1.00), // Tím Huyền Ảo
+                Color(red: 1.00, green: 0.15, blue: 0.25)  // Đỏ Rực khép vòng tuần hoàn
             ]
         case .veLix:
             return [

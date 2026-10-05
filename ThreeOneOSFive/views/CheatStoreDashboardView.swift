@@ -641,7 +641,7 @@ struct RainbowText: View {
     private var glowColor: Color {
         switch AppBrandingTheme.current {
         case .cheatStore:
-            return Color(red: 0.0, green: 0.55, blue: 1.0) // Vầng hào quang Electric Blue
+            return Color(red: 0.90, green: 0.20, blue: 0.85) // Vầng hào quang 7 màu rực rỡ
         case .veLix:
             return AppBrandingTheme.current.accentColor
         case .venom:
@@ -829,25 +829,6 @@ struct RainbowText: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
-
-                // Huy hiệu trạng thái Antiban Yabao (Timed Exposure Wipe 322B)
-                HStack(spacing: 6) {
-                    Image(systemName: antibanPatchService.isNeutralized ? "shield.fill" : "shield.lefthalf.filled")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(antibanPatchService.isNeutralized ? Color.cyan : Color(red: 1.0, green: 0.72, blue: 0.2))
-                    Text(antibanPatchService.isNeutralized ? "Antiban Yabao: Đã trung hoà file đĩa 322B (Active)" : "Antiban Yabao: Timed Exposure Wipe 322B (Ready)")
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.88))
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 5)
-                .background(
-                    Capsule()
-                        .fill(antibanPatchService.isNeutralized ? Color.cyan.opacity(0.18) : Color.white.opacity(0.08))
-                        .overlay(
-                            Capsule().stroke(antibanPatchService.isNeutralized ? Color.cyan.opacity(0.4) : Color.white.opacity(0.15), lineWidth: 1)
-                        )
-                )
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -957,13 +938,9 @@ struct RainbowText: View {
         } else if isRestoringClean {
             return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
-            if antibanPatchService.isNeutralized {
-                return "Đã nạp mod vào RAM · Đĩa đã trung hoà (Antiban Yabao Active)!"
-            } else {
-                return "Đã nạp mod! Đang mở game & chuẩn bị trung hòa file đĩa..."
-            }
+            return "Đã nạp mod vào game thành công!"
         } else {
-            return "Chạm INJECTOR để nạp file và vào game (Antiban Yabao 100%)"
+            return "Chạm INJECTOR để nạp file và vào game"
         }
     }
 
