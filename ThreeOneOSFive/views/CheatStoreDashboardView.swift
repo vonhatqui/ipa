@@ -221,7 +221,6 @@ struct CheatStoreDashboardView: View {
     @State private var selectedLanguage: String = "Tiếng Việt"
     @State private var showCompatList: Bool = false
     @State private var showDeltaSettingsSheet: Bool = false
-    @State private var showExternal1706Demo: Bool = false
     @ObservedObject private var antibanPatchService = AntibanPatchService.shared
 
     // Common Alerts & Status
@@ -257,6 +256,11 @@ struct CheatStoreDashboardView: View {
         ZStack {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
+
+            // Nền chất lỏng Snapchat Ferrofluid sống động
+            SnapchatFluidLiquidBackgroundView()
+                .ignoresSafeArea()
+                .opacity(0.85)
 
             // Vầng sáng LED Ambient rực rỡ theo chủ đề
             RadialGradient(
@@ -492,9 +496,6 @@ struct CheatStoreDashboardView: View {
         .sheet(isPresented: $showDeltaSettingsSheet) {
             DeltaStyleSettingsView()
         }
-        .sheet(isPresented: $showExternal1706Demo) {
-            ExternalCheat1706View()
-        }
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
@@ -588,32 +589,6 @@ struct CheatStoreDashboardView: View {
                             lineWidth: 1
                         )
                 )
-
-                // Nút mở Menu Demo 1706 External Style
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showExternal1706Demo = true
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("1706")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
-                    .background(
-                        LinearGradient(
-                            colors: [Color(red: 0/255, green: 140/255, blue: 255/255), Color(red: 0/255, green: 90/255, blue: 220/255)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan.opacity(0.5), lineWidth: 1))
-                }
-                .buttonStyle(AuroraScaleButtonStyle())
 
                 // Nút Cài Đặt (Settings button) nằm ngay bên phải cạnh chữ Not Injected
                 Button(action: {

@@ -18,7 +18,6 @@ struct GameSelectionView: View {
     @State private var isLaunchingGame: Bool = false
     @State private var launchingVersionTitle: String = ""
     @State private var showSettings: Bool = false
-    @State private var showExternal1706Demo: Bool = false
 
     private var currentGameVersion: FreeFireGameVersion {
         FreeFireGameVersion(rawValue: selectedGameVersionRaw) ?? .standard
@@ -128,9 +127,6 @@ struct GameSelectionView: View {
         .sheet(isPresented: $showSettings) {
             DeltaStyleSettingsView()
         }
-        .sheet(isPresented: $showExternal1706Demo) {
-            ExternalCheat1706View()
-        }
         .onAppear {
             BundledPatchInjector.autoImportBundledPatches(into: patchStore)
         }
@@ -156,31 +152,6 @@ struct GameSelectionView: View {
             }
 
             Spacer()
-
-            // Nút Menu 1706 External Style Demo
-            Button {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                showExternal1706Demo = true
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 13, weight: .bold))
-                    Text("1706")
-                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 10)
-                .frame(height: 38)
-                .background(
-                    LinearGradient(
-                        colors: [Color(red: 0/255, green: 140/255, blue: 255/255), Color(red: 0/255, green: 90/255, blue: 220/255)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .cornerRadius(12)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.18), lineWidth: 1))
-            }
 
             // Nút Cài đặt (Gear shape) mở Modal 7 mục chuẩn Delta
             Button {

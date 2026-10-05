@@ -101,8 +101,6 @@
 		3105M222 /* AirliftPairingSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M122; };
 		3105M223 /* DeltaStyleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M123; };
 		3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M124; };
-		3105M225 /* Cheat1706Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M125; };
-		3105M226 /* ExternalCheat1706View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M126; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -218,8 +216,6 @@
 		3105M122 /* AirliftPairingSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingSectionView.swift; sourceTree = "<group>"; };
 		3105M123 /* DeltaStyleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeltaStyleSettingsView.swift; sourceTree = "<group>"; };
 		3105M124 /* SnapchatFluidLiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapchatFluidLiquidBackgroundView.swift; sourceTree = "<group>"; };
-		3105M125 /* Cheat1706Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Cheat1706Settings.swift; sourceTree = "<group>"; };
-		3105M126 /* ExternalCheat1706View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalCheat1706View.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -314,7 +310,6 @@
 				3105M122 /* AirliftPairingSectionView.swift */,
 				3105M123 /* DeltaStyleSettingsView.swift */,
 				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
-				3105M126 /* ExternalCheat1706View.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -322,7 +317,6 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
-				3105M125 /* Cheat1706Settings.swift */,
 				3105M120 /* AirliftBridge.swift */,
 				3105M118 /* AppBrandingTheme.swift */,
 				3105M117 /* CloudPatchService.swift */,
@@ -544,8 +538,6 @@
 				3105M222 /* AirliftPairingSectionView.swift in Sources */,
 				3105M223 /* DeltaStyleSettingsView.swift in Sources */,
 				3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */,
-				3105M225 /* Cheat1706Settings.swift in Sources */,
-				3105M226 /* ExternalCheat1706View.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
