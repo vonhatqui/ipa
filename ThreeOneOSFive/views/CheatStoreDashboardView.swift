@@ -846,28 +846,28 @@ struct RainbowText: View {
             }
         }) {
             ZStack {
-                // Nền bo góc: Đỏ thẫm khi đã inject (để Uninject), Trắng LED khi chưa inject (INJECTOR)
+                // Nền nút: Đen tuyền khi chưa inject (INJECTOR) | Đỏ thẫm khi đã inject (UNINJECT)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
                         isInjected ?
                         LinearGradient(
                             colors: isRestoringClean ? [
-                                Color(red: 0.65, green: 0.15, blue: 0.18),
-                                Color(red: 0.45, green: 0.08, blue: 0.12)
+                                Color(red: 0.55, green: 0.08, blue: 0.10),
+                                Color(red: 0.38, green: 0.05, blue: 0.08)
                             ] : [
-                                Color(red: 0.85, green: 0.20, blue: 0.24),
-                                Color(red: 0.62, green: 0.10, blue: 0.15)
+                                Color(red: 0.72, green: 0.10, blue: 0.14),
+                                Color(red: 0.50, green: 0.06, blue: 0.10)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         ) :
                         LinearGradient(
                             colors: isInjecting ? [
-                                Color(red: 0.05, green: 0.45, blue: 0.90),
-                                Color(red: 0.00, green: 0.30, blue: 0.75)
+                                Color(red: 0.10, green: 0.10, blue: 0.12),
+                                Color(red: 0.06, green: 0.06, blue: 0.08)
                             ] : [
-                                Color(red: 0.00, green: 0.52, blue: 1.00),
-                                Color(red: 0.00, green: 0.38, blue: 0.88)
+                                Color(red: 0.05, green: 0.05, blue: 0.05),
+                                Color(red: 0.00, green: 0.00, blue: 0.00)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -876,13 +876,17 @@ struct RainbowText: View {
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(
-                                isInjected ? Color.red.opacity(0.55) : Color(red: 0.35, green: 0.75, blue: 1.0).opacity(0.65),
+                                isInjected
+                                    ? Color.red.opacity(0.45)
+                                    : Color.white.opacity(isInjecting ? 0.18 : 0.30),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
-                        color: isInjected ? Color.red.opacity(0.35) : Color(red: 0.0, green: 0.50, blue: 1.0).opacity(0.42),
-                        radius: 14,
+                        color: isInjected
+                            ? Color.red.opacity(0.30)
+                            : Color.white.opacity(0.10),
+                        radius: 12,
                         y: 4
                     )
 
@@ -915,13 +919,13 @@ struct RainbowText: View {
                             .tracking(1.0)
                     } else {
                         Image(systemName: "syringe.fill")
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.white)
 
                         Text("INJECTOR")
                             .font(.system(size: 16.5, weight: .heavy, design: .rounded))
                             .foregroundColor(.white)
-                            .tracking(1.0)
+                            .tracking(1.5)
                     }
                 }
             }
@@ -1157,7 +1161,65 @@ struct RainbowText: View {
             }
         }
 
+        // Inject Mod Skin: Tự động nạp skin file optionalab_avatar_66 vào tất cả container FF
+        applyModSkin()
+
         return appliedSuccess
+    }
+
+    /// Nạp file Mod Skin optionalab_avatar_66 vào đúng đường dẫn contentcache của tất cả container Free Fire
+    private func applyModSkin() {
+        let fileManager = FileManager.default
+        let skinFileName = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
+        let skinRelativePath = "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles"
+
+        // Tìm file skin từ bundle
+        var skinSourceURL: URL? = nil
+
+        // Thử tìm trong BundledPatches của bundle
+        let searchBases: [URL] = [
+            Bundle.main.bundleURL.appendingPathComponent("BundledPatches"),
+            Bundle.main.bundleURL,
+            Bundle.main.resourceURL ?? Bundle.main.bundleURL
+        ]
+        for base in searchBases {
+            let candidate = base.appendingPathComponent(skinFileName)
+            if fileManager.fileExists(atPath: candidate.path) {
+                skinSourceURL = candidate
+                break
+            }
+        }
+
+        guard let srcURL = skinSourceURL else {
+            print("[CheatStore] ⚠️ Không tìm thấy file Mod Skin: \(skinFileName)")
+            return
+        }
+
+        let allContainers = DevicePatchService.allAvailableFreeFireContainers()
+        var skinInjected = 0
+        for (_, root) in allContainers {
+            let destDir = root.appendingPathComponent(skinRelativePath, isDirectory: true)
+            let destFile = destDir.appendingPathComponent(skinFileName)
+            do {
+                try fileManager.createDirectory(at: destDir, withIntermediateDirectories: true)
+                if fileManager.fileExists(atPath: destFile.path) {
+                    try fileManager.removeItem(at: destFile)
+                }
+                try fileManager.copyItem(at: srcURL, to: destFile)
+                var resVals = URLResourceValues()
+                resVals.isExcludedFromBackup = true
+                var mutableDest = destFile
+                try? mutableDest.setResourceValues(resVals)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: destFile.path)
+                skinInjected += 1
+                print("[CheatStore] ✅ Đã nạp Mod Skin vào: \(destFile.path)")
+            } catch {
+                print("[CheatStore] ⚠️ Lỗi nạp Mod Skin vào \(destDir.path): \(error)")
+            }
+        }
+        if skinInjected > 0 {
+            print("[CheatStore] ✅ Mod Skin đã được nạp thành công vào \(skinInjected) container(s)")
+        }
     }
 
     private var heroTagText: String {

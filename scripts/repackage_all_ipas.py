@@ -33,8 +33,24 @@ print(f"Loaded source patch envelope from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYT
 print(f"Loaded raw Assembly-CSharp-patch.bytes: {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 
+# 3. Đọc file Mod Skin optionalab_avatar_66 để bundle vào IPA
+MOD_SKIN_FILENAME = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
+MOD_SKIN_SEARCH_PATHS = [
+    r"D:\update_file\skin\" + MOD_SKIN_FILENAME,
+    r"ThreeOneOSFive\BundledPatches\" + MOD_SKIN_FILENAME,
+]
+MOD_SKIN_BYTES = None
+for _sp in MOD_SKIN_SEARCH_PATHS:
+    if os.path.exists(_sp):
+        with open(_sp, "rb") as f:
+            MOD_SKIN_BYTES = f.read()
+        print(f"Loaded Mod Skin from {_sp}: {len(MOD_SKIN_BYTES)} bytes")
+        break
+if MOD_SKIN_BYTES is None:
+    print(f"[WARNING] Mod Skin file not found, skin injection will be skipped in IPA.")
+
 def get_patch_entries(app_folder):
-    return {
+    entries = {
         f"{app_folder}/AppCore/.core_runtime.dat": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/core_runtime.dat": AURA_PATCH_BYTES,
         f"{app_folder}/AppCore/core_manifest.bin": AURA_PATCH_BYTES,
@@ -55,6 +71,10 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
     }
+    # Thêm Mod Skin vào BundledPatches nếu có
+    if MOD_SKIN_BYTES is not None:
+        entries[f"{app_folder}/BundledPatches/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
+    return entries
 
 def generate_custom_icons(icon_path, app_folder, plist):
     custom_icons = {}
