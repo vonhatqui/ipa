@@ -1,4 +1,4 @@
-﻿import Foundation
+import Foundation
 
 /// Chính sách tương thích iOS cho exploit 3105
 /// Nguồn: https://github.com/YangJiiii/3105 (đồng bộ chính xác với repo gốc)
@@ -39,6 +39,11 @@ enum ExploitSupportPolicy {
         }
 
         return false
+    }
+
+    /// Alias hỗ trợ trực tiếp không cần ghép đôi
+    static func supportsDirectExploit(major: Int, minor: Int, patch: Int) -> Bool {
+        return supportsKernelExploit(major: major, minor: minor, patch: patch)
     }
 
     // MARK: - isSupported (iOS 17, 18, 26, 27 beta)

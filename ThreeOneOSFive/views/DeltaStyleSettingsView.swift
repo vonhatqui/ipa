@@ -378,7 +378,7 @@ struct DeltaStyleSettingsView: View {
     // MARK: - Actions
     private func handlePairingTap() {
         let v = AppInfo.versionTuple
-        if ExploitSupportPolicy.supportsDirectExploit(major: v.major, minor: v.minor, patch: v.patch) {
+        if ExploitSupportPolicy.supportsKernelExploit(major: v.major, minor: v.minor, patch: v.patch) {
             UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             showDirectSupportAlert = true
             return
