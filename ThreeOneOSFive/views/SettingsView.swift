@@ -90,6 +90,14 @@ struct SettingsView: View {
                     }
                 }
 
+                Section {
+                    AirliftPairingSectionView()
+                } header: {
+                    Text("Ghép nối thiết bị (iOS 18.7+ / iOS 27+)")
+                } footer: {
+                    Text("Bật LocalDevVPN hoặc WireGuard (10.7.0.1) trên máy để vượt rào Sandbox trên các phiên bản iOS cao.")
+                }
+
                 Section(language.text("common.device")) {
                     LabeledContent(language.text("dashboard.hardware_model"), value: AppInfo.displayMachineName)
                     LabeledContent(language.text("settings.ios_version"), value: "\(AppInfo.osVersion) (\(AppInfo.osBuild))")
@@ -118,6 +126,12 @@ struct SettingsView: View {
                     iosRangeRow(
                         label: "iOS 18",
                         range: ExploitSupportPolicy.verifiedIOS18Range,
+                        compatible: true
+                    )
+                    // iOS 18.7.2+: Ghép nối AirLift
+                    iosRangeRow(
+                        label: "iOS 18.7.2+",
+                        range: "Ghép nối (AirLift)",
                         compatible: true
                     )
                     // iOS 19 – 25: không hỗ trợ
@@ -151,6 +165,13 @@ struct SettingsView: View {
                         }
                     }
                     .padding(.vertical, 2)
+
+                    // iOS 27 Chính thức: Ghép nối AirLift
+                    iosRangeRow(
+                        label: "iOS 27 Chính thức",
+                        range: "Ghép nối (AirLift)",
+                        compatible: true
+                    )
                 } header: {
                     Text(language.text("settings.verified_versions"))
                 } footer: {
@@ -281,15 +302,14 @@ struct IOSCompatibilityListView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let rows: [(label: String, range: String, compatible: Bool)] = [
-        ("iOS 17.0–17.7.x",  "Tương thích",     true),
-        ("iOS 18.0–18.7.1",  "Tương thích",     true),
-        ("iOS 19–25",        "Không hỗ trợ",    false),
-        ("iOS 26.0–26.6.1",  "Tương thích",     true),
-        ("iOS 27.0 Beta 1",  "Tương thích",     true),
-        ("iOS 27.0 Beta 2",  "Tương thích",     true),
-        ("iOS 27.0 Beta 3",  "Tương thích (PB1)", true),
-        ("iOS 27.0 Beta 4",  "Tương thích (PB2)", true),
-        ("iOS 27.0 Beta 5+", "Chưa xác nhận",   false)
+        ("iOS 17.0–17.7.x",   "Tương thích",          true),
+        ("iOS 18.0–18.7.1",   "Tương thích",          true),
+        ("iOS 18.7.2–18.8",   "Ghép nối (AirLift)",   true),
+        ("iOS 19–25",         "Không hỗ trợ",         false),
+        ("iOS 26.0–26.6.1",   "Tương thích",          true),
+        ("iOS 27.0 Beta 1–4", "Tương thích",          true),
+        ("iOS 27 Chính thức", "Ghép nối (AirLift)",   true),
+        ("iOS 28+",           "Ghép nối (AirLift)",   true)
     ]
 
     var body: some View {

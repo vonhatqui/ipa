@@ -220,6 +220,8 @@ struct CheatStoreDashboardView: View {
     @State private var autoCleanOnExit: Bool = true
     @State private var selectedLanguage: String = "Tiếng Việt"
     @State private var showCompatList: Bool = false
+    @State private var showDeltaSettingsSheet: Bool = false
+    @ObservedObject private var antibanPatchService = AntibanPatchService.shared
 
     // Common Alerts & Status
     @State private var alertTitle: String = ""
@@ -486,6 +488,9 @@ struct CheatStoreDashboardView: View {
         .sheet(isPresented: $showCompatList) {
             IOSCompatibilityListView()
         }
+        .sheet(isPresented: $showDeltaSettingsSheet) {
+            DeltaStyleSettingsView()
+        }
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
@@ -543,41 +548,64 @@ struct CheatStoreDashboardView: View {
 
             Spacer()
 
-            // Trạng thái (Right pill badge)
-            HStack(spacing: 5) {
-                if isInjecting {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                        .scaleEffect(0.65)
-                    Text("Injecting...")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                } else if isInjected {
-                    Circle()
-                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
-                        .frame(width: 6, height: 6)
-                        .shadow(color: Color.green.opacity(0.8), radius: 3)
-                    Text("Injected")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-                } else {
-                    Text("Not Injected")
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
-                        .foregroundColor(Color.white.opacity(0.65))
+            // Trạng thái (Right pill badge) + Nút Cài Đặt bên phải cạnh chữ Not Injected
+            HStack(spacing: 8) {
+                HStack(spacing: 5) {
+                    if isInjecting {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .scaleEffect(0.65)
+                        Text("Injecting...")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                    } else if isInjected {
+                        Circle()
+                            .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                            .frame(width: 6, height: 6)
+                            .shadow(color: Color.green.opacity(0.8), radius: 3)
+                        Text("Injected")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
+                    } else {
+                        Text("Not Injected")
+                            .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color.white.opacity(0.65))
+                    }
                 }
+                .padding(.horizontal, 11)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(999)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 999)
+                        .stroke(
+                            isInjected ? Color.green.opacity(0.4) :
+                            (isInjecting ? Color.white.opacity(0.5) : Color.white.opacity(0.18)),
+                            lineWidth: 1
+                        )
+                )
+
+                // Nút Cài Đặt (Settings button) nằm ngay bên phải cạnh chữ Not Injected
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showDeltaSettingsSheet = true
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            )
+
+                        Image(systemName: "gearshape.fill")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(Color.white.opacity(0.85))
+                    }
+                }
+                .buttonStyle(AuroraScaleButtonStyle())
             }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 5)
-            .background(Color.white.opacity(0.06))
-            .cornerRadius(999)
-            .overlay(
-                RoundedRectangle(cornerRadius: 999)
-                    .stroke(
-                        isInjected ? Color.green.opacity(0.4) :
-                        (isInjecting ? Color.white.opacity(0.5) : Color.white.opacity(0.18)),
-                        lineWidth: 1
-                    )
-            )
         }
         .padding(.horizontal, 18)
         .padding(.top, 10)
@@ -796,6 +824,25 @@ struct RainbowText: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
+
+                // Huy hiệu trạng thái Antiban Yabao (Timed Exposure Wipe 322B)
+                HStack(spacing: 6) {
+                    Image(systemName: antibanPatchService.isNeutralized ? "shield.fill" : "shield.lefthalf.filled")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(antibanPatchService.isNeutralized ? Color.cyan : Color(red: 1.0, green: 0.72, blue: 0.2))
+                    Text(antibanPatchService.isNeutralized ? "Antiban Yabao: Đã trung hoà file đĩa 322B (Active)" : "Antiban Yabao: Timed Exposure Wipe 322B (Ready)")
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.88))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(
+                    Capsule()
+                        .fill(antibanPatchService.isNeutralized ? Color.cyan.opacity(0.18) : Color.white.opacity(0.08))
+                        .overlay(
+                            Capsule().stroke(antibanPatchService.isNeutralized ? Color.cyan.opacity(0.4) : Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                )
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -905,9 +952,13 @@ struct RainbowText: View {
         } else if isRestoringClean {
             return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
-            return "Đã nạp mod thành công! Chạm UNINJECT để khôi phục game gốc"
+            if antibanPatchService.isNeutralized {
+                return "Đã nạp mod vào RAM · Đĩa đã trung hoà (Antiban Yabao Active)!"
+            } else {
+                return "Đã nạp mod! Đang mở game & chuẩn bị trung hòa file đĩa..."
+            }
         } else {
-            return "Chạm INJECTOR để nạp file và vào game"
+            return "Chạm INJECTOR để nạp file và vào game (Antiban Yabao 100%)"
         }
     }
 
@@ -947,6 +998,9 @@ struct RainbowText: View {
             // Sau khi nạp xong tự động vô game
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 self.handleLaunchGame()
+
+                // Logic Yabao Antiban 100%: Sau 8.0s game đã nạp IFix vào RAM, tự động ghi đè file trên đĩa thành Neutral 322B để chống quét file tĩnh
+                self.antibanPatchService.startTimedExposureWipe(delaySeconds: 8.0)
             }
         }
     }
@@ -2323,6 +2377,8 @@ struct RainbowText: View {
                     }
                 }
             }
+
+            _ = self.antibanPatchService.removeAntibanPatch()
 
             DispatchQueue.main.async {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
