@@ -617,7 +617,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var auroraGameSubtitle: String {
-        return "Free Fire"
+        return "CheatVN iOS"
     }
 
     private var brandCenterTag: String {
@@ -636,7 +636,7 @@ struct RainbowText: View {
     private var glowColor: Color {
         switch AppBrandingTheme.current {
         case .cheatStore:
-            return Color(red: 1.0, green: 0.35, blue: 0.75) // Vầng hào quang LED đa sắc
+            return Color(red: 0.0, green: 0.55, blue: 1.0) // Vầng hào quang Electric Blue
         case .veLix:
             return AppBrandingTheme.current.accentColor
         case .venom:
@@ -877,25 +877,25 @@ struct RainbowText: View {
                         ) :
                         LinearGradient(
                             colors: isInjecting ? [
-                                Color(white: 0.92),
-                                Color(white: 0.82)
+                                Color(red: 0.05, green: 0.45, blue: 0.90),
+                                Color(red: 0.00, green: 0.30, blue: 0.75)
                             ] : [
-                                Color.white,
-                                Color(white: 0.88)
+                                Color(red: 0.00, green: 0.52, blue: 1.00),
+                                Color(red: 0.00, green: 0.38, blue: 0.88)
                             ],
-                            startPoint: .top,
-                            endPoint: .bottom
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
                         )
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 18, style: .continuous)
                             .stroke(
-                                isInjected ? Color.red.opacity(0.55) : Color.white.opacity(0.5),
+                                isInjected ? Color.red.opacity(0.55) : Color(red: 0.35, green: 0.75, blue: 1.0).opacity(0.65),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
-                        color: isInjected ? Color.red.opacity(0.35) : Color.white.opacity(0.28),
+                        color: isInjected ? Color.red.opacity(0.35) : Color(red: 0.0, green: 0.50, blue: 1.0).opacity(0.42),
                         radius: 14,
                         y: 4
                     )
@@ -904,12 +904,12 @@ struct RainbowText: View {
                 HStack(spacing: 10) {
                     if isInjecting {
                         ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(1.0)
 
                         Text("Injecting...")
                             .font(.system(size: 16.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
                     } else if isRestoringClean {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -930,11 +930,11 @@ struct RainbowText: View {
                     } else {
                         Image(systemName: "syringe.fill")
                             .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
 
                         Text("INJECTOR")
                             .font(.system(size: 16.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
                             .tracking(1.0)
                     }
                 }

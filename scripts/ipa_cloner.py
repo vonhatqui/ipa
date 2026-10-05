@@ -119,6 +119,8 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             extra_entries[f"{app_folder}/AppCore/core_manifest.bin"] = aura_bytes
             extra_entries[f"{app_folder}/AppCore/Assets/core_manifest.bin"] = aura_bytes
             extra_entries[f"{app_folder}/AppCore/Aurora Menu v1.3105"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/CheatVN Menu v1.3105"] = aura_bytes
+            extra_entries[f"{app_folder}/AppCore/CheatVN iOS.3105"] = aura_bytes
 
         if os.path.exists(raw_patch_path) and os.path.exists(raw_config_path):
             with open(raw_patch_path, "rb") as f:
@@ -131,6 +133,10 @@ def clone_ipa(base_ipa, output_ipa, app_name=None, bundle_id=None, version=None,
             extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Documents/localConfig.json"] = raw_config_bytes
             extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
             extra_entries[f"{app_folder}/BundledPatches/Aurora Menu v1.3105/localConfig.json"] = raw_config_bytes
+            extra_entries[f"{app_folder}/BundledPatches/CheatVN Menu v1.3105/Documents/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/BundledPatches/CheatVN Menu v1.3105/Documents/localConfig.json"] = raw_config_bytes
+            extra_entries[f"{app_folder}/BundledPatches/CheatVN Menu v1.3105/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
+            extra_entries[f"{app_folder}/BundledPatches/CheatVN Menu v1.3105/localConfig.json"] = raw_config_bytes
             extra_entries[f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes"] = raw_patch_bytes
             extra_entries[f"{app_folder}/AppCore/Assets/localConfig.json"] = raw_config_bytes
 

@@ -96,7 +96,7 @@ enum AppBrandingTheme {
 
     var accentColor: Color {
         switch self {
-        case .cheatStore: return Color.white
+        case .cheatStore: return Color(red: 0/255, green: 140/255, blue: 255/255)
         case .veLix: return Color(red: 0/255, green: 215/255, blue: 255/255)
         case .venom: return Color(red: 196/255, green: 72/255, blue: 255/255)
         }
@@ -104,7 +104,7 @@ enum AppBrandingTheme {
 
     var glassBg: Color {
         switch self {
-        case .cheatStore: return Color.white.opacity(0.04)
+        case .cheatStore: return Color(red: 0/255, green: 140/255, blue: 255/255).opacity(0.05)
         case .veLix: return Color(red: 0/255, green: 180/255, blue: 255/255).opacity(0.06)
         case .venom: return Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.08)
         }
@@ -112,7 +112,7 @@ enum AppBrandingTheme {
 
     var glassBorder: Color {
         switch self {
-        case .cheatStore: return Color.white.opacity(0.12)
+        case .cheatStore: return Color(red: 0/255, green: 140/255, blue: 255/255).opacity(0.20)
         case .veLix: return Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.22)
         case .venom: return Color(red: 186/255, green: 82/255, blue: 253/255).opacity(0.24)
         }
@@ -121,7 +121,11 @@ enum AppBrandingTheme {
     var ambientGlowGradient: [Color] {
         switch self {
         case .cheatStore:
-            return [Color.white.opacity(0.10), Color.clear]
+            return [
+                Color(red: 0/255, green: 140/255, blue: 255/255).opacity(0.18),
+                Color(red: 0/255, green: 80/255, blue: 220/255).opacity(0.06),
+                Color.clear
+            ]
         case .veLix:
             return [
                 Color(red: 0/255, green: 200/255, blue: 255/255).opacity(0.22),
@@ -141,14 +145,12 @@ enum AppBrandingTheme {
         switch self {
         case .cheatStore:
             return [
-                Color(red: 1.00, green: 0.15, blue: 0.25), // Đỏ Rực
-                Color(red: 1.00, green: 0.55, blue: 0.00), // Cam Neon
-                Color(red: 1.00, green: 0.90, blue: 0.05), // Vàng Rực
-                Color(red: 0.10, green: 0.95, blue: 0.35), // Lục Dạ Quang
-                Color(red: 0.00, green: 0.85, blue: 1.00), // Lam / Cyan
+                Color(red: 0.00, green: 0.85, blue: 1.00), // Cyan Neon
+                Color(red: 0.15, green: 0.55, blue: 1.00), // Electric Blue
                 Color(red: 0.35, green: 0.40, blue: 1.00), // Chàm Neon
-                Color(red: 0.85, green: 0.20, blue: 1.00), // Tím Huyền Ảo
-                Color(red: 1.00, green: 0.15, blue: 0.25)  // Đỏ Rực khép vòng tuần hoàn
+                Color(red: 0.00, green: 0.70, blue: 1.00), // Azure
+                Color(red: 0.75, green: 0.90, blue: 1.00), // Băng Lam
+                Color(red: 0.00, green: 0.85, blue: 1.00)
             ]
         case .veLix:
             return [
@@ -174,7 +176,7 @@ enum AppBrandingTheme {
     var dockBackground: Color {
         switch self {
         case .cheatStore:
-            return Color(red: 16/255, green: 16/255, blue: 20/255).opacity(0.96)
+            return Color(red: 14/255, green: 16/255, blue: 24/255).opacity(0.96)
         case .veLix:
             return Color(red: 6/255, green: 14/255, blue: 28/255).opacity(0.96)
         case .venom:
@@ -185,7 +187,7 @@ enum AppBrandingTheme {
     var dockLedColor: Color {
         switch self {
         case .cheatStore:
-            return Color.white
+            return Color(red: 0/255, green: 140/255, blue: 255/255)
         case .veLix:
             return Color(red: 0/255, green: 215/255, blue: 255/255)
         case .venom:

@@ -452,17 +452,33 @@ struct DeltaStyleSettingsView: View {
     }
 
     private func shareAppAction() {
-        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let rootVC = windowScene.windows.first?.rootViewController else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         
         let shareText = "Tải \(theme.appTitle) v\(appVersion) cho iOS - Hỗ trợ ghép đôi bypass iOS 18 & iOS 27: https://github.com/vonhatqui/ipa/releases"
-        let activityVC = UIActivityViewController(activityItems: [shareText], applicationActivities: nil)
+        let shareURL = URL(string: "https://github.com/vonhatqui/ipa/releases")!
+        let activityVC = UIActivityViewController(activityItems: [shareText, shareURL], applicationActivities: nil)
+        
+        // Tìm UIViewController đang hiển thị trên cùng (Topmost ViewController)
+        guard let windowScene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene ??
+                                UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let window = windowScene.windows.first(where: { $0.isKeyWindow }) ?? windowScene.windows.first else {
+            return
+        }
+
+        var topController = window.rootViewController
+        while let presented = topController?.presentedViewController {
+            topController = presented
+        }
+
+        guard let presenter = topController else { return }
+
         if let popover = activityVC.popoverPresentationController {
-            popover.sourceView = rootVC.view
-            popover.sourceRect = CGRect(x: rootVC.view.bounds.midX, y: rootVC.view.bounds.midY, width: 0, height: 0)
+            popover.sourceView = presenter.view
+            popover.sourceRect = CGRect(x: presenter.view.bounds.midX, y: presenter.view.bounds.midY, width: 0, height: 0)
             popover.permittedArrowDirections = []
         }
-        rootVC.present(activityVC, animated: true)
+        
+        presenter.present(activityVC, animated: true)
     }
 }
 
