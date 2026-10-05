@@ -142,14 +142,23 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
         plist_path = f"{app_folder}/Info.plist"
         plist = plistlib.loads(zin.read(plist_path))
 
-        # Tìm binary thực tế
+        # Tìm binary thực tế ngay tại thư mục root của .app (không tìm trong subfolder)
         exec_cand = None
-        for name in zin.namelist():
-            if name.startswith(app_folder + "/") and not zin.getinfo(name).is_dir():
-                sz = zin.getinfo(name).file_size
-                if sz > 2000000 and not name.endswith(".car"):
-                    exec_cand = name
-                    break
+        expected_exec = plist.get('CFBundleExecutable')
+        if expected_exec and f"{app_folder}/{expected_exec}" in zin.namelist():
+            exec_cand = f"{app_folder}/{expected_exec}"
+        elif f"{app_folder}/CheatStore" in zin.namelist():
+            exec_cand = f"{app_folder}/CheatStore"
+        elif f"{app_folder}/3105" in zin.namelist():
+            exec_cand = f"{app_folder}/3105"
+        else:
+            for name in zin.namelist():
+                # Chỉ kiểm tra các file nằm trực tiếp dưới app_folder (không nằm trong thư mục con)
+                if name.startswith(app_folder + "/") and name.count('/') == 2 and not zin.getinfo(name).is_dir():
+                    sz = zin.getinfo(name).file_size
+                    if sz > 1000000 and not name.endswith(".car") and not name.endswith(".png"):
+                        exec_cand = name
+                        break
         
         print(f"Found actual binary: {exec_cand} (size: {zin.getinfo(exec_cand).file_size})")
         target_exec_name = "CheatStore"
@@ -455,11 +464,11 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
-    raw_ipa = r"D:\update_file\well-known\base.ipa"
+    raw_ipa = r"D:\update_file\build_artifact\CheatStore-All-IPAs\CheatStore-VN.ipa"
+    if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
+        raw_ipa = r"D:\update_file\well-known\base.ipa"
     if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
         raw_ipa = r"D:\update_file\CheatStore-VN.ipa"
-    if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
-        raw_ipa = r"CheatStore-VN.ipa\CheatStore-VN.ipa"
 
     cheatstore_ipa_update = r"D:\update_file\CheatStore.ipa"
     cheatstore_vn_ipa_update = r"D:\update_file\CheatStore-VN.ipa"
