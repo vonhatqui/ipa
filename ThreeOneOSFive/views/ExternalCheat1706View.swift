@@ -218,33 +218,36 @@ public struct ExternalCheat1706View: View {
     // MARK: - 3. Game Selector Pill
     private var gameSelectorPillView: some View {
         HStack(spacing: 8) {
-            ForEach(0..<2, id: \.self) { idx in
-                let isSelected = settings.selectedGameIndex == idx
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .selection).impactOccurred()
-                    settings.selectedGameIndex = idx
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: idx == 0 ? "flame.fill" : "bolt.fill")
-                            .font(.system(size: 13, weight: .bold))
-                        Text(idx == 0 ? "Free Fire Thường" : "Free Fire MAX")
-                            .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(
-                        isSelected ?
-                        LinearGradient(colors: [accentNeon, Color(red: 0/255, green: 100/255, blue: 220/255)], startPoint: .top, endPoint: .bottom) :
-                        LinearGradient(colors: [Color.white.opacity(0.04), Color.white.opacity(0.02)], startPoint: .top, endPoint: .bottom)
-                    )
-                    .foregroundColor(isSelected ? .white : textMute)
-                    .cornerRadius(12)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(isSelected ? accentCyan.opacity(0.4) : Color.white.opacity(0.05), lineWidth: 1)
-                    )
-                }
+            gameButton(idx: 0, title: "Free Fire Thường", icon: "flame.fill")
+            gameButton(idx: 1, title: "Free Fire MAX", icon: "bolt.fill")
+        }
+    }
+
+    private func gameButton(idx: Int, title: String, icon: String) -> some View {
+        let isSelected = settings.selectedGameIndex == idx
+        return Button(action: {
+            UIImpactFeedbackGenerator(style: .selection).impactOccurred()
+            settings.selectedGameIndex = idx
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 13, weight: .bold))
+                Text(title)
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
             }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(
+                isSelected ?
+                LinearGradient(colors: [accentNeon, Color(red: 0/255, green: 100/255, blue: 220/255)], startPoint: .top, endPoint: .bottom) :
+                LinearGradient(colors: [Color.white.opacity(0.04), Color.white.opacity(0.02)], startPoint: .top, endPoint: .bottom)
+            )
+            .foregroundColor(isSelected ? .white : textMute)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? accentCyan.opacity(0.4) : Color.white.opacity(0.05), lineWidth: 1)
+            )
         }
     }
 
@@ -457,19 +460,21 @@ public struct ExternalCheat1706View: View {
             // 1. Tạo file localConfig.json từ toàn bộ các Toggle & Slider
             let configData = self.settings.generateLocalConfigData()
             let bundleID = self.settings.selectedGameBundleID
+            let fileManager = FileManager.default
 
             // 2. Nạp dữ liệu vào Container của Game (Documents/localConfig.json)
-            _ = BundledPatchInjector.applyDirectPatchFiles(
-                bundleID: bundleID,
-                targetSubpath: "localConfig.json",
-                data: configData
-            )
+            let allContainers = DevicePatchService.allAvailableFreeFireContainers()
+            for (id, root) in allContainers where id == bundleID || bundleID.isEmpty {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+                let dstConfig = docDir.appendingPathComponent("localConfig.json")
+                try? fileManager.removeItem(at: dstConfig)
+                try? configData.write(to: dstConfig, options: .atomic)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+            }
 
             // 3. Đảm bảo file mã gốc Assembly-CSharp-patch.bytes được đồng bộ
-            if let patchItem = PatchProjectLibrary.loadBundledItem(named: "CheatVN Menu v1.3105") ??
-                               PatchProjectLibrary.loadBundledItem(named: "Aurora Menu v1.3105") {
-                _ = BundledPatchInjector.inject(item: patchItem, into: bundleID)
-            }
+            DevicePatchService.ensureActivePatchesInjected()
 
             // 4. Kích hoạt lớp trung hòa Antiban Yabao
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -484,10 +489,9 @@ public struct ExternalCheat1706View: View {
 
     // MARK: - Logic Khôi phục sạch sẽ
     private func handleCleanGame() {
-        let bundleID = self.settings.selectedGameBundleID
-        _ = BundledPatchInjector.restoreOriginal(bundleID: bundleID)
+        _ = DevicePatchService.cleanRestoreAllModifications()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        showToast("Đã khôi phục game \(self.settings.selectedGameDisplayName) về trạng thái sạch sẽ!", color: .orange)
+        showToast("Đã khôi phục game \(settings.selectedGameDisplayName) về trạng thái sạch sẽ!", color: .orange)
     }
 
     private func showToast(_ msg: String, color: Color) {
