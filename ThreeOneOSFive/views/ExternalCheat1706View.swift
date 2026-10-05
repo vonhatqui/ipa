@@ -226,7 +226,7 @@ public struct ExternalCheat1706View: View {
     private func gameButton(idx: Int, title: String, icon: String) -> some View {
         let isSelected = settings.selectedGameIndex == idx
         return Button(action: {
-            UIImpactFeedbackGenerator(style: .selection).impactOccurred()
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             settings.selectedGameIndex = idx
         }) {
             HStack(spacing: 6) {
@@ -478,7 +478,7 @@ public struct ExternalCheat1706View: View {
 
             // 4. Kích hoạt lớp trung hòa Antiban Yabao
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                self.antibanService.executeTimedAntibanFlow(bundleID: bundleID)
+                self.antibanService.startTimedExposureWipe(delaySeconds: 8.0)
 
                 self.isInjecting = false
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
