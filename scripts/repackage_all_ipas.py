@@ -461,67 +461,48 @@ def main():
     if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
         raw_ipa = r"CheatStore-VN.ipa\CheatStore-VN.ipa"
 
-    fixed_base_ipa = r"D:\update_file\CheatStore-VN.ipa"
-    velix_ipa = r"D:\update_file\VeLix_VN.ipa"
-    venom_ipa = r"D:\update_file\Venom_VN.ipa"
-
-    # Logo chuẩn của từng app:
-    cheatstore_icon = r"assets\brands\cheatstore_logo.png"
-    velix_icon = r"assets\brands\velix_logo.jpg"
-    venom_icon = r"assets\brands\venom_logo.jpg"
-
-    print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI 3 APP CHUẨN XÁC VỚI 2 FILE NẠP DỮ LIỆU & MHA-C2")
-    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes) [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
-    print(f"  - VeLix Icon: {velix_icon} ({os.path.getsize(velix_icon)} bytes) [Chủ sở hữu: Quốc Đại]")
-    print(f"  - Venom Icon: {venom_icon} ({os.path.getsize(venom_icon)} bytes) [Chủ sở hữu: Trương Thành Trọng]")
-    print("==================================================")
-
-    # 1. Tạo fixed base CheatStore-VN.ipa với icon CheatStore chuẩn
-    fix_base_ipa(raw_ipa, fixed_base_ipa, icon_path=cheatstore_icon)
-
-    # 2. Cập nhật well-known base.ipa
+    cheatstore_ipa_update = r"D:\update_file\CheatStore.ipa"
+    cheatstore_vn_ipa_update = r"D:\update_file\CheatStore-VN.ipa"
+    cheatstore_ipa_root = r"D:\CheatStore.ipa"
+    cheatstore_vn_ipa_root = r"D:\CheatStore-VN.ipa"
     well_known_base = r"D:\update_file\well-known\base.ipa"
-    shutil.copyfile(fixed_base_ipa, well_known_base)
-    print(f"Copied fixed base IPA to: {well_known_base}")
 
-    # 3. Clone VeLix VN (Chủ sở hữu: Quốc Đại)
-    create_clone(
-        base_ipa=fixed_base_ipa,
-        output_ipa=velix_ipa,
-        app_name="VeLix VN",
-        bundle_id="com.apple.mobile.MobileHouseArrest",
-        icon_path=velix_icon,
-        owner_name="Quốc Đại"
-    )
+    # Logo chuẩn của CheatStore:
+    cheatstore_icon = r"assets\brands\cheatstore_logo.png"
 
-    # 4. Clone Venom VN (Chủ sở hữu: Trương Thành Trọng)
-    create_clone(
-        base_ipa=fixed_base_ipa,
-        output_ipa=venom_ipa,
-        app_name="Venom VN",
-        bundle_id="com.apple.mobile.MobileHouseArrest",
-        icon_path=venom_icon,
-        owner_name="Trương Thành Trọng"
-    )
+    print("==================================================")
+    print("BẮT ĐẦU ĐÓNG GÓI DUY NHẤT: CheatStore.ipa")
+    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes) [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
+    print("  - Bỏ qua VeLix và Venom theo yêu cầu người dùng.")
+    print("==================================================")
 
-    # 5. Verify cả 3 IPA
-    verify_ipa(fixed_base_ipa, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
-    verify_ipa(velix_ipa, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại", expected_phone="0796668836")
-    verify_ipa(venom_ipa, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng", expected_phone="095826667")
+    # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và MHA-C2
+    fix_base_ipa(raw_ipa, cheatstore_ipa_update, icon_path=cheatstore_icon)
 
-    # 6. Upload lên GitHub Release v2.4
-    print("\n--- Uploading all 3 IPAs to GitHub Release v2.4 ---")
-    cmd = [
-        "gh", "release", "upload", "v2.4",
-        fixed_base_ipa,
-        velix_ipa,
-        venom_ipa,
-        "--clobber",
-        "--repo", "vonhatqui/ipa"
-    ]
-    subprocess.check_call(cmd)
-    print("\n🎉 HOÀN TẤT 100%: CẢ 3 BẢN IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
+    # 2. Đồng bộ sang CheatStore-VN.ipa và D:\CheatStore.ipa
+    shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_update)
+    shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_root)
+    shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_root)
+    shutil.copyfile(cheatstore_ipa_update, well_known_base)
+    print(f"Đã sao chép sang:\n  - {cheatstore_vn_ipa_update}\n  - {cheatstore_ipa_root}\n  - {cheatstore_vn_ipa_root}\n  - {well_known_base}")
+
+    # 3. Verify CheatStore.ipa
+    verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
+
+    # 4. Upload lên GitHub Release v2.4 (chỉ CheatStore.ipa và CheatStore-VN.ipa)
+    print("\n--- Đang phát hành CheatStore.ipa lên GitHub Release v2.4 ---")
+    try:
+        cmd = [
+            "gh", "release", "upload", "v2.4",
+            cheatstore_ipa_update,
+            cheatstore_vn_ipa_update,
+            "--clobber",
+            "--repo", "vonhatqui/ipa"
+        ]
+        subprocess.check_call(cmd)
+        print("\n🎉 HOÀN TẤT 100%: CheatStore.ipa ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
+    except Exception as e:
+        print(f"⚠️ Upload GitHub Release bỏ qua hoặc có cảnh báo: {e}")
 
 if __name__ == '__main__':
     main()
