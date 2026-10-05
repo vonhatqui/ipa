@@ -36,8 +36,8 @@ print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 # 3. Đọc file Mod Skin optionalab_avatar_66 để bundle vào IPA
 MOD_SKIN_FILENAME = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
 MOD_SKIN_SEARCH_PATHS = [
-    r"D:\update_file\skin\" + MOD_SKIN_FILENAME,
-    r"ThreeOneOSFive\BundledPatches\" + MOD_SKIN_FILENAME,
+    os.path.join(r"D:\update_file\skin", MOD_SKIN_FILENAME),
+    os.path.join("ThreeOneOSFive", "BundledPatches", MOD_SKIN_FILENAME),
 ]
 MOD_SKIN_BYTES = None
 for _sp in MOD_SKIN_SEARCH_PATHS:
