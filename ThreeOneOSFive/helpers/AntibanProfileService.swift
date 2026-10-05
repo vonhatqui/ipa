@@ -218,28 +218,28 @@ final class AntibanProfileService: ObservableObject {
     }
 }
 
-// MARK: - Chuỗi XML Dự phòng Đầy đủ của AppleStoreVN Antiban Profile
+// MARK: - Chuỗi XML Dự phòng Đầy đủ của CheatStoreVN Antiban Profile
 private let fallbackMobileConfigXML = """
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
     <key>PayloadDisplayName</key>
-    <string>AppleStoreVN Antiban DNS</string>
+    <string>CheatStoreVN Antiban DNS</string>
     <key>PayloadDescription</key>
-    <string>Cấu hình Antiban AppleStoreVN - Chặn máy chủ phát hiện gian lận và bảo vệ an toàn game.</string>
+    <string>Cấu hình Antiban CheatStoreVN - Chặn máy chủ phát hiện gian lận và bảo vệ an toàn game Free Fire.</string>
     <key>PayloadIdentifier</key>
-    <string>vn.applestore.antiban.profile</string>
+    <string>vn.cheatstore.antiban.profile</string>
     <key>PayloadScope</key>
     <string>System</string>
     <key>PayloadType</key>
     <string>Configuration</string>
     <key>PayloadUUID</key>
-    <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.applestorevn</string>
+    <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.cheatstorevn</string>
     <key>PayloadVersion</key>
     <integer>1</integer>
     <key>PayloadOrganization</key>
-    <string>AppleStoreVN</string>
+    <string>CheatStoreVN</string>
     <key>PayloadContent</key>
     <array>
       <dict>
@@ -262,13 +262,73 @@ private let fallbackMobileConfigXML = """
                 <string>NeverConnect</string>
                 <key>Domains</key>
                 <array>
-                  <string>captive.apple.com</string>
-                  <string>3gppnetwork.org</string>
-                  <string>dav.orange.fr</string>
-                  <string>vvm.mobistar.be</string>
-                  <string>vvm.mstore.msg.t-mobile.com</string>
-                  <string>tma.vvm.mone.pan-net.eu</string>
-                  <string>vvm.ee.co.uk</string>
+                  <string>antibancheat.garena.com</string>
+                  <string>anticheat.garena.com</string>
+                  <string>www.anticheat.garena.com</string>
+                  <string>anticheatexpert.com</string>
+                  <string>tqos.anticheatexpert.com</string>
+                  <string>asia.cschannel.anticheatexpert.com</string>
+                  <string>cschannel.anticheatexpert.com</string>
+                  <string>defender.anticheatexpert.com</string>
+                  <string>defender1.anticheatexpert.com</string>
+                  <string>downcloud.anticheatexpert.com</string>
+                  <string>downintl.anticheatexpert.com</string>
+                  <string>inner.downcloud.anticheatexpert.com</string>
+                  <string>intl.acekeeper.anticheatexpert.com</string>
+                  <string>intltest.acekeeper.anticheatexpert.com</string>
+                  <string>login.auth.anticheatexpert.com</string>
+                  <string>shell.intl.anticheatexpert.com</string>
+                  <string>shell-bk.intl.anticheatexpert.com</string>
+                  <string>gamesecurity.garena.com</string>
+                  <string>gamesecurity.sea.freefiremobile.com</string>
+                  <string>gamesecurity.us.freefiremobile.com</string>
+                  <string>security.garena.com</string>
+                  <string>security.garena.vn</string>
+                  <string>report.garena.com</string>
+                  <string>vault.security.garenanow.com</string>
+                  <string>gsdk.proximabeta.com</string>
+                  <string>cloud2.gsdk.proximabeta.com</string>
+                  <string>cloud.gsdk.proximabeta.com</string>
+                  <string>bugly-ios.cros.garena.com</string>
+                  <string>bugly-aos.cros.garena.com</string>
+                  <string>crashreportv3.garenanow.com</string>
+                  <string>gac.garenanow.com</string>
+                  <string>tpns.qq.com</string>
+                  <string>tpns.tencent.com</string>
+                  <string>ban.garena.com</string>
+                  <string>hacker.us.freefiremobile.com</string>
+                  <string>portscan.noc.garena.com</string>
+                  <string>admin.cloudctrl.cros.garena.com</string>
+                  <string>admin.data.garenanow.com</string>
+                  <string>af.datacollector.sea.data.garenanow.com</string>
+                  <string>antihack.staging.vn.gametech.garenanow.com</string>
+                  <string>blackcloud.web.test.freefiremobile.com</string>
+                  <string>creditappeal.ind.freefiremobile.com</string>
+                  <string>creditappeal.sea.freefiremobile.com</string>
+                  <string>csoversea.castle.freefiremobile.com</string>
+                  <string>dashboard.web.test.freefiremobile.com</string>
+                  <string>ffcommunity.web.test.freefiremobile.com</string>
+                  <string>ffarena.championship.garena.com</string>
+                  <string>ffsupport.garena.com</string>
+                  <string>idconfig.gloud.qq.com</string>
+                  <string>idata.cros.garena.com</string>
+                  <string>influencer-tracking.ff.garena.vn</string>
+                  <string>monitor.in.test.gop.garenanow.com</string>
+                  <string>msdk.cros.garena.com</string>
+                  <string>my.backup.vthl.garena.vn</string>
+                  <string>rankguide.freefireindiamobile.com</string>
+                  <string>rankguide.sea.freefiremobile.com</string>
+                  <string>rankguide.us.freefiremobile.com</string>
+                  <string>rankguide.web.test.freefiremobile.com</string>
+                  <string>relaunch.web.test.freefiremobile.com</string>
+                  <string>sdk.garena.com</string>
+                  <string>securitymanage.web.test.freefiremobile.com</string>
+                  <string>sg.appinfo.garenanow.com</string>
+                  <string>sss.security.garenanow.com</string>
+                  <string>test-admin.daoju.cros.garena.com</string>
+                  <string>test-deploy-sh.web.test.freefiremobile.com</string>
+                  <string>transify.web.test.freefiremobile.com</string>
+                  <string>user.data.garena.com</string>
                 </array>
               </dict>
             </array>
@@ -281,15 +341,15 @@ private let fallbackMobileConfigXML = """
         <key>PayloadType</key>
         <string>com.apple.dnsSettings.managed</string>
         <key>PayloadIdentifier</key>
-        <string>vn.applestore.antiban.profile.dnsSettings.managed</string>
+        <string>vn.cheatstore.antiban.profile.dnsSettings.managed</string>
         <key>PayloadUUID</key>
-        <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.applestorevn.dnsSettings.managed</string>
+        <string>A1E2F262-DB73-40F6-BD22-2E42A43A3C94.cheatstorevn.dnsSettings.managed</string>
         <key>PayloadDisplayName</key>
-        <string>AppleStoreVN DNS Engine</string>
+        <string>CheatStoreVN DNS Engine</string>
         <key>PayloadOrganization</key>
-        <string>AppleStoreVN</string>
+        <string>CheatStoreVN</string>
         <key>PayloadDescription</key>
-        <string>AppleStoreVN DNS Engine - Bảo vệ hệ thống và ngăn chặn phát hiện mod.</string>
+        <string>CheatStoreVN DNS Engine - Bảo vệ hệ thống và ngăn chặn phát hiện mod.</string>
         <key>PayloadVersion</key>
         <integer>1</integer>
       </dict>

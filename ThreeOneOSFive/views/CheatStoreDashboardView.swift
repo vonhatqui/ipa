@@ -547,8 +547,8 @@ struct CheatStoreDashboardView: View {
                     .tracking(0.5)
 
                 Text(auroraGameSubtitle)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.65))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(red: 0.25, green: 0.75, blue: 1.0))
             }
 
             Spacer()
@@ -622,7 +622,7 @@ struct CheatStoreDashboardView: View {
     }
 
     private var auroraGameSubtitle: String {
-        return "CheatVN iOS"
+        return "Cheat External"
     }
 
     private var brandCenterTag: String {
@@ -641,7 +641,7 @@ struct RainbowText: View {
     private var glowColor: Color {
         switch AppBrandingTheme.current {
         case .cheatStore:
-            return Color(red: 0.90, green: 0.20, blue: 0.85) // Vầng hào quang 7 màu rực rỡ
+            return Color(red: 0.0, green: 0.55, blue: 1.0) // Vầng hào quang Electric Blue
         case .veLix:
             return AppBrandingTheme.current.accentColor
         case .venom:
@@ -863,11 +863,11 @@ struct RainbowText: View {
                         ) :
                         LinearGradient(
                             colors: isInjecting ? [
-                                Color(red: 0.10, green: 0.10, blue: 0.12),
-                                Color(red: 0.06, green: 0.06, blue: 0.08)
+                                Color(red: 0.05, green: 0.45, blue: 0.90),
+                                Color(red: 0.00, green: 0.30, blue: 0.75)
                             ] : [
-                                Color(red: 0.05, green: 0.05, blue: 0.05),
-                                Color(red: 0.00, green: 0.00, blue: 0.00)
+                                Color(red: 0.00, green: 0.52, blue: 1.00),
+                                Color(red: 0.00, green: 0.38, blue: 0.88)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -878,15 +878,15 @@ struct RainbowText: View {
                             .stroke(
                                 isInjected
                                     ? Color.red.opacity(0.45)
-                                    : Color.white.opacity(isInjecting ? 0.18 : 0.30),
+                                    : Color(red: 0.35, green: 0.75, blue: 1.0).opacity(0.65),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
                         color: isInjected
                             ? Color.red.opacity(0.30)
-                            : Color.white.opacity(0.10),
-                        radius: 12,
+                            : Color(red: 0.0, green: 0.50, blue: 1.0).opacity(0.45),
+                        radius: 14,
                         y: 4
                     )
 
@@ -1796,7 +1796,7 @@ struct RainbowText: View {
                             .foregroundColor(antibanService.isAntibanEnabled ? Color(red: 0.20, green: 0.88, blue: 0.45) : colorMute)
 
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("AppleStoreVN Antiban Safe Shield")
+                            Text("CheatStoreVN Antiban Safe Shield")
                                 .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundColor(colorInk)
                             Text("Ledger Safe Injection & Lifecycle Auto-Restore")
