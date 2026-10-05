@@ -302,14 +302,14 @@ struct IOSCompatibilityListView: View {
     @Environment(\.dismiss) private var dismiss
 
     private let rows: [(label: String, range: String, compatible: Bool)] = [
-        ("iOS 17.0–17.7.x",   "Tương thích",          true),
-        ("iOS 18.0–18.7.1",   "Tương thích",          true),
-        ("iOS 18.7.2–18.8",   "Ghép nối (AirLift)",   true),
-        ("iOS 19–25",         "Không hỗ trợ",         false),
-        ("iOS 26.0–26.6.1",   "Tương thích",          true),
-        ("iOS 27.0 Beta 1–4", "Tương thích",          true),
-        ("iOS 27 Chính thức", "Ghép nối (AirLift)",   true),
-        ("iOS 28+",           "Ghép nối (AirLift)",   true)
+        ("iOS 17.0 – 17.7.x",   "Tương thích",          true),
+        ("iOS 18.0 – 18.7.1",   "Tương thích",          true),
+        ("iOS 19 – 25",         "Không hỗ trợ",         false),
+        ("iOS 26.0 – 26.6.1",   "Tương thích",          true),
+        ("iOS 27.0 Beta 1",     "Tương thích",          true),
+        ("iOS 27.0 Beta 2",     "Tương thích",          true),
+        ("iOS 27.0 Beta 3",     "Tương thích (PB1)",    true),
+        ("iOS 27.0 Beta 4",     "Tương thích (PB2)",    true)
     ]
 
     var body: some View {
@@ -318,19 +318,24 @@ struct IOSCompatibilityListView: View {
                 Section {
                     ForEach(rows, id: \.label) { row in
                         HStack {
-                            Label(row.label, systemImage: row.compatible ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                .foregroundStyle(row.compatible ? Color.green : Color.red)
-                                .font(.subheadline)
+                            HStack(spacing: 9) {
+                                Image(systemName: row.compatible ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(row.compatible ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color(red: 1.0, green: 0.25, blue: 0.25))
+                                    .font(.system(size: 16, weight: .bold))
+
+                                Text(row.label)
+                                    .font(.system(size: 14.5, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.primary)
+                            }
                             Spacer()
                             Text(row.range)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(row.compatible ? Color(red: 0.20, green: 0.88, blue: 0.45) : .secondary)
                         }
+                        .padding(.vertical, 2)
                     }
                 } header: {
-                    Text("Danh sách tương thích CheatStoreVN")
-                } footer: {
-                    Text("Dựa trên exploit 3105 của YangJiii. Chỉ các phiên bản được liệt kê mới được hỗ trợ.")
+                    Text("Danh sách tương thích iOS")
                 }
             }
             .navigationTitle("Tương thích iOS")

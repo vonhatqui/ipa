@@ -138,9 +138,14 @@ struct GameSelectionView: View {
             CheatStoreLogoView(size: 34, cornerRadius: 9)
 
             HStack(spacing: 6) {
-                Text(theme.appTitle)
-                    .font(.system(size: 16, weight: .heavy, design: .rounded))
-                    .foregroundColor(colorInk)
+                ShinyTextView(
+                    text: theme.appTitle,
+                    font: .system(size: 16, weight: .heavy, design: .rounded),
+                    baseColor: colorInk,
+                    shineColor: theme.accentColor,
+                    duration: 2.4,
+                    tracking: 0.2
+                )
 
                 Text("v\(appVersion)")
                     .font(.system(size: 10.5, weight: .bold, design: .rounded))
@@ -172,33 +177,51 @@ struct GameSelectionView: View {
         .background(Color.black.opacity(0.35))
     }
 
-    // MARK: - Bộ 3 thẻ thông số hệ thống
+    // MARK: - Thanh thông số hệ thống liền khối cao cấp (Thiết bị • Hệ điều hành • Tương thích)
     private var systemStatsRowView: some View {
-        HStack(spacing: 8) {
-            statBox(
+        HStack(spacing: 0) {
+            statItem(
                 title: "THIẾT BỊ",
                 value: AppInfo.hardwareDisplayName,
                 valueColor: colorInk
             )
 
-            statBox(
+            Divider()
+                .frame(width: 1, height: 26)
+                .background(Color.white.opacity(0.12))
+
+            statItem(
                 title: "HỆ ĐIỀU HÀNH",
                 value: "iOS \(UIDevice.current.systemVersion)",
                 valueColor: colorInk
             )
 
-            statBox(
+            Divider()
+                .frame(width: 1, height: 26)
+                .background(Color.white.opacity(0.12))
+
+            statItem(
                 title: "TƯƠNG THÍCH",
                 value: "• Sẵn Sàng",
                 valueColor: greenBadge
             )
         }
+        .padding(.vertical, 11)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(colorCardBg.opacity(0.88))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(colorCardBorder, lineWidth: 1)
+        )
         .padding(.horizontal, 16)
         .padding(.top, 12)
     }
 
-    private func statBox(title: String, value: String, valueColor: Color) -> some View {
-        VStack(spacing: 4) {
+    private func statItem(title: String, value: String, valueColor: Color) -> some View {
+        VStack(spacing: 3) {
             Text(title)
                 .font(.system(size: 9.5, weight: .bold, design: .rounded))
                 .tracking(1.0)
@@ -211,16 +234,6 @@ struct GameSelectionView: View {
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 10)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 14)
-                .fill(colorCardBg.opacity(0.85))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(colorCardBorder, lineWidth: 1)
-        )
     }
 
     // MARK: - Game Card View (Free Fire Max / Free Fire - Đồng bộ màu App)

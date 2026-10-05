@@ -24,7 +24,7 @@ enum AppBrandingTheme {
 
     var appTitle: String {
         switch self {
-        case .cheatStore: return "CheatStore VN"
+        case .cheatStore: return "CheatVN External"
         case .veLix: return "VeLix VN"
         case .venom: return "Venom VN"
         }

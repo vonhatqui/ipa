@@ -496,42 +496,69 @@ def main():
     cheatstore_vn_ipa_root = r"D:\CheatStore-VN.ipa"
     well_known_base = r"D:\update_file\well-known\base.ipa"
 
-    # Logo chuẩn của CheatStore:
+    velix_ipa_update = r"D:\update_file\VeLix.ipa"
+    velix_vn_ipa_update = r"D:\update_file\VeLix_VN.ipa"
+    velix_ipa_root = r"D:\VeLix.ipa"
+
+    venom_ipa_update = r"D:\update_file\Venom.ipa"
+    venom_vn_ipa_update = r"D:\update_file\Venom_VN.ipa"
+    venom_ipa_root = r"D:\Venom.ipa"
+
     cheatstore_icon = r"assets\brands\cheatstore_logo.png"
+    velix_icon = r"assets\brands\velix_logo.jpg"
+    venom_icon = r"assets\brands\venom_logo.png"
+    if not os.path.exists(venom_icon):
+        venom_icon = r"assets\brands\venom_logo.jpg"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI DUY NHẤT: CheatStore.ipa")
-    print(f"  - CheatStore Icon: {cheatstore_icon} ({os.path.getsize(cheatstore_icon)} bytes) [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
-    print("  - Bỏ qua VeLix và Venom theo yêu cầu người dùng.")
+    print("BẮT ĐẦU ĐÓNG GÓI TOÀN BỘ 3 IPA:")
+    print(f"  1. CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
+    print(f"  2. VeLix:      {velix_icon} [Chủ sở hữu: Quốc Đại (VeLix VN)]")
+    print(f"  3. Venom:      {venom_icon} [Chủ sở hữu: Trương Thành Trọng (Venom VN)]")
     print("==================================================")
 
     # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và MHA-C2
     fix_base_ipa(raw_ipa, cheatstore_ipa_update, icon_path=cheatstore_icon)
-
-    # 2. Đồng bộ sang CheatStore-VN.ipa và D:\CheatStore.ipa
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_update)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_root)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_root)
     shutil.copyfile(cheatstore_ipa_update, well_known_base)
-    print(f"Đã sao chép sang:\n  - {cheatstore_vn_ipa_update}\n  - {cheatstore_ipa_root}\n  - {cheatstore_vn_ipa_root}\n  - {well_known_base}")
-
-    # 3. Verify CheatStore.ipa
     verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
 
-    # 4. Upload lên GitHub Release v2.4 (chỉ CheatStore.ipa và CheatStore-VN.ipa)
-    print("\n--- Đang phát hành CheatStore.ipa lên GitHub Release v2.4 ---")
+    # 2. Tạo bản VeLix.ipa
+    print("\n--- Đóng gói VeLix VN ---")
+    create_clone(cheatstore_ipa_update, velix_ipa_update, app_name="VeLix VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=velix_icon, owner_name="Quốc Đại")
+    shutil.copyfile(velix_ipa_update, velix_vn_ipa_update)
+    shutil.copyfile(velix_ipa_update, velix_ipa_root)
+    verify_ipa(velix_ipa_update, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại", expected_phone="0796668836")
+
+    # 3. Tạo bản Venom.ipa
+    print("\n--- Đóng gói Venom VN ---")
+    create_clone(cheatstore_ipa_update, venom_ipa_update, app_name="Venom VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=venom_icon, owner_name="Trương Thành Trọng")
+    shutil.copyfile(venom_ipa_update, venom_vn_ipa_update)
+    shutil.copyfile(venom_ipa_update, venom_ipa_root)
+    verify_ipa(venom_ipa_update, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng", expected_phone="095826667")
+
+    print("\n🎉 XÁC NHẬN: CẢ 3 IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
+
+    # 4. Upload cả 3 IPAs lên GitHub Release v2.4
+    print("\n--- Đang phát hành cả 3 IPAs lên GitHub Release v2.4 ---")
     try:
         cmd = [
             "gh", "release", "upload", "v2.4",
             cheatstore_ipa_update,
             cheatstore_vn_ipa_update,
+            velix_ipa_update,
+            velix_vn_ipa_update,
+            venom_ipa_update,
+            venom_vn_ipa_update,
             "--clobber",
             "--repo", "vonhatqui/ipa"
         ]
         subprocess.check_call(cmd)
-        print("\n🎉 HOÀN TẤT 100%: CheatStore.ipa ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
+        print("\n🎉 HOÀN TẤT 100%: TẤT CẢ 3 IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
     except Exception as e:
-        print(f"⚠️ Upload GitHub Release bỏ qua hoặc có cảnh báo: {e}")
+        print(f"⚠️ Upload GitHub Release có cảnh báo hoặc bỏ qua: {e}")
 
 if __name__ == '__main__':
     main()

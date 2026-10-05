@@ -693,10 +693,14 @@ struct RainbowText: View {
                     .tracking(3.2)
                     .foregroundColor(theme.accentColor.opacity(0.85))
 
-                Text(theme.appTitle)
-                    .font(.system(size: 24, weight: .heavy, design: .rounded))
-                    .tracking(-0.6)
-                    .foregroundColor(colorInk)
+                ShinyTextView(
+                    text: theme.appTitle,
+                    font: .system(size: 22, weight: .heavy, design: .rounded),
+                    baseColor: colorInk,
+                    shineColor: theme.accentColor,
+                    duration: 2.2,
+                    tracking: -0.5
+                )
             }
             Spacer()
 
@@ -832,6 +836,37 @@ struct RainbowText: View {
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
+    }
+
+    private struct AuroraButtonLedSweep: View {
+        var cornerRadius: CGFloat = 18
+        var duration: Double = 2.4
+        @State private var offset: CGFloat = -1.0
+
+        var body: some View {
+            GeometryReader { geo in
+                let w = geo.size.width
+                LinearGradient(
+                    colors: [
+                        Color.clear,
+                        Color.white.opacity(0.04),
+                        Color.white.opacity(0.28),
+                        Color.white.opacity(0.04),
+                        Color.clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .frame(width: max(60, w * 0.42))
+                .offset(x: offset * (w + 80) - 40)
+                .blendMode(.screen)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .onAppear {
+                withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
+                    offset = 1.6
+                }
+            }
         }
     }
 
@@ -846,7 +881,7 @@ struct RainbowText: View {
             }
         }) {
             ZStack {
-                // Nền nút: Đen tuyền khi chưa inject (INJECTOR) | Đỏ thẫm khi đã inject (UNINJECT)
+                // Nền nút: Đen tuyền sang trọng khi chưa inject (INJECTOR) | Đỏ thẫm khi đã inject (UNINJECT)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(
                         isInjected ?
@@ -863,11 +898,11 @@ struct RainbowText: View {
                         ) :
                         LinearGradient(
                             colors: isInjecting ? [
-                                Color(red: 0.05, green: 0.45, blue: 0.90),
-                                Color(red: 0.00, green: 0.30, blue: 0.75)
+                                Color(red: 0.12, green: 0.12, blue: 0.15),
+                                Color(red: 0.05, green: 0.05, blue: 0.07)
                             ] : [
-                                Color(red: 0.00, green: 0.52, blue: 1.00),
-                                Color(red: 0.00, green: 0.38, blue: 0.88)
+                                Color(red: 0.07, green: 0.07, blue: 0.09),
+                                Color(red: 0.02, green: 0.02, blue: 0.03)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -878,17 +913,22 @@ struct RainbowText: View {
                             .stroke(
                                 isInjected
                                     ? Color.red.opacity(0.45)
-                                    : Color(red: 0.35, green: 0.75, blue: 1.0).opacity(0.65),
+                                    : Color.white.opacity(0.24),
                                 lineWidth: 1.2
                             )
                     )
                     .shadow(
                         color: isInjected
                             ? Color.red.opacity(0.30)
-                            : Color(red: 0.0, green: 0.50, blue: 1.0).opacity(0.45),
+                            : Color.black.opacity(0.70),
                         radius: 14,
                         y: 4
                     )
+
+                // Dải LED sáng sang chảnh chạy ngang qua nút (như nút Launch ở màn hình login)
+                if !isInjected {
+                    AuroraButtonLedSweep(cornerRadius: 18)
+                }
 
                 // Nội dung nút theo các trạng thái
                 HStack(spacing: 10) {
@@ -922,10 +962,14 @@ struct RainbowText: View {
                             .font(.system(size: 17, weight: .bold))
                             .foregroundColor(.white)
 
-                        Text("INJECTOR")
-                            .font(.system(size: 16.5, weight: .heavy, design: .rounded))
-                            .foregroundColor(.white)
-                            .tracking(1.5)
+                        ShinyTextView(
+                            text: "INJECTOR",
+                            font: .system(size: 16.5, weight: .heavy, design: .rounded),
+                            baseColor: .white,
+                            shineColor: .white,
+                            duration: 2.2,
+                            tracking: 1.5
+                        )
                     }
                 }
             }
