@@ -110,10 +110,27 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
     write_rgba(0x14a0f, 0.18, 0.18, 0.20, 0.95)   # Active buttons -> Dark Sleek
     write_rgba(0x14b5f, 0.18, 0.18, 0.20, 0.95)
     write_rgba(0x14fb7, 1.00, 1.00, 1.00, 0.95)   # Button highlights -> White
-    # 5. BYPASS HMAC VERIFICATION (Luôn nhảy qua nhánh báo lỗi 'HMAC verification failed')
-    curr_code = struct.unpack('<i', data[0x24cf:0x24cf+4])[0]
-    if curr_code == 142:
-        data[0x24cf:0x24cf+4] = struct.pack('<i', 144)
+    # 5. BYPASS HMAC VERIFICATION
+    # a. Patch Method 9 (VerifyHMAC) to immediately and unconditionally return true (1)
+    # Method 9 starts at 0x124f7:
+    # [00] 0x124f7: code=57, op=655363 (StackSpace)
+    # [01] 0x124ff: code=180, op=1     (ldc.i4 1 -> push true)
+    # [02] 0x12507: code=136, op=1     (ret 1 -> return true)
+    data[0x124ff:0x124ff+8] = struct.pack('<ii', 180, 1)
+    data[0x12507:0x12507+8] = struct.pack('<ii', 136, 1)
+
+    # b. Patch Method 0 instruction 181 (at 0x24cf):
+    # Unconditional jump forward by 5 instructions (code=114, op=5), directly skipping instructions 182-186
+    data[0x24cf:0x24cf+8] = struct.pack('<ii', 114, 5)
+
+    # c. Patch Method 0 instruction 182 (at 0x24d7):
+    # Change Ldstr operand from 21 ("HMAC verification failed") to 24 ("valid")
+    data[0x24d7:0x24d7+8] = struct.pack('<ii', 176, 24)
+
+    # d. Overwrite string 21 in intern_strings so any other place loading string 21 gets "Verification successful!"
+    pos_str21 = data.find(b'HMAC verification failed')
+    if pos_str21 != -1:
+        data[pos_str21:pos_str21+24] = b'Verification successful!'
 
     assert len(data) == 97028
 
@@ -209,6 +226,10 @@ def main():
         r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\Documents",
         r"ThreeOneOSFive\BundledPatches\DeltaX Enternal",
         r"ThreeOneOSFive\AppCore\DeltaX",
+        r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105\Documents",
+        r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105",
+        r"ThreeOneOSFive\AppCore",
+        r"ThreeOneOSFive\AppCore\Assets",
     ]
     for d in raw_dirs:
         os.makedirs(d, exist_ok=True)
