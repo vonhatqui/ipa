@@ -20,26 +20,54 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
             assert code == 3, f"Expected opcode 3 at {hex(p)}, got {code}"
             data[p+4:p+8] = struct.pack('<f', val)
 
-    # 1. STRINGS: Thay thế hoàn toàn ASHOK và đổi tên thành CheatVN External
-    # String #32 + #33 (Login Gate): 26 bytes
-    # ASHOK (len 5) + SECURE LICENSE GATE (len 19) -> CheatVN (len 7) + EXTERNAL GATE VIP (len 17)
-    data[0x17114:0x17114+26] = b'\x07CheatVN\x11EXTERNAL GATE VIP'
+    # 1. STRINGS: Parse toàn bộ String Table từ 0x16f9c
+    strings = []
+    p = 0x16f9c
+    while p < 0x175e0:
+        length = data[p]
+        s_bytes = data[p+1:p+1+length]
+        strings.append(s_bytes)
+        p += 1 + length
 
-    # String #47 (Watermark): 6 bytes
-    if data[0x17208:0x17208+6] in [b'\x05ASHOK', b'\x05DELTA']:
-        data[0x17208:0x17208+6] = b'\x05Cheat'
+    orig_str_table_end = p
+    orig_str_bytes_len = orig_str_table_end - 0x16f9c
 
-    # String #49 + #50 + #51 (Main Menu Header): 24 bytes
-    # Enemy: (len 7) + ASHOK (len 5) + VIP SUITE (len 9) -> Enemy: (len 6) + CheatVN (len 7) + External (len 8)
-    data[0x17210:0x17210+24] = b'\x06Enemy:\x07CheatVN\x08External'
+    # Cập nhật String Table:
+    # #5: Server API Verify URL -> cheatingenginexyz.online
+    strings[5] = b'http://cheatingenginexyz.online/api/key/verify?key='
 
-    # String #57: JustinNam -> CheatVN (10 bytes)
-    if data[0x1727c:0x1727c+10] in [b'\x09JustinNam', b'\x09 CheatVN ']:
-        data[0x1727c:0x1727c+10] = b'\x09 CheatVN '
+    # #30: Get Key URL -> cheatingenginexyz.online/getkey
+    strings[30] = b'http://cheatingenginexyz.online/getkey'
 
-    # String #120 (Online status watermark): 6 bytes
-    if data[0x175de:0x175de+6] in [b'\x05ASHOK', b'\x05DELTA']:
-        data[0x175de:0x175de+6] = b'\x05Cheat'
+    # #32 & #33: Login Gate Title -> CheatVN EXTERNAL GATE VIP
+    strings[32] = b'CheatVN'
+    strings[33] = b'EXTERNAL GATE VIP'
+
+    # #45: Cân bằng độ dài để tổng byte String Table giữ nguyên 100% không lệch offset
+    strings[45] = b'Tap key to use keyboard'
+
+    # #47: Watermark
+    strings[47] = b'Cheat'
+
+    # #49, #50, #51: Main Menu Header -> Enemy: CheatVN External
+    strings[49] = b'Enemy:'
+    strings[50] = b'CheatVN'
+    strings[51] = b'External'
+
+    # #57: Settings Author
+    strings[57] = b' CheatVN '
+
+    # #120: Online Watermark
+    strings[120] = b'Cheat'
+
+    # Re-serialize String Table
+    new_str_bytes = bytearray()
+    for s in strings:
+        new_str_bytes.append(len(s))
+        new_str_bytes.extend(s)
+
+    assert len(new_str_bytes) == orig_str_bytes_len, f"String table length mismatch: {len(new_str_bytes)} vs {orig_str_bytes_len}"
+    data[0x16f9c:orig_str_table_end] = new_str_bytes
 
     # 2. NAMETAG ESP LIME GREEN -> BRIGHT RED
     write_rgba(0xa817, 1.00, 0.20, 0.20, 1.00)
@@ -120,9 +148,8 @@ def reencrypt_envelope(env, project_plist):
     return new_env_data
 
 def main():
-    print("=== BẮT ĐẦU PATCH DELTAX / LEAK FILES (CHEATVN EXTERNAL & BLACK THEME) ===")
+    print("=== BẮT ĐẦU PATCH DELTAX / LEAK FILES (CHEATVN EXTERNAL & SERVER API CHEATSTORE) ===")
 
-    # 1. Các nguồn file cần patch
     leak_ffm_path = r"D:\update_file\aklo\leak\OG MENU FFM.3105"
     leak_ffth_path = r"D:\update_file\aklo\leak\OG MENU FFTH.3105"
 
@@ -252,7 +279,7 @@ def main():
     create_imageset("CheatVNExternal", logo_src1)
     create_imageset("DeltaXEnternal", logo_src2)
 
-    print("🎉 HOÀN TẤT PATCHING VÀ SAO CHÉP TẤT CẢ TÀI NGUYÊN DELTAX & CHEATVN EXTERNAL!")
+    print("🎉 HOÀN TẤT PATCHING VÀ ĐỔI SERVER API SANG CHEATINGENGINEXYZ.ONLINE!")
 
 if __name__ == "__main__":
     main()
