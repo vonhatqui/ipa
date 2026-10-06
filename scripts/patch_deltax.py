@@ -110,9 +110,13 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
     write_rgba(0x14a0f, 0.18, 0.18, 0.20, 0.95)   # Active buttons -> Dark Sleek
     write_rgba(0x14b5f, 0.18, 0.18, 0.20, 0.95)
     write_rgba(0x14fb7, 1.00, 1.00, 1.00, 0.95)   # Button highlights -> White
-    write_rgba(0x15277, 1.00, 1.00, 1.00, 0.95)
+    # 5. BYPASS HMAC VERIFICATION (Luôn nhảy qua nhánh báo lỗi 'HMAC verification failed')
+    curr_code = struct.unpack('<i', data[0x24cf:0x24cf+4])[0]
+    if curr_code == 142:
+        data[0x24cf:0x24cf+4] = struct.pack('<i', 144)
 
     assert len(data) == 97028
+
     return bytes(data)
 
 def decrypt_envelope(path):
