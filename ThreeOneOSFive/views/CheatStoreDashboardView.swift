@@ -903,15 +903,8 @@ struct RainbowText: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Tên Discord (7 màu chạy tới lui) & Mô tả hỗ trợ & các icon Zalo / Tele
-            VStack(spacing: 8) {
-                RainbowText(text: brandCenterTag)
-
-                Text("Mô tả: Liên hệ khi cần hỗ trợ")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.65))
-
-                // Nút nhỏ đường dẫn Zalo / Telegram theo thương hiệu
+            // CHÍNH GIỮA: Nút hỗ trợ Zalo / Telegram theo thương hiệu (Đã loại bỏ Discord và mô tả theo yêu cầu)
+            if theme.zaloURLString != nil || theme.telegramURLString != nil {
                 HStack(spacing: 16) {
                     // Nút Zalo
                     if let zaloURL = theme.zaloURLString, let url = URL(string: zaloURL) {
@@ -974,10 +967,9 @@ struct RainbowText: View {
                         .buttonStyle(AuroraScaleButtonStyle())
                     }
                 }
-                .padding(.top, 6)
+                .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
+                .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
             }
-            .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
-            .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
 
             Spacer()
 
@@ -1121,13 +1113,13 @@ struct RainbowText: View {
         .disabled(isInjecting || isRestoringClean)
     }
 
-    // MARK: - Chọn Chức Năng Menu (CheatVN External vs DeltaX Enternal)
+    // MARK: - Chọn Chức Năng Menu (CheatVN External & DeltaX Enternal xếp trên dưới banner ngang)
     @ViewBuilder
     private var featureSelectorCards: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
                 Text("CHỌN MENU CHỨC NĂNG")
-                    .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
                     .tracking(1.4)
                     .foregroundColor(Color.white.opacity(0.60))
 
@@ -1144,23 +1136,21 @@ struct RainbowText: View {
             }
             .padding(.horizontal, 4)
 
-            HStack(spacing: 10) {
-                // Feature 1: CheatVN External
+            VStack(spacing: 8) {
+                // Chức năng 1 (Trên): CheatVN External - Banner ngang dài
                 featureCard(
                     id: "cheatvn_external",
                     title: "CheatVN External",
-                    subtitle: "Bản Chuẩn VIP",
                     logoImageName: "cheatvn_external",
                     assetImageName: "CheatVNExternal",
                     badgeText: "V1.3105",
                     accentGlow: Color(red: 1.0, green: 0.25, blue: 0.25)
                 )
 
-                // Feature 2: DeltaX Enternal
+                // Chức năng 2 (Dưới): DeltaX Enternal - Banner ngang dài
                 featureCard(
                     id: "deltax_enternal",
                     title: "DeltaX Enternal",
-                    subtitle: "Bản DeltaX Black",
                     logoImageName: "deltax_enternal",
                     assetImageName: "DeltaXEnternal",
                     badgeText: "NO KEY",
@@ -1175,7 +1165,6 @@ struct RainbowText: View {
     private func featureCard(
         id: String,
         title: String,
-        subtitle: String,
         logoImageName: String,
         assetImageName: String,
         badgeText: String,
@@ -1192,14 +1181,14 @@ struct RainbowText: View {
             }
         }) {
             ZStack {
-                // Nền thẻ: Sáng nổi bật khi được chọn, nền tối mờ khi chưa chọn
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                // Nền thẻ dài ngang: Sáng rực rỡ khi được chọn, nền tối mờ khi chưa chọn
+                RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .fill(
                         isSelected ?
                         LinearGradient(
                             colors: [
-                                Color(red: 0.16, green: 0.17, blue: 0.22),
-                                Color(red: 0.08, green: 0.09, blue: 0.12)
+                                Color(red: 0.17, green: 0.18, blue: 0.24),
+                                Color(red: 0.08, green: 0.09, blue: 0.13)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -1214,7 +1203,7 @@ struct RainbowText: View {
                         )
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
                             .stroke(
                                 isSelected ?
                                 LinearGradient(
@@ -1231,62 +1220,56 @@ struct RainbowText: View {
                             )
                     )
                     .shadow(
-                        color: isSelected ? accentGlow.opacity(0.55) : Color.black.opacity(0.4),
-                        radius: isSelected ? 10 : 4,
+                        color: isSelected ? accentGlow.opacity(0.60) : Color.black.opacity(0.4),
+                        radius: isSelected ? 12 : 3,
                         x: 0,
                         y: isSelected ? 0 : 2
                     )
 
                 // Dải LED sáng chạy ngang khi được chọn (hiện sáng sang trọng)
                 if isSelected {
-                    AuroraButtonLedSweep(cornerRadius: 16)
+                    AuroraButtonLedSweep(cornerRadius: 15)
                 }
 
-                // Nội dung thẻ
-                HStack(spacing: 8) {
-                    // Logo chức năng
+                // Nội dung thẻ xếp ngang: Logo + Tên Chức Năng (Không có mô tả) + Badge & Checkmark
+                HStack(spacing: 12) {
+                    // Logo chức năng bo góc
                     featureLogo(logoName: logoImageName, assetName: assetImageName, fallbackIcon: "bolt.shield.fill")
 
-                    VStack(alignment: .leading, spacing: 2.5) {
-                        HStack(spacing: 4) {
-                            Text(title)
-                                .font(.system(size: 13, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.80)
+                    // Tên chức năng (KHÔNG CÓ BẤT KỲ MÔ TẢ NÀO)
+                    Text(title)
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
 
-                            Spacer(minLength: 0)
+                    Spacer(minLength: 8)
 
-                            if isSelected {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 12.5, weight: .heavy))
-                                    .foregroundColor(accentGlow)
-                            }
-                        }
+                    // Badge phiên bản
+                    Text(badgeText)
+                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(isSelected ? accentGlow.opacity(0.25) : Color.white.opacity(0.08))
+                        .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.60))
+                        .cornerRadius(6)
 
-                        HStack(spacing: 4) {
-                            Text(subtitle)
-                                .font(.system(size: 10.5, weight: .medium, design: .rounded))
-                                .foregroundColor(isSelected ? Color.white.opacity(0.85) : Color.white.opacity(0.45))
-                                .lineLimit(1)
-
-                            Spacer(minLength: 0)
-
-                            Text(badgeText)
-                                .font(.system(size: 9, weight: .heavy, design: .rounded))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 1.5)
-                                .background(isSelected ? accentGlow.opacity(0.25) : Color.white.opacity(0.08))
-                                .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.55))
-                                .cornerRadius(5)
-                        }
+                    // Icon chọn
+                    if isSelected {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 18, weight: .heavy))
+                            .foregroundColor(accentGlow)
+                            .shadow(color: accentGlow.opacity(0.8), radius: 6)
+                    } else {
+                        Circle()
+                            .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
+                            .frame(width: 18, height: 18)
                     }
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 66)
+            .frame(height: 54)
         }
         .buttonStyle(AuroraScaleButtonStyle())
     }
@@ -2350,10 +2333,6 @@ struct RainbowText: View {
                                     .cornerRadius(4)
                             }
 
-                            Text("Mod Skin Alok Thức Tỉnh VIP (Avatar 66)")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(colorMute)
-
                             HStack(spacing: 6) {
                                 Text(modSkinService.isAlockEnabled ? "ĐÃ KÍCH HOẠT" : "CHƯA BẬT")
                                     .font(.system(size: 10, weight: .heavy))
@@ -2362,10 +2341,6 @@ struct RainbowText: View {
                                     .padding(.vertical, 2)
                                     .background((modSkinService.isAlockEnabled ? Color.green : Color.orange).opacity(0.12))
                                     .cornerRadius(4)
-
-                                Text("Documents/.../optionalavatarres")
-                                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                                    .foregroundColor(colorMute.opacity(0.7))
                             }
                         }
 
