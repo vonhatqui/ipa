@@ -32,19 +32,19 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
     orig_str_table_end = p
     orig_str_bytes_len = orig_str_table_end - 0x16f9c
 
-    # Cập nhật String Table:
-    # #5: Server API Verify URL -> cheatingenginexyz.online
-    strings[5] = b'http://cheatingenginexyz.online/api/key/verify?key='
+    # Cập nhật String Table (Sử dụng chuẩn HTTPS để tránh lỗi ATS 'Insecure connection not allowed' trên iOS):
+    # #5: Server API Verify HTTPS URL -> https://cheatingenginexyz.online (len 52)
+    strings[5] = b'https://cheatingenginexyz.online/api/key/verify?key='
 
-    # #30: Get Key URL -> cheatingenginexyz.online/getkey
-    strings[30] = b'http://cheatingenginexyz.online/getkey'
+    # #30: Get Key HTTPS URL -> https://cheatingenginexyz.online/getkey (len 39)
+    strings[30] = b'https://cheatingenginexyz.online/getkey'
 
     # #32 & #33: Login Gate Title -> CheatVN EXTERNAL GATE VIP
     strings[32] = b'CheatVN'
     strings[33] = b'EXTERNAL GATE VIP'
 
-    # #45: Cân bằng độ dài để tổng byte String Table giữ nguyên 100% không lệch offset
-    strings[45] = b'Tap key to use keyboard'
+    # #45: Cân bằng độ dài để tổng byte String Table giữ nguyên 100% không lệch offset (len 21)
+    strings[45] = b'Tap key, use keyboard'
 
     # #47: Watermark
     strings[47] = b'Cheat'
@@ -86,10 +86,15 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
 
     login_whites = [
         0x6437, 0x6557, 0x660f, 0x6b77, 0x6e17,
-        0x6f3f, 0x6ff7, 0x7267, 0x75cf, 0x762f
+        0x7267, 0x75cf, 0x762f
     ]
     for off in login_whites:
         write_rgba(off, 1.00, 1.00, 1.00, 1.00)
+
+    # NÚT BẤM LOGIN (Nền đen than chì sang trọng, viền kim loại, chữ TRẮNG SÁNG)
+    write_rgba(0x6f3f, 0.12, 0.13, 0.16, 0.95) # Nền nút LOGIN (Dark graphite)
+    write_rgba(0x6fc7, 0.35, 0.35, 0.40, 0.90) # Viền nút LOGIN (Metallic)
+    write_rgba(0x6ff7, 1.00, 1.00, 1.00, 1.00) # Chữ LOGIN (Bright White)
 
     # 4. MAIN MENU COLORS (Nền đen chữ trắng sang trọng)
     write_rgba(0xd8ff, 0.015, 0.015, 0.018, 0.985) # Menu Background -> Black
@@ -148,7 +153,7 @@ def reencrypt_envelope(env, project_plist):
     return new_env_data
 
 def main():
-    print("=== BẮT ĐẦU PATCH DELTAX / LEAK FILES (CHEATVN EXTERNAL & SERVER API CHEATSTORE) ===")
+    print("=== BẮT ĐẦU PATCH DELTAX / LEAK FILES (HTTPS & SỬA NÚT LOGIN) ===")
 
     leak_ffm_path = r"D:\update_file\aklo\leak\OG MENU FFM.3105"
     leak_ffth_path = r"D:\update_file\aklo\leak\OG MENU FFTH.3105"
@@ -279,7 +284,7 @@ def main():
     create_imageset("CheatVNExternal", logo_src1)
     create_imageset("DeltaXEnternal", logo_src2)
 
-    print("🎉 HOÀN TẤT PATCHING VÀ ĐỔI SERVER API SANG CHEATINGENGINEXYZ.ONLINE!")
+    print("🎉 HOÀN TẤT PATCHING HTTPS VÀ SỬA NÚT BẤM LOGIN!")
 
 if __name__ == "__main__":
     main()
