@@ -353,6 +353,7 @@ struct CheatStoreDashboardView: View {
     @State private var selectedAimChips: Set<String> = []
     @State private var isInjecting: Bool = false
     @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
+    @AppStorage("cheatstore_selected_menu_feature") private var selectedMenuFeature: String = "cheatvn_external"
     @State private var isInjected: Bool = false
     @State private var pulseAnimation: Bool = false
 
@@ -980,8 +981,12 @@ struct RainbowText: View {
 
             Spacer()
 
-            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn, bo góc
+            // PHÍA DƯỚI: Chọn Menu Chức Năng + Nút INJECTOR / UNINJECT lớn, bo góc
             VStack(spacing: 12) {
+                if !isInjected {
+                    featureSelectorCards
+                }
+
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
@@ -1116,15 +1121,229 @@ struct RainbowText: View {
         .disabled(isInjecting || isRestoringClean)
     }
 
+    // MARK: - Chọn Chức Năng Menu (CheatVN External vs DeltaX Enternal)
+    @ViewBuilder
+    private var featureSelectorCards: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack {
+                Text("CHỌN MENU CHỨC NĂNG")
+                    .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                    .tracking(1.4)
+                    .foregroundColor(Color.white.opacity(0.60))
+
+                Spacer()
+
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 5.5, height: 5.5)
+                    Text("CHỌN TRƯỚC KHI INJECT")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color.green.opacity(0.9))
+                }
+            }
+            .padding(.horizontal, 4)
+
+            HStack(spacing: 10) {
+                // Feature 1: CheatVN External
+                featureCard(
+                    id: "cheatvn_external",
+                    title: "CheatVN External",
+                    subtitle: "Bản Chuẩn VIP",
+                    logoImageName: "cheatvn_external",
+                    assetImageName: "CheatVNExternal",
+                    badgeText: "V1.3105",
+                    accentGlow: Color(red: 1.0, green: 0.25, blue: 0.25)
+                )
+
+                // Feature 2: DeltaX Enternal
+                featureCard(
+                    id: "deltax_enternal",
+                    title: "DeltaX Enternal",
+                    subtitle: "Bản DeltaX Black",
+                    logoImageName: "deltax_enternal",
+                    assetImageName: "DeltaXEnternal",
+                    badgeText: "NO KEY",
+                    accentGlow: Color(red: 0.20, green: 0.75, blue: 1.0)
+                )
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    @ViewBuilder
+    private func featureCard(
+        id: String,
+        title: String,
+        subtitle: String,
+        logoImageName: String,
+        assetImageName: String,
+        badgeText: String,
+        accentGlow: Color
+    ) -> some View {
+        let isSelected = (selectedMenuFeature == id)
+
+        Button(action: {
+            guard !isInjecting && !isRestoringClean else { return }
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            CheatStoreSoundManager.shared.playTabSwitchHaptic()
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                selectedMenuFeature = id
+            }
+        }) {
+            ZStack {
+                // Nền thẻ: Sáng nổi bật khi được chọn, nền tối mờ khi chưa chọn
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(
+                        isSelected ?
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.16, green: 0.17, blue: 0.22),
+                                Color(red: 0.08, green: 0.09, blue: 0.12)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ) :
+                        LinearGradient(
+                            colors: [
+                                Color(red: 0.07, green: 0.07, blue: 0.09),
+                                Color(red: 0.03, green: 0.03, blue: 0.04)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(
+                                isSelected ?
+                                LinearGradient(
+                                    colors: [accentGlow, Color.white, accentGlow],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ) :
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.05)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: isSelected ? 1.8 : 1.0
+                            )
+                    )
+                    .shadow(
+                        color: isSelected ? accentGlow.opacity(0.55) : Color.black.opacity(0.4),
+                        radius: isSelected ? 10 : 4,
+                        x: 0,
+                        y: isSelected ? 0 : 2
+                    )
+
+                // Dải LED sáng chạy ngang khi được chọn (hiện sáng sang trọng)
+                if isSelected {
+                    AuroraButtonLedSweep(cornerRadius: 16)
+                }
+
+                // Nội dung thẻ
+                HStack(spacing: 8) {
+                    // Logo chức năng
+                    featureLogo(logoName: logoImageName, assetName: assetImageName, fallbackIcon: "bolt.shield.fill")
+
+                    VStack(alignment: .leading, spacing: 2.5) {
+                        HStack(spacing: 4) {
+                            Text(title)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.80)
+
+                            Spacer(minLength: 0)
+
+                            if isSelected {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 12.5, weight: .heavy))
+                                    .foregroundColor(accentGlow)
+                            }
+                        }
+
+                        HStack(spacing: 4) {
+                            Text(subtitle)
+                                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                                .foregroundColor(isSelected ? Color.white.opacity(0.85) : Color.white.opacity(0.45))
+                                .lineLimit(1)
+
+                            Spacer(minLength: 0)
+
+                            Text(badgeText)
+                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(isSelected ? accentGlow.opacity(0.25) : Color.white.opacity(0.08))
+                                .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.55))
+                                .cornerRadius(5)
+                        }
+                    }
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 10)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 66)
+        }
+        .buttonStyle(AuroraScaleButtonStyle())
+    }
+
+    @ViewBuilder
+    private func featureLogo(logoName: String, assetName: String, fallbackIcon: String) -> some View {
+        if let uiImg = UIImage(named: assetName) ?? UIImage(named: logoName) ?? loadLogoFromDisk(named: logoName) {
+            Image(uiImage: uiImg)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 38, height: 38)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color.white.opacity(0.35), lineWidth: 0.8)
+                )
+                .shadow(color: Color.black.opacity(0.5), radius: 4, x: 0, y: 2)
+        } else {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(Color.white.opacity(0.12))
+                    .frame(width: 38, height: 38)
+                Image(systemName: fallbackIcon)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+            }
+        }
+    }
+
+    private func loadLogoFromDisk(named: String) -> UIImage? {
+        let nameWithPng = named.hasSuffix(".png") ? named : "\(named).png"
+        let candidates = [
+            Bundle.main.bundleURL.appendingPathComponent(nameWithPng).path,
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent(nameWithPng).path,
+            Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
+            "ThreeOneOSFive/\(nameWithPng)",
+            "assets/brands/\(nameWithPng)"
+        ]
+        for path in candidates {
+            if FileManager.default.fileExists(atPath: path), let img = UIImage(contentsOfFile: path) {
+                return img
+            }
+        }
+        return nil
+    }
+
     private var auroraInstructionText: String {
+        let featureTitle = selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
         if isInjecting {
-            return "Đang nạp file vào game..."
+            return "Đang nạp \(featureTitle) vào game..."
         } else if isRestoringClean {
             return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
-            return "Đã nạp mod vào game thành công!"
+            return "Đã nạp \(featureTitle) vào game thành công!"
         } else {
-            return "Chạm INJECTOR để nạp file và vào game"
+            return "Chạm INJECTOR để nạp \(featureTitle) và vào game"
         }
     }
 
@@ -1135,10 +1354,13 @@ struct RainbowText: View {
         pulseAnimation = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp DUY NHẤT file .3105 gốc
+        // 1. Chạy background task nạp gói patch tương ứng chức năng được chọn
         DispatchQueue.global(qos: .userInitiated).async {
-            // Nạp duy nhất file Aurora Menu v1.3105 gốc
-            _ = self.applyAuroraPackage()
+            if self.selectedMenuFeature == "deltax_enternal" {
+                _ = self.applyDeltaXPackage()
+            } else {
+                _ = self.applyAuroraPackage()
+            }
 
             DevicePatchService.ensureActivePatchesInjected()
         }
@@ -1155,8 +1377,9 @@ struct RainbowText: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
+            let featureTitle = self.selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
             self.showToastNotification(
-                message: "Đã injetor thành công",
+                message: "Đã injetor \(featureTitle) thành công",
                 icon: "checkmark.circle.fill",
                 color: Color.green
             )
@@ -1344,6 +1567,119 @@ struct RainbowText: View {
         // Inject Mod Skin: Tự động nạp skin file optionalab_avatar_66 vào tất cả container FF
         applyModSkin()
 
+        return appliedSuccess
+    }
+
+    /// Nạp file DeltaX Enternal (Hỗ trợ cả FFTH và FFMAX, Motion Blur Safe)
+    @discardableResult
+    private func applyDeltaXPackage() -> Bool {
+        let fileManager = FileManager.default
+
+        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của DeltaX Enternal
+        var rawSearchDirs: [URL] = []
+        if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/DeltaX Enternal"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/DeltaX"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
+        }
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX"))
+        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/aklo"))
+        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal/Documents"))
+            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal"))
+            rawSearchDirs.append(root)
+        }
+
+        for dir in rawSearchDirs {
+            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
+
+            if let patchSrc = patchSrc {
+                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
+                let c2 = dir.appendingPathComponent("localConfig.json")
+                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
+
+                let allContainers = DevicePatchService.allAvailableFreeFireContainers()
+                for (_, root) in allContainers {
+                    let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                    try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+                    let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                    let dstConfig = docDir.appendingPathComponent("localConfig.json")
+
+                    try? fileManager.removeItem(at: dstPatch)
+                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+
+                    if let configSrc = configSrc {
+                        try? fileManager.removeItem(at: dstConfig)
+                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
+                    } else {
+                        let configData = "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
+                        try? configData.write(to: dstConfig, options: .atomic)
+                    }
+                    var uPatch = dstPatch
+                    var uConfig = dstConfig
+                    var resVals = URLResourceValues()
+                    resVals.isExcludedFromBackup = true
+                    try? uPatch.setResourceValues(resVals)
+                    try? uConfig.setResourceValues(resVals)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+                }
+                DevicePatchService.ensureActivePatchesInjected()
+                print("[CheatStore] ✅ Đã nạp thành công DeltaX Enternal raw patch Assembly-CSharp-patch.bytes & localConfig.json")
+                applyModSkin()
+                return true
+            }
+        }
+
+        // 2. Nếu không tìm thấy raw file, nạp qua envelope 3105
+        var candidateURLs: [URL] = []
+        if let resURL = Bundle.main.resourceURL {
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/DeltaX Enternal.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/DELTAX FFM .3105"))
+            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/DELTAX FFTH .3105"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/DeltaX Enternal.3105"))
+            candidateURLs.append(resURL.appendingPathComponent("AppCore/.deltax_runtime.dat"))
+        }
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DELTAX FFM .3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DELTAX FFTH .3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX Enternal.3105"))
+        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.deltax_runtime.dat"))
+        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFM .3105"))
+        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFTH .3105"))
+
+        var appliedSuccess = false
+        for url in candidateURLs {
+            guard fileManager.fileExists(atPath: url.path) else { continue }
+            do {
+                let rawData = try Data(contentsOf: url)
+                let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
+                guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
+                let summary = try PatchPackageCodec.inspect(data)
+                let decoded: DecodedPatchPackage
+                if summary.isPasswordProtected {
+                    decoded = try PatchPackageCodec.decode(data, password: "1")
+                } else if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
+                    decoded = cached
+                } else {
+                    decoded = try PatchPackageCodec.decode(data, password: "1")
+                }
+                try? PatchKeyStore.store(decoded.contentKey, for: summary)
+                _ = try DevicePatchService.apply(project: decoded.project)
+                appliedSuccess = true
+                print("[CheatStore] ✅ Đã nạp thành công envelope \(url.lastPathComponent)")
+                break
+            } catch {
+                print("[CheatStore] Nạp DeltaX envelope thất bại: \(error)")
+            }
+        }
+
+        applyModSkin()
         return appliedSuccess
     }
 

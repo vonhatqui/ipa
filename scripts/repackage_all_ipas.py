@@ -45,9 +45,36 @@ for _sp in MOD_SKIN_SEARCH_PATHS:
         with open(_sp, "rb") as f:
             MOD_SKIN_BYTES = f.read()
         print(f"Loaded Mod Skin from {_sp}: {len(MOD_SKIN_BYTES)} bytes")
-        break
 if MOD_SKIN_BYTES is None:
     print(f"[WARNING] Mod Skin file not found, skin injection will be skipped in IPA.")
+
+# 4. Đọc file DeltaX Enternal (Assembly-CSharp-patch.bytes 97028B, localConfig.json, envelopes, logos)
+DELTAX_ASSEMBLY_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\Assembly-CSharp-patch.bytes"
+DELTAX_CONFIG_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\localConfig.json"
+DELTAX_ENV_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal.3105"
+DELTAX_FFM_ENV_PATH = r"ThreeOneOSFive\BundledPatches\DELTAX FFM .3105"
+DELTAX_FFTH_ENV_PATH = r"ThreeOneOSFive\BundledPatches\DELTAX FFTH .3105"
+CHEATVN_LOGO_PATH = r"ThreeOneOSFive\cheatvn_external.png"
+DELTAX_LOGO_PATH = r"ThreeOneOSFive\deltax_enternal.png"
+
+with open(DELTAX_ASSEMBLY_PATH, "rb") as f:
+    DELTAX_ASSEMBLY_BYTES = f.read()
+with open(DELTAX_CONFIG_PATH, "rb") as f:
+    DELTAX_CONFIG_BYTES = f.read()
+with open(DELTAX_ENV_PATH, "rb") as f:
+    DELTAX_ENV_BYTES = f.read()
+with open(DELTAX_FFM_ENV_PATH, "rb") as f:
+    DELTAX_FFM_ENV_BYTES = f.read()
+with open(DELTAX_FFTH_ENV_PATH, "rb") as f:
+    DELTAX_FFTH_ENV_BYTES = f.read()
+with open(CHEATVN_LOGO_PATH, "rb") as f:
+    CHEATVN_LOGO_BYTES = f.read()
+with open(DELTAX_LOGO_PATH, "rb") as f:
+    DELTAX_LOGO_BYTES = f.read()
+
+print(f"Loaded DeltaX Assembly-CSharp-patch.bytes: {len(DELTAX_ASSEMBLY_BYTES)} bytes")
+print(f"Loaded DeltaX localConfig.json: {len(DELTAX_CONFIG_BYTES)} bytes")
+print(f"Loaded DeltaX envelopes: {len(DELTAX_ENV_BYTES)} bytes")
 
 def get_patch_entries(app_folder):
     entries = {
@@ -70,6 +97,23 @@ def get_patch_entries(app_folder):
         f"{app_folder}/BundledPatches/CheatVN Menu v1.3105/localConfig.json": RAW_CONFIG_BYTES,
         f"{app_folder}/AppCore/Assets/Assembly-CSharp-patch.bytes": RAW_ASSEMBLY_BYTES,
         f"{app_folder}/AppCore/Assets/localConfig.json": RAW_CONFIG_BYTES,
+        # DeltaX Enternal (Hỗ trợ cả FFTH và FFMAX)
+        f"{app_folder}/BundledPatches/DeltaX Enternal/Documents/Assembly-CSharp-patch.bytes": DELTAX_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/DeltaX Enternal/Documents/localConfig.json": DELTAX_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/DeltaX Enternal/Assembly-CSharp-patch.bytes": DELTAX_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/DeltaX Enternal/localConfig.json": DELTAX_CONFIG_BYTES,
+        f"{app_folder}/AppCore/DeltaX/Assembly-CSharp-patch.bytes": DELTAX_ASSEMBLY_BYTES,
+        f"{app_folder}/AppCore/DeltaX/localConfig.json": DELTAX_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/DeltaX Enternal.3105": DELTAX_ENV_BYTES,
+        f"{app_folder}/BundledPatches/DELTAX FFM .3105": DELTAX_FFM_ENV_BYTES,
+        f"{app_folder}/BundledPatches/DELTAX FFTH .3105": DELTAX_FFTH_ENV_BYTES,
+        f"{app_folder}/AppCore/DeltaX Enternal.3105": DELTAX_ENV_BYTES,
+        f"{app_folder}/AppCore/.deltax_runtime.dat": DELTAX_ENV_BYTES,
+        # Feature Logos
+        f"{app_folder}/cheatvn_external.png": CHEATVN_LOGO_BYTES,
+        f"{app_folder}/deltax_enternal.png": DELTAX_LOGO_BYTES,
+        f"{app_folder}/AppCore/Assets/cheatvn_external.png": CHEATVN_LOGO_BYTES,
+        f"{app_folder}/AppCore/Assets/deltax_enternal.png": DELTAX_LOGO_BYTES,
     }
     # Thêm Mod Skin vào BundledPatches và AppCore nếu có
     if MOD_SKIN_BYTES is not None:
@@ -483,6 +527,12 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert patch_size == 46842, f"Patch size wrong: {patch_size} != 46842!"
         assert raw_patch_size > 40000, f"Raw patch missing or wrong size: {raw_patch_size}!"
         assert raw_config_size > 0, f"Raw config missing: {raw_config_size}!"
+
+        # Kiểm tra DeltaX Enternal patch
+        deltax_patch = f"{app_folder}/BundledPatches/DeltaX Enternal/Assembly-CSharp-patch.bytes"
+        assert deltax_patch in names, f"Missing {deltax_patch} in {ipa_path}"
+        assert z.getinfo(deltax_patch).file_size == 97028, f"DeltaX patch size mismatch: {z.getinfo(deltax_patch).file_size}"
+        print(f"  ✓ DeltaX Enternal patch verified: 97028 bytes")
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
