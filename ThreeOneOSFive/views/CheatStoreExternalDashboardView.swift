@@ -614,7 +614,8 @@ struct CheatStoreExternalDashboardView: View {
 
                 infoRow(label: "Thương hiệu", value: "CheatVN External")
                 infoRow(label: "Chủ sở hữu", value: "Võ Nhật Qui (CheatVN)")
-                infoRow(label: "Key kích hoạt", value: licenseManager.storedKey.isEmpty ? "VĨNH VIỄN" : licenseManager.storedKey)
+                infoRow(label: "Key kích hoạt", value: licenseManager.activeKey.isEmpty ? "VĨNH VIỄN" : licenseManager.activeKey)
+                infoRow(label: "Thời hạn", value: licenseManager.formattedRemainingTime)
                 infoRow(label: "Trạng thái Key", value: "Hoạt Động 100% (Hợp Lệ)")
 
                 // Nút Liên Hệ Zalo & Telegram
@@ -680,7 +681,7 @@ struct CheatStoreExternalDashboardView: View {
                 // Nút Đăng Xuất Key
                 Button(action: {
                     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    licenseManager.logout()
+                    licenseManager.deactivate()
                 }) {
                     HStack {
                         Image(systemName: "rectangle.portrait.and.arrow.right")
