@@ -132,6 +132,23 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
     if pos_str21 != -1:
         data[pos_str21:pos_str21+24] = b'Verification successful!'
 
+    # 6. BYPASS LOGIN GATE -> CHUYỂN THẲNG QUA MENU CHÍNH (MAIN MENU)
+    # a. Method 5 instruction 660 (at 0x5047):
+    # Nhảy vô điều kiện (code=144, op=1277) tới instruction 1938 -> mở Menu chính (Main Menu)
+    data[0x5047:0x5047+8] = struct.pack('<ii', 144, 1277)
+
+    # b. Method 8 instruction 127 (at 0x123d7):
+    # Không nhảy qua instruction 128 (success flag = 1) khi xác thực server API trả về
+    data[0x123d7:0x123d7+8] = struct.pack('<ii', 144, 0)
+
+    # c. Method 8 instruction 85 (at 0x12287):
+    # Không nhảy qua lệnh lưu trạng thái xác thực PlayerPrefs ("Delta-adr-auth" & "auth-menu" = 1)
+    data[0x12287:0x12287+8] = struct.pack('<ii', 144, 0)
+
+    # d. Method 0 instruction 357 (at 0x2a4f):
+    # Nhảy thẳng tới instruction 386 (target 386 -> sets field 14 = 1, isLoggedIn = true)
+    data[0x2a4f:0x2a4f+8] = struct.pack('<ii', 144, 28)
+
     assert len(data) == 97028
 
     return bytes(data)
