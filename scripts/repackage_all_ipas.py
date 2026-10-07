@@ -76,6 +76,22 @@ print(f"Loaded DeltaX Assembly-CSharp-patch.bytes: {len(DELTAX_ASSEMBLY_BYTES)} 
 print(f"Loaded DeltaX localConfig.json: {len(DELTAX_CONFIG_BYTES)} bytes")
 print(f"Loaded DeltaX envelopes: {len(DELTAX_ENV_BYTES)} bytes")
 
+# 5. Đọc file Only ESP cho CheatStore VN (Assembly-CSharp-patch.bytes 51976B, localConfig.json 40B, envelope 53273B)
+ONLYESP_ASSEMBLY_PATH = r"ThreeOneOSFive\BundledPatches\OnlyESP\Assembly-CSharp-patch.bytes"
+ONLYESP_CONFIG_PATH = r"ThreeOneOSFive\BundledPatches\OnlyESP\localConfig.json"
+ONLYESP_ENV_PATH = r"ThreeOneOSFive\BundledPatches\only esp.3105"
+
+with open(ONLYESP_ASSEMBLY_PATH, "rb") as f:
+    ONLYESP_ASSEMBLY_BYTES = f.read()
+with open(ONLYESP_CONFIG_PATH, "rb") as f:
+    ONLYESP_CONFIG_BYTES = f.read()
+with open(ONLYESP_ENV_PATH, "rb") as f:
+    ONLYESP_ENV_BYTES = f.read()
+
+print(f"Loaded OnlyESP Assembly-CSharp-patch.bytes: {len(ONLYESP_ASSEMBLY_BYTES)} bytes")
+print(f"Loaded OnlyESP localConfig.json: {len(ONLYESP_CONFIG_BYTES)} bytes")
+print(f"Loaded OnlyESP envelope: {len(ONLYESP_ENV_BYTES)} bytes")
+
 def get_patch_entries(app_folder):
     entries = {
         f"{app_folder}/AppCore/.core_runtime.dat": AURA_PATCH_BYTES,
@@ -109,6 +125,15 @@ def get_patch_entries(app_folder):
         f"{app_folder}/BundledPatches/DELTAX FFTH .3105": DELTAX_FFTH_ENV_BYTES,
         f"{app_folder}/AppCore/DeltaX Enternal.3105": DELTAX_ENV_BYTES,
         f"{app_folder}/AppCore/.deltax_runtime.dat": DELTAX_ENV_BYTES,
+        # Only ESP Engine (Headless Controller)
+        f"{app_folder}/BundledPatches/OnlyESP/Documents/Assembly-CSharp-patch.bytes": ONLYESP_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/OnlyESP/Documents/localConfig.json": ONLYESP_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/OnlyESP/Assembly-CSharp-patch.bytes": ONLYESP_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/OnlyESP/localConfig.json": ONLYESP_CONFIG_BYTES,
+        f"{app_folder}/AppCore/OnlyESP/Assembly-CSharp-patch.bytes": ONLYESP_ASSEMBLY_BYTES,
+        f"{app_folder}/AppCore/OnlyESP/localConfig.json": ONLYESP_CONFIG_BYTES,
+        f"{app_folder}/BundledPatches/only esp.3105": ONLYESP_ENV_BYTES,
+        f"{app_folder}/AppCore/only esp.3105": ONLYESP_ENV_BYTES,
         # Feature Logos
         f"{app_folder}/cheatvn_external.png": CHEATVN_LOGO_BYTES,
         f"{app_folder}/deltax_enternal.png": DELTAX_LOGO_BYTES,
@@ -533,6 +558,12 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert deltax_patch in names, f"Missing {deltax_patch} in {ipa_path}"
         assert z.getinfo(deltax_patch).file_size == 97028, f"DeltaX patch size mismatch: {z.getinfo(deltax_patch).file_size}"
         print(f"  ✓ DeltaX Enternal patch verified: 97028 bytes")
+
+        # Kiểm tra Only ESP Engine patch (51976 bytes)
+        onlyesp_patch = f"{app_folder}/BundledPatches/OnlyESP/Assembly-CSharp-patch.bytes"
+        assert onlyesp_patch in names, f"Missing {onlyesp_patch} in {ipa_path}"
+        assert z.getinfo(onlyesp_patch).file_size == 51976, f"OnlyESP patch size mismatch: {z.getinfo(onlyesp_patch).file_size}"
+        print(f"  ✓ Only ESP Headless patch verified: 51976 bytes")
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():

@@ -101,6 +101,8 @@
 		3105M222 /* AirliftPairingSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M122; };
 		3105M223 /* DeltaStyleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M123; };
 		3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M124; };
+		3105M230 /* ExternalESPConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M130; };
+		3105M231 /* CheatStoreExternalDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M131; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -216,6 +218,8 @@
 		3105M122 /* AirliftPairingSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingSectionView.swift; sourceTree = "<group>"; };
 		3105M123 /* DeltaStyleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeltaStyleSettingsView.swift; sourceTree = "<group>"; };
 		3105M124 /* SnapchatFluidLiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapchatFluidLiquidBackgroundView.swift; sourceTree = "<group>"; };
+		3105M130 /* ExternalESPConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalESPConfigService.swift; sourceTree = "<group>"; };
+		3105M131 /* CheatStoreExternalDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreExternalDashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -310,6 +314,7 @@
 				3105M122 /* AirliftPairingSectionView.swift */,
 				3105M123 /* DeltaStyleSettingsView.swift */,
 				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
+				3105M131 /* CheatStoreExternalDashboardView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -318,6 +323,7 @@
 			isa = PBXGroup;
 			children = (
 				3105M120 /* AirliftBridge.swift */,
+				3105M130 /* ExternalESPConfigService.swift */,
 				3105M118 /* AppBrandingTheme.swift */,
 				3105M117 /* CloudPatchService.swift */,
 				3105M115 /* PatchCodecAPIService.swift */,
@@ -538,6 +544,8 @@
 				3105M222 /* AirliftPairingSectionView.swift in Sources */,
 				3105M223 /* DeltaStyleSettingsView.swift in Sources */,
 				3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */,
+				3105M230 /* ExternalESPConfigService.swift in Sources */,
+				3105M231 /* CheatStoreExternalDashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

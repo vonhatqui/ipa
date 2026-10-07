@@ -43,3 +43,4 @@ DerivedData/
 *~
 __pycache__/
 *.pyc
+scratch/

@@ -421,6 +421,16 @@ struct CheatStoreDashboardView: View {
     private var glassBorder: Color { theme.glassBorder }
 
     var body: some View {
+        Group {
+            if AppBrandingTheme.current == .cheatStore {
+                CheatStoreExternalDashboardView(onBackToGames: onBackToGames)
+            } else {
+                legacyMultiBrandDashboardView
+            }
+        }
+    }
+
+    private var legacyMultiBrandDashboardView: some View {
         ZStack {
             // Nền đen sâu True Black Void
             colorVoid.ignoresSafeArea()
