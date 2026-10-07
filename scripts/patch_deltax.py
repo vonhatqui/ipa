@@ -132,22 +132,11 @@ def patch_deltax_bytecode(raw: bytes) -> bytes:
     if pos_str21 != -1:
         data[pos_str21:pos_str21+24] = b'Verification successful!'
 
-    # 6. BYPASS LOGIN GATE -> CHUYỂN THẲNG QUA MENU CHÍNH (MAIN MENU)
-    # a. Method 5 instruction 660 (at 0x5047):
-    # Nhảy vô điều kiện (code=144, op=1277) tới instruction 1938 -> mở Menu chính (Main Menu)
-    data[0x5047:0x5047+8] = struct.pack('<ii', 144, 1277)
-
-    # b. Method 8 instruction 127 (at 0x123d7):
-    # Không nhảy qua instruction 128 (success flag = 1) khi xác thực server API trả về
-    data[0x123d7:0x123d7+8] = struct.pack('<ii', 144, 0)
-
-    # c. Method 8 instruction 85 (at 0x12287):
-    # Không nhảy qua lệnh lưu trạng thái xác thực PlayerPrefs ("Delta-adr-auth" & "auth-menu" = 1)
-    data[0x12287:0x12287+8] = struct.pack('<ii', 144, 0)
-
-    # d. Method 0 instruction 357 (at 0x2a4f):
-    # Nhảy thẳng tới instruction 386 (target 386 -> sets field 14 = 1, isLoggedIn = true)
-    data[0x2a4f:0x2a4f+8] = struct.pack('<ii', 144, 28)
+    # Đảm bảo 4 lệnh gốc ổn định tuyệt đối (không bị lỗi Stack Underflow trong IFix VM)
+    data[0x5047:0x5047+8] = struct.pack('<ii', 114, 1277)
+    data[0x123d7:0x123d7+8] = struct.pack('<ii', 62, 4)
+    data[0x12287:0x12287+8] = struct.pack('<ii', 114, 8)
+    data[0x2a4f:0x2a4f+8] = struct.pack('<ii', 62, 40)
 
     assert len(data) == 97028
 
@@ -237,16 +226,12 @@ def main():
             f.write(reencrypted_ffm)
         print("✅ Đã ghi đè file tại D:\\update_file\\aklo\\")
 
-    # Trích xuất raw Assembly-CSharp-patch.bytes & localConfig.json vào Documents
+    # Trích xuất raw Assembly-CSharp-patch.bytes & localConfig.json vào Documents của DeltaX
     raw_dirs = [
         r"D:\update_file\aklo\DeltaX Enternal\Documents",
         r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\Documents",
         r"ThreeOneOSFive\BundledPatches\DeltaX Enternal",
         r"ThreeOneOSFive\AppCore\DeltaX",
-        r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105\Documents",
-        r"ThreeOneOSFive\BundledPatches\Aurora Menu v1.3105",
-        r"ThreeOneOSFive\AppCore",
-        r"ThreeOneOSFive\AppCore\Assets",
     ]
     for d in raw_dirs:
         os.makedirs(d, exist_ok=True)
