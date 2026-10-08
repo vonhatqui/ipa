@@ -421,13 +421,7 @@ struct CheatStoreDashboardView: View {
     private var glassBorder: Color { theme.glassBorder }
 
     var body: some View {
-        Group {
-            if AppBrandingTheme.current == .cheatStore {
-                CheatStoreExternalDashboardView(onBackToGames: onBackToGames)
-            } else {
-                legacyMultiBrandDashboardView
-            }
-        }
+        legacyMultiBrandDashboardView
     }
 
     private var legacyMultiBrandDashboardView: some View {
@@ -983,12 +977,8 @@ struct RainbowText: View {
 
             Spacer()
 
-            // PHÍA DƯỚI: Chọn Menu Chức Năng + Nút INJECTOR / UNINJECT lớn, bo góc
+            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn + Nút Xoá file ở Documents
             VStack(spacing: 12) {
-                if !isInjected {
-                    featureSelectorCards
-                }
-
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
@@ -1007,6 +997,9 @@ struct RainbowText: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
+
+                // NÚT CHỨC NĂNG: Xoá File ở Documents
+                deleteDocumentsButton
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -1327,8 +1320,121 @@ struct RainbowText: View {
         return nil
     }
 
+    // MARK: - Chức năng Xoá File ở Documents (Chuẩn Theo Yêu Cầu)
+    @ViewBuilder
+    private var deleteDocumentsButton: some View {
+        Button(action: {
+            deleteDocumentsFiles()
+        }) {
+            HStack(spacing: 7) {
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(Color(red: 1.0, green: 0.42, blue: 0.42))
+
+                Text("Xoá file ở Documents")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(Color(red: 1.0, green: 0.42, blue: 0.42))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color(red: 1.0, green: 0.2, blue: 0.2).opacity(0.12))
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color(red: 1.0, green: 0.35, blue: 0.35).opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(AuroraScaleButtonStyle())
+        .disabled(isInjecting || isRestoringClean)
+    }
+
+    /// Xoá toàn bộ file can thiệp, file mod / patch trong thư mục Documents của game Free Fire & FF MAX
+    private func deleteDocumentsFiles() {
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+        let fileManager = FileManager.default
+        let allContainers = DevicePatchService.allAvailableFreeFireContainers()
+
+        guard !allContainers.isEmpty else {
+            showToastNotification(
+                message: "⚠️ Không tìm thấy thư mục Documents của Free Fire",
+                icon: "exclamationmark.triangle.fill",
+                color: Color.orange
+            )
+            return
+        }
+
+        var deletedCount = 0
+        let targetFileNames = [
+            "Assembly-CSharp-patch.bytes",
+            "localConfig.json",
+            "patch_cache",
+            "mod_signature.bin",
+            ".0xfixa.ledger"
+        ]
+
+        for (_, rootURL) in allContainers {
+            let docDir = rootURL.appendingPathComponent("Documents", isDirectory: true)
+
+            // 1. Xoá các file mod / config xác định
+            for targetName in targetFileNames {
+                let targetURL = docDir.appendingPathComponent(targetName)
+                if fileManager.fileExists(atPath: targetURL.path) {
+                    do {
+                        try fileManager.removeItem(at: targetURL)
+                        deletedCount += 1
+                        print("[DocumentsCleaner] 🗑️ Đã xoá: \(targetURL.path)")
+                    } catch {
+                        print("[DocumentsCleaner] ⚠️ Lỗi xoá \(targetName): \(error)")
+                    }
+                }
+            }
+
+            // 2. Dọn sạch các file bytes/json/dat patch tạm khác trong Documents
+            if let items = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
+                for item in items {
+                    let name = item.lastPathComponent
+                    if name.hasSuffix("-patch.bytes") || name.hasSuffix(".filza_backup") || name.hasPrefix(".0x") {
+                        try? fileManager.removeItem(at: item)
+                        deletedCount += 1
+                        print("[DocumentsCleaner] 🗑️ Đã xoá file mod phụ: \(name)")
+                    }
+                }
+            }
+        }
+
+        // 3. Khôi phục lại bản sao gốc nếu có
+        _ = DevicePatchService.cleanRestoreAllModifications()
+        _ = ModSkinService.shared.removeAlockSkin()
+
+        // 4. Dọn sạch thư mục Documents của chính app nếu có cache patch
+        if let appDocURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
+            if let items = try? fileManager.contentsOfDirectory(at: appDocURL, includingPropertiesForKeys: nil) {
+                for item in items {
+                    let name = item.lastPathComponent
+                    if name.hasSuffix("-patch.bytes") || (name.hasSuffix(".dat") && name.contains("patch")) {
+                        try? fileManager.removeItem(at: item)
+                        deletedCount += 1
+                    }
+                }
+            }
+        }
+
+        // 5. Cập nhật UI trạng thái Not Injected
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            self.isInjected = false
+            self.isInjecting = false
+        }
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        showToastNotification(
+            message: "🗑️ Đã xoá sạch file ở Documents thành công!",
+            icon: "checkmark.circle.fill",
+            color: Color.green
+        )
+    }
+
     private var auroraInstructionText: String {
-        let featureTitle = selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
+        let featureTitle = "Cheat External"
         if isInjecting {
             return "Đang nạp \(featureTitle) vào game..."
         } else if isRestoringClean {
@@ -1347,13 +1453,9 @@ struct RainbowText: View {
         pulseAnimation = true
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp gói patch tương ứng chức năng được chọn
+        // 1. Chạy background task nạp gói patch Aurora Menu v1.3105 (Cheat External)
         DispatchQueue.global(qos: .userInitiated).async {
-            if self.selectedMenuFeature == "deltax_enternal" {
-                _ = self.applyDeltaXPackage()
-            } else {
-                _ = self.applyAuroraPackage()
-            }
+            _ = self.applyAuroraPackage()
             DevicePatchService.ensureActivePatchesInjected()
         }
 
@@ -1369,7 +1471,7 @@ struct RainbowText: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
-            let featureTitle = self.selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
+            let featureTitle = "Cheat External"
             self.showToastNotification(
                 message: "Đã injetor \(featureTitle) thành công",
                 icon: "checkmark.circle.fill",
