@@ -720,7 +720,8 @@ struct CheatStoreDashboardView: View {
 
                 Text(auroraGameSubtitle)
                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.25, green: 0.75, blue: 1.0))
+                    .foregroundColor(Color.white.opacity(0.92))
+                    .shadow(color: Color.white.opacity(0.65), radius: 6, x: 0, y: 0)
             }
 
             Spacer()
@@ -813,7 +814,7 @@ struct RainbowText: View {
     private var glowColor: Color {
         switch AppBrandingTheme.current {
         case .cheatStore:
-            return Color(red: 0.0, green: 0.55, blue: 1.0) // Vầng hào quang Electric Blue
+            return Color.white // Vầng hào quang trắng phát sáng
         case .veLix:
             return AppBrandingTheme.current.accentColor
         case .venom:
@@ -907,78 +908,80 @@ struct RainbowText: View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Nút hỗ trợ Zalo / Telegram theo thương hiệu (Đã loại bỏ Discord và mô tả theo yêu cầu)
-            if theme.zaloURLString != nil || theme.telegramURLString != nil {
-                HStack(spacing: 16) {
-                    // Nút Zalo
-                    if let zaloURL = theme.zaloURLString, let url = URL(string: zaloURL) {
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            UIApplication.shared.open(url)
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(red: 0.05, green: 0.58, blue: 1.0), Color(red: 0.0, green: 0.38, blue: 0.85)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
+            // CHÍNH GIỮA: Discord: @jinwwostore.vn (Chữ trắng phát sáng) + Nút Zalo / Tele
+            VStack(spacing: 8) {
+                Text(theme.discordTag)
+                    .font(.system(size: 21, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: Color.white.opacity(0.9), radius: 14, x: 0, y: 0)
+                    .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
+
+                Text("Mô tả: Liên hệ khi cần hỗ trợ")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.65))
+
+                // Các nút hỗ trợ Zalo / Telegram
+                if theme.zaloURLString != nil || theme.telegramURLString != nil {
+                    HStack(spacing: 16) {
+                        // Nút Zalo
+                        if let zaloURL = theme.zaloURLString, let url = URL(string: zaloURL) {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                UIApplication.shared.open(url)
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.10))
+                                        .frame(width: 38, height: 38)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
                                         )
-                                    )
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
-                                    )
-                                    .shadow(color: Color.blue.opacity(0.55), radius: 6, x: 0, y: 2)
+                                        .shadow(color: Color.white.opacity(0.25), radius: 6, x: 0, y: 0)
 
-                                Text("Z")
-                                    .font(.system(size: 20, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.white)
+                                    Text("Z")
+                                        .font(.system(size: 19, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.white)
+                                }
                             }
+                            .buttonStyle(AuroraScaleButtonStyle())
                         }
-                        .buttonStyle(AuroraScaleButtonStyle())
-                    }
 
-                    // Nút Telegram (tự động ẩn nếu thương hiệu không có tele)
-                    if let teleURL = theme.telegramURLString, let url = URL(string: teleURL) {
-                        Button(action: {
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            UIApplication.shared.open(url)
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(
-                                        LinearGradient(
-                                            colors: [Color(red: 0.18, green: 0.68, blue: 0.93), Color(red: 0.08, green: 0.50, blue: 0.78)],
-                                            startPoint: .top,
-                                            endPoint: .bottom
+                        // Nút Telegram (tự động ẩn nếu thương hiệu không có tele)
+                        if let teleURL = theme.telegramURLString, let url = URL(string: teleURL) {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                UIApplication.shared.open(url)
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white.opacity(0.10))
+                                        .frame(width: 38, height: 38)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
                                         )
-                                    )
-                                    .frame(width: 36, height: 36)
-                                    .overlay(
-                                        Circle()
-                                            .stroke(Color.white.opacity(0.4), lineWidth: 1.2)
-                                    )
-                                    .shadow(color: Color.cyan.opacity(0.55), radius: 6, x: 0, y: 2)
+                                        .shadow(color: Color.white.opacity(0.25), radius: 6, x: 0, y: 0)
 
-                                Image(systemName: "paperplane.fill")
-                                    .font(.system(size: 16, weight: .bold))
-                                    .foregroundColor(.white)
-                                    .offset(x: -1, y: 1)
+                                    Image(systemName: "paperplane.fill")
+                                        .font(.system(size: 16, weight: .bold))
+                                        .foregroundColor(.white)
+                                        .offset(x: -1, y: 1)
+                                }
                             }
+                            .buttonStyle(AuroraScaleButtonStyle())
                         }
-                        .buttonStyle(AuroraScaleButtonStyle())
                     }
+                    .padding(.top, 4)
                 }
-                .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
-                .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
             }
+            .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
+            .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
 
             Spacer()
 
-            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn + Nút Xoá file ở Documents
-            VStack(spacing: 12) {
+            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn + Nút Dọn file Documents
+            VStack(spacing: 11) {
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
@@ -992,13 +995,13 @@ struct RainbowText: View {
                     Text(auroraInstructionText)
                         .font(.system(size: 13.5, weight: (isInjecting || isRestoringClean) ? .semibold : .medium, design: .rounded))
                         .foregroundColor(
-                            (isInjecting || isRestoringClean) ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.55))
+                            (isInjecting || isRestoringClean) ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.70))
                         )
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
 
-                // NÚT CHỨC NĂNG: Xoá File ở Documents
+                // NÚT CHỨC NĂNG: Dọn File ở Documents (Gọn gàng, dễ thấy)
                 deleteDocumentsButton
             }
             .padding(.horizontal, 20)
@@ -1320,35 +1323,36 @@ struct RainbowText: View {
         return nil
     }
 
-    // MARK: - Chức năng Xoá File ở Documents (Chuẩn Theo Yêu Cầu)
+    // MARK: - Chức năng Dọn File ở Documents (Gọn gàng, dễ thấy, chuẩn 100%)
     @ViewBuilder
     private var deleteDocumentsButton: some View {
         Button(action: {
             deleteDocumentsFiles()
         }) {
-            HStack(spacing: 7) {
-                Image(systemName: "trash.fill")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(Color(red: 1.0, green: 0.42, blue: 0.42))
+            HStack(spacing: 6) {
+                Image(systemName: "trash.circle.fill")
+                    .font(.system(size: 13.5, weight: .bold))
+                    .foregroundColor(.white)
 
-                Text("Xoá file ở Documents")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 1.0, green: 0.42, blue: 0.42))
+                Text("Dọn sạch Documents")
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(red: 1.0, green: 0.2, blue: 0.2).opacity(0.12))
-            .cornerRadius(12)
+            .padding(.horizontal, 15)
+            .padding(.vertical, 7)
+            .background(Color.white.opacity(0.08))
+            .cornerRadius(18)
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(red: 1.0, green: 0.35, blue: 0.35).opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 18)
+                    .stroke(Color.white.opacity(0.30), lineWidth: 1)
             )
+            .shadow(color: Color.white.opacity(0.20), radius: 6, x: 0, y: 0)
         }
         .buttonStyle(AuroraScaleButtonStyle())
         .disabled(isInjecting || isRestoringClean)
     }
 
-    /// Xoá toàn bộ file can thiệp, file mod / patch trong thư mục Documents của game Free Fire & FF MAX
+    /// Dọn sạch toàn diện 100% file can thiệp, file mod / patch trong thư mục Documents của game Free Fire & FF MAX
     private func deleteDocumentsFiles() {
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         let fileManager = FileManager.default
@@ -1364,54 +1368,118 @@ struct RainbowText: View {
         }
 
         var deletedCount = 0
-        let targetFileNames = [
-            "Assembly-CSharp-patch.bytes",
-            "localConfig.json",
-            "patch_cache",
-            "mod_signature.bin",
-            ".0xfixa.ledger"
-        ]
 
+        // 1. Quét sạch tất cả container Free Fire thường & Free Fire MAX
         for (_, rootURL) in allContainers {
             let docDir = rootURL.appendingPathComponent("Documents", isDirectory: true)
 
-            // 1. Xoá các file mod / config xác định
-            for targetName in targetFileNames {
-                let targetURL = docDir.appendingPathComponent(targetName)
+            // Danh sách các file / thư mục mod can thiệp đích danh
+            let knownModItems = [
+                "Assembly-CSharp-patch.bytes",
+                "Assembly-CSharp.bytes",
+                "localConfig.json",
+                "config.json",
+                "patch_cache",
+                "mod_signature.bin",
+                ".0xfixa.ledger",
+                ".0xcheats.ledger",
+                "Patches",
+                "AppCore",
+                "Aurora Menu v1.3105",
+                "DeltaX Enternal"
+            ]
+
+            for item in knownModItems {
+                let targetURL = docDir.appendingPathComponent(item)
                 if fileManager.fileExists(atPath: targetURL.path) {
                     do {
                         try fileManager.removeItem(at: targetURL)
                         deletedCount += 1
                         print("[DocumentsCleaner] 🗑️ Đã xoá: \(targetURL.path)")
                     } catch {
-                        print("[DocumentsCleaner] ⚠️ Lỗi xoá \(targetName): \(error)")
+                        print("[DocumentsCleaner] ⚠️ Lỗi xoá \(item): \(error)")
                     }
                 }
             }
 
-            // 2. Dọn sạch các file bytes/json/dat patch tạm khác trong Documents
-            if let items = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
-                for item in items {
-                    let name = item.lastPathComponent
-                    if name.hasSuffix("-patch.bytes") || name.hasSuffix(".filza_backup") || name.hasPrefix(".0x") {
-                        try? fileManager.removeItem(at: item)
+            // Quét toàn bộ thư mục gốc Documents: Xoá triệt để bất kỳ file nào có dấu hiệu mod / patch
+            if let docItems = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
+                for fileURL in docItems {
+                    let name = fileURL.lastPathComponent
+
+                    // Bỏ qua thư mục contentcache của game gốc (sẽ xử lý riêng bên dưới)
+                    if name.lowercased() == "contentcache" {
+                        continue
+                    }
+
+                    let lower = name.lowercased()
+                    if name.hasSuffix("-patch.bytes") ||
+                       name.hasSuffix(".bytes") ||
+                       name.hasSuffix(".filza_backup") ||
+                       name.hasSuffix(".backup") ||
+                       name.hasSuffix(".bak") ||
+                       name.hasPrefix(".0x") ||
+                       lower.contains("patch") ||
+                       lower.contains("aurora") ||
+                       lower.contains("deltax") ||
+                       lower.contains("cheat") ||
+                       name == "localConfig.json" ||
+                       name == "config.json" {
+                        do {
+                            try fileManager.removeItem(at: fileURL)
+                            deletedCount += 1
+                            print("[DocumentsCleaner] 🗑️ Đã xoá file can thiệp: \(name)")
+                        } catch {
+                            print("[DocumentsCleaner] ⚠️ Lỗi xoá \(name): \(error)")
+                        }
+                    }
+                }
+            }
+
+            // Quét sâu trong Documents/contentcache để khôi phục file gốc từ .filza_backup và xoá file mod
+            let contentCacheDir = docDir.appendingPathComponent("contentcache")
+            if fileManager.fileExists(atPath: contentCacheDir.path) {
+                if let enumerator = fileManager.enumerator(at: contentCacheDir, includingPropertiesForKeys: nil) {
+                    var backupsToRestore: [URL] = []
+                    var modsToDelete: [URL] = []
+                    for case let fileURL as URL in enumerator {
+                        if fileURL.pathExtension == "filza_backup" || fileURL.lastPathComponent.hasSuffix(".filza_backup") {
+                            backupsToRestore.append(fileURL)
+                        } else if fileURL.lastPathComponent.contains(ModSkinService.alockSkinFileName) {
+                            modsToDelete.append(fileURL)
+                        }
+                    }
+
+                    for backupURL in backupsToRestore {
+                        let originalPath = backupURL.path.replacingOccurrences(of: ".filza_backup", with: "")
+                        let originalURL = URL(fileURLWithPath: originalPath)
+                        try? fileManager.removeItem(at: originalURL)
+                        try? fileManager.moveItem(at: backupURL, to: originalURL)
                         deletedCount += 1
-                        print("[DocumentsCleaner] 🗑️ Đã xoá file mod phụ: \(name)")
+                        print("[DocumentsCleaner] 🔄 Đã khôi phục file gốc từ backup: \(originalURL.lastPathComponent)")
+                    }
+
+                    for modURL in modsToDelete {
+                        if fileManager.fileExists(atPath: modURL.path) {
+                            try? fileManager.removeItem(at: modURL)
+                            deletedCount += 1
+                            print("[DocumentsCleaner] 🗑️ Đã xoá file mod skin: \(modURL.lastPathComponent)")
+                        }
                     }
                 }
             }
         }
 
-        // 3. Khôi phục lại bản sao gốc nếu có
+        // 2. Gọi engine khôi phục gốc toàn diện của hệ thống
         _ = DevicePatchService.cleanRestoreAllModifications()
         _ = ModSkinService.shared.removeAlockSkin()
 
-        // 4. Dọn sạch thư mục Documents của chính app nếu có cache patch
+        // 3. Dọn sạch cache / patch trong Documents của chính app
         if let appDocURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
             if let items = try? fileManager.contentsOfDirectory(at: appDocURL, includingPropertiesForKeys: nil) {
                 for item in items {
                     let name = item.lastPathComponent
-                    if name.hasSuffix("-patch.bytes") || (name.hasSuffix(".dat") && name.contains("patch")) {
+                    if name.hasSuffix(".bytes") || name.hasSuffix(".dat") || name.lowercased().contains("patch") {
                         try? fileManager.removeItem(at: item)
                         deletedCount += 1
                     }
@@ -1419,7 +1487,7 @@ struct RainbowText: View {
             }
         }
 
-        // 5. Cập nhật UI trạng thái Not Injected
+        // 4. Reset trạng thái giao diện về Not Injected
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             self.isInjected = false
             self.isInjecting = false
@@ -1427,7 +1495,7 @@ struct RainbowText: View {
 
         UINotificationFeedbackGenerator().notificationOccurred(.success)
         showToastNotification(
-            message: "🗑️ Đã xoá sạch file ở Documents thành công!",
+            message: "🗑️ Đã dọn sạch 100% file trong Documents!",
             icon: "checkmark.circle.fill",
             color: Color.green
         )

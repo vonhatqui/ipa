@@ -73,18 +73,18 @@ struct GameSelectionView: View {
                         .padding(.horizontal, 20)
                         .padding(.top, 14)
 
-                        // Cả 2 bản Free Fire Max & Free Fire Thường đều sẵn sàng
-                        gameCardView(
-                            title: "Free Fire Max",
-                            bundleId: "com.dts.freefiremax",
-                            version: .max
-                        )
-                        .padding(.horizontal, 16)
-
+                        // Cả 2 bản Free Fire Thường & Free Fire Max đều sẵn sàng (FF Thường ở trên, Max ở dưới)
                         gameCardView(
                             title: "Free Fire",
                             bundleId: "com.dts.freefireth",
                             version: .standard
+                        )
+                        .padding(.horizontal, 16)
+
+                        gameCardView(
+                            title: "Free Fire Max",
+                            bundleId: "com.dts.freefiremax",
+                            version: .max
                         )
                         .padding(.horizontal, 16)
                     }
