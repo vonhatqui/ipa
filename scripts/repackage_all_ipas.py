@@ -8,10 +8,10 @@ from PIL import Image
 import subprocess
 import shutil
 
-# 1. Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105 (46842 bytes)
+# 1. Đọc file patch gốc chuẩn
 AURA_PATCH_PATH = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
 if not os.path.exists(AURA_PATCH_PATH):
-    raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
+    AURA_PATCH_PATH = r"ThreeOneOSFive\BundledPatches\CheatVN External.3105"
 
 with open(AURA_PATCH_PATH, "rb") as f:
     AURA_PATCH_BYTES = f.read()
