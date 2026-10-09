@@ -516,23 +516,45 @@ struct CheatStoreDashboardView: View {
     // MARK: - Aurora Free Fire Top Header (Chuẩn 100% Ảnh Mẫu Aurora iOS)
     private var auroraTopHeaderView: some View {
         HStack {
-            // Nút quay lại: < Games
-            if let onBackToGames = onBackToGames {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    handleBackToGames(onBackToGames)
-                }) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("Games")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
+            // Nút quay lại: < Games + Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
+            HStack(spacing: 6) {
+                if let onBackToGames = onBackToGames {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        handleBackToGames(onBackToGames)
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Games")
+                                .font(.system(size: 16, weight: .medium, design: .rounded))
+                        }
+                        .foregroundColor(Color.white)
                     }
-                    .foregroundColor(Color.white)
+                    .disabled(isRestoringForGameSwitch || isInjecting)
                 }
-                .disabled(isRestoringForGameSwitch || isInjecting)
-            } else {
-                Spacer().frame(width: 60)
+
+                // Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    showOriginal3105View = true
+                }) {
+                    HStack(spacing: 3) {
+                        Text("3105")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                        Image(systemName: "arrow.up.right")
+                            .font(.system(size: 8.5, weight: .bold))
+                    }
+                    .foregroundColor(Color.white.opacity(0.85))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                    .background(Color.white.opacity(0.10))
+                    .cornerRadius(7)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 7)
+                            .stroke(Color.white.opacity(0.20), lineWidth: 0.8)
+                    )
+                }
             }
 
             Spacer()
@@ -588,27 +610,6 @@ struct CheatStoreDashboardView: View {
                             lineWidth: 1
                         )
                 )
-
-                // Nút Mở 3105 Tools Gốc
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showOriginal3105View = true
-                }) {
-                    ZStack {
-                        Circle()
-                            .fill(Color.white.opacity(0.08))
-                            .frame(width: 28, height: 28)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
-                            )
-
-                        Image(systemName: "folder.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
-                    }
-                }
-                .buttonStyle(AuroraScaleButtonStyle())
 
                 // Nút Cài Đặt (Settings button) nằm ngay bên phải cạnh chữ Not Injected
                 Button(action: {
@@ -725,24 +726,45 @@ struct RainbowText: View {
             Spacer()
 
             if let onBackToGames = onBackToGames {
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    handleBackToGames(onBackToGames)
-                }) {
-                    HStack(spacing: 5) {
-                        Image(systemName: "gamecontroller.fill")
-                            .font(.system(size: 12))
-                        Text("Đổi Game")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                HStack(spacing: 6) {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        handleBackToGames(onBackToGames)
+                    }) {
+                        HStack(spacing: 5) {
+                            Image(systemName: "gamecontroller.fill")
+                                .font(.system(size: 12))
+                            Text("Đổi Game")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                        }
+                        .foregroundColor(colorInk)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
                     }
-                    .foregroundColor(colorInk)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
+                    .disabled(isRestoringForGameSwitch)
+
+                    // Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        showOriginal3105View = true
+                    }) {
+                        HStack(spacing: 3) {
+                            Text("3105")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 8.5, weight: .bold))
+                        }
+                        .foregroundColor(colorInk.opacity(0.85))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(glassBorder, lineWidth: 0.8))
+                    }
                 }
-                .disabled(isRestoringForGameSwitch)
             }
         }
         .padding(.horizontal, 20)
@@ -2161,73 +2183,6 @@ struct RainbowText: View {
                 .background(glassBg)
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-
-                // 1.5. Thẻ Mở Công Cụ 3105 2.0 (Gốc) - Dùng Chung Không Cần Cài 2 App
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text("CÔNG CỤ HỆ THỐNG & MOD")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .tracking(2.4)
-                            .foregroundColor(colorMute)
-                            .padding(.horizontal, 4)
-
-                        Spacer()
-
-                        Text("3105 v2.0")
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
-                            .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 2.5)
-                            .background(Color.green.opacity(0.12))
-                            .cornerRadius(6)
-                    }
-
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        showOriginal3105View = true
-                    }) {
-                        HStack(spacing: 12) {
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(LinearGradient(
-                                        colors: [Color(red: 0.20, green: 0.22, blue: 0.30), Color(red: 0.10, green: 0.11, blue: 0.16)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    ))
-                                    .frame(width: 44, height: 44)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(red: 0.0, green: 0.90, blue: 0.46).opacity(0.4), lineWidth: 1)
-                                    )
-
-                                Image(systemName: "folder.badge.gearshape.fill")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
-                            }
-
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text("Mở Công Cụ 3105 2.0 (Gốc)")
-                                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
-
-                                Text("Duyệt File Container, Quản lý Patch, MobileGestalt & Kernel")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundColor(colorMute)
-                                    .lineLimit(1)
-                            }
-
-                            Spacer()
-
-                            Image(systemName: "arrow.up.right.square.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
-                        }
-                        .padding(14)
-                        .background(glassBg)
-                        .cornerRadius(18)
-                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
-                    }
-                }
 
                 // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
