@@ -15,18 +15,11 @@ struct CheatStoreLoginView: View {
 
     var body: some View {
         ZStack {
-            // Nền không gian sâu đồng bộ theo thương hiệu
-            AppBrandingTheme.current.colorVoid
+            // Nền đen tuyệt đối True Dark AMOLED
+            Color.black
                 .ignoresSafeArea()
 
-            // Vầng sáng spotlight ambient đồng bộ theo màu chủ đề thương hiệu
-            Circle()
-                .fill(AppBrandingTheme.current.accentColor.opacity(0.14))
-                .blur(radius: 100)
-                .frame(width: 320, height: 320)
-                .offset(y: -180)
-
-            // Panel Đăng Nhập Chuẩn 100% 0xCheats (.auth-panel)
+            // Panel Đăng Nhập Chuẩn 100% Full Đen (.auth-panel)
             VStack(spacing: 0) {
                 Spacer()
 
@@ -143,23 +136,13 @@ struct CheatStoreLoginView: View {
         .frame(height: 52)
         .background(
             Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.white.opacity(0.04),
-                            Color.white.opacity(0.09),
-                            Color.white.opacity(0.04)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .fill(Color(red: 16/255, green: 16/255, blue: 20/255))
         )
         .overlay(
             Capsule()
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                .stroke(Color.white.opacity(0.18), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.35), radius: 16, y: 8)
+        .shadow(color: Color.black.opacity(0.6), radius: 16, y: 8)
         .padding(.bottom, 12)
     }
 
@@ -172,11 +155,11 @@ struct CheatStoreLoginView: View {
                 HStack(spacing: 8) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 4)
-                            .fill(licenseManager.rememberKey ? Color(red: 0.0, green: 0.72, blue: 1.0) : Color.white.opacity(0.08))
+                            .fill(licenseManager.rememberKey ? Color(red: 0.0, green: 0.82, blue: 1.0) : Color(red: 22/255, green: 22/255, blue: 26/255))
                             .frame(width: 16, height: 16)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 4)
-                                    .stroke(licenseManager.rememberKey ? Color(red: 0.0, green: 0.72, blue: 1.0) : Color.white.opacity(0.2), lineWidth: 1)
+                                    .stroke(licenseManager.rememberKey ? Color(red: 0.0, green: 0.82, blue: 1.0) : Color.white.opacity(0.25), lineWidth: 1)
                             )
 
                         if licenseManager.rememberKey {
@@ -188,7 +171,7 @@ struct CheatStoreLoginView: View {
 
                     Text("Remember")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50))
+                        .foregroundStyle(Color.white.opacity(0.6))
                 }
             }
             .buttonStyle(.plain)
@@ -203,14 +186,14 @@ struct CheatStoreLoginView: View {
             } label: {
                 Text("Paste key")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.96, green: 0.95, blue: 0.92).opacity(0.88))
+                    .foregroundStyle(.white)
             }
         }
         .padding(.horizontal, 4)
         .padding(.bottom, 22)
     }
 
-    // 6. .rainbow-btn: Launch Button
+    // 6. .rainbow-btn: Launch Button (Full Black Luxury Glowing AMOLED)
     private var launchButtonSection: some View {
         Button {
             executeLaunch()
@@ -218,41 +201,35 @@ struct CheatStoreLoginView: View {
             HStack(spacing: 8) {
                 if licenseManager.isVerifying {
                     ProgressView()
-                        .tint(Color(red: 0.07, green: 0.07, blue: 0.08))
+                        .tint(.white)
                     Text("Verifying...")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundStyle(Color(red: 0.07, green: 0.07, blue: 0.08))
+                        .foregroundStyle(.white)
                 } else {
                     ShinyTextView(
                         text: "Launch",
                         font: .system(size: 16, weight: .bold),
-                        baseColor: Color(red: 0.07, green: 0.07, blue: 0.08),
-                        shineColor: Color.white,
+                        baseColor: .white,
+                        shineColor: Color(red: 0.8, green: 0.8, blue: 0.9),
                         duration: 2.2,
                         tracking: 0.4
                     )
 
                     Image(systemName: "arrow.right")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(Color(red: 0.07, green: 0.07, blue: 0.08))
+                        .foregroundStyle(.white)
                 }
             }
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.white, Color(red: 0.95, green: 0.95, blue: 0.96)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                    .fill(Color(red: 18/255, green: 18/255, blue: 24/255))
             )
-            .shadow(color: Color.black.opacity(0.2), radius: 14, y: 6)
+            .shadow(color: Color.black.opacity(0.5), radius: 12, y: 6)
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(Color.white.opacity(0.9), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
             )
         }
         .disabled(licenseManager.isVerifying || inputKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -275,7 +252,7 @@ struct CheatStoreLoginView: View {
             } else {
                 Text("Enter your license key to continue")
                     .font(.system(size: 12, weight: .regular))
-                    .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50).opacity(0.8))
+                    .foregroundStyle(Color.white.opacity(0.45))
                     .padding(.top, 14)
             }
         }
@@ -297,7 +274,7 @@ struct CheatStoreLoginView: View {
                 Text(showCopiedDeviceID ? "Device ID Copied" : "Device ID: \(String(licenseManager.deviceID.prefix(14)))...")
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
             }
-            .foregroundStyle(Color(red: 0.55, green: 0.53, blue: 0.50).opacity(0.6))
+            .foregroundStyle(Color.white.opacity(0.45))
             .padding(.bottom, 24)
         }
         .buttonStyle(.plain)
