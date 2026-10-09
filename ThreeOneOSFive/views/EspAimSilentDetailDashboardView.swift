@@ -500,10 +500,9 @@ struct CategoryLogoView: View {
         if let img = UIImage(named: filename) { return img }
         if let bundlePath = Bundle.main.path(forResource: filename, ofType: "png"),
            let img = UIImage(contentsOfFile: bundlePath) { return img }
-        if let appCoreRes = Bundle.main.resourceURL?.appendingPathComponent("AppCore/Assets/\(filename).png"),
+        let appCoreRes = (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assets/\(filename).png")
+        if FileManager.default.fileExists(atPath: appCoreRes.path),
            let img = UIImage(contentsOfFile: appCoreRes.path) { return img }
-        if let appCoreBundle = Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets/\(filename).png"),
-           let img = UIImage(contentsOfFile: appCoreBundle.path) { return img }
         let directPath = "ThreeOneOSFive/\(filename).png"
         if FileManager.default.fileExists(atPath: directPath),
            let img = UIImage(contentsOfFile: directPath) { return img }
