@@ -467,8 +467,8 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
                             'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
                             'Chủ sở hữu: Quốc Đại (VeLix VN)'.encode('utf-8')
                         ).replace(
-                            'Liên hệ Zalo: 0365829172'.encode('utf-8'),
-                            'Liên hệ Zalo: 0796668836'.encode('utf-8')
+                            b'0365829172',
+                            b'0796668836'
                         )
                     elif "venom" in app_name.lower():
                         print("  [PATCH BINARY] Venom VN -> Chủ sở hữu: Trương Thành Trọng")
@@ -479,8 +479,8 @@ def create_clone(base_ipa, output_ipa, app_name, bundle_id, icon_path, owner_nam
                             'Chủ sở hữu: Võ Nhật Qui (CheatVN)'.encode('utf-8'),
                             'Chủ sở hữu: Trương Thành Trọng '.encode('utf-8')
                         ).replace(
-                            'Liên hệ Zalo: 0365829172'.encode('utf-8'),
-                            'Liên hệ Zalo: 095826667 '.encode('utf-8')
+                            b'0365829172',
+                            b'095826667 '
                         )
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, bin_data)
