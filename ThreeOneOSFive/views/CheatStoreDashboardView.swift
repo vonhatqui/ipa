@@ -492,12 +492,11 @@ struct CheatStoreDashboardView: View {
         .onChange(of: selectedTab) { _ in
             cloudPatchService.syncCloudPatches()
         }
-        .onChange(of: cloudPatchService.cloudPatches) { newPatches in
+        .onReceive(cloudPatchService.$cloudPatches) { newPatches in
             if !newPatches.isEmpty {
                 let validNames = Set(newPatches.map { $0.name.uppercased() })
                 selectedAimChips = selectedAimChips.filter { validNames.contains($0.uppercased()) }
                 selectedEspChips = selectedEspChips.filter { validNames.contains($0.uppercased()) }
-                selectedSpecialSkins = selectedSpecialSkins.filter { validNames.contains($0.uppercased()) }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
@@ -2321,7 +2320,7 @@ struct RainbowText: View {
     // MARK: - Đổi Game với Auto-Restore
     private func handleBackToGames(_ callback: @escaping () -> Void) {
         // Kiểm tra xem có mod nào đang active không
-        let hasActiveMods = !selectedAimChips.isEmpty || !selectedEspChips.isEmpty || !selectedSpecialSkins.isEmpty
+        let hasActiveMods = !selectedAimChips.isEmpty || !selectedEspChips.isEmpty
 
         if hasActiveMods {
             // Có mod active → hiện loading overlay, khôi phục, rồi đổi game
@@ -2338,7 +2337,6 @@ struct RainbowText: View {
                         self.activeEspColor = nil
                         self.selectedAimChips.removeAll()
                         self.selectedEspChips.removeAll()
-                        self.selectedSpecialSkins.removeAll()
                         self.isRestoringForGameSwitch = false
                     }
 
