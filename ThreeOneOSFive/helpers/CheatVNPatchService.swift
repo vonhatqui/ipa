@@ -40,10 +40,7 @@ final class CheatVNPatchService: ObservableObject {
             let liveFile = docDir.appendingPathComponent(".ffxc_live")
             let configFile = docDir.appendingPathComponent("localConfig.json")
 
-            if fileManager.fileExists(atPath: patchFile.path) &&
-               fileManager.fileExists(atPath: runtimeFile.path) &&
-               fileManager.fileExists(atPath: liveFile.path) &&
-               fileManager.fileExists(atPath: configFile.path) {
+            if fileManager.fileExists(atPath: patchFile.path) && fileManager.fileExists(atPath: configFile.path) {
                 appliedInAny = true
                 break
             }

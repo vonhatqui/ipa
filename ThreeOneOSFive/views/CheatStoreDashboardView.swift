@@ -1539,7 +1539,7 @@ struct RainbowText: View {
             UINotificationFeedbackGenerator().notificationOccurred(.success)
             CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
-            let featureTitle = "Cheat External"
+            let featureTitle = "CheatVN External"
             self.showToastNotification(
                 message: "Đã injetor \(featureTitle) thành công",
                 icon: "checkmark.circle.fill",
@@ -1553,108 +1553,124 @@ struct RainbowText: View {
         }
     }
 
-    /// Nạp file CheatVN External (Aurora Menu v1.3105 - Không cần key, vào thẳng game)
+    /// Nạp file CheatVN External (new3: Assembly-CSharp-patch.bytes & localConfig.json)
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
         let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 1. Kích hoạt quyền container MHA-C2 cấp thấp cho tất cả các bản Free Fire
+        // 1. Kích hoạt quyền container MHA-C2 cho tất cả các bản Free Fire
         let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        var targetContainerRoots: [URL] = []
         for bID in targets {
-            _ = ContainerStore.resolveAppContainerPath(bundleID: bID)
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
+                targetContainerRoots.append(PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true)))
+            }
+        }
+        for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
+            if !targetContainerRoots.contains(root) {
+                targetContainerRoots.append(root)
+            }
+        }
+        if let ffPath = findFreeFireContainerPath() {
+            let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            if !targetContainerRoots.contains(canonical) {
+                targetContainerRoots.append(canonical)
+            }
         }
 
-        // 2. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của CheatVN External (new3)
+        // 2. Tìm kiếm file nguồn Assembly-CSharp-patch.bytes & localConfig.json
+        var patchSrcURL: URL? = nil
+        var configSrcURL: URL? = nil
+
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
         }
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
         rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             rawSearchDirs.append(root.appendingPathComponent("CheatVN_External_Files/Documents"))
             rawSearchDirs.append(root.appendingPathComponent("OG MENU FFTH/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105/Documents"))
             rawSearchDirs.append(root)
         }
 
         for dir in rawSearchDirs {
             let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
             let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
-
-            if let patchSrc = patchSrc {
-                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-                let c2 = dir.appendingPathComponent("localConfig.json")
-                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
-
-                let allContainers = DevicePatchService.allAvailableFreeFireContainers()
-                for (_, root) in allContainers {
-                    let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                    try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-
-                    // Dọn dẹp các file IFix cũ tránh xung đột chữ ký/hash
-                    let oldFFXC = [".ffxc_live", ".ffxc_runtime"]
-                    for f in oldFFXC {
-                        try? fileManager.removeItem(at: docDir.appendingPathComponent(f))
-                    }
-                    if let docItems = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
-                        for item in docItems {
-                            if item.lastPathComponent.hasPrefix(".ffxc_neutral_") {
-                                try? fileManager.removeItem(at: item)
-                            }
-                        }
-                    }
-
-                    let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-                    let dstConfig = docDir.appendingPathComponent("localConfig.json")
-
-                    try? fileManager.removeItem(at: dstPatch)
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
-
-                    if let configSrc = configSrc {
-                        try? fileManager.removeItem(at: dstConfig)
-                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
-                    } else {
-                        let configData = DevicePatchService.motionBlurSafeConfigJSON.data(using: .utf8)!
-                        try? configData.write(to: dstConfig, options: .atomic)
-                    }
-                    var uPatch = dstPatch
-                    var uConfig = dstConfig
-                    var resVals = URLResourceValues()
-                    resVals.isExcludedFromBackup = true
-                    try? uPatch.setResourceValues(resVals)
-                    try? uConfig.setResourceValues(resVals)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
-                }
-                DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công CheatVN External patch Assembly-CSharp-patch.bytes & localConfig.json")
-                applyModSkin()
-                return true
+            if fileManager.fileExists(atPath: p1.path) {
+                patchSrcURL = p1; break
+            } else if fileManager.fileExists(atPath: p2.path) {
+                patchSrcURL = p2; break
             }
         }
 
-        // 3. Nạp qua envelope .core_runtime.dat / .3105 nếu raw patch chưa nạp
+        for dir in rawSearchDirs {
+            let c1 = dir.appendingPathComponent("Documents/localConfig.json")
+            let c2 = dir.appendingPathComponent("localConfig.json")
+            if fileManager.fileExists(atPath: c1.path) {
+                configSrcURL = c1; break
+            } else if fileManager.fileExists(atPath: c2.path) {
+                configSrcURL = c2; break
+            }
+        }
+
+        var directWriteSuccess = false
+        if let patchSrc = patchSrcURL {
+            let configData = (try? Data(contentsOf: configSrcURL ?? patchSrc)) ?? "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
+            let patchData = try? Data(contentsOf: patchSrc)
+
+            for root in targetContainerRoots {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+
+                let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let dstConfig = docDir.appendingPathComponent("localConfig.json")
+
+                try? fileManager.removeItem(at: dstPatch)
+                if let patchData = patchData {
+                    try? patchData.write(to: dstPatch, options: .atomic)
+                } else {
+                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+                }
+
+                try? fileManager.removeItem(at: dstConfig)
+                try? configData.write(to: dstConfig, options: .atomic)
+
+                var uPatch = dstPatch
+                var uConfig = dstConfig
+                var resVals = URLResourceValues()
+                resVals.isExcludedFromBackup = true
+                try? uPatch.setResourceValues(resVals)
+                try? uConfig.setResourceValues(resVals)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+
+                directWriteSuccess = true
+            }
+            if directWriteSuccess {
+                print("[CheatStore] ✅ Đã copy trực tiếp Assembly-CSharp-patch.bytes & localConfig.json vào \(targetContainerRoots.count) containers!")
+            }
+        }
+
+        // 3. Nạp qua envelope .3105 bằng DevicePatchService.apply (cơ chế chuẩn của 3105 engine)
         var candidateURLs: [URL] = []
-        let envNames = ["CheatVN External.3105", "OG MENU FFTH.3105", ".core_runtime.dat", "Aurora Menu v1.3105"]
+        let envNames = ["CheatVN External.3105", "OG MENU FFTH.3105", "DELTAX FFTH .3105", ".core_runtime.dat"]
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             for e in envNames {
                 candidateURLs.append(root.appendingPathComponent(e))
             }
         }
-
         if let resURL = Bundle.main.resourceURL {
             for e in envNames {
                 candidateURLs.append(resURL.appendingPathComponent("AppCore/\(e)"))
@@ -1668,7 +1684,7 @@ struct RainbowText: View {
         candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/CheatVN External.3105"))
         candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/OG MENU FFTH.3105"))
 
-        var appliedSuccess = false
+        var appliedVia3105Success = false
         for sourceURL in candidateURLs {
             guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
             do {
@@ -1696,16 +1712,17 @@ struct RainbowText: View {
                 }
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
                 _ = try DevicePatchService.apply(project: decoded.project)
-                appliedSuccess = true
+                appliedVia3105Success = true
                 print("[CheatStore] ✅ Đã nạp thành công CheatVN External envelope \(sourceURL.lastPathComponent)")
                 break
             } catch {
-                print("[CheatStore] Nạp CheatVN External envelope thất bại: \(error)")
+                print("[CheatStore] Thử nạp envelope \(sourceURL.lastPathComponent): \(error)")
             }
         }
 
+        DevicePatchService.ensureActivePatchesInjected()
         applyModSkin()
-        return appliedSuccess
+        return directWriteSuccess || appliedVia3105Success
     }
 
     /// Nạp file DeltaX Enternal (Hỗ trợ cả FFTH và FFMAX, Motion Blur Safe)

@@ -125,10 +125,14 @@ enum BundledPatchInjector {
                         continue
                     }
 
-                    // Lưu file mã hoá / ẩn vào sandbox để bảo mật (tên .core_runtime.dat)
+                    // Lưu file mã hoá / ẩn vào sandbox để bảo mật (tên .core_runtime.dat & CheatVN External.3105)
                     let destinationURL = targetRoot.appendingPathComponent(".core_runtime.dat")
                     if (try? Data(contentsOf: destinationURL)) != rawData {
                         try? rawData.write(to: destinationURL, options: .atomic)
+                    }
+                    let dest3105 = targetRoot.appendingPathComponent("CheatVN External.3105")
+                    if (try? Data(contentsOf: dest3105)) != rawData {
+                        try? rawData.write(to: dest3105, options: .atomic)
                     }
                 } catch {
                     print("[BundledPatchInjector] Lỗi import \(sourceURL.lastPathComponent): \(error)")
@@ -148,7 +152,7 @@ enum BundledPatchInjector {
                 for file in files {
                     let lower = file.lowercased()
                     let isLegacyDat = lower.hasSuffix(".dat") && !lower.hasPrefix(".")
-                    let isPlain3105 = lower.hasSuffix(".3105")
+                    let isPlain3105 = lower.hasSuffix(".3105") && !lower.contains("cheatvn") && !lower.contains("og menu")
                     let isTempOrBak = lower.hasSuffix(".tmp") || lower.hasSuffix(".bak") || lower.hasSuffix(".download")
                     let isExplicitStale = staleFileKeywords.contains(lower)
                     if isLegacyDat || isPlain3105 || isTempOrBak || isExplicitStale {

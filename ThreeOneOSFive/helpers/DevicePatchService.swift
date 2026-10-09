@@ -11,17 +11,8 @@ enum DevicePatchService {
     private static let cacheLock = NSLock()
 
     // MARK: - Motion Blur & Graphics Safety (FF thường & Metal Pipeline)
-    /// Cấu hình an toàn tương thích đồ họa Motion Blur trên FF thường và Metal API
-    static let motionBlurSafeConfigJSON: String = """
-    {
-      "testCodePatch": true,
-      "motionBlur": true,
-      "motionBlurSafeMode": true,
-      "safeRenderMode": true,
-      "cameraStabilizer": true,
-      "bypassMotionBlurCrash": true
-    }
-    """
+    /// Cấu hình chuẩn cho Free Fire IFix loader
+    static let motionBlurSafeConfigJSON: String = "{\"testCodePatch\":true,\"resetGuest\":true}"
 
     private static let preferenceBundleTargets: [(bundleID: String, relativePath: String)] = [
         ("com.dts.freefireth", "Library/Preferences/com.dts.freefireth.plist"),
@@ -348,7 +339,7 @@ enum DevicePatchService {
                         shouldWriteConfig = true
                     } else if let existingData = try? Data(contentsOf: configFile),
                               let str = String(data: existingData, encoding: .utf8),
-                              !str.contains("motionBlurSafeMode") {
+                              !str.contains("testCodePatch") {
                         shouldWriteConfig = true
                     } else {
                         shouldWriteConfig = false
