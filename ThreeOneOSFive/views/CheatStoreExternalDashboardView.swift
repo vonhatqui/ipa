@@ -63,9 +63,44 @@ struct CheatStoreExternalDashboardView: View {
             bgVoid.ignoresSafeArea()
 
             VStack(spacing: 0) {
+                // Top Header with Back to Categories
+                HStack {
+                    if let back = onBackToGames {
+                        Button(action: {
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            back()
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "chevron.left")
+                                    .font(.system(size: 14, weight: .bold))
+                                Text("Danh Mục")
+                                    .font(.system(size: 13.5, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(Color.white.opacity(0.1))
+                            .cornerRadius(12)
+                        }
+                    }
+
+                    Spacer()
+
+                    HStack(spacing: 8) {
+                        Text("CheatVN External")
+                            .font(.system(size: 15, weight: .heavy, design: .rounded))
+                            .foregroundColor(textPrimary)
+
+                        CategoryLogoView(name: "cheatvn_logo", fallbackIcon: "shield.fill", size: 30)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 4)
+
                 // Thanh 4 Tab trên đỉnh (Aimbot, Visual, Misc, Setting)
                 topTabBarView
-                    .padding(.top, 8)
+                    .padding(.top, 4)
                     .padding(.bottom, 12)
 
                 // Nội dung các Tab cuộn mượt mà
@@ -483,7 +518,35 @@ struct CheatStoreExternalDashboardView: View {
                     Spacer()
                 }
 
-                toggleRow(title: "Antiban Master 100% (Yabao Core)", isOn: $espService.antibanMaster, hasDot: false)
+                toggleRow(
+                    title: "Antiban Master 100% (Yabao Core)",
+                    isOn: Binding(
+                        get: { espService.antibanMaster },
+                        set: { newValue in
+                            espService.antibanMaster = newValue
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            if newValue {
+                                AntibanPatchService.shared.startAntiBan(targetGame: espService.targetGame == "max" ? "Free Fire MAX" : "Free Fire")
+                            } else {
+                                AntibanPatchService.shared.stopAntiBan()
+                            }
+                        }
+                    ),
+                    hasDot: false
+                )
+
+                if AntibanPatchService.shared.isAntiBanActive {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 7, height: 7)
+                        Text("LIVE: \(AntibanPatchService.shared.formattedElapsedTime) • \(AntibanPatchService.shared.activeGameTarget) • Đã dọn telemetry")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundColor(Color.green)
+                        Spacer()
+                    }
+                    .padding(.top, -6)
+                }
                 toggleRow(title: "Safe Mode Bypass Anti-Cheat", isOn: $espService.safeMode, hasDot: false)
                 toggleRow(title: "Fast Medikit (Bơm Máu Chạy)", isOn: $espService.fastMedikit, hasDot: false)
                 toggleRow(title: "Fast Parachute (Dù Siêu Tốc)", isOn: $espService.fastParachute, hasDot: false)

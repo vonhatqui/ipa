@@ -17,6 +17,7 @@ struct DeltaStyleSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject private var bridge = AirliftBridge.shared
     @ObservedObject private var antibanService = AntibanProfileService.shared
+    @ObservedObject private var patchAntibanService = AntibanPatchService.shared
     
     // Theme
     private var theme: AppBrandingTheme { AppBrandingTheme.current }
@@ -27,6 +28,7 @@ struct DeltaStyleSettingsView: View {
     // States for modals & alerts
     @State private var showPairingDetailModal: Bool = false
     @State private var showAppInfoModal: Bool = false
+    @State private var showAntibanLogSheet: Bool = false
     @State private var showLanguagePicker: Bool = false
     @State private var showUpdateAlert: Bool = false
     @State private var showCacheAlert: Bool = false
@@ -168,6 +170,98 @@ struct DeltaStyleSettingsView: View {
 
                             dividerLine
 
+                            // 6. Extreme Anti-Ban (Delta Core + Real-time Status + Live Badge)
+                            HStack(spacing: 14) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                        .fill(
+                                            patchAntibanService.isAntiBanActive
+                                                ? Color(red: 0.1, green: 0.7, blue: 0.4).opacity(0.25)
+                                                : Color(red: 0.5, green: 0.2, blue: 0.9).opacity(0.22)
+                                        )
+                                        .frame(width: 42, height: 42)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                                                .stroke(
+                                                    patchAntibanService.isAntiBanActive
+                                                        ? Color.green.opacity(0.5)
+                                                        : Color.purple.opacity(0.4),
+                                                    lineWidth: 1
+                                                )
+                                        )
+                                    
+                                    Image(systemName: patchAntibanService.isAntiBanActive ? "shield.checkered" : "shield.lefthalf.filled")
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(patchAntibanService.isAntiBanActive ? Color.green : Color(red: 0.75, green: 0.5, blue: 1.0))
+                                }
+
+                                VStack(alignment: .leading, spacing: 3) {
+                                    HStack(spacing: 6) {
+                                        Text("Extreme Anti-Ban")
+                                            .font(.system(size: 15.5, weight: .semibold, design: .rounded))
+                                            .foregroundColor(.white)
+
+                                        if patchAntibanService.isAntiBanActive {
+                                            Text("LIVE")
+                                                .font(.system(size: 9.5, weight: .black, design: .monospaced))
+                                                .foregroundColor(.green)
+                                                .padding(.horizontal, 5)
+                                                .padding(.vertical, 2)
+                                                .background(Color.green.opacity(0.18))
+                                                .cornerRadius(4)
+                                        }
+                                    }
+                                    
+                                    Text(
+                                        patchAntibanService.isActivating
+                                            ? "Đang kích hoạt bảo vệ tối đa..."
+                                            : (patchAntibanService.isAntiBanActive
+                                                ? "\(patchAntibanService.formattedElapsedTime) • Nhấn xem log"
+                                                : "Bảo vệ nền Yabao • Nhấn xem log")
+                                    )
+                                    .font(.system(size: 12, weight: .regular, design: .rounded))
+                                    .foregroundColor(patchAntibanService.isAntiBanActive ? Color.green.opacity(0.85) : Color.white.opacity(0.55))
+                                }
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    showAntibanLogSheet = true
+                                }
+
+                                Spacer()
+
+                                HStack(spacing: 10) {
+                                    Button(action: {
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        showAntibanLogSheet = true
+                                    }) {
+                                        Image(systemName: "terminal.fill")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(Color.white.opacity(0.7))
+                                            .padding(6)
+                                            .background(Color.white.opacity(0.1))
+                                            .clipShape(Circle())
+                                    }
+
+                                    Toggle("", isOn: Binding(
+                                        get: { patchAntibanService.isAntiBanActive },
+                                        set: { newValue in
+                                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                            if newValue {
+                                                patchAntibanService.startAntiBan(targetGame: "Free Fire")
+                                            } else {
+                                                patchAntibanService.stopAntiBan()
+                                            }
+                                        }
+                                    ))
+                                    .labelsHidden()
+                                    .tint(Color(red: 0.22, green: 0.74, blue: 0.45))
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 14)
+
+                            dividerLine
+
                             // 7. Chặn Quảng Cáo (Toggle switch cài đặt DNS Profile)
                             HStack(spacing: 14) {
                                 ZStack {
@@ -247,6 +341,10 @@ struct DeltaStyleSettingsView: View {
         // Sheet Thông tin ứng dụng
         .sheet(isPresented: $showAppInfoModal) {
             AppInfoDetailSheetView(appTitle: theme.appTitle, appVersion: appVersion)
+        }
+        // Sheet chi tiết Nhật ký Antiban
+        .sheet(isPresented: $showAntibanLogSheet) {
+            AntibanLogDetailSheetView()
         }
         // Alert kiểm tra cập nhật
         .alert("Kiểm Tra Cập Nhật", isPresented: $showUpdateAlert) {
@@ -742,6 +840,176 @@ private struct AppInfoDetailSheetView: View {
             Text(value)
                 .font(.system(size: 13.5, weight: .semibold, design: .rounded))
                 .foregroundColor(.white)
+        }
+    }
+}
+
+// MARK: - Sheet Nhật Ký Antiban Chuẩn Delta Client
+private struct AntibanLogDetailSheetView: View {
+    @Environment(\.dismiss) private var dismiss
+    @ObservedObject private var antibanPatch = AntibanPatchService.shared
+    @State private var copied: Bool = false
+
+    var body: some View {
+        ZStack {
+            Color(red: 0.08, green: 0.09, blue: 0.13)
+                .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                Capsule()
+                    .fill(Color.white.opacity(0.3))
+                    .frame(width: 40, height: 4.5)
+                    .padding(.top, 10)
+                    .padding(.bottom, 16)
+
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Nhật Ký Phiên Antiban")
+                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                        Text("Session Logs • Delta Core Engine")
+                            .font(.system(size: 11.5, weight: .medium))
+                            .foregroundColor(Color.white.opacity(0.5))
+                    }
+                    Spacer()
+                    Button("Đóng") {
+                        dismiss()
+                    }
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(Color(red: 0.4, green: 0.65, blue: 1.0))
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 12)
+
+                // Status Banner
+                HStack(spacing: 12) {
+                    HStack(spacing: 6) {
+                        Circle()
+                            .fill(antibanPatch.isAntiBanActive ? Color.green : Color.orange)
+                            .frame(width: 8, height: 8)
+                            .shadow(color: (antibanPatch.isAntiBanActive ? Color.green : Color.orange).opacity(0.8), radius: 3)
+                        Text(antibanPatch.isAntiBanActive ? "LIVE" : "SẴN SÀNG")
+                            .font(.system(size: 11, weight: .black, design: .monospaced))
+                            .foregroundColor(antibanPatch.isAntiBanActive ? Color.green : Color.orange)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.black.opacity(0.3))
+                    .cornerRadius(8)
+
+                    Text("Thời gian: \(antibanPatch.formattedElapsedTime)")
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .foregroundColor(.white)
+
+                    Spacer()
+
+                    Text("Bảo vệ: \(antibanPatch.bgRunsCount) lượt")
+                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.6))
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(0.06))
+                .cornerRadius(12)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 14)
+
+                // Terminal Console
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        HStack(spacing: 6) {
+                            Circle().fill(Color.red.opacity(0.7)).frame(width: 9, height: 9)
+                            Circle().fill(Color.yellow.opacity(0.7)).frame(width: 9, height: 9)
+                            Circle().fill(Color.green.opacity(0.7)).frame(width: 9, height: 9)
+                        }
+                        Spacer()
+                        Text("antiban_session.log")
+                            .font(.system(size: 10.5, weight: .medium, design: .monospaced))
+                            .foregroundColor(Color.white.opacity(0.4))
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.white.opacity(0.05))
+
+                    Divider().background(Color.white.opacity(0.1))
+
+                    ScrollViewReader { proxy in
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 6) {
+                                if antibanPatch.logs.isEmpty {
+                                    Text("Chưa có nhật ký trong phiên này.\nHoạt động dọn dẹp và bảo vệ sẽ xuất hiện tại đây khi bật Antiban.")
+                                        .font(.system(size: 12, weight: .regular, design: .monospaced))
+                                        .foregroundColor(Color.white.opacity(0.4))
+                                        .padding(.vertical, 20)
+                                } else {
+                                    ForEach(Array(antibanPatch.logs.enumerated()), id: \.offset) { index, logItem in
+                                        Text(logItem)
+                                            .font(.system(size: 11.5, weight: .regular, design: .monospaced))
+                                            .foregroundColor(logItem.contains("[LIVE]") || logItem.contains("thành công") ? Color.green : (logItem.contains("LỖI") ? Color.red : Color(red: 0.6, green: 0.85, blue: 1.0)))
+                                            .id(index)
+                                    }
+                                }
+                            }
+                            .padding(12)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .onChange(of: antibanPatch.logs.count) { newCount in
+                            if newCount > 0 {
+                                proxy.scrollTo(newCount - 1, anchor: .bottom)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: .infinity)
+                .background(Color(red: 0.04, green: 0.05, blue: 0.07))
+                .cornerRadius(16)
+                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.12), lineWidth: 1))
+                .padding(.horizontal, 20)
+                .padding(.bottom, 16)
+
+                // Action Buttons (Xóa & Sao chép log)
+                HStack(spacing: 12) {
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        antibanPatch.logs.removeAll()
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "trash")
+                            Text("Xoá Nhật Ký")
+                        }
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.8))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(Color.white.opacity(0.08))
+                        .cornerRadius(12)
+                    }
+
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        let fullText = antibanPatch.logs.joined(separator: "\n")
+                        UIPasteboard.general.string = fullText
+                        copied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            copied = false
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
+                            Text(copied ? "Đã Sao Chép!" : "Sao Chép Log")
+                        }
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 42)
+                        .background(Color.white)
+                        .cornerRadius(12)
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+            }
         }
     }
 }

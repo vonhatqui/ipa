@@ -3120,7 +3120,7 @@ struct RainbowText: View {
                 }
             }
 
-            _ = self.antibanPatchService.removeAntibanPatch()
+            self.antibanPatchService.stopAntiBan()
             _ = ModSkinService.shared.removeAlockSkin()
 
             DispatchQueue.main.async {

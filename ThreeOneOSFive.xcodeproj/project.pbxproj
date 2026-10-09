@@ -103,6 +103,9 @@
 		3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M124; };
 		3105M230 /* ExternalESPConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M130; };
 		3105M231 /* CheatStoreExternalDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M131; };
+		3105M232 /* CheatVNPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M132; };
+		3105M233 /* CheatVNCategoryHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M133; };
+		3105M234 /* EspAimSilentDetailDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M134; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -220,6 +223,9 @@
 		3105M124 /* SnapchatFluidLiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapchatFluidLiquidBackgroundView.swift; sourceTree = "<group>"; };
 		3105M130 /* ExternalESPConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalESPConfigService.swift; sourceTree = "<group>"; };
 		3105M131 /* CheatStoreExternalDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreExternalDashboardView.swift; sourceTree = "<group>"; };
+		3105M132 /* CheatVNPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNPatchService.swift; sourceTree = "<group>"; };
+		3105M133 /* CheatVNCategoryHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNCategoryHubView.swift; sourceTree = "<group>"; };
+		3105M134 /* EspAimSilentDetailDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspAimSilentDetailDashboardView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -315,6 +321,8 @@
 				3105M123 /* DeltaStyleSettingsView.swift */,
 				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
 				3105M131 /* CheatStoreExternalDashboardView.swift */,
+				3105M133 /* CheatVNCategoryHubView.swift */,
+				3105M134 /* EspAimSilentDetailDashboardView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -324,6 +332,7 @@
 			children = (
 				3105M120 /* AirliftBridge.swift */,
 				3105M130 /* ExternalESPConfigService.swift */,
+				3105M132 /* CheatVNPatchService.swift */,
 				3105M118 /* AppBrandingTheme.swift */,
 				3105M117 /* CloudPatchService.swift */,
 				3105M115 /* PatchCodecAPIService.swift */,
@@ -546,6 +555,9 @@
 				3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */,
 				3105M230 /* ExternalESPConfigService.swift in Sources */,
 				3105M231 /* CheatStoreExternalDashboardView.swift in Sources */,
+				3105M232 /* CheatVNPatchService.swift in Sources */,
+				3105M233 /* CheatVNCategoryHubView.swift in Sources */,
+				3105M234 /* EspAimSilentDetailDashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -92,6 +92,43 @@ print(f"Loaded OnlyESP Assembly-CSharp-patch.bytes: {len(ONLYESP_ASSEMBLY_BYTES)
 print(f"Loaded OnlyESP localConfig.json: {len(ONLYESP_CONFIG_BYTES)} bytes")
 print(f"Loaded OnlyESP envelope: {len(ONLYESP_ENV_BYTES)} bytes")
 
+# 6. Đọc file CheatVN External & ESP & AIM SILENT (Hotfix Tencent IFix 5 files, envelopes, logos)
+CHEATVN_ENV_PATH = r"ThreeOneOSFive\BundledPatches\CheatVN External.3105"
+ESP_AIM_ENV_PATH = r"ThreeOneOSFive\BundledPatches\ESP & AIM SILENT.3105"
+CHEATVN_LOGO_NEW_PATH = r"ThreeOneOSFive\cheatvn_logo.png"
+ESP_AIM_LOGO_PATH = r"ThreeOneOSFive\esp_aimsilent_logo.png"
+
+DOCS_DIR = r"ThreeOneOSFive\BundledPatches\CheatVN_External_Files\Documents"
+FFXC_LIVE_PATH = os.path.join(DOCS_DIR, ".ffxc_live")
+FFXC_NEUTRAL_PATH = os.path.join(DOCS_DIR, ".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9")
+FFXC_RUNTIME_PATH = os.path.join(DOCS_DIR, ".ffxc_runtime")
+FFXC_ASSEMBLY_PATH = os.path.join(DOCS_DIR, "Assembly-CSharp-patch.bytes")
+FFXC_CONFIG_PATH = os.path.join(DOCS_DIR, "localConfig.json")
+
+with open(CHEATVN_ENV_PATH, "rb") as f:
+    CHEATVN_ENV_BYTES = f.read()
+with open(ESP_AIM_ENV_PATH, "rb") as f:
+    ESP_AIM_ENV_BYTES = f.read()
+with open(CHEATVN_LOGO_NEW_PATH, "rb") as f:
+    CHEATVN_LOGO_NEW_BYTES = f.read()
+with open(ESP_AIM_LOGO_PATH, "rb") as f:
+    ESP_AIM_LOGO_BYTES = f.read()
+
+with open(FFXC_LIVE_PATH, "rb") as f:
+    FFXC_LIVE_BYTES = f.read()
+with open(FFXC_NEUTRAL_PATH, "rb") as f:
+    FFXC_NEUTRAL_BYTES = f.read()
+with open(FFXC_RUNTIME_PATH, "rb") as f:
+    FFXC_RUNTIME_BYTES = f.read()
+with open(FFXC_ASSEMBLY_PATH, "rb") as f:
+    FFXC_ASSEMBLY_BYTES = f.read()
+with open(FFXC_CONFIG_PATH, "rb") as f:
+    FFXC_CONFIG_BYTES = f.read()
+
+print(f"Loaded CheatVN External envelopes: {len(CHEATVN_ENV_BYTES)} bytes")
+print(f"Loaded ESP & AIM SILENT envelopes: {len(ESP_AIM_ENV_BYTES)} bytes")
+print(f"Loaded IFix Assembly-CSharp-patch.bytes: {len(FFXC_ASSEMBLY_BYTES)} bytes")
+
 def get_patch_entries(app_folder):
     entries = {
         f"{app_folder}/AppCore/.core_runtime.dat": AURA_PATCH_BYTES,
@@ -134,11 +171,23 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/OnlyESP/localConfig.json": ONLYESP_CONFIG_BYTES,
         f"{app_folder}/BundledPatches/only esp.3105": ONLYESP_ENV_BYTES,
         f"{app_folder}/AppCore/only esp.3105": ONLYESP_ENV_BYTES,
+        # CheatVN External & ESP & AIM SILENT (Hotfix Tencent IFix 5 files)
+        f"{app_folder}/BundledPatches/CheatVN External.3105": CHEATVN_ENV_BYTES,
+        f"{app_folder}/BundledPatches/ESP & AIM SILENT.3105": ESP_AIM_ENV_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_live": FFXC_LIVE_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9": FFXC_NEUTRAL_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_runtime": FFXC_RUNTIME_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes": FFXC_ASSEMBLY_BYTES,
+        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/localConfig.json": FFXC_CONFIG_BYTES,
         # Feature Logos
         f"{app_folder}/cheatvn_external.png": CHEATVN_LOGO_BYTES,
         f"{app_folder}/deltax_enternal.png": DELTAX_LOGO_BYTES,
+        f"{app_folder}/cheatvn_logo.png": CHEATVN_LOGO_NEW_BYTES,
+        f"{app_folder}/esp_aimsilent_logo.png": ESP_AIM_LOGO_BYTES,
         f"{app_folder}/AppCore/Assets/cheatvn_external.png": CHEATVN_LOGO_BYTES,
         f"{app_folder}/AppCore/Assets/deltax_enternal.png": DELTAX_LOGO_BYTES,
+        f"{app_folder}/AppCore/Assets/cheatvn_logo.png": CHEATVN_LOGO_NEW_BYTES,
+        f"{app_folder}/AppCore/Assets/esp_aimsilent_logo.png": ESP_AIM_LOGO_BYTES,
     }
     # Thêm Mod Skin vào BundledPatches và AppCore nếu có
     if MOD_SKIN_BYTES is not None:
@@ -564,6 +613,20 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         assert onlyesp_patch in names, f"Missing {onlyesp_patch} in {ipa_path}"
         assert z.getinfo(onlyesp_patch).file_size == 51976, f"OnlyESP patch size mismatch: {z.getinfo(onlyesp_patch).file_size}"
         print(f"  ✓ Only ESP Headless patch verified: 51976 bytes")
+
+        # Kiểm tra CheatVN External & ESP & AIM SILENT patch (Hotfix Tencent IFix 5 files)
+        cheatvn_ext_patch = f"{app_folder}/BundledPatches/CheatVN External.3105"
+        assert cheatvn_ext_patch in names, f"Missing {cheatvn_ext_patch} in {ipa_path}"
+        print(f"  ✓ CheatVN External .3105 verified: {z.getinfo(cheatvn_ext_patch).file_size} bytes")
+
+        esp_aim_patch = f"{app_folder}/BundledPatches/ESP & AIM SILENT.3105"
+        assert esp_aim_patch in names, f"Missing {esp_aim_patch} in {ipa_path}"
+        print(f"  ✓ ESP & AIM SILENT .3105 verified: {z.getinfo(esp_aim_patch).file_size} bytes")
+
+        ifix_raw_patch = f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes"
+        assert ifix_raw_patch in names, f"Missing {ifix_raw_patch} in {ipa_path}"
+        assert z.getinfo(ifix_raw_patch).file_size == 76368, f"IFix patch size mismatch: {z.getinfo(ifix_raw_patch).file_size}"
+        print(f"  ✓ IFix Assembly-CSharp-patch.bytes verified: 76368 bytes")
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
@@ -577,6 +640,7 @@ def main():
     cheatstore_vn_ipa_update = r"D:\update_file\CheatStore-VN.ipa"
     cheatstore_ipa_root = r"D:\CheatStore.ipa"
     cheatstore_vn_ipa_root = r"D:\CheatStore-VN.ipa"
+    cheatstore_ipa_new2 = r"D:\update_file\new2\CheatStore.ipa"
     well_known_base = r"D:\update_file\well-known\base.ipa"
 
     velix_ipa_update = r"D:\update_file\VeLix.ipa"
@@ -605,6 +669,7 @@ def main():
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_update)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_root)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_root)
+    shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_new2)
     shutil.copyfile(cheatstore_ipa_update, well_known_base)
     verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
 

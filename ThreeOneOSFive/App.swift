@@ -44,7 +44,7 @@ struct ThreeOneOSFiveApp: App {
         Group {
             if licenseManager.isActivated {
                 if isGameLoaded {
-                    CheatStoreDashboardView(onBackToGames: {
+                    CheatVNCategoryHubView(onBackToGameSelection: {
                         withAnimation(.easeInOut(duration: 0.25)) {
                             isGameLoaded = false
                         }
