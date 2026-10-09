@@ -176,7 +176,6 @@ struct CheatStoreDashboardView: View {
     @State private var selectedAimChips: Set<String> = []
     @State private var isInjecting: Bool = false
     @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
-    @AppStorage("cheatstore_selected_menu_feature") private var selectedMenuFeature: String = "cheatvn_external"
     @State private var isInjected: Bool = false
     @State private var pulseAnimation: Bool = false
     @State private var injectionProgress: Int = 0
@@ -516,45 +515,21 @@ struct CheatStoreDashboardView: View {
     // MARK: - Aurora Free Fire Top Header (Chuẩn 100% Ảnh Mẫu Aurora iOS)
     private var auroraTopHeaderView: some View {
         HStack {
-            // Nút quay lại: < Games + Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
-            HStack(spacing: 6) {
-                if let onBackToGames = onBackToGames {
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        handleBackToGames(onBackToGames)
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text("Games")
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                        }
-                        .foregroundColor(Color.white)
-                    }
-                    .disabled(isRestoringForGameSwitch || isInjecting)
-                }
-
-                // Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
+            // Nút quay lại: < Games
+            if let onBackToGames = onBackToGames {
                 Button(action: {
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    showOriginal3105View = true
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    handleBackToGames(onBackToGames)
                 }) {
-                    HStack(spacing: 3) {
-                        Text("3105")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                        Image(systemName: "arrow.up.right")
-                            .font(.system(size: 8.5, weight: .bold))
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Games")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
                     }
-                    .foregroundColor(Color.white.opacity(0.85))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .background(Color.white.opacity(0.10))
-                    .cornerRadius(7)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7)
-                            .stroke(Color.white.opacity(0.20), lineWidth: 0.8)
-                    )
+                    .foregroundColor(Color.white)
                 }
+                .disabled(isRestoringForGameSwitch || isInjecting)
             }
 
             Spacer()
@@ -726,45 +701,24 @@ struct RainbowText: View {
             Spacer()
 
             if let onBackToGames = onBackToGames {
-                HStack(spacing: 6) {
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        handleBackToGames(onBackToGames)
-                    }) {
-                        HStack(spacing: 5) {
-                            Image(systemName: "gamecontroller.fill")
-                                .font(.system(size: 12))
-                            Text("Đổi Game")
-                                .font(.system(size: 12, weight: .bold, design: .rounded))
-                        }
-                        .foregroundColor(colorInk)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    handleBackToGames(onBackToGames)
+                }) {
+                    HStack(spacing: 5) {
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 12))
+                        Text("Đổi Game")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
                     }
-                    .disabled(isRestoringForGameSwitch)
-
-                    // Nút mở 3105 bé bé kế nút đổi game (kiểu mở website)
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        showOriginal3105View = true
-                    }) {
-                        HStack(spacing: 3) {
-                            Text("3105")
-                                .font(.system(size: 11, weight: .bold, design: .rounded))
-                            Image(systemName: "arrow.up.right")
-                                .font(.system(size: 8.5, weight: .bold))
-                        }
-                        .foregroundColor(colorInk.opacity(0.85))
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.08))
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(glassBorder, lineWidth: 0.8))
-                    }
+                    .foregroundColor(colorInk)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(glassBorder, lineWidth: 1))
                 }
+                .disabled(isRestoringForGameSwitch)
             }
         }
         .padding(.horizontal, 20)
@@ -849,9 +803,8 @@ struct RainbowText: View {
 
             Spacer()
 
-            // PHÍA DƯỚI: Chọn Chức Năng + Nút INJECTOR / UNINJECT lớn
+            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn
             VStack(spacing: 12) {
-                featureSelectorCards
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
@@ -1003,220 +956,15 @@ struct RainbowText: View {
         .disabled(isInjecting || isRestoringClean)
     }
 
-    // MARK: - Chọn Chức Năng Menu (CheatVN External & DeltaX Enternal xếp trên dưới banner ngang)
-    @ViewBuilder
-    private var featureSelectorCards: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text("CHỌN MENU CHỨC NĂNG")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
-                    .tracking(1.4)
-                    .foregroundColor(Color.white.opacity(0.60))
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 5.5, height: 5.5)
-                    Text("CHỌN TRƯỚC KHI INJECT")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .foregroundColor(Color.green.opacity(0.9))
-                }
-            }
-            .padding(.horizontal, 4)
-
-            VStack(spacing: 8) {
-                // Chức năng 1 (Trên): CheatVN External - Banner ngang dài
-                featureCard(
-                    id: "cheatvn_external",
-                    title: "CheatVN External",
-                    logoImageName: "cheatvn_external",
-                    assetImageName: "CheatVNExternal",
-                    badgeText: "V1.3105",
-                    accentGlow: Color(red: 1.0, green: 0.25, blue: 0.25)
-                )
-
-                // Chức năng 2 (Dưới): DeltaX Enternal - Banner ngang dài
-                featureCard(
-                    id: "deltax_enternal",
-                    title: "DeltaX Enternal",
-                    logoImageName: "deltax_enternal",
-                    assetImageName: "DeltaXEnternal",
-                    badgeText: "NO KEY",
-                    accentGlow: Color(red: 0.20, green: 0.75, blue: 1.0)
-                )
-            }
-        }
-        .padding(.horizontal, 2)
-    }
-
-    @ViewBuilder
-    private func featureCard(
-        id: String,
-        title: String,
-        logoImageName: String,
-        assetImageName: String,
-        badgeText: String,
-        accentGlow: Color
-    ) -> some View {
-        let isSelected = (selectedMenuFeature == id)
-
-        Button(action: {
-            guard !isInjecting && !isRestoringClean else { return }
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            CheatStoreSoundManager.shared.playTabSwitchHaptic()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                selectedMenuFeature = id
-            }
-        }) {
-            ZStack {
-                // Nền thẻ dài ngang: Sáng rực rỡ khi được chọn, nền tối mờ khi chưa chọn
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(
-                        isSelected ?
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.17, green: 0.18, blue: 0.24),
-                                Color(red: 0.08, green: 0.09, blue: 0.13)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.07, green: 0.07, blue: 0.09),
-                                Color(red: 0.03, green: 0.03, blue: 0.04)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(
-                                isSelected ?
-                                LinearGradient(
-                                    colors: [accentGlow, Color.white, accentGlow],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ) :
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.05)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: isSelected ? 1.8 : 1.0
-                            )
-                    )
-                    .shadow(
-                        color: isSelected ? accentGlow.opacity(0.60) : Color.black.opacity(0.4),
-                        radius: isSelected ? 12 : 3,
-                        x: 0,
-                        y: isSelected ? 0 : 2
-                    )
-
-                // Dải LED sáng chạy ngang khi được chọn (hiện sáng sang trọng)
-                if isSelected {
-                    AuroraButtonLedSweep(cornerRadius: 15)
-                }
-
-                // Nội dung thẻ xếp ngang: Logo + Tên Chức Năng (Không có mô tả) + Badge & Checkmark
-                HStack(spacing: 12) {
-                    // Logo chức năng bo góc
-                    featureLogo(logoName: logoImageName, assetName: assetImageName, fallbackIcon: "bolt.shield.fill")
-
-                    // Tên chức năng (KHÔNG CÓ BẤT KỲ MÔ TẢ NÀO)
-                    Text(title)
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 8)
-
-                    // Badge phiên bản
-                    Text(badgeText)
-                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(isSelected ? accentGlow.opacity(0.25) : Color.white.opacity(0.08))
-                        .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.60))
-                        .cornerRadius(6)
-
-                    // Icon chọn
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18, weight: .heavy))
-                            .foregroundColor(accentGlow)
-                            .shadow(color: accentGlow.opacity(0.8), radius: 6)
-                    } else {
-                        Circle()
-                            .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-                            .frame(width: 18, height: 18)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-        }
-        .buttonStyle(AuroraScaleButtonStyle())
-    }
-
-    @ViewBuilder
-    private func featureLogo(logoName: String, assetName: String, fallbackIcon: String) -> some View {
-        if let uiImg = UIImage(named: assetName) ?? UIImage(named: logoName) ?? loadLogoFromDisk(named: logoName) {
-            Image(uiImage: uiImg)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 38, height: 38)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.35), lineWidth: 0.8)
-                )
-                .shadow(color: Color.black.opacity(0.5), radius: 4, x: 0, y: 2)
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.12))
-                    .frame(width: 38, height: 38)
-                Image(systemName: fallbackIcon)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-            }
-        }
-    }
-
-    private func loadLogoFromDisk(named: String) -> UIImage? {
-        let nameWithPng = named.hasSuffix(".png") ? named : "\(named).png"
-        let candidates = [
-            Bundle.main.bundleURL.appendingPathComponent(nameWithPng).path,
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent(nameWithPng).path,
-            Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
-            "ThreeOneOSFive/\(nameWithPng)",
-            "assets/brands/\(nameWithPng)"
-        ]
-        for path in candidates {
-            if FileManager.default.fileExists(atPath: path), let img = UIImage(contentsOfFile: path) {
-                return img
-            }
-        }
-        return nil
-    }
-
     private var auroraInstructionText: String {
-        let featureTitle = selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
         if isInjecting {
             return "\(injectionStatusText) (\(injectionProgress)%)"
         } else if isRestoringClean {
             return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
-            return "Đã nạp \(featureTitle) vào game thành công!"
+            return "Đã nạp CheatVN External vào game thành công!"
         } else {
-            return "Chạm INJECTOR để nạp \(featureTitle) và vào game"
+            return "Chạm INJECTOR để nạp CheatVN External và vào game"
         }
     }
 
@@ -1229,16 +977,11 @@ struct RainbowText: View {
         injectionStatusText = "Đang nạp patching..."
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp gói patch theo menu được chọn
+        // 1. Chạy background task nạp gói patch CheatVN External (từ D:\update_file\new3\CheatVN External.3105)
         DispatchQueue.global(qos: .userInitiated).async {
-            let ok: Bool
-            if self.selectedMenuFeature == "deltax_enternal" {
-                ok = self.applyDeltaXPackage()
-            } else {
-                ok = self.applyAuroraPackage()
-            }
+            let ok = self.applyAuroraPackage()
             DevicePatchService.ensureActivePatchesInjected()
-            print("[CheatStore] Nạp hoàn tất (\(self.selectedMenuFeature)): \(ok)")
+            print("[CheatStore] Nạp CheatVN External hoàn tất: \(ok)")
         }
 
         // 2. Chạy timer tăng tiến độ 1% -> 100% mượt mà
@@ -1268,9 +1011,8 @@ struct RainbowText: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
-                let featTitle = self.selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
                 self.showToastNotification(
-                    message: "Đã nạp \(featTitle) thành công! Đang vào game...",
+                    message: "Đã nạp CheatVN External thành công! Đang vào game...",
                     icon: "checkmark.circle.fill",
                     color: Color.green
                 )
@@ -2184,7 +1926,59 @@ struct RainbowText: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
+                // 2. Không Gian Công Cụ 3105 2.0 (Chỉ xuất hiện ở Cá Nhân)
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showOriginal3105View = true
+                }) {
+                    HStack(spacing: 14) {
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.88, green: 0.16, blue: 0.22), Color(red: 0.50, green: 0.06, blue: 0.10)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 44, height: 44)
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 20, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+
+                        VStack(alignment: .leading, spacing: 3) {
+                            HStack(spacing: 6) {
+                                Text("Công Cụ 3105 2.0")
+                                    .font(.system(size: 15.5, weight: .bold, design: .rounded))
+                                    .foregroundColor(colorInk)
+                                Text("2.0")
+                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Color.red.opacity(0.85))
+                                    .cornerRadius(6)
+                            }
+                            Text("Chuyển sang giao diện cấu hình & công cụ gốc 3105")
+                                .font(.system(size: 12))
+                                .foregroundColor(colorMute)
+                                .lineLimit(1)
+                        }
+
+                        Spacer()
+
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(colorMute)
+                    }
+                    .padding(14)
+                    .background(glassBg)
+                    .cornerRadius(18)
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                }
+
+                // 3. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("THIẾT BỊ & HỆ THỐNG")
