@@ -210,6 +210,7 @@ struct CheatStoreDashboardView: View {
     @State private var selectedLanguage: String = "Tiếng Việt"
     @State private var showCompatList: Bool = false
     @State private var showDeltaSettingsSheet: Bool = false
+    @State private var showOriginal3105View: Bool = false
     @ObservedObject private var antibanPatchService = AntibanPatchService.shared
 
     // Common Alerts & Status
@@ -486,6 +487,14 @@ struct CheatStoreDashboardView: View {
         .sheet(isPresented: $showDeltaSettingsSheet) {
             DeltaStyleSettingsView()
         }
+        .fullScreenCover(isPresented: $showOriginal3105View) {
+            Original3105WorkspaceView()
+                .environmentObject(patchDraftCoordinator)
+                .environmentObject(patchStore)
+                .environmentObject(repositoryStore)
+                .environmentObject(appState)
+                .environmentObject(fileOperationCoordinator)
+        }
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
@@ -579,6 +588,27 @@ struct CheatStoreDashboardView: View {
                             lineWidth: 1
                         )
                 )
+
+                // Nút Mở 3105 Tools Gốc
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    showOriginal3105View = true
+                }) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .frame(width: 28, height: 28)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            )
+
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                    }
+                }
+                .buttonStyle(AuroraScaleButtonStyle())
 
                 // Nút Cài Đặt (Settings button) nằm ngay bên phải cạnh chữ Not Injected
                 Button(action: {
@@ -2132,6 +2162,73 @@ struct RainbowText: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
+                // 1.5. Thẻ Mở Công Cụ 3105 2.0 (Gốc) - Dùng Chung Không Cần Cài 2 App
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack {
+                        Text("CÔNG CỤ HỆ THỐNG & MOD")
+                            .font(.system(size: 10, weight: .bold, design: .rounded))
+                            .tracking(2.4)
+                            .foregroundColor(colorMute)
+                            .padding(.horizontal, 4)
+
+                        Spacer()
+
+                        Text("3105 v2.0")
+                            .font(.system(size: 10, weight: .black, design: .monospaced))
+                            .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2.5)
+                            .background(Color.green.opacity(0.12))
+                            .cornerRadius(6)
+                    }
+
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        showOriginal3105View = true
+                    }) {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(LinearGradient(
+                                        colors: [Color(red: 0.20, green: 0.22, blue: 0.30), Color(red: 0.10, green: 0.11, blue: 0.16)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ))
+                                    .frame(width: 44, height: 44)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(red: 0.0, green: 0.90, blue: 0.46).opacity(0.4), lineWidth: 1)
+                                    )
+
+                                Image(systemName: "folder.badge.gearshape.fill")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                            }
+
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Mở Công Cụ 3105 2.0 (Gốc)")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .foregroundColor(colorInk)
+
+                                Text("Duyệt File Container, Quản lý Patch, MobileGestalt & Kernel")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(colorMute)
+                                    .lineLimit(1)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right.square.fill")
+                                .font(.system(size: 18))
+                                .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                        }
+                        .padding(14)
+                        .background(glassBg)
+                        .cornerRadius(18)
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                    }
+                }
+
                 // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
@@ -2876,4 +2973,85 @@ canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
 </body>
 </html>
 """#
+}
+
+// MARK: - Original 3105 Workspace View (Tích hợp All-in-One giải quyết bài toán dùng chung)
+struct Original3105WorkspaceView: View {
+    @Environment(\.presentationMode) private var presentationMode
+    @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
+    @EnvironmentObject private var patchStore: PatchProjectStore
+    @EnvironmentObject private var repositoryStore: PackageRepositoryStore
+    @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var fileOperationCoordinator: FileOperationCoordinator
+    @Environment(\.appLanguage) private var language
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Thanh điều hướng trên cùng với nút quay lại CheatStore
+            HStack(spacing: 12) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("CheatStore")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+                }
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.badge.gearshape.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                    Text("3105 v2.0 (Gốc)")
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color.white.opacity(0.65))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .background(Color(red: 18/255, green: 18/255, blue: 24/255))
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.white.opacity(0.1)),
+                alignment: .bottom
+            )
+
+            ContentView()
+                .environmentObject(patchDraftCoordinator)
+                .environmentObject(patchStore)
+                .environmentObject(repositoryStore)
+                .environmentObject(appState)
+                .environmentObject(fileOperationCoordinator)
+                .environment(\.appLanguage, language)
+                .environment(\.locale, language.locale)
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
 }
