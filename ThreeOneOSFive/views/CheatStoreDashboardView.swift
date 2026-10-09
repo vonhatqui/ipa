@@ -1559,20 +1559,33 @@ struct RainbowText: View {
         let fileManager = FileManager.default
         let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của Aurora Menu v1.3105
+        // 1. Kích hoạt quyền container MHA-C2 cấp thấp cho tất cả các bản Free Fire
+        let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        for bID in targets {
+            _ = ContainerStore.resolveAppContainerPath(bundleID: bID)
+        }
+
+        // 2. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của CheatVN External (new3)
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
         }
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
+        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
+        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
+            rawSearchDirs.append(root.appendingPathComponent("CheatVN_External_Files/Documents"))
+            rawSearchDirs.append(root.appendingPathComponent("OG MENU FFTH/Documents"))
             rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
             rawSearchDirs.append(root)
         }
 
@@ -1590,6 +1603,20 @@ struct RainbowText: View {
                 for (_, root) in allContainers {
                     let docDir = root.appendingPathComponent("Documents", isDirectory: true)
                     try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+
+                    // Dọn dẹp các file IFix cũ tránh xung đột chữ ký/hash
+                    let oldFFXC = [".ffxc_live", ".ffxc_runtime"]
+                    for f in oldFFXC {
+                        try? fileManager.removeItem(at: docDir.appendingPathComponent(f))
+                    }
+                    if let docItems = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
+                        for item in docItems {
+                            if item.lastPathComponent.hasPrefix(".ffxc_neutral_") {
+                                try? fileManager.removeItem(at: item)
+                            }
+                        }
+                    }
+
                     let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
                     let dstConfig = docDir.appendingPathComponent("localConfig.json")
 
@@ -1613,41 +1640,33 @@ struct RainbowText: View {
                     try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
                 }
                 DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công CheatVN External raw patch Assembly-CSharp-patch.bytes & localConfig.json")
+                print("[CheatStore] ✅ Đã nạp thành công CheatVN External patch Assembly-CSharp-patch.bytes & localConfig.json")
                 applyModSkin()
                 return true
             }
         }
 
-        // 2. Nạp qua envelope .core_runtime.dat
+        // 3. Nạp qua envelope .core_runtime.dat / .3105 nếu raw patch chưa nạp
         var candidateURLs: [URL] = []
+        let envNames = ["CheatVN External.3105", "OG MENU FFTH.3105", ".core_runtime.dat", "Aurora Menu v1.3105"]
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            candidateURLs.append(root.appendingPathComponent(".core_runtime.dat"))
-            candidateURLs.append(root.appendingPathComponent("core_manifest.bin"))
-            candidateURLs.append(root.appendingPathComponent("core_runtime.dat"))
-            candidateURLs.append(root.appendingPathComponent("Aurora Menu v1.3105"))
-            candidateURLs.append(root.appendingPathComponent("Assets/core_manifest.bin"))
+            for e in envNames {
+                candidateURLs.append(root.appendingPathComponent(e))
+            }
         }
 
         if let resURL = Bundle.main.resourceURL {
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_manifest.bin"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/core_runtime.dat"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/.core_runtime.dat"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/Aurora Menu v1.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("AppCore/Assets/core_manifest.bin"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
-            candidateURLs.append(resURL.appendingPathComponent("BundledPatches/.core_runtime.dat"))
+            for e in envNames {
+                candidateURLs.append(resURL.appendingPathComponent("AppCore/\(e)"))
+                candidateURLs.append(resURL.appendingPathComponent("BundledPatches/\(e)"))
+            }
         }
-        if let binURL = Bundle.main.url(forResource: "core_manifest", withExtension: "bin") {
-            candidateURLs.append(binURL)
+        for e in envNames {
+            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/\(e)"))
+            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/\(e)"))
         }
-        if let datURL = Bundle.main.url(forResource: "core_runtime", withExtension: "dat") {
-            candidateURLs.append(datURL)
-        }
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_manifest.bin"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/core_runtime.dat"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.core_runtime.dat"))
-        candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/Aurora Menu v1.3105"))
+        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/CheatVN External.3105"))
+        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/OG MENU FFTH.3105"))
 
         var appliedSuccess = false
         for sourceURL in candidateURLs {
@@ -1658,12 +1677,22 @@ struct RainbowText: View {
                 guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
                 let summary = try PatchPackageCodec.inspect(data)
                 let decoded: DecodedPatchPackage
-                if summary.isPasswordProtected {
-                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
-                } else if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
-                    decoded = cached
+                if !summary.isPasswordProtected {
+                    if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
+                        decoded = cached
+                    } else {
+                        decoded = try PatchPackageCodec.decode(data, password: "")
+                    }
                 } else {
-                    decoded = try PatchPackageCodec.decode(data, password: patchPassword)
+                    var decResult: DecodedPatchPackage? = nil
+                    for pwd in ["OG", patchPassword, "1", ""] {
+                        if let d = try? PatchPackageCodec.decode(data, password: pwd) {
+                            decResult = d
+                            break
+                        }
+                    }
+                    guard let d = decResult else { continue }
+                    decoded = d
                 }
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
                 _ = try DevicePatchService.apply(project: decoded.project)
