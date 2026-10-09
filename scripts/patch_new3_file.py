@@ -14,24 +14,48 @@ def encode_string(s):
     b = s.encode('utf-8')
     return encode_7bit_int(len(b)) + b
 
-# 1. Load clean modified assembly from scratch/assembly_20931f2_binary.bytes
-# In this binary, bytecode is 100% intact and clean.
-assembly_src = r'scratch/assembly_20931f2_binary.bytes'
+# 1. Load pristine clean assembly from scratch/original_pristine_assembly.bytes
+assembly_src = r'scratch/original_pristine_assembly.bytes'
 if not os.path.exists(assembly_src):
     raise FileNotFoundError(f"Missing {assembly_src}")
 
 with open(assembly_src, 'rb') as f:
-    raw_assembly = f.read()
+    raw_assembly = bytearray(f.read())
+
+# Bytecode patches (in-place edits before string table):
+# - Method 0 insn 23: br 3 (unconditional branch past aimbot gate)
+m0_23_pos = 0x1fdf
+raw_assembly[m0_23_pos:m0_23_pos+8] = struct.pack('<ii', 62, 3)
+
+# - Method 1 insn 35: ldc.i4 1 (set static field -18 = 1 in .cctor so game is authenticated at load)
+m1_35_pos = 0x2d1f
+raw_assembly[m1_35_pos:m1_35_pos+8] = struct.pack('<ii', 180, 1)
+
+# - Method 2 insn 15: br 5 (unconditional branch past movable tracking gate)
+m2_15_pos = 0x3007
+raw_assembly[m2_15_pos:m2_15_pos+8] = struct.pack('<ii', 62, 5)
+
+# - Method 5 insn 660: br 1277 (unconditional jump over Secure License Gate straight to CheatVN External menu at 1938)
+m5_660_pos = 0x5047
+raw_assembly[m5_660_pos:m5_660_pos+8] = struct.pack('<ii', 62, 1277)
+
+# - Method 5 insn 5620: ldstr 24 (change 'Authentication failed' to 'valid')
+m5_5620_pos = 0xeb47
+raw_assembly[m5_5620_pos:m5_5620_pos+8] = struct.pack('<ii', 42, 24)
+
+# - Method 22 insn 3: ldc.i4 1 (prevent logout button from setting field -18 = 0)
+m22_3_pos = 0x13bef
+raw_assembly[m22_3_pos:m22_3_pos+8] = struct.pack('<ii', 180, 1)
 
 # Parse binary and re-encode intern strings:
-# [33]: 'nhismgaylolgbt' (Master auth key in Method 0 - MUST match login key!)
+# [33]: 'nhismgaylolgbt' (Master auth key in Method 0)
 # [48]: 'nhismgaylolgbt' (Default prefilled key in GUI)
 # [51]: 'CheatVN External' (VIP SUITE menu header)
 # [121]: 'CheatVN External' (Brand label watermark)
 sys.path.append('.')
 import scratch.parse_new3_ifix as p
 
-reader = p.BinaryReader(raw_assembly)
+reader = p.BinaryReader(bytes(raw_assembly))
 reader.read_uint64(); reader.read_string()
 for _ in range(reader.read_int32()): reader.read_string()
 m_cnt = reader.read_int32()
@@ -56,8 +80,8 @@ str_cnt = reader.read_int32()
 orig_strings = [reader.read_string() for _ in range(str_cnt)]
 tail_pos = reader.tell()
 
-head = raw_assembly[:str_start_pos]
-tail = raw_assembly[tail_pos:]
+head = bytes(raw_assembly[:str_start_pos])
+tail = bytes(raw_assembly[tail_pos:])
 
 new_strings = list(orig_strings)
 new_strings[33] = 'nhismgaylolgbt'
@@ -71,16 +95,28 @@ for s in new_strings:
     new_str_buf += encode_string(s)
 
 modified_assembly = bytes(head) + bytes(new_str_buf) + bytes(tail)
-print(f"Re-encoded assembly: original={len(raw_assembly)} bytes, patched={len(modified_assembly)} bytes")
+print(f"Patched assembly: original={len(raw_assembly)} bytes, output={len(modified_assembly)} bytes")
 
-# Verify strings using parser
+# Verify instructions and strings using parser
 verify_reader = p.BinaryReader(modified_assembly)
 verify_reader.read_uint64(); verify_reader.read_string()
 for _ in range(verify_reader.read_int32()): verify_reader.read_string()
 test_m_cnt = verify_reader.read_int32()
+test_methods = []
 for _ in range(test_m_cnt):
-    cs = verify_reader.read_int32(); verify_reader.read_bytes(cs * 8)
+    cs = verify_reader.read_int32()
+    insns = [(verify_reader.read_int32(), verify_reader.read_int32()) for _ in range(cs)]
     eh = verify_reader.read_int32(); verify_reader.read_bytes(eh * 24)
+    test_methods.append(insns)
+
+assert test_methods[0][23] == (62, 3), f"Method 0 insn 23 assertion failed: {test_methods[0][23]}"
+assert test_methods[1][35] == (180, 1), f"Method 1 insn 35 assertion failed: {test_methods[1][35]}"
+assert test_methods[2][15] == (62, 5), f"Method 2 insn 15 assertion failed: {test_methods[2][15]}"
+assert test_methods[5][660] == (62, 1277), f"Method 5 insn 660 assertion failed: {test_methods[5][660]}"
+assert test_methods[5][5620] == (42, 24), f"Method 5 insn 5620 assertion failed: {test_methods[5][5620]}"
+assert test_methods[22][3] == (180, 1), f"Method 22 insn 3 assertion failed: {test_methods[22][3]}"
+print("✅ Bytecode auth bypass & gates 100% verified!")
+
 test_ext_m_cnt = verify_reader.read_int32()
 for _ in range(test_ext_m_cnt):
     is_gen = verify_reader.read_boolean()
@@ -102,7 +138,7 @@ assert strings[51] == 'CheatVN External', f"Expected CheatVN External at 51, got
 assert strings[121] == 'CheatVN External', f"Expected CheatVN External at 121, got {strings[121]}"
 v_tail = modified_assembly[verify_reader.tell():]
 assert v_tail == tail, "Tail mismatch in re-encoded assembly!"
-print("[OK] Verified intern strings: [33] 'nhismgaylolgbt', [48] 'nhismgaylolgbt', [51] 'CheatVN External', [121] 'CheatVN External'")
+print("✅ Intern strings verified: [33]='nhismgaylolgbt', [48]='nhismgaylolgbt', [51]='CheatVN External', [121]='CheatVN External'")
 
 raw_config = b'{"testCodePatch":true,"resetGuest":true}'
 
