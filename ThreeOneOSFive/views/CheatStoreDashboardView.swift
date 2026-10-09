@@ -2389,7 +2389,7 @@ struct RainbowText: View {
 
         // Dọn dẹp ngầm toàn bộ dữ liệu container trong background không làm đơ giao diện
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = DevicePatchService.cleanRestore()
+            _ = DevicePatchService.cleanRestoreAllModifications()
             self.antibanPatchService.stopAntiBan()
             print("[CheatStore] Đã dọn dẹp khôi phục sạch dữ liệu gốc")
         }
