@@ -23,31 +23,21 @@ with open(assembly_src, 'rb') as f:
     raw_assembly = bytearray(f.read())
 
 # Bytecode patches (in-place edits before string table):
-# - Method 0 insn 23: br 3 (unconditional branch past aimbot gate)
-m0_23_pos = 0x1fdf
-raw_assembly[m0_23_pos:m0_23_pos+8] = struct.pack('<ii', 62, 3)
+# - Method 0 insn 228: br 118 (unconditional branch to instruction 346 success handler)
+m0_228_pos = 0x2647
+raw_assembly[m0_228_pos:m0_228_pos+8] = struct.pack('<ii', 62, 118)
 
 # - Method 1 insn 35: ldc.i4 1 (set static field -18 = 1 in .cctor so game is authenticated at load)
 m1_35_pos = 0x2d1f
 raw_assembly[m1_35_pos:m1_35_pos+8] = struct.pack('<ii', 180, 1)
-
-# - Method 2 insn 15: br 5 (unconditional branch past movable tracking gate)
-m2_15_pos = 0x3007
-raw_assembly[m2_15_pos:m2_15_pos+8] = struct.pack('<ii', 62, 5)
-
-# - Method 5 insn 660: br 1277 (unconditional jump over Secure License Gate straight to CheatVN External menu at 1938)
-m5_660_pos = 0x5047
-raw_assembly[m5_660_pos:m5_660_pos+8] = struct.pack('<ii', 62, 1277)
-
-# - Method 5 insn 5620: ldstr 24 (change 'Authentication failed' to 'valid')
-m5_5620_pos = 0xeb47
-raw_assembly[m5_5620_pos:m5_5620_pos+8] = struct.pack('<ii', 42, 24)
 
 # - Method 22 insn 3: ldc.i4 1 (prevent logout button from setting field -18 = 0)
 m22_3_pos = 0x13bef
 raw_assembly[m22_3_pos:m22_3_pos+8] = struct.pack('<ii', 180, 1)
 
 # Parse binary and re-encode intern strings:
+# [6]: 'https://cheatingenginexyz.online/api/key/verify?key=' (User key verify API endpoint)
+# [31]: 'https://cheatingenginexyz.online/getkey' (User get key web URL)
 # [33]: 'nhismgaylolgbt' (Master auth key in Method 0)
 # [48]: 'nhismgaylolgbt' (Default prefilled key in GUI)
 # [51]: 'CheatVN External' (VIP SUITE menu header)
@@ -84,6 +74,8 @@ head = bytes(raw_assembly[:str_start_pos])
 tail = bytes(raw_assembly[tail_pos:])
 
 new_strings = list(orig_strings)
+new_strings[6] = 'https://cheatingenginexyz.online/api/key/verify?key='
+new_strings[31] = 'https://cheatingenginexyz.online/getkey'
 new_strings[33] = 'nhismgaylolgbt'
 new_strings[48] = 'nhismgaylolgbt'
 new_strings[51] = 'CheatVN External'
@@ -109,11 +101,11 @@ for _ in range(test_m_cnt):
     eh = verify_reader.read_int32(); verify_reader.read_bytes(eh * 24)
     test_methods.append(insns)
 
-assert test_methods[0][23] == (62, 3), f"Method 0 insn 23 assertion failed: {test_methods[0][23]}"
+assert test_methods[0][23] == (114, 3), f"Method 0 insn 23 assertion failed: {test_methods[0][23]}"
+assert test_methods[0][228] == (62, 118), f"Method 0 insn 228 assertion failed: {test_methods[0][228]}"
 assert test_methods[1][35] == (180, 1), f"Method 1 insn 35 assertion failed: {test_methods[1][35]}"
-assert test_methods[2][15] == (62, 5), f"Method 2 insn 15 assertion failed: {test_methods[2][15]}"
-assert test_methods[5][660] == (62, 1277), f"Method 5 insn 660 assertion failed: {test_methods[5][660]}"
-assert test_methods[5][5620] == (42, 24), f"Method 5 insn 5620 assertion failed: {test_methods[5][5620]}"
+assert test_methods[2][15] == (114, 5), f"Method 2 insn 15 assertion failed: {test_methods[2][15]}"
+assert test_methods[5][660] == (114, 1277), f"Method 5 insn 660 assertion failed: {test_methods[5][660]}"
 assert test_methods[22][3] == (180, 1), f"Method 22 insn 3 assertion failed: {test_methods[22][3]}"
 print("✅ Bytecode auth bypass & gates 100% verified!")
 
@@ -132,13 +124,15 @@ for _ in range(test_ext_m_cnt):
 
 v_str_cnt = verify_reader.read_int32()
 strings = [verify_reader.read_string() for _ in range(v_str_cnt)]
+assert strings[6] == 'https://cheatingenginexyz.online/api/key/verify?key=', f"Expected cheatingenginexyz.online verify at 6, got {strings[6]}"
+assert strings[31] == 'https://cheatingenginexyz.online/getkey', f"Expected cheatingenginexyz.online getkey at 31, got {strings[31]}"
 assert strings[33] == 'nhismgaylolgbt', f"Expected nhismgaylolgbt at 33, got {strings[33]}"
 assert strings[48] == 'nhismgaylolgbt', f"Expected nhismgaylolgbt at 48, got {strings[48]}"
 assert strings[51] == 'CheatVN External', f"Expected CheatVN External at 51, got {strings[51]}"
 assert strings[121] == 'CheatVN External', f"Expected CheatVN External at 121, got {strings[121]}"
 v_tail = modified_assembly[verify_reader.tell():]
 assert v_tail == tail, "Tail mismatch in re-encoded assembly!"
-print("✅ Intern strings verified: [33]='nhismgaylolgbt', [48]='nhismgaylolgbt', [51]='CheatVN External', [121]='CheatVN External'")
+print("✅ Intern strings verified: server [6]='https://cheatingenginexyz.online/api/key/verify?key=', [31]='https://cheatingenginexyz.online/getkey', [33]='nhismgaylolgbt', [48]='nhismgaylolgbt', [51]='CheatVN External', [121]='CheatVN External'")
 
 raw_config = b'{"testCodePatch":true,"resetGuest":true}'
 
