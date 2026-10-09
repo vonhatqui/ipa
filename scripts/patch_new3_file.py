@@ -2,26 +2,36 @@ import plistlib, os, struct, io, sys, uuid, hashlib, datetime
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 sys.stdout.reconfigure(encoding='utf-8')
 
+def encode_7bit_int(value):
+    out = bytearray()
+    while value >= 0x80:
+        out.append((value & 0x7F) | 0x80)
+        value >>= 7
+    out.append(value & 0x7F)
+    return bytes(out)
+
+def encode_string(s):
+    b = s.encode('utf-8')
+    return encode_7bit_int(len(b)) + b
+
 # 1. Load clean modified assembly from scratch/assembly_20931f2_binary.bytes
-# In this binary, bytecode is 100% intact and clean, and strings are already set to:
-# [33]: 'CheatVN External'
-# [48]: 'nhismgaylolgbt'
-# [51]: 'CheatVN External'
-# [121]: 'CheatVN External'
+# In this binary, bytecode is 100% intact and clean.
 assembly_src = r'scratch/assembly_20931f2_binary.bytes'
 if not os.path.exists(assembly_src):
     raise FileNotFoundError(f"Missing {assembly_src}")
 
 with open(assembly_src, 'rb') as f:
-    modified_assembly = f.read()
+    raw_assembly = f.read()
 
-print(f"Loaded clean modified assembly: {len(modified_assembly)} bytes")
-
-# Verify strings using parser
+# Parse binary and re-encode intern strings:
+# [33]: 'nhismgaylolgbt' (Master auth key in Method 0 - MUST match login key!)
+# [48]: 'nhismgaylolgbt' (Default prefilled key in GUI)
+# [51]: 'CheatVN External' (VIP SUITE menu header)
+# [121]: 'CheatVN External' (Brand label watermark)
 sys.path.append('.')
 import scratch.parse_new3_ifix as p
 
-reader = p.BinaryReader(modified_assembly)
+reader = p.BinaryReader(raw_assembly)
 reader.read_uint64(); reader.read_string()
 for _ in range(reader.read_int32()): reader.read_string()
 m_cnt = reader.read_int32()
@@ -41,13 +51,58 @@ for _ in range(ext_m_cnt):
         reader.read_int32(); reader.read_string()
         reader.read_bytes(reader.read_int32() * 4)
 
+str_start_pos = reader.tell()
 str_cnt = reader.read_int32()
-strings = [reader.read_string() for _ in range(str_cnt)]
-assert strings[33] == 'CheatVN External', f"Expected CheatVN External at 33, got {strings[33]}"
+orig_strings = [reader.read_string() for _ in range(str_cnt)]
+tail_pos = reader.tell()
+
+head = raw_assembly[:str_start_pos]
+tail = raw_assembly[tail_pos:]
+
+new_strings = list(orig_strings)
+new_strings[33] = 'nhismgaylolgbt'
+new_strings[48] = 'nhismgaylolgbt'
+new_strings[51] = 'CheatVN External'
+new_strings[121] = 'CheatVN External'
+
+new_str_buf = bytearray()
+new_str_buf += struct.pack('<i', len(new_strings))
+for s in new_strings:
+    new_str_buf += encode_string(s)
+
+modified_assembly = bytes(head) + bytes(new_str_buf) + bytes(tail)
+print(f"Re-encoded assembly: original={len(raw_assembly)} bytes, patched={len(modified_assembly)} bytes")
+
+# Verify strings using parser
+verify_reader = p.BinaryReader(modified_assembly)
+verify_reader.read_uint64(); verify_reader.read_string()
+for _ in range(verify_reader.read_int32()): verify_reader.read_string()
+test_m_cnt = verify_reader.read_int32()
+for _ in range(test_m_cnt):
+    cs = verify_reader.read_int32(); verify_reader.read_bytes(cs * 8)
+    eh = verify_reader.read_int32(); verify_reader.read_bytes(eh * 24)
+test_ext_m_cnt = verify_reader.read_int32()
+for _ in range(test_ext_m_cnt):
+    is_gen = verify_reader.read_boolean()
+    if is_gen:
+        verify_reader.read_int32(); verify_reader.read_string()
+        verify_reader.read_bytes(verify_reader.read_int32() * 4)
+        for _ in range(verify_reader.read_int32()):
+            if verify_reader.read_boolean(): verify_reader.read_string()
+            else: verify_reader.read_int32()
+    else:
+        verify_reader.read_int32(); verify_reader.read_string()
+        verify_reader.read_bytes(verify_reader.read_int32() * 4)
+
+v_str_cnt = verify_reader.read_int32()
+strings = [verify_reader.read_string() for _ in range(v_str_cnt)]
+assert strings[33] == 'nhismgaylolgbt', f"Expected nhismgaylolgbt at 33, got {strings[33]}"
 assert strings[48] == 'nhismgaylolgbt', f"Expected nhismgaylolgbt at 48, got {strings[48]}"
 assert strings[51] == 'CheatVN External', f"Expected CheatVN External at 51, got {strings[51]}"
 assert strings[121] == 'CheatVN External', f"Expected CheatVN External at 121, got {strings[121]}"
-print("✅ Verified intern strings: [33] 'CheatVN External', [48] 'nhismgaylolgbt', [51] 'CheatVN External', [121] 'CheatVN External'")
+v_tail = modified_assembly[verify_reader.tell():]
+assert v_tail == tail, "Tail mismatch in re-encoded assembly!"
+print("[OK] Verified intern strings: [33] 'nhismgaylolgbt', [48] 'nhismgaylolgbt', [51] 'CheatVN External', [121] 'CheatVN External'")
 
 raw_config = b'{"testCodePatch":true,"resetGuest":true}'
 
