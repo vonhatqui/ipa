@@ -33,22 +33,7 @@ print(f"Loaded source patch envelope from {AURA_PATCH_PATH}: {len(AURA_PATCH_BYT
 print(f"Loaded raw Assembly-CSharp-patch.bytes: {len(RAW_ASSEMBLY_BYTES)} bytes")
 print(f"Loaded raw localConfig.json: {len(RAW_CONFIG_BYTES)} bytes")
 
-# 3. Đọc file Mod Skin optionalab_avatar_66 để bundle vào IPA
-MOD_SKIN_FILENAME = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
-MOD_SKIN_SEARCH_PATHS = [
-    os.path.join(r"D:\update_file\skin", MOD_SKIN_FILENAME),
-    os.path.join("ThreeOneOSFive", "BundledPatches", MOD_SKIN_FILENAME),
-]
-MOD_SKIN_BYTES = None
-for _sp in MOD_SKIN_SEARCH_PATHS:
-    if os.path.exists(_sp):
-        with open(_sp, "rb") as f:
-            MOD_SKIN_BYTES = f.read()
-        print(f"Loaded Mod Skin from {_sp}: {len(MOD_SKIN_BYTES)} bytes")
-if MOD_SKIN_BYTES is None:
-    print(f"[WARNING] Mod Skin file not found, skin injection will be skipped in IPA.")
-
-# 4. Đọc file DeltaX Enternal (Assembly-CSharp-patch.bytes 97028B, localConfig.json, envelopes, logos)
+# 3. Đọc file DeltaX Enternal (Assembly-CSharp-patch.bytes 97028B, localConfig.json, envelopes, logos)
 DELTAX_ASSEMBLY_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\Assembly-CSharp-patch.bytes"
 DELTAX_CONFIG_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal\localConfig.json"
 DELTAX_ENV_PATH = r"ThreeOneOSFive\BundledPatches\DeltaX Enternal.3105"
@@ -204,15 +189,9 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/cheatvn_logo.png": CHEATVN_LOGO_NEW_BYTES,
         f"{app_folder}/AppCore/Assets/esp_aimsilent_logo.png": ESP_AIM_LOGO_BYTES,
     }
-    # Thêm Login GIF vào bundle
+    # Thêm Login GIF vào bundle (chỉ 1 bản duy nhất ở root app bundle)
     if LOGIN_GIF_BYTES is not None:
         entries[f"{app_folder}/login_banner.gif"] = LOGIN_GIF_BYTES
-        entries[f"{app_folder}/AppCore/Assets/login_banner.gif"] = LOGIN_GIF_BYTES
-    # Thêm Mod Skin vào BundledPatches và AppCore nếu có
-    if MOD_SKIN_BYTES is not None:
-        entries[f"{app_folder}/BundledPatches/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
-        entries[f"{app_folder}/AppCore/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
-        entries[f"{app_folder}/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
     return entries
 
 def generate_custom_icons(icon_path, app_folder, plist):
@@ -347,7 +326,11 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
                 clean = item.filename.replace('\\', '/')
                 if clean in seen:
                     continue
-                if any(x in clean for x in ["@Nhism", "CheatVN", "Aurora Menu v1-0.3105"]):
+                if any(x in clean for x in [
+                    "@Nhism", "CheatVN", "Aurora Menu v1-0.3105",
+                    "optionalab_avatar", "IGNIS_DAO_SI_DO", "char-alok",
+                    "skin_ignis", "Skins/", ".mp4"
+                ]):
                     continue
                 # Bắt buộc loại bỏ file trùng tên với thư mục BundledPatches/Aurora Menu v1.3105
                 if clean.endswith("BundledPatches/Aurora Menu v1.3105") and not clean.endswith('/'):
