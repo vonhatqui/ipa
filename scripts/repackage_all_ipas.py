@@ -106,6 +106,13 @@ if os.path.exists(LOGIN_GIF_PATH):
         LOGIN_GIF_BYTES = f.read()
     print(f"Loaded login_banner.gif: {len(LOGIN_GIF_BYTES)} bytes")
 
+LOGO_3105_PATH = r"ThreeOneOSFive\logo_3105.png"
+LOGO_3105_BYTES = None
+if os.path.exists(LOGO_3105_PATH):
+    with open(LOGO_3105_PATH, "rb") as f:
+        LOGO_3105_BYTES = f.read()
+    print(f"Loaded logo_3105.png: {len(LOGO_3105_BYTES)} bytes")
+
 with open(FFXC_LIVE_PATH, "rb") as f:
     FFXC_LIVE_BYTES = f.read()
 with open(FFXC_NEUTRAL_PATH, "rb") as f:
@@ -195,9 +202,15 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/cheatvn_logo.png": CHEATVN_LOGO_NEW_BYTES,
         f"{app_folder}/AppCore/Assets/esp_aimsilent_logo.png": ESP_AIM_LOGO_BYTES,
     }
-    # Thêm Login GIF vào bundle (chỉ 1 bản duy nhất ở root app bundle)
+    # Thêm Login GIF vào bundle
     if LOGIN_GIF_BYTES is not None:
         entries[f"{app_folder}/login_banner.gif"] = LOGIN_GIF_BYTES
+        entries[f"{app_folder}/AppCore/login_banner.gif"] = LOGIN_GIF_BYTES
+        entries[f"{app_folder}/AppCore/Assets/login_banner.gif"] = LOGIN_GIF_BYTES
+    if LOGO_3105_BYTES is not None:
+        entries[f"{app_folder}/logo_3105.png"] = LOGO_3105_BYTES
+        entries[f"{app_folder}/AppCore/logo_3105.png"] = LOGO_3105_BYTES
+        entries[f"{app_folder}/AppCore/Assets/logo_3105.png"] = LOGO_3105_BYTES
     return entries
 
 def generate_custom_icons(icon_path, app_folder, plist):

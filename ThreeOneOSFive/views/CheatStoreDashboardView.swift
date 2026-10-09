@@ -807,18 +807,18 @@ struct RainbowText: View {
             VStack(spacing: 12) {
                 auroraInjectorButton
 
-                // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
+                // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang nạp)
                 HStack(spacing: 7) {
-                    if isInjecting || isRestoringClean {
+                    if isInjecting {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.85)
                     }
 
                     Text(auroraInstructionText)
-                        .font(.system(size: 13.5, weight: (isInjecting || isRestoringClean) ? .semibold : .medium, design: .rounded))
+                        .font(.system(size: 13.5, weight: isInjecting ? .semibold : .medium, design: .rounded))
                         .foregroundColor(
-                            (isInjecting || isRestoringClean) ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.70))
+                            isInjecting ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.70))
                         )
                         .multilineTextAlignment(.center)
                 }
@@ -833,9 +833,8 @@ struct RainbowText: View {
     private var auroraInjectorButton: some View {
         Button(action: {
             if isInjected {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 performCleanRestore()
-            } else if !isInjecting && !isRestoringClean {
+            } else if !isInjecting {
                 startAuroraInjection()
             }
         }) {
@@ -959,8 +958,6 @@ struct RainbowText: View {
     private var auroraInstructionText: String {
         if isInjecting {
             return "\(injectionStatusText) (\(injectionProgress)%)"
-        } else if isRestoringClean {
-            return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
             return "Đã nạp CheatVN External vào game thành công!"
         } else {
@@ -1926,59 +1923,7 @@ struct RainbowText: View {
                 .cornerRadius(20)
                 .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
 
-                // 2. Không Gian Công Cụ 3105 2.0 (Chỉ xuất hiện ở Cá Nhân)
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showOriginal3105View = true
-                }) {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.88, green: 0.16, blue: 0.22), Color(red: 0.50, green: 0.06, blue: 0.10)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 44, height: 44)
-                            Image(systemName: "slider.horizontal.3")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundColor(.white)
-                        }
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 6) {
-                                Text("Công Cụ 3105 2.0")
-                                    .font(.system(size: 15.5, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
-                                Text("2.0")
-                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(Color.red.opacity(0.85))
-                                    .cornerRadius(6)
-                            }
-                            Text("Chuyển sang giao diện cấu hình & công cụ gốc 3105")
-                                .font(.system(size: 12))
-                                .foregroundColor(colorMute)
-                                .lineLimit(1)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(colorMute)
-                    }
-                    .padding(14)
-                    .background(glassBg)
-                    .cornerRadius(18)
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 3. Thẻ Thông Tin Thiết Bị & Hệ Thống
+                // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Text("THIẾT BỊ & HỆ THỐNG")
@@ -2110,6 +2055,77 @@ struct RainbowText: View {
                                 .padding(.vertical, 4)
                                 .background(Color.white.opacity(0.12))
                                 .cornerRadius(8)
+                            }
+                        }
+
+                        Divider().background(Color.white.opacity(0.08))
+
+                        // Công cụ 3105 (Gọn gàng dưới mã phần cứng kèm logo app 3105 & nút Qua app 3105)
+                        HStack(spacing: 10) {
+                            if let uiImg = UIImage(named: "Logo3105") ?? UIImage(contentsOfFile: "ThreeOneOSFive/logo_3105.png") ?? UIImage(contentsOfFile: Bundle.main.bundleURL.appendingPathComponent("logo_3105.png").path) ?? UIImage(contentsOfFile: (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/logo_3105.png").path) {
+                                Image(uiImage: uiImg)
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(width: 32, height: 32)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                            .stroke(Color.white.opacity(0.25), lineWidth: 0.8)
+                                    )
+                            } else {
+                                Image(systemName: "cpu")
+                                    .font(.system(size: 16, weight: .bold))
+                                    .foregroundColor(.white)
+                                    .frame(width: 32, height: 32)
+                                    .background(Color.red.opacity(0.85))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                HStack(spacing: 5) {
+                                    Text("Công cụ 3105")
+                                        .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                                        .foregroundColor(colorInk)
+                                    Text("v2.0")
+                                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 5)
+                                        .padding(.vertical, 1.5)
+                                        .background(Color.red.opacity(0.85))
+                                        .cornerRadius(4)
+                                }
+                                Text("Không gian cấu hình & patch gốc")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(colorMute)
+                            }
+
+                            Spacer()
+
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                showOriginal3105View = true
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("Qua app 3105")
+                                        .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 9, weight: .bold))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color(red: 0.88, green: 0.16, blue: 0.22), Color(red: 0.55, green: 0.08, blue: 0.12)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .cornerRadius(8)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 0.8)
+                                )
                             }
                         }
                     }
@@ -2349,56 +2365,33 @@ struct RainbowText: View {
         }
     }
 
-    // MARK: - Ledger Restore Cleanup Action (Hiện Loading Chi Tiết Cho Khách Thấy Rõ)
+    // MARK: - Ledger Restore Cleanup Action (Un một cái là un luôn, không hiện loading)
     func performCleanRestore() {
-        guard !isRestoringClean else { return }
-        isRestoringClean = true
-        restoreProgressValue = 0.05
-        restoreCurrentStepTitle = "Khởi tạo quy trình khôi phục an toàn 100%..."
-        restoreCompletedSteps.removeAll()
-        isRestoreFinished = false
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showRestoreProgressModal = true
-        }
-
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
+        // Ngay lập tức đổi trạng thái nút về ban đầu (un cái là un luôn 0ms)
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            self.isInjected = false
+            self.activeAimPatch = nil
+            self.activeEspColor = nil
+            self.selectedAimChips.removeAll()
+            self.selectedEspChips.removeAll()
+            self.isRestoringClean = false
+        }
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        CheatStoreSoundManager.shared.playTabSwitchHaptic()
+        self.showToastNotification(
+            message: "✅ Đã gỡ nạp CheatVN External thành công!",
+            icon: "checkmark.circle.fill",
+            color: Color.green
+        )
+
+        // Dọn dẹp ngầm toàn bộ dữ liệu container trong background không làm đơ giao diện
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = DevicePatchService.cleanRestoreWithProgress { stepIndex, stepTitle, progress in
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.restoreProgressValue = progress
-                        self.restoreCurrentStepTitle = stepTitle
-                        if !self.restoreCompletedSteps.contains(stepTitle) {
-                            self.restoreCompletedSteps.append(stepTitle)
-                        }
-                    }
-                }
-            }
-
+            _ = DevicePatchService.cleanRestore()
             self.antibanPatchService.stopAntiBan()
-
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    self.isInjected = false
-                    self.activeAimPatch = nil
-                    self.activeEspColor = nil
-                    self.selectedAimChips.removeAll()
-                    self.selectedEspChips.removeAll()
-                    self.isRestoringClean = false
-                    self.isRestoreFinished = true
-                    self.restoreProgressValue = 1.0
-                }
-
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-
-                // Hiện toast thành công
-                self.showToastNotification(
-                    message: "✅ Đã khôi phục sạch 100% dữ liệu game!",
-                    icon: "checkmark.circle.fill",
-                    color: Color.green
-                )
-            }
+            print("[CheatStore] Đã dọn dẹp khôi phục sạch dữ liệu gốc")
         }
     }
 

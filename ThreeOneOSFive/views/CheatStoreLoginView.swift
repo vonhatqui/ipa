@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import WebKit
+import ImageIO
 
 struct CheatStoreLoginView: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
@@ -1451,77 +1452,119 @@ struct KeyNotificationModalView: View {
     }
 }
 
-// MARK: - Login GIF Banner View (https://files.catbox.moe/qhq1ot.gif)
-struct LoginGifBannerView: UIViewRepresentable {
-    func makeUIView(context: Context) -> WKWebView {
-        let config = WKWebViewConfiguration()
-        config.allowsAirPlayForMediaPlayback = false
-        let webView = WKWebView(frame: .zero, configuration: config)
-        webView.isOpaque = false
-        webView.backgroundColor = .clear
-        webView.scrollView.isScrollEnabled = false
-        webView.scrollView.backgroundColor = .clear
-        webView.scrollView.bounces = false
-        webView.isUserInteractionEnabled = false
-        loadGif(webView: webView)
-        return webView
+// MARK: - Login GIF Banner View (Siêu tốc độ với UIImageView & CGImageSource Native Cache)
+final class BannerGifCache {
+    static let shared = BannerGifCache()
+    var cachedImage: UIImage? = nil
+    private var isFetching = false
+
+    init() {
+        loadFast()
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func loadFast(completion: ((UIImage?) -> Void)? = nil) {
+        if let cached = cachedImage {
+            completion?(cached)
+            return
+        }
 
-    private func loadGif(webView: WKWebView) {
-        var gifData: Data? = nil
+        // 1. Quét tìm file local trong AppCore / Bundle / Documents
         let candidateURLs = [
             Bundle.main.url(forResource: "login_banner", withExtension: "gif"),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/login_banner.gif"),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assets/login_banner.gif"),
+            Bundle.main.bundleURL.appendingPathComponent("AppCore/login_banner.gif"),
             Bundle.main.bundleURL.appendingPathComponent("login_banner.gif"),
             (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("login_banner.gif"),
-            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("login_banner.gif")
+            FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?.appendingPathComponent("login_banner.gif"),
+            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("login_banner.gif"),
+            URL(fileURLWithPath: "ThreeOneOSFive/login_banner.gif")
         ].compactMap { $0 }
 
         for url in candidateURLs {
-            if let data = try? Data(contentsOf: url), !data.isEmpty {
-                gifData = data
-                break
+            if FileManager.default.fileExists(atPath: url.path),
+               let data = try? Data(contentsOf: url), !data.isEmpty,
+               let animImg = Self.decodeGif(data: data) {
+                self.cachedImage = animImg
+                completion?(animImg)
+                return
             }
         }
 
-        if let data = gifData {
-            let base64 = data.base64EncodedString()
-            let html = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-            img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; }
-            </style>
-            </head>
-            <body>
-            <img src="data:image/gif;base64,\(base64)">
-            </body>
-            </html>
-            """
-            webView.loadHTMLString(html, baseURL: nil)
+        // 2. Nếu chưa có trên đĩa, tải ngay từ link catbox và lưu cache
+        guard !isFetching else { return }
+        isFetching = true
+        DispatchQueue.global(qos: .userInteractive).async {
+            defer { self.isFetching = false }
+            guard let remoteURL = URL(string: "https://files.catbox.moe/qhq1ot.gif"),
+                  let data = try? Data(contentsOf: remoteURL), !data.isEmpty,
+                  let animImg = Self.decodeGif(data: data) else { return }
+
+            DispatchQueue.main.async {
+                self.cachedImage = animImg
+                completion?(animImg)
+            }
+
+            if let cacheDir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first {
+                let cacheFile = cacheDir.appendingPathComponent("login_banner.gif")
+                try? data.write(to: cacheFile)
+            }
+        }
+    }
+
+    static func decodeGif(data: Data) -> UIImage? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil) else { return nil }
+        let count = CGImageSourceGetCount(source)
+        guard count > 0 else { return nil }
+
+        var images: [UIImage] = []
+        var duration: Double = 0.0
+
+        for i in 0..<count {
+            if let cgImage = CGImageSourceCreateImageAtIndex(source, i, nil) {
+                images.append(UIImage(cgImage: cgImage))
+
+                var frameDuration: Double = 0.05
+                if let properties = CGImageSourceCopyPropertiesAtIndex(source, i, nil) as? [CFString: Any],
+                   let gifInfo = properties[kCGImagePropertyGIFDictionary] as? [CFString: Any] {
+                    if let unclamped = gifInfo[kCGImagePropertyGIFUnclampedDelayTime] as? Double, unclamped > 0.01 {
+                        frameDuration = unclamped
+                    } else if let delay = gifInfo[kCGImagePropertyGIFDelayTime] as? Double, delay > 0.01 {
+                        frameDuration = delay
+                    }
+                }
+                duration += frameDuration
+            }
+        }
+
+        if images.count == 1 {
+            return images.first
+        }
+        return UIImage.animatedImage(with: images, duration: duration > 0 ? duration : Double(count) * 0.06)
+    }
+}
+
+struct LoginGifBannerView: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIImageView {
+        let imageView = UIImageView()
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
+        imageView.layer.cornerRadius = 18
+        imageView.backgroundColor = UIColor(white: 0.1, alpha: 0.2)
+
+        if let cached = BannerGifCache.shared.cachedImage {
+            imageView.image = cached
         } else {
-            let html = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-            <style>
-            * { margin: 0; padding: 0; box-sizing: border-box; }
-            html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-            img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; }
-            </style>
-            </head>
-            <body>
-            <img src="https://files.catbox.moe/qhq1ot.gif">
-            </body>
-            </html>
-            """
-            webView.loadHTMLString(html, baseURL: nil)
+            BannerGifCache.shared.loadFast { img in
+                imageView.image = img
+            }
+        }
+        return imageView
+    }
+
+    func updateUIView(_ uiView: UIImageView, context: Context) {
+        if uiView.image == nil, let cached = BannerGifCache.shared.cachedImage {
+            uiView.image = cached
         }
     }
 }
