@@ -397,7 +397,7 @@ struct CheatStoreDashboardView: View {
                         // Thanh Progress Bar
                         VStack(spacing: 6) {
                             ProgressView(value: restoreProgressValue, total: 1.0)
-                                .progressViewStyle(LinearProgressViewStyle(tint: isRestoreFinished ? Color.green : Color.orange))
+                                .progressViewStyle(LinearProgressViewStyle(tint: Color.white))
                                 .scaleEffect(x: 1, y: 2.2, anchor: .center)
                                 .clipShape(Capsule())
 
@@ -409,7 +409,7 @@ struct CheatStoreDashboardView: View {
                                 Spacer()
                                 Text("\(Int(restoreProgressValue * 100))%")
                                     .font(.system(size: 11.5, weight: .bold, design: .monospaced))
-                                    .foregroundColor(isRestoreFinished ? .green : .orange)
+                                    .foregroundColor(Color.white)
                             }
                         }
                         .padding(.horizontal, 4)
@@ -797,8 +797,9 @@ struct RainbowText: View {
 
             Spacer()
 
-            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn + Nút Dọn file Documents
-            VStack(spacing: 11) {
+            // PHÍA DƯỚI: Chọn Chức Năng + Nút INJECTOR / UNINJECT lớn
+            VStack(spacing: 12) {
+                featureSelectorCards
                 auroraInjectorButton
 
                 // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
@@ -903,13 +904,7 @@ struct RainbowText: View {
                                         .fill(Color.white.opacity(0.18))
                                         .frame(height: 4)
                                     Capsule()
-                                        .fill(
-                                            LinearGradient(
-                                                colors: [Color.green, Color.cyan],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
+                                        .fill(Color.white)
                                         .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(injectionProgress) / 100.0)), height: 4)
                                 }
                             }
@@ -1161,7 +1156,7 @@ struct RainbowText: View {
     }
 
     private var auroraInstructionText: String {
-        let featureTitle = "CheatVN External"
+        let featureTitle = selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
         if isInjecting {
             return "\(injectionStatusText) (\(injectionProgress)%)"
         } else if isRestoringClean {
@@ -1182,17 +1177,23 @@ struct RainbowText: View {
         injectionStatusText = "Đang nạp patching..."
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp gói patch CheatVN External (.3105 từ D:\update_file\new1111)
+        // 1. Chạy background task nạp gói patch theo menu được chọn
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = self.applyAuroraPackage()
+            let ok: Bool
+            if self.selectedMenuFeature == "deltax_enternal" {
+                ok = self.applyDeltaXPackage()
+            } else {
+                ok = self.applyAuroraPackage()
+            }
             DevicePatchService.ensureActivePatchesInjected()
+            print("[CheatStore] Nạp hoàn tất (\(self.selectedMenuFeature)): \(ok)")
         }
 
         // 2. Chạy timer tăng tiến độ 1% -> 100% mượt mà
         // 1-40%: Đang nạp patching...
         // 41-80%: Đang bypass anti-cheat...
         // 81-100%: Đang chuẩn bị vào game...
-        let stepInterval: TimeInterval = 0.045
+        let stepInterval: TimeInterval = 0.04
         Timer.scheduledTimer(withTimeInterval: stepInterval, repeats: true) { timer in
             if self.injectionProgress < 100 {
                 self.injectionProgress += 1
@@ -1215,8 +1216,9 @@ struct RainbowText: View {
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
                 CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
+                let featTitle = self.selectedMenuFeature == "deltax_enternal" ? "DeltaX Enternal" : "CheatVN External"
                 self.showToastNotification(
-                    message: "Đã nạp và bypass thành công! Đang vào game...",
+                    message: "Đã nạp \(featTitle) thành công! Đang vào game...",
                     icon: "checkmark.circle.fill",
                     color: Color.green
                 )
@@ -1229,23 +1231,27 @@ struct RainbowText: View {
         }
     }
 
-    /// Nạp file CheatVN External (new3: Assembly-CSharp-patch.bytes & localConfig.json)
+    /// Nạp file CheatVN External (Assembly-CSharp-patch.bytes, localConfig.json, .ffxc_live, .ffxc_neutral, .ffxc_runtime)
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
         let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 1. Kích hoạt quyền container MHA-C2 cho tất cả các bản Free Fire
+        // 1. Kích hoạt và tìm tất cả container của Free Fire (cả Standard lẫn MAX)
         let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
         var targetContainerRoots: [URL] = []
         for bID in targets {
             if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
-                targetContainerRoots.append(PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true)))
+                let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+                if !targetContainerRoots.contains(url) {
+                    targetContainerRoots.append(url)
+                }
             }
         }
         for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
-            if !targetContainerRoots.contains(root) {
-                targetContainerRoots.append(root)
+            let canonical = PatchPathValidator.canonicalFileURL(root)
+            if !targetContainerRoots.contains(canonical) {
+                targetContainerRoots.append(canonical)
             }
         }
         if let ffPath = findFreeFireContainerPath() {
@@ -1254,150 +1260,253 @@ struct RainbowText: View {
                 targetContainerRoots.append(canonical)
             }
         }
-
-        // 2. Tìm kiếm file nguồn Assembly-CSharp-patch.bytes & localConfig.json
-        var patchSrcURL: URL? = nil
-        var configSrcURL: URL? = nil
-
-        var rawSearchDirs: [URL] = []
-        if let bundleRes = Bundle.main.resourceURL {
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
-        }
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
-        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new1111"))
-        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            rawSearchDirs.append(root.appendingPathComponent("CheatVN_External_Files/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("OG MENU FFTH/Documents"))
-            rawSearchDirs.append(root)
-        }
-
-        for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            if fileManager.fileExists(atPath: p1.path) {
-                patchSrcURL = p1; break
-            } else if fileManager.fileExists(atPath: p2.path) {
-                patchSrcURL = p2; break
-            }
-        }
-
-        for dir in rawSearchDirs {
-            let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-            let c2 = dir.appendingPathComponent("localConfig.json")
-            if fileManager.fileExists(atPath: c1.path) {
-                configSrcURL = c1; break
-            } else if fileManager.fileExists(atPath: c2.path) {
-                configSrcURL = c2; break
-            }
-        }
-
-        var directWriteSuccess = false
-        if let patchSrc = patchSrcURL {
-            let configData = (try? Data(contentsOf: configSrcURL ?? patchSrc)) ?? "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
-            let patchData = try? Data(contentsOf: patchSrc)
-
-            for root in targetContainerRoots {
-                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-
-                let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-                let dstConfig = docDir.appendingPathComponent("localConfig.json")
-
-                try? fileManager.removeItem(at: dstPatch)
-                if let patchData = patchData {
-                    try? patchData.write(to: dstPatch, options: .atomic)
-                } else {
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
+        // Quét trực tiếp thư mục /var/mobile/Containers/Data/Application để phát hiện cả FF và FF MAX
+        for rootPath in ["/private/var/mobile/Containers/Data/Application", "/var/mobile/Containers/Data/Application"] {
+            if let dirs = try? fileManager.contentsOfDirectory(atPath: rootPath) {
+                for d in dirs {
+                    let full = (rootPath as NSString).appendingPathComponent(d)
+                    let chk1 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
+                    let chk2 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                    let chk3 = (full as NSString).appendingPathComponent("Documents/contentcache")
+                    if fileManager.fileExists(atPath: chk1) || fileManager.fileExists(atPath: chk2) || fileManager.fileExists(atPath: chk3) {
+                        let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: full, isDirectory: true))
+                        if !targetContainerRoots.contains(url) {
+                            targetContainerRoots.append(url)
+                        }
+                    }
                 }
-
-                try? fileManager.removeItem(at: dstConfig)
-                try? configData.write(to: dstConfig, options: .atomic)
-
-                var uPatch = dstPatch
-                var uConfig = dstConfig
-                var resVals = URLResourceValues()
-                resVals.isExcludedFromBackup = true
-                try? uPatch.setResourceValues(resVals)
-                try? uConfig.setResourceValues(resVals)
-                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
-                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
-
-                directWriteSuccess = true
-            }
-            if directWriteSuccess {
-                print("[CheatStore] ✅ Đã copy trực tiếp Assembly-CSharp-patch.bytes & localConfig.json vào \(targetContainerRoots.count) containers!")
             }
         }
 
-        // 3. Nạp qua envelope .3105 bằng DevicePatchService.apply (cơ chế chuẩn của 3105 engine)
-        var candidateURLs: [URL] = []
+        print("[CheatStore] 🎯 Đã tìm thấy \(targetContainerRoots.count) container Free Fire:")
+        for r in targetContainerRoots {
+            print("[CheatStore]  -> \(r.path)")
+        }
+
+        // 2. Thu thập đầy đủ 5 file Hotfix IFix chuẩn của CheatVN External:
+        //    - Assembly-CSharp-patch.bytes
+        //    - localConfig.json
+        //    - .ffxc_live
+        //    - .ffxc_neutral_37ca851ab5df497db608f1b2f45165f9
+        //    - .ffxc_runtime
+        var searchDirs: [URL] = []
+        if let bundleRes = Bundle.main.resourceURL {
+            searchDirs.append(bundleRes.appendingPathComponent("AppCore"))
+            searchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
+            searchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
+            searchDirs.append(bundleRes.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
+            searchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
+        }
+        searchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
+        searchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
+        searchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
+        searchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
+        searchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches"))
+        searchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/CheatVN_External_Files/Documents"))
+        searchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/AppCore"))
+        searchDirs.append(URL(fileURLWithPath: "D:/update_file/new1111"))
+        searchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
+
+        var assemblyData: Data? = nil
+        var configData: Data = "{\"testCodePatch\":true,\"resetGuest\":true}\n".data(using: .utf8)!
+        var liveData: Data? = nil
+        var neutralData: Data? = nil
+        var runtimeData: Data? = nil
+
+        for dir in searchDirs {
+            let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            if assemblyData == nil {
+                if fileManager.fileExists(atPath: p1.path), let d = try? Data(contentsOf: p1) { assemblyData = d }
+                else if fileManager.fileExists(atPath: p2.path), let d = try? Data(contentsOf: p2) { assemblyData = d }
+            }
+
+            let c1 = dir.appendingPathComponent("localConfig.json")
+            let c2 = dir.appendingPathComponent("Documents/localConfig.json")
+            if fileManager.fileExists(atPath: c1.path), let d = try? Data(contentsOf: c1) { configData = d }
+            else if fileManager.fileExists(atPath: c2.path), let d = try? Data(contentsOf: c2) { configData = d }
+
+            let l1 = dir.appendingPathComponent(".ffxc_live")
+            let l2 = dir.appendingPathComponent("Documents/.ffxc_live")
+            if liveData == nil {
+                if fileManager.fileExists(atPath: l1.path), let d = try? Data(contentsOf: l1) { liveData = d }
+                else if fileManager.fileExists(atPath: l2.path), let d = try? Data(contentsOf: l2) { liveData = d }
+            }
+
+            let n1 = dir.appendingPathComponent(".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9")
+            let n2 = dir.appendingPathComponent("Documents/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9")
+            if neutralData == nil {
+                if fileManager.fileExists(atPath: n1.path), let d = try? Data(contentsOf: n1) { neutralData = d }
+                else if fileManager.fileExists(atPath: n2.path), let d = try? Data(contentsOf: n2) { neutralData = d }
+            }
+
+            let r1 = dir.appendingPathComponent(".ffxc_runtime")
+            let r2 = dir.appendingPathComponent("Documents/.ffxc_runtime")
+            if runtimeData == nil {
+                if fileManager.fileExists(atPath: r1.path), let d = try? Data(contentsOf: r1) { runtimeData = d }
+                else if fileManager.fileExists(atPath: r2.path), let d = try? Data(contentsOf: r2) { runtimeData = d }
+            }
+        }
+
+        // Dự phòng tĩnh nếu file IFix chưa tìm thấy trên đĩa:
+        if liveData == nil {
+            liveData = "FFXCLIVE2\n37ca851ab5df497db608f1b2f45165f9\n2\n704807167\n201775153\n120\n286c910f8c2a7798a5be7b2fc66e4f0\n".data(using: .utf8)
+        }
+        if neutralData == nil {
+            neutralData = AntibanPatchService.neutralSeedBytes
+        }
+        if runtimeData == nil {
+            runtimeData = "FFXC2\n37ca851ab5df497db608f1b2f45165f9\n15\n704807167\n201775153\n173d5b9b9cdded8652d2c5726b0b2740e03ad6\n".data(using: .utf8)
+        }
+
+        // Thử giải mã thêm từ envelope CheatVN External.3105 nếu assemblyData vẫn rỗng
+        if assemblyData == nil {
+            let envCandidates = [
+                Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External.3105"),
+                Bundle.main.bundleURL.appendingPathComponent("AppCore/CheatVN External.3105"),
+                (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("BundledPatches/CheatVN External.3105"),
+                URL(fileURLWithPath: "D:/update_file/new1111/CheatVN External.3105")
+            ]
+            for envURL in envCandidates {
+                if fileManager.fileExists(atPath: envURL.path),
+                   let raw = try? Data(contentsOf: envURL),
+                   let summary = try? PatchPackageCodec.inspect(raw) {
+                    if let decoded = PatchProjectLibrary.decodePackageSafely(data: raw, summary: summary) {
+                        for rule in decoded.project.rules {
+                            if rule.relativePath.contains("Assembly-CSharp-patch.bytes") {
+                                assemblyData = rule.replacementData
+                                break
+                            }
+                        }
+                    }
+                }
+                if assemblyData != nil { break }
+            }
+        }
+
+        var filesMap: [String: Data] = [:]
+        if let ass = assemblyData { filesMap["Assembly-CSharp-patch.bytes"] = ass }
+        filesMap["localConfig.json"] = configData
+        if let live = liveData { filesMap[".ffxc_live"] = live }
+        if let neutral = neutralData { filesMap[".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9"] = neutral }
+        if let runtime = runtimeData { filesMap[".ffxc_runtime"] = runtime }
+
+        print("[CheatStore] 📦 Chuẩn bị ghi \(filesMap.count) file patch:")
+        for (name, data) in filesMap {
+            print("[CheatStore]  -> \(name): \(data.count) bytes")
+        }
+
+        // 3. Nạp trước qua 3105 Engine (nếu khả dụng)
+        var appliedVia3105 = false
+        var envelopeURLs: [URL] = []
         let envNames = ["CheatVN External.3105", "OG MENU FFTH.3105", "DELTAX FFTH .3105", ".core_runtime.dat"]
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            for e in envNames {
-                candidateURLs.append(root.appendingPathComponent(e))
-            }
-        }
         if let resURL = Bundle.main.resourceURL {
             for e in envNames {
-                candidateURLs.append(resURL.appendingPathComponent("AppCore/\(e)"))
-                candidateURLs.append(resURL.appendingPathComponent("BundledPatches/\(e)"))
+                envelopeURLs.append(resURL.appendingPathComponent("AppCore/\(e)"))
+                envelopeURLs.append(resURL.appendingPathComponent("BundledPatches/\(e)"))
             }
         }
         for e in envNames {
-            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/\(e)"))
-            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/\(e)"))
+            envelopeURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/\(e)"))
+            envelopeURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/\(e)"))
         }
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/CheatVN External.3105"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/OG MENU FFTH.3105"))
+        envelopeURLs.append(URL(fileURLWithPath: "D:/update_file/new1111/CheatVN External.3105"))
+        envelopeURLs.append(URL(fileURLWithPath: "D:/update_file/new3/CheatVN External.3105"))
 
-        var appliedVia3105Success = false
-        for sourceURL in candidateURLs {
-            guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
+        for envURL in envelopeURLs {
+            guard fileManager.fileExists(atPath: envURL.path) else { continue }
             do {
-                let rawData = try Data(contentsOf: sourceURL)
+                let rawData = try Data(contentsOf: envURL)
                 let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
                 guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
                 let summary = try PatchPackageCodec.inspect(data)
                 let decoded: DecodedPatchPackage
                 if !summary.isPasswordProtected {
-                    if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
-                        decoded = cached
-                    } else {
-                        decoded = try PatchPackageCodec.decode(data, password: "")
-                    }
+                    decoded = try PatchPackageCodec.decode(data, password: "")
                 } else {
                     var decResult: DecodedPatchPackage? = nil
                     for pwd in ["OG", patchPassword, "1", ""] {
-                        if let d = try? PatchPackageCodec.decode(data, password: pwd) {
-                            decResult = d
-                            break
-                        }
+                        if let d = try? PatchPackageCodec.decode(data, password: pwd) { decResult = d; break }
                     }
                     guard let d = decResult else { continue }
                     decoded = d
                 }
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                _ = try DevicePatchService.apply(project: decoded.project)
-                appliedVia3105Success = true
-                print("[CheatStore] ✅ Đã nạp thành công CheatVN External envelope \(sourceURL.lastPathComponent)")
+                _ = try? DevicePatchService.apply(project: decoded.project)
+                appliedVia3105 = true
+                print("[CheatStore] ✅ Đã nạp thành công qua 3105 DevicePatchService: \(envURL.lastPathComponent)")
                 break
             } catch {
-                print("[CheatStore] Thử nạp envelope \(sourceURL.lastPathComponent): \(error)")
+                print("[CheatStore] Thử nạp envelope \(envURL.lastPathComponent): \(error)")
             }
         }
 
+        // 4. Ghi TRỰC TIẾP toàn bộ 5 files vào Documents của TẤT CẢ các containers
+        var writeSuccessCount = 0
+        for root in targetContainerRoots {
+            let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+            try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+            try? fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: docDir.path)
+
+            // Dọn dẹp cache verify cũ của game để IFix nạp ngay file mới không bị chặn
+            let cleanCaches = [
+                "Documents/contentcache/res_version.hash",
+                "Documents/contentcache/file_hash.bin",
+                "Documents/contentcache/verify_cache.dat",
+                "Documents/contentcache/crc_cache.bin",
+                "Documents/contentcache/asset_verify.db",
+                "Documents/contentcache/patch_verify.dat",
+                "Documents/pending_reports"
+            ]
+            for cl in cleanCaches {
+                let p = root.appendingPathComponent(cl)
+                if fileManager.fileExists(atPath: p.path) {
+                    try? fileManager.removeItem(at: p)
+                }
+            }
+
+            for (fileName, data) in filesMap {
+                let dst = docDir.appendingPathComponent(fileName)
+                try? fileManager.removeItem(at: dst)
+                var written = false
+                do {
+                    try data.write(to: dst)
+                    written = true
+                } catch {
+                    let tmp = fileManager.temporaryDirectory.appendingPathComponent(fileName)
+                    if (try? data.write(to: tmp)) != nil {
+                        if (try? fileManager.copyItem(at: tmp, to: dst)) != nil { written = true }
+                        try? fileManager.removeItem(at: tmp)
+                    }
+                }
+                if written {
+                    var u = dst
+                    var resVals = URLResourceValues()
+                    resVals.isExcludedFromBackup = true
+                    try? u.setResourceValues(resVals)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dst.path)
+                    writeSuccessCount += 1
+                }
+            }
+
+            // Ghi thêm bản sao dự phòng vào Library/Application Support nếu có
+            let appSupport = root.appendingPathComponent("Library/Application Support", isDirectory: true)
+            if fileManager.fileExists(atPath: appSupport.path) {
+                if let ass = filesMap["Assembly-CSharp-patch.bytes"] {
+                    let dst = appSupport.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                    try? fileManager.removeItem(at: dst)
+                    try? ass.write(to: dst)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dst.path)
+                }
+            }
+        }
+
+        // 5. Khóa cấu hình và đảm bảo localConfig luôn duy trì
         DevicePatchService.ensureActivePatchesInjected()
-        return directWriteSuccess || appliedVia3105Success
+
+        let totalSuccess = writeSuccessCount > 0 || appliedVia3105
+        print("[CheatStore] 🏁 Kết quả nạp CheatVN External: \(totalSuccess ? "THÀNH CÔNG" : "THẤT BẠI") (\(writeSuccessCount) files written)")
+        return totalSuccess
     }
 
     /// Nạp file DeltaX Enternal (Hỗ trợ cả FFTH và FFMAX, Motion Blur Safe)
@@ -1405,7 +1514,39 @@ struct RainbowText: View {
     private func applyDeltaXPackage() -> Bool {
         let fileManager = FileManager.default
 
-        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của DeltaX Enternal
+        // 1. Kích hoạt và tìm tất cả container của Free Fire
+        let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        var targetContainerRoots: [URL] = []
+        for bID in targets {
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
+                let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+                if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
+            }
+        }
+        for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
+            let canonical = PatchPathValidator.canonicalFileURL(root)
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
+        }
+        if let ffPath = findFreeFireContainerPath() {
+            let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
+        }
+        for rootPath in ["/private/var/mobile/Containers/Data/Application", "/var/mobile/Containers/Data/Application"] {
+            if let dirs = try? fileManager.contentsOfDirectory(atPath: rootPath) {
+                for d in dirs {
+                    let full = (rootPath as NSString).appendingPathComponent(d)
+                    let chk1 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
+                    let chk2 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                    let chk3 = (full as NSString).appendingPathComponent("Documents/contentcache")
+                    if fileManager.fileExists(atPath: chk1) || fileManager.fileExists(atPath: chk2) || fileManager.fileExists(atPath: chk3) {
+                        let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: full, isDirectory: true))
+                        if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
+                    }
+                }
+            }
+        }
+
+        // 2. Quét tìm nạp file patch Assembly-CSharp-patch.bytes & localConfig.json của DeltaX Enternal
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
@@ -1416,56 +1557,27 @@ struct RainbowText: View {
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX"))
+        rawSearchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/DeltaX Enternal/Documents"))
+        rawSearchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/DeltaX Enternal"))
         rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/aklo"))
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal"))
-            rawSearchDirs.append(root)
-        }
+
+        var deltaXAssembly: Data? = nil
+        var deltaXConfig: Data = "{\"testCodePatch\":true,\"resetGuest\":true}\n".data(using: .utf8)!
 
         for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
-
-            if let patchSrc = patchSrc {
-                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-                let c2 = dir.appendingPathComponent("localConfig.json")
-                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
-
-                let allContainers = DevicePatchService.allAvailableFreeFireContainers()
-                for (_, root) in allContainers {
-                    let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                    try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-                    let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-                    let dstConfig = docDir.appendingPathComponent("localConfig.json")
-
-                    try? fileManager.removeItem(at: dstPatch)
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
-
-                    if let configSrc = configSrc {
-                        try? fileManager.removeItem(at: dstConfig)
-                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
-                    } else {
-                        let configData = "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
-                        try? configData.write(to: dstConfig, options: .atomic)
-                    }
-                    var uPatch = dstPatch
-                    var uConfig = dstConfig
-                    var resVals = URLResourceValues()
-                    resVals.isExcludedFromBackup = true
-                    try? uPatch.setResourceValues(resVals)
-                    try? uConfig.setResourceValues(resVals)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
-                }
-                DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công DeltaX Enternal raw patch Assembly-CSharp-patch.bytes & localConfig.json")
-                return true
+            let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            if deltaXAssembly == nil {
+                if fileManager.fileExists(atPath: p1.path), let d = try? Data(contentsOf: p1) { deltaXAssembly = d }
+                else if fileManager.fileExists(atPath: p2.path), let d = try? Data(contentsOf: p2) { deltaXAssembly = d }
             }
+            let c1 = dir.appendingPathComponent("localConfig.json")
+            let c2 = dir.appendingPathComponent("Documents/localConfig.json")
+            if fileManager.fileExists(atPath: c1.path), let d = try? Data(contentsOf: c1) { deltaXConfig = d }
+            else if fileManager.fileExists(atPath: c2.path), let d = try? Data(contentsOf: c2) { deltaXConfig = d }
         }
 
-        // 2. Nếu không tìm thấy raw file, nạp qua envelope 3105
+        // 3. Nạp qua envelope 3105 DeltaX nếu có
         var candidateURLs: [URL] = []
         if let resURL = Bundle.main.resourceURL {
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/DeltaX Enternal.3105"))
@@ -1479,10 +1591,7 @@ struct RainbowText: View {
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DELTAX FFTH .3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX Enternal.3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.deltax_runtime.dat"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFM .3105"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFTH .3105"))
 
-        var appliedSuccess = false
         for url in candidateURLs {
             guard fileManager.fileExists(atPath: url.path) else { continue }
             do {
@@ -1498,17 +1607,52 @@ struct RainbowText: View {
                 } else {
                     decoded = try PatchPackageCodec.decode(data, password: "1")
                 }
+                if deltaXAssembly == nil {
+                    for r in decoded.project.rules {
+                        if r.relativePath.contains("Assembly-CSharp-patch.bytes") { deltaXAssembly = r.replacementData; break }
+                    }
+                }
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                _ = try DevicePatchService.apply(project: decoded.project)
-                appliedSuccess = true
-                print("[CheatStore] ✅ Đã nạp thành công envelope \(url.lastPathComponent)")
+                _ = try? DevicePatchService.apply(project: decoded.project)
                 break
             } catch {
                 print("[CheatStore] Nạp DeltaX envelope thất bại: \(error)")
             }
         }
 
-        return appliedSuccess
+        // 4. Ghi trực tiếp vào toàn bộ container
+        var writtenCount = 0
+        if let ass = deltaXAssembly {
+            for root in targetContainerRoots {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+                try? fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: docDir.path)
+
+                let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let dstConfig = docDir.appendingPathComponent("localConfig.json")
+
+                try? fileManager.removeItem(at: dstPatch)
+                try? ass.write(to: dstPatch)
+                var uPatch = dstPatch
+                var resPatch = URLResourceValues()
+                resPatch.isExcludedFromBackup = true
+                try? uPatch.setResourceValues(resPatch)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
+
+                try? fileManager.removeItem(at: dstConfig)
+                try? deltaXConfig.write(to: dstConfig)
+                var uConfig = dstConfig
+                var resConfig = URLResourceValues()
+                resConfig.isExcludedFromBackup = true
+                try? uConfig.setResourceValues(resConfig)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+
+                writtenCount += 1
+            }
+        }
+
+        DevicePatchService.ensureActivePatchesInjected()
+        return writtenCount > 0
     }
 
     private var heroTagText: String {

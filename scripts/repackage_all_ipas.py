@@ -179,6 +179,12 @@ def get_patch_entries(app_folder):
         f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_runtime": FFXC_RUNTIME_BYTES,
         f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes": FFXC_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/localConfig.json": FFXC_CONFIG_BYTES,
+        f"{app_folder}/AppCore/.ffxc_live": FFXC_LIVE_BYTES,
+        f"{app_folder}/AppCore/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9": FFXC_NEUTRAL_BYTES,
+        f"{app_folder}/AppCore/.ffxc_runtime": FFXC_RUNTIME_BYTES,
+        f"{app_folder}/BundledPatches/.ffxc_live": FFXC_LIVE_BYTES,
+        f"{app_folder}/BundledPatches/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9": FFXC_NEUTRAL_BYTES,
+        f"{app_folder}/BundledPatches/.ffxc_runtime": FFXC_RUNTIME_BYTES,
         # Feature Logos
         f"{app_folder}/cheatvn_external.png": CHEATVN_LOGO_BYTES,
         f"{app_folder}/deltax_enternal.png": DELTAX_LOGO_BYTES,
@@ -303,7 +309,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
         plist['CFBundleExecutable'] = target_exec_name
         plist['CFBundleDisplayName'] = "CheatStore VN"
         plist['CFBundleName'] = "CheatStore VN"
-        plist['CFBundleIdentifier'] = "com.cheatvn.external"
+        plist['CFBundleIdentifier'] = "com.apple.mobile.MobileHouseArrest"
         plist['CFBundleShortVersionString'] = "2.4"
         plist['CFBundleVersion'] = "10"
         plist['AppReleaseDisplayVersion'] = "2.4"
@@ -662,12 +668,12 @@ def main():
     cheatstore_icon = r"assets\brands\cheatstore_logo.png"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI CHEATSTORE IPA (BUNDLE ID: com.cheatvn.external):")
+    print("BẮT ĐẦU ĐÓNG GÓI CHEATSTORE IPA (MHA-C2 EXPLOIT ENABLED):")
     print(f"  CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
     print("  (Đã loại bỏ VeLix và Venom theo yêu cầu)")
     print("==================================================")
 
-    # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và Bundle ID com.cheatvn.external
+    # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và Bundle ID com.apple.mobile.MobileHouseArrest
     fix_base_ipa(raw_ipa, cheatstore_ipa_update, icon_path=cheatstore_icon)
     for dest in [cheatstore_vn_ipa_update, cheatstore_ipa_root, cheatstore_vn_ipa_root, cheatstore_ipa_new2, well_known_base]:
         dest_dir = os.path.dirname(dest)
@@ -680,7 +686,7 @@ def main():
             shutil.copyfile(cheatstore_ipa_update, dest)
         except Exception as e:
             print(f"  Note: copy to {dest} skipped: {e}")
-    verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.cheatvn.external", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
+    verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
 
     print("\n🎉 XÁC NHẬN: CHEATSTORE IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
 
