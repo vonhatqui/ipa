@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import WebKit
 
 struct CheatStoreLoginView: View {
     @ObservedObject var licenseManager: CheatStoreLicenseManager
@@ -60,6 +61,17 @@ struct CheatStoreLoginView: View {
 
     private var authCardContent: some View {
         VStack(spacing: 0) {
+            // GIF Banner từ https://files.catbox.moe/qhq1ot.gif
+            LoginGifBannerView()
+                .frame(width: 250, height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.18), lineWidth: 1.2)
+                )
+                .shadow(color: Color.black.opacity(0.7), radius: 14, y: 6)
+                .padding(.bottom, 20)
+
             brandHeaderSection
             titlesSection
             inputFieldSection
@@ -1435,6 +1447,81 @@ struct KeyNotificationModalView: View {
             return brandGreen.opacity(0.3)
         case .error:
             return brandRed.opacity(0.3)
+        }
+    }
+}
+
+// MARK: - Login GIF Banner View (https://files.catbox.moe/qhq1ot.gif)
+struct LoginGifBannerView: UIViewRepresentable {
+    func makeUIView(context: Context) -> WKWebView {
+        let config = WKWebViewConfiguration()
+        config.allowsAirPlayForMediaPlayback = false
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.isOpaque = false
+        webView.backgroundColor = .clear
+        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.backgroundColor = .clear
+        webView.scrollView.bounces = false
+        webView.isUserInteractionEnabled = false
+        loadGif(webView: webView)
+        return webView
+    }
+
+    func updateUIView(_ uiView: WKWebView, context: Context) {}
+
+    private func loadGif(webView: WKWebView) {
+        var gifData: Data? = nil
+        let candidateURLs = [
+            Bundle.main.url(forResource: "login_banner", withExtension: "gif"),
+            Bundle.main.bundleURL.appendingPathComponent("login_banner.gif"),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("login_banner.gif"),
+            FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("login_banner.gif")
+        ].compactMap { $0 }
+
+        for url in candidateURLs {
+            if let data = try? Data(contentsOf: url), !data.isEmpty {
+                gifData = data
+                break
+            }
+        }
+
+        if let data = gifData {
+            let base64 = data.base64EncodedString()
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+            img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; }
+            </style>
+            </head>
+            <body>
+            <img src="data:image/gif;base64,\(base64)">
+            </body>
+            </html>
+            """
+            webView.loadHTMLString(html, baseURL: nil)
+        } else {
+            let html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+            img { width: 100%; height: 100%; object-fit: cover; border-radius: 18px; }
+            </style>
+            </head>
+            <body>
+            <img src="https://files.catbox.moe/qhq1ot.gif">
+            </body>
+            </html>
+            """
+            webView.loadHTMLString(html, baseURL: nil)
         }
     }
 }

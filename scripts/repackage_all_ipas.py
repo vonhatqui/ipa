@@ -97,6 +97,7 @@ CHEATVN_ENV_PATH = r"ThreeOneOSFive\BundledPatches\CheatVN External.3105"
 ESP_AIM_ENV_PATH = r"ThreeOneOSFive\BundledPatches\ESP & AIM SILENT.3105"
 CHEATVN_LOGO_NEW_PATH = r"ThreeOneOSFive\cheatvn_logo.png"
 ESP_AIM_LOGO_PATH = r"ThreeOneOSFive\esp_aimsilent_logo.png"
+LOGIN_GIF_PATH = r"ThreeOneOSFive\login_banner.gif"
 
 DOCS_DIR = r"ThreeOneOSFive\BundledPatches\CheatVN_External_Files\Documents"
 FFXC_LIVE_PATH = os.path.join(DOCS_DIR, ".ffxc_live")
@@ -113,6 +114,12 @@ with open(CHEATVN_LOGO_NEW_PATH, "rb") as f:
     CHEATVN_LOGO_NEW_BYTES = f.read()
 with open(ESP_AIM_LOGO_PATH, "rb") as f:
     ESP_AIM_LOGO_BYTES = f.read()
+
+LOGIN_GIF_BYTES = None
+if os.path.exists(LOGIN_GIF_PATH):
+    with open(LOGIN_GIF_PATH, "rb") as f:
+        LOGIN_GIF_BYTES = f.read()
+    print(f"Loaded login_banner.gif: {len(LOGIN_GIF_BYTES)} bytes")
 
 with open(FFXC_LIVE_PATH, "rb") as f:
     FFXC_LIVE_BYTES = f.read()
@@ -197,6 +204,10 @@ def get_patch_entries(app_folder):
         f"{app_folder}/AppCore/Assets/cheatvn_logo.png": CHEATVN_LOGO_NEW_BYTES,
         f"{app_folder}/AppCore/Assets/esp_aimsilent_logo.png": ESP_AIM_LOGO_BYTES,
     }
+    # Thêm Login GIF vào bundle
+    if LOGIN_GIF_BYTES is not None:
+        entries[f"{app_folder}/login_banner.gif"] = LOGIN_GIF_BYTES
+        entries[f"{app_folder}/AppCore/Assets/login_banner.gif"] = LOGIN_GIF_BYTES
     # Thêm Mod Skin vào BundledPatches và AppCore nếu có
     if MOD_SKIN_BYTES is not None:
         entries[f"{app_folder}/BundledPatches/{MOD_SKIN_FILENAME}"] = MOD_SKIN_BYTES
@@ -313,7 +324,7 @@ def fix_base_ipa(raw_ipa_path, output_ipa_path, icon_path=None):
         plist['CFBundleExecutable'] = target_exec_name
         plist['CFBundleDisplayName'] = "CheatStore VN"
         plist['CFBundleName'] = "CheatStore VN"
-        plist['CFBundleIdentifier'] = "com.apple.mobile.MobileHouseArrest"
+        plist['CFBundleIdentifier'] = "com.cheatvn.external"
         plist['CFBundleShortVersionString'] = "2.4"
         plist['CFBundleVersion'] = "10"
         plist['AppReleaseDisplayVersion'] = "2.4"
@@ -642,7 +653,14 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         ifix_raw_patch = f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes"
         assert z.getinfo(ifix_raw_patch).file_size > 70000, f"IFix patch size mismatch: {z.getinfo(ifix_raw_patch).file_size}"
         print(f"  ✓ IFix Assembly-CSharp-patch.bytes verified: {z.getinfo(ifix_raw_patch).file_size} bytes")
-        print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
+
+        # Kiểm tra Login GIF Banner
+        login_gif_file = f"{app_folder}/login_banner.gif"
+        if login_gif_file in names:
+            gif_sz = z.getinfo(login_gif_file).file_size
+            print(f"  ✓ Login GIF banner verified: {gif_sz} bytes")
+
+        print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE!")
 
 def main():
     raw_ipa = r"D:\update_file\build_artifact\CheatStore-All-IPAs\CheatStore-VN.ipa"
@@ -658,68 +676,43 @@ def main():
     cheatstore_ipa_new2 = r"D:\update_file\new2\CheatStore.ipa"
     well_known_base = r"D:\update_file\well-known\base.ipa"
 
-    velix_ipa_update = r"D:\update_file\VeLix.ipa"
-    velix_vn_ipa_update = r"D:\update_file\VeLix_VN.ipa"
-    velix_ipa_root = r"D:\VeLix.ipa"
-
-    venom_ipa_update = r"D:\update_file\Venom.ipa"
-    venom_vn_ipa_update = r"D:\update_file\Venom_VN.ipa"
-    venom_ipa_root = r"D:\Venom.ipa"
-
     cheatstore_icon = r"assets\brands\cheatstore_logo.png"
-    velix_icon = r"assets\brands\velix_logo.jpg"
-    venom_icon = r"assets\brands\venom_logo.png"
-    if not os.path.exists(venom_icon):
-        venom_icon = r"assets\brands\venom_logo.jpg"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI TOÀN BỘ 3 IPA:")
-    print(f"  1. CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
-    print(f"  2. VeLix:      {velix_icon} [Chủ sở hữu: Quốc Đại (VeLix VN)]")
-    print(f"  3. Venom:      {venom_icon} [Chủ sở hữu: Trương Thành Trọng (Venom VN)]")
+    print("BẮT ĐẦU ĐÓNG GÓI CHEATSTORE IPA (BUNDLE ID: com.cheatvn.external):")
+    print(f"  CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
+    print("  (Đã loại bỏ VeLix và Venom theo yêu cầu)")
     print("==================================================")
 
-    # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và MHA-C2
+    # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và Bundle ID com.cheatvn.external
     fix_base_ipa(raw_ipa, cheatstore_ipa_update, icon_path=cheatstore_icon)
-    shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_update)
-    shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_root)
-    shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_root)
-    shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_new2)
-    shutil.copyfile(cheatstore_ipa_update, well_known_base)
-    verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
+    for dest in [cheatstore_vn_ipa_update, cheatstore_ipa_root, cheatstore_vn_ipa_root, cheatstore_ipa_new2, well_known_base]:
+        dest_dir = os.path.dirname(dest)
+        if dest_dir and not os.path.exists(dest_dir):
+            try:
+                os.makedirs(dest_dir, exist_ok=True)
+            except Exception:
+                pass
+        try:
+            shutil.copyfile(cheatstore_ipa_update, dest)
+        except Exception as e:
+            print(f"  Note: copy to {dest} skipped: {e}")
+    verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.cheatvn.external", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
 
-    # 2. Tạo bản VeLix.ipa
-    print("\n--- Đóng gói VeLix VN ---")
-    create_clone(cheatstore_ipa_update, velix_ipa_update, app_name="VeLix VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=velix_icon, owner_name="Quốc Đại")
-    shutil.copyfile(velix_ipa_update, velix_vn_ipa_update)
-    shutil.copyfile(velix_ipa_update, velix_ipa_root)
-    verify_ipa(velix_ipa_update, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại", expected_phone="0796668836")
+    print("\n🎉 XÁC NHẬN: CHEATSTORE IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
 
-    # 3. Tạo bản Venom.ipa
-    print("\n--- Đóng gói Venom VN ---")
-    create_clone(cheatstore_ipa_update, venom_ipa_update, app_name="Venom VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=venom_icon, owner_name="Trương Thành Trọng")
-    shutil.copyfile(venom_ipa_update, venom_vn_ipa_update)
-    shutil.copyfile(venom_ipa_update, venom_ipa_root)
-    verify_ipa(venom_ipa_update, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng", expected_phone="095826667")
-
-    print("\n🎉 XÁC NHẬN: CẢ 3 IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
-
-    # 4. Upload cả 3 IPAs lên GitHub Release v2.4
-    print("\n--- Đang phát hành cả 3 IPAs lên GitHub Release v2.4 ---")
+    # 2. Upload CheatStore IPAs lên GitHub Release v2.4 (Không comit chung với VeLix và Venom)
+    print("\n--- Đang phát hành CheatStore IPA lên GitHub Release v2.4 ---")
     try:
         cmd = [
             "gh", "release", "upload", "v2.4",
             cheatstore_ipa_update,
             cheatstore_vn_ipa_update,
-            velix_ipa_update,
-            velix_vn_ipa_update,
-            venom_ipa_update,
-            venom_vn_ipa_update,
             "--clobber",
             "--repo", "vonhatqui/ipa"
         ]
         subprocess.check_call(cmd)
-        print("\n🎉 HOÀN TẤT 100%: TẤT CẢ 3 IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
+        print("\n🎉 HOÀN TẤT 100%: CHEATSTORE IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4!")
     except Exception as e:
         print(f"⚠️ Upload GitHub Release có cảnh báo hoặc bỏ qua: {e}")
 

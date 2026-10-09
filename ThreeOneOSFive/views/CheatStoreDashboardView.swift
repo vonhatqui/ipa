@@ -2,16 +2,14 @@ import SwiftUI
 import UIKit
 import WebKit
 
-// MARK: - CheatStoreTab Enum (3 Tab: Trang Chủ, Modskin, Cá Nhân)
+// MARK: - CheatStoreTab Enum (2 Tab: Trang Chủ, Cá Nhân)
 enum CheatStoreTab: Int, CaseIterable {
     case home = 0
-    case modskin = 1
-    case profile = 2
+    case profile = 1
 
     var title: String {
         switch self {
         case .home: return "Trang Chủ"
-        case .modskin: return "Modskin"
         case .profile: return "Cá Nhân"
         }
     }
@@ -19,7 +17,6 @@ enum CheatStoreTab: Int, CaseIterable {
     var icon: String {
         switch self {
         case .home: return "house.fill"
-        case .modskin: return "tshirt.fill"
         case .profile: return "person.crop.circle.fill"
         }
     }
@@ -356,6 +353,8 @@ struct CheatStoreDashboardView: View {
     @AppStorage("cheatstore_selected_menu_feature") private var selectedMenuFeature: String = "cheatvn_external"
     @State private var isInjected: Bool = false
     @State private var pulseAnimation: Bool = false
+    @State private var injectionProgress: Int = 0
+    @State private var injectionStatusText: String = "Đang nạp patching..."
 
     private var currentAimDisplayText: String {
         let activeMods = Array(selectedAimChips)
@@ -451,13 +450,10 @@ struct CheatStoreDashboardView: View {
                     topHeaderView
                 }
 
-                // Nội dung 3 Tab: Trang Chủ, Modskin, Cá Nhân
+                // Nội dung 2 Tab: Trang Chủ, Cá Nhân
                 ZStack {
                     if selectedTab == .home {
                         homeView
-                            .transition(.opacity)
-                    } else if selectedTab == .modskin {
-                        modskinView
                             .transition(.opacity)
                     } else if selectedTab == .profile {
                         profileView
@@ -1000,9 +996,6 @@ struct RainbowText: View {
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
-
-                // NÚT CHỨC NĂNG: Dọn File ở Documents (Gọn gàng, dễ thấy)
-                deleteDocumentsButton
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
@@ -1072,13 +1065,36 @@ struct RainbowText: View {
                 // Nội dung nút theo các trạng thái
                 HStack(spacing: 10) {
                     if isInjecting {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.0)
+                        VStack(spacing: 4) {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.9)
 
-                        Text("Injecting...")
-                            .font(.system(size: 16.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                                Text("\(injectionStatusText) (\(injectionProgress)%)")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
+
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.18))
+                                        .frame(height: 4)
+                                    Capsule()
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.green, Color.cyan],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                        )
+                                        .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(injectionProgress) / 100.0)), height: 4)
+                                }
+                            }
+                            .frame(height: 4)
+                            .padding(.horizontal, 24)
+                        }
                     } else if isRestoringClean {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -1502,9 +1518,9 @@ struct RainbowText: View {
     }
 
     private var auroraInstructionText: String {
-        let featureTitle = "Cheat External"
+        let featureTitle = "CheatVN External"
         if isInjecting {
-            return "Đang nạp \(featureTitle) vào game..."
+            return "\(injectionStatusText) (\(injectionProgress)%)"
         } else if isRestoringClean {
             return "Đang gỡ mod và khôi phục dữ liệu gốc..."
         } else if isInjected {
@@ -1519,36 +1535,53 @@ struct RainbowText: View {
         isInjecting = true
         isInjected = false
         pulseAnimation = true
+        injectionProgress = 1
+        injectionStatusText = "Đang nạp patching..."
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp gói patch Aurora Menu v1.3105 (Cheat External)
+        // 1. Chạy background task nạp gói patch CheatVN External (.3105 từ D:\update_file\new1111)
         DispatchQueue.global(qos: .userInitiated).async {
             _ = self.applyAuroraPackage()
             DevicePatchService.ensureActivePatchesInjected()
         }
 
-        // 2. Thời gian loading animation chuẩn 12 giây (trong khoảng 10-15s như yêu cầu)
-        let loadingDuration: TimeInterval = 12.0
-        DispatchQueue.main.asyncAfter(deadline: .now() + loadingDuration) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                self.isInjecting = false
-                self.isInjected = true
-                self.pulseAnimation = false
-            }
+        // 2. Chạy timer tăng tiến độ 1% -> 100% mượt mà
+        // 1-40%: Đang nạp patching...
+        // 41-80%: Đang bypass anti-cheat...
+        // 81-100%: Đang chuẩn bị vào game...
+        let stepInterval: TimeInterval = 0.045
+        Timer.scheduledTimer(withTimeInterval: stepInterval, repeats: true) { timer in
+            if self.injectionProgress < 100 {
+                self.injectionProgress += 1
+                if self.injectionProgress <= 40 {
+                    self.injectionStatusText = "Đang nạp patching..."
+                } else if self.injectionProgress <= 80 {
+                    self.injectionStatusText = "Đang bypass anti-cheat..."
+                } else {
+                    self.injectionStatusText = "Đang chuẩn bị vào game..."
+                }
+            } else {
+                timer.invalidate()
+                self.injectionStatusText = "Hoàn tất! Đang vào game..."
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                    self.isInjecting = false
+                    self.isInjected = true
+                    self.pulseAnimation = false
+                }
 
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
-            let featureTitle = "CheatVN External"
-            self.showToastNotification(
-                message: "Đã injetor \(featureTitle) thành công",
-                icon: "checkmark.circle.fill",
-                color: Color.green
-            )
+                self.showToastNotification(
+                    message: "Đã nạp và bypass thành công! Đang vào game...",
+                    icon: "checkmark.circle.fill",
+                    color: Color.green
+                )
 
-            // Sau khi nạp xong tự động vô game
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                self.handleLaunchGame()
+                // Vào thẳng game luôn!
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.handleLaunchGame()
+                }
             }
         }
     }
@@ -1597,7 +1630,7 @@ struct RainbowText: View {
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
+        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new1111"))
         rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
         if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
             rawSearchDirs.append(root.appendingPathComponent("CheatVN_External_Files/Documents"))
