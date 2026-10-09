@@ -15,42 +15,63 @@ def encode_string(s):
     b = s.encode('utf-8')
     return encode_7bit_int(len(b)) + b
 
-# 1. Read D:\update_file\new3\OG MENU FFTH.3105
-source_3105 = r'D:\update_file\new3\OG MENU FFTH.3105'
-with open(source_3105, 'rb') as f:
-    raw_data = f.read()
+# 1. Read original D:\update_file\new3\OG MENU FFTH.3105 or extracted backup
+backup_assembly = r'scratch/new3_extracted_0_Assembly-CSharp-patch.bytes'
+if os.path.exists(backup_assembly):
+    with open(backup_assembly, 'rb') as f:
+        raw_assembly = bytearray(f.read())
+else:
+    source_3105 = r'D:\update_file\new3\OG MENU FFTH.3105'
+    with open(source_3105, 'rb') as f:
+        raw_data = f.read()
+    env = plistlib.loads(raw_data[10:])
+    pkg_id = env['packageID']
+    ver = env.get('keyAADVersion') or env.get('schemaVersion', 1)
+    content_key = env['publicContentKey']
+    p_aad = f'3105PATCH/v{ver}/payload/{pkg_id}'.encode('utf-8')
+    payload_raw = env['encryptedPayload']
+    aesgcm = AESGCM(content_key)
+    payload_decrypted = aesgcm.decrypt(payload_raw[:12], payload_raw[12:], p_aad)
+    proj_plist = plistlib.loads(payload_decrypted)
+    raw_assembly = bytearray(proj_plist['project']['rules'][0]['replacementData'])
 
-magic = raw_data[:10]
-assert magic == b'3105PATCH\x00'
-env = plistlib.loads(raw_data[10:])
+# Read localConfig.json
+config_path = r'scratch/new3_extracted_1_localConfig.json'
+if os.path.exists(config_path):
+    with open(config_path, 'rb') as f:
+        raw_config = f.read()
+else:
+    raw_config = b'{"testCodePatch":true,"resetGuest":true}'
 
-pkg_id = env['packageID']
-ver = env.get('keyAADVersion') or env.get('schemaVersion', 1)
-content_key = env['publicContentKey']
-p_aad = f'3105PATCH/v{ver}/payload/{pkg_id}'.encode('utf-8')
+# 2. Patch bytecode instructions in raw_assembly BEFORE the string table
+# Method 0 base: 0x1f27
+# Method 5 base: 0x3ba7
+m0_base = 0x1f27
+m5_base = 0x3ba7
 
-payload_raw = env['encryptedPayload']
-p_nonce = payload_raw[:12]
-p_tag = payload_raw[-16:]
-p_ciphertext = payload_raw[12:-16]
+# In Method 5: instruction 684 loads window title string.
+# Change operand from 33 ('nhismgaylolgbt') to 51 ('CheatVN External')
+off_m5_684 = m5_base + 684 * 8
+code_684, op_684 = struct.unpack('<ii', raw_assembly[off_m5_684:off_m5_684+8])
+print(f"Method 5 insn 684 before: code={code_684}, op={op_684}")
+assert code_684 == 176
+struct.pack_into('<ii', raw_assembly, off_m5_684, 176, 51)
+print(f"Method 5 insn 684 after: code=176, op=51 (CheatVN External)")
 
-aesgcm = AESGCM(content_key)
-payload_decrypted = aesgcm.decrypt(p_nonce, p_ciphertext + p_tag, p_aad)
-proj_plist = plistlib.loads(payload_decrypted)
-proj = proj_plist['project']
+# In Method 0: make auth state ALWAYS succeed (true = 16)
+# Instructions 105, 174, 345, 358, 371, 374 previously set false (19)
+for insn_idx in [105, 174, 345, 358, 371, 374]:
+    off = m0_base + insn_idx * 8
+    code, op = struct.unpack('<ii', raw_assembly[off:off+8])
+    if op == 19:
+        struct.pack_into('<ii', raw_assembly, off, code, 16)
+        print(f"Method 0 insn {insn_idx}: patched op from 19 (false) -> 16 (true)")
 
-print(f"Decrypted project: {proj['name']}")
-
-raw_assembly = proj['rules'][0]['replacementData']
-raw_config = proj['rules'][1]['replacementData']
-
-# 2. Modify string table in Assembly-CSharp-patch.bytes
-# We know intern_strings start at 0x16F97
-# Let's parse string table
+# 3. Modify intern string table
 sys.path.append('.')
 import scratch.parse_new3_ifix as p
 
-reader = p.BinaryReader(raw_assembly)
+reader = p.BinaryReader(bytes(raw_assembly))
 reader.read_uint64(); reader.read_string()
 for _ in range(reader.read_int32()): reader.read_string()
 m_cnt = reader.read_int32()
@@ -86,12 +107,12 @@ head = raw_assembly[:str_start_pos]
 tail = raw_assembly[tail_pos:]
 
 # Replace strings:
-# [33] 'ASHOK' -> 'CheatVN External' (window header)
-# [48] 'ASHOK' -> 'nhismgaylolgbt' (default prefilled key)
-# [51] 'ASHOK' -> 'CheatVN External' (VIP SUITE header)
-# [121] 'ASHOK' -> 'CheatVN External' (brand label)
+# [33] 'nhismgaylolgbt' (Master key check in Method 0)
+# [48] 'nhismgaylolgbt' (Default prefilled login key in Gate)
+# [51] 'CheatVN External' (VIP SUITE header & Gate title)
+# [121] 'CheatVN External' (Watermark brand label)
 new_strings = list(original_strings)
-new_strings[33] = 'CheatVN External'
+new_strings[33] = 'nhismgaylolgbt'
 new_strings[48] = 'nhismgaylolgbt'
 new_strings[51] = 'CheatVN External'
 new_strings[121] = 'CheatVN External'
@@ -101,34 +122,97 @@ new_str_buf += struct.pack('<i', len(new_strings))
 for s in new_strings:
     new_str_buf += encode_string(s)
 
-modified_assembly = head + bytes(new_str_buf) + tail
+modified_assembly = bytes(head) + bytes(new_str_buf) + bytes(tail)
 print(f"Original Assembly size: {len(raw_assembly)}, Modified Assembly size: {len(modified_assembly)}")
 
-# Update project rules with modified assembly and ensure bundleIDs cover FFTH and FFMAX
-proj['name'] = 'CheatVN External'
-proj['bundleIdentifiers'] = ['com.dts.freefireth', 'com.dts.freefiremax']
-proj['rules'][0]['replacementData'] = modified_assembly
-proj['rules'][0]['bundleID'] = 'com.dts.freefireth'
-proj['rules'][1]['replacementData'] = raw_config
-proj['rules'][1]['bundleID'] = 'com.dts.freefireth'
+# 4. Verify modified assembly with parser
+test_reader = p.BinaryReader(modified_assembly)
+test_reader.read_uint64(); test_reader.read_string()
+for _ in range(test_reader.read_int32()): test_reader.read_string()
+test_m_cnt = test_reader.read_int32()
+for _ in range(test_m_cnt):
+    cs = test_reader.read_int32(); test_reader.read_bytes(cs * 8)
+    eh = test_reader.read_int32(); test_reader.read_bytes(eh * 24)
+test_ext_m_cnt = test_reader.read_int32()
+for _ in range(test_ext_m_cnt):
+    is_gen = test_reader.read_boolean()
+    if is_gen:
+        test_reader.read_int32(); test_reader.read_string()
+        test_reader.read_bytes(test_reader.read_int32() * 4)
+        for _ in range(test_reader.read_int32()):
+            if test_reader.read_boolean(): test_reader.read_string()
+            else: test_reader.read_int32()
+    else:
+        test_reader.read_int32(); test_reader.read_string()
+        test_reader.read_bytes(test_reader.read_int32() * 4)
 
-# Add duplicate rules for FFMAX if not present
-rule_ffmax_0 = dict(proj['rules'][0])
-rule_ffmax_0['bundleID'] = 'com.dts.freefiremax'
-rule_ffmax_1 = dict(proj['rules'][1])
-rule_ffmax_1['bundleID'] = 'com.dts.freefiremax'
+read_str_cnt = test_reader.read_int32()
+read_strings = [test_reader.read_string() for _ in range(read_str_cnt)]
+assert read_strings[33] == 'nhismgaylolgbt'
+assert read_strings[48] == 'nhismgaylolgbt'
+assert read_strings[51] == 'CheatVN External'
+assert read_strings[121] == 'CheatVN External'
+print("Verified all modified strings successfully!")
 
-proj['rules'] = [proj['rules'][0], proj['rules'][1], rule_ffmax_0, rule_ffmax_1]
+# 5. Build .3105 envelope
+proj = {
+    'bundleIdentifiers': ['com.dts.freefireth', 'com.dts.freefiremax'],
+    'createdAt': 1760000000.0,
+    'description': 'CheatVN External iOS Runtime Patch',
+    'id': 'cheatvn-external-2026',
+    'name': 'CheatVN External',
+    'rules': [
+        {
+            'action': 'replace',
+            'bundleID': 'com.dts.freefireth',
+            'relativePath': 'Documents/Assembly-CSharp-patch.bytes',
+            'replacementData': modified_assembly,
+        },
+        {
+            'action': 'replace',
+            'bundleID': 'com.dts.freefireth',
+            'relativePath': 'Documents/localConfig.json',
+            'replacementData': raw_config,
+        },
+        {
+            'action': 'replace',
+            'bundleID': 'com.dts.freefiremax',
+            'relativePath': 'Documents/Assembly-CSharp-patch.bytes',
+            'replacementData': modified_assembly,
+        },
+        {
+            'action': 'replace',
+            'bundleID': 'com.dts.freefiremax',
+            'relativePath': 'Documents/localConfig.json',
+            'replacementData': raw_config,
+        },
+    ],
+    'version': '1.0'
+}
 
-# Re-encrypt envelope
+proj_plist = {'project': proj}
 new_payload_bytes = plistlib.dumps(proj_plist, fmt=plistlib.FMT_BINARY)
+
+content_key = os.urandom(32)
+pkg_id = 'cheatvn-external-package'
+p_aad = f'3105PATCH/v1/payload/{pkg_id}'.encode('utf-8')
+aesgcm = AESGCM(content_key)
 new_nonce = os.urandom(12)
 new_ciphertext = aesgcm.encrypt(new_nonce, new_payload_bytes, p_aad)
 
-env['encryptedPayload'] = new_nonce + new_ciphertext
+env = {
+    'encryptedPayload': new_nonce + new_ciphertext,
+    'isPasswordProtected': False,
+    'keyAADVersion': 1,
+    'packageID': pkg_id,
+    'publicContentKey': content_key,
+    'schemaVersion': 1,
+}
+
+magic = b'3105PATCH\x00'
 new_env_data = magic + plistlib.dumps(env, fmt=plistlib.FMT_BINARY)
 
-# Save files to workspace locations
+# 6. Save files to all workspace locations
 save_targets = [
     r'D:\update_file\new3\Assembly-CSharp-patch.bytes',
     r'ThreeOneOSFive\BundledPatches\CheatVN_External_Files\Documents\Assembly-CSharp-patch.bytes',
@@ -169,4 +253,4 @@ for t in env_targets:
         f.write(new_env_data)
     print(f"Saved envelope: {t} ({len(new_env_data)} bytes)")
 
-print("\n🎉 HOÀN TẤT: Đã tạo và phân phối bản vá CheatVN External mới 100% chuẩn xác!")
+print("\n[SUCCESS] Da tao va phan phoi ban va CheatVN External 100% chuan xac voi key nhismgaylolgbt!")
