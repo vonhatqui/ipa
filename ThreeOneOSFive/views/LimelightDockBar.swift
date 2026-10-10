@@ -15,7 +15,7 @@ struct LimelightDockBar: View {
     private var dockBackground: Color { theme.dockBackground }
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 3) {
             ForEach(CheatStoreTab.allCases, id: \.self) { tab in
                 let isSelected = (selectedTab == tab)
 
@@ -31,7 +31,7 @@ struct LimelightDockBar: View {
                         if isSelected {
                             ZStack(alignment: .bottom) {
                                 // Vầng sáng dạ quang nền tab active
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
                                     .fill(
                                         LinearGradient(
                                             colors: [
@@ -43,7 +43,7 @@ struct LimelightDockBar: View {
                                         )
                                     )
                                     .overlay(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
                                             .stroke(ledColor.opacity(0.40), lineWidth: 1)
                                     )
                                     .shadow(color: ledColor.opacity(0.32), radius: 8, x: 0, y: 0)
@@ -51,47 +51,56 @@ struct LimelightDockBar: View {
                                 // Vệt sáng LED rọi dưới chân icon
                                 Capsule()
                                     .fill(highlightColor)
-                                    .frame(width: 22, height: 2.5)
+                                    .frame(width: 18, height: 2.2)
                                     .shadow(color: ledColor, radius: 6, x: 0, y: -1)
-                                    .padding(.bottom, 3)
+                                    .padding(.bottom, 2.5)
                             }
-                            .frame(height: 48)
+                            .frame(height: 46)
                             .matchedGeometryEffect(id: "DOCK_LIMELIGHT_BAR", in: limelightNamespace)
                         }
 
                         // Nội dung Icon & Tiêu đề
-                        VStack(spacing: 2) {
+                        VStack(spacing: 1.5) {
                             ZStack(alignment: .topTrailing) {
                                 Image(systemName: tab.icon)
-                                    .font(.system(size: isSelected ? 17.5 : 16, weight: isSelected ? .bold : .medium))
+                                    .font(.system(size: isSelected ? 15.5 : 14, weight: isSelected ? .bold : .medium))
                                     .foregroundStyle(
                                         isSelected
                                             ? highlightColor
                                             : Color.white.opacity(0.45)
                                     )
                                     .shadow(color: isSelected ? ledColor.opacity(0.85) : .clear, radius: 8, x: 0, y: 0)
-                                    .scaleEffect(isSelected ? 1.06 : 1.0)
+                                    .scaleEffect(isSelected ? 1.05 : 1.0)
 
-                                // Tab icon
+                                // Badge trạng thái Modskin đang bật
+                                if tab == .modskin && ModSkinService.shared.isAnySkinActive {
+                                    Circle()
+                                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                                        .frame(width: 5, height: 5)
+                                        .shadow(color: Color.green.opacity(0.9), radius: 3)
+                                        .offset(x: 5, y: -2)
+                                }
                             }
-                            .frame(height: 20)
+                            .frame(height: 18)
 
                             Text(tab.title)
-                                .font(.system(size: 10, weight: isSelected ? .bold : .medium, design: .rounded))
+                                .font(.system(size: 8.5, weight: isSelected ? .bold : .medium, design: .rounded))
                                 .foregroundStyle(isSelected ? highlightColor : Color.white.opacity(0.48))
-                                .shadow(color: isSelected ? ledColor.opacity(0.55) : .clear, radius: 4)
+                                .shadow(color: isSelected ? ledColor.opacity(0.55) : .clear, radius: 3)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
                         }
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
+                        .frame(height: 46)
                     }
-                    .frame(height: 48)
+                    .frame(height: 46)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
-        .frame(height: 54)
-        .padding(.horizontal, 8)
+        .frame(height: 52)
+        .padding(.horizontal, 4)
         .padding(.vertical, 3)
         .background(
             ZStack {
