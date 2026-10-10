@@ -40,8 +40,8 @@ public struct New3105MiscTabView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("MISC CONFIGURATION")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                Text("MISC")
+                    .font(.system(size: 16, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 Text("Cấu hình thông số phụ trợ trong localConfig.json")
                     .font(.system(size: 12, weight: .regular))

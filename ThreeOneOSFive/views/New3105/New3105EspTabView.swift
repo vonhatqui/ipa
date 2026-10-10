@@ -42,8 +42,8 @@ public struct New3105EspTabView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("ESP CONFIGURATION")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                Text("ESP")
+                    .font(.system(size: 16, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 Text("Điều chỉnh các trường định vị visual trong localConfig.json")
                     .font(.system(size: 12, weight: .regular))

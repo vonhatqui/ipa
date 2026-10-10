@@ -177,6 +177,9 @@ public final class LocalConfigManager: ObservableObject {
             // Hoán đổi file tạm vào file chính thức
             _ = try fm.replaceItemAt(targetURL, withItemAt: tempURL)
             
+            // Tự động đẩy cấu hình sang container Free Fire đang hoạt động trong thời gian thực
+            syncToActiveGameContainers()
+
             self.lastSavedTime = Date()
             self.errorMessage = nil
             self.successMessage = "Đã lưu cấu hình thành công lúc \(formattedTime(Date()))"
@@ -184,6 +187,41 @@ public final class LocalConfigManager: ObservableObject {
         } catch {
             self.errorMessage = "Lỗi khi ghi file localConfig.json: \(error.localizedDescription)"
             return false
+        }
+    }
+
+    // MARK: - Real-Time Container Auto-Sync
+    /// Tự động cập nhật trực tiếp vào thư mục Documents của game Free Fire
+    /// Người dùng thay đổi bất kỳ thông số nào thì game nhận ngay lập tức, không cần out game hay nạp lại.
+    public func syncToActiveGameContainers() {
+        let currentRaw = self.rawConfig
+        DispatchQueue.global(qos: .utility).async {
+            guard let data = try? JSONSerialization.data(withJSONObject: currentRaw, options: [.prettyPrinted, .sortedKeys]) else { return }
+            let fm = FileManager.default
+            var targetContainers: [URL] = []
+            let targetBIDs = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+            for bid in targetBIDs {
+                if let p = ContainerStore.resolveAppContainerPath(bundleID: bid) {
+                    let u = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: p, isDirectory: true))
+                    if !targetContainers.contains(u) { targetContainers.append(u) }
+                }
+            }
+            for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
+                if !targetContainers.contains(root) { targetContainers.append(root) }
+            }
+            if let ffPath = findFreeFireContainerPath() {
+                let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+                if !targetContainers.contains(canonical) { targetContainers.append(canonical) }
+            }
+
+            for root in targetContainers {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                let dstConfig = docDir.appendingPathComponent("localConfig.json")
+                if fm.fileExists(atPath: docDir.path) {
+                    try? data.write(to: dstConfig, options: .atomic)
+                    try? fm.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+                }
+            }
         }
     }
 
@@ -216,6 +254,9 @@ public final class LocalConfigManager: ObservableObject {
             self.rawConfig = json
             syncFieldsFromRaw(json)
             self.isUpdatingFromDisk = false
+
+            // Đẩy bản sao lưu sang container game ngay lập tức
+            syncToActiveGameContainers()
 
             self.errorMessage = nil
             self.successMessage = "Đã khôi phục cấu hình từ bản sao lưu dự phòng thành công."

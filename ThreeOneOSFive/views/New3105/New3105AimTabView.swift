@@ -39,8 +39,8 @@ public struct New3105AimTabView: View {
     private var headerSection: some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
-                Text("AIM CONFIGURATION")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                Text("AIM")
+                    .font(.system(size: 16, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 Text("Điều chỉnh thông số ngắm bắn từ localConfig.json")
                     .font(.system(size: 12, weight: .regular))
@@ -66,9 +66,25 @@ public struct New3105AimTabView: View {
                 dividerLine
 
                 toggleRow(
-                    title: "Aim Enabled",
+                    title: "Aim Enabled (Silent Aim)",
                     subtitle: "Kích hoạt chức năng khóa mục tiêu (AimEnabled)",
                     isOn: $configManager.aimEnabled
+                )
+
+                dividerLine
+
+                toggleRow(
+                    title: "Aim FOV Circle (EspFov)",
+                    subtitle: "Hiển thị vòng tròn ngắm FOV trên màn hình (EspFov)",
+                    isOn: $configManager.espFov
+                )
+
+                dividerLine
+
+                toggleRow(
+                    title: "No Recoil",
+                    subtitle: "Giảm độ giật vũ khí khi ngắm bắn (NoRecoil)",
+                    isOn: $configManager.noRecoil
                 )
             }
             .background(Color(white: 0.08))

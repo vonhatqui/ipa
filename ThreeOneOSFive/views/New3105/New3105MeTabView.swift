@@ -54,7 +54,7 @@ public struct New3105MeTabView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .onAppear {
-            refreshProfile()
+            refreshProfileSilently()
         }
         .alert(isPresented: $showingAlert) {
             Alert(
@@ -117,7 +117,7 @@ public struct New3105MeTabView: View {
                 dividerLine
                 infoRow(label: "Thời Hạn Còn Lại", value: licenseManager.formattedRemainingTime)
                 dividerLine
-                infoRow(label: "Server Status", value: "ONLINE (cheatingenginexyz.online)", isStatus: true)
+                infoRow(label: "Server Status", value: "Online", isStatus: true)
             }
             .background(Color(white: 0.08))
             .cornerRadius(10)
@@ -129,7 +129,7 @@ public struct New3105MeTabView: View {
     private var actionButtonsSection: some View {
         VStack(spacing: 10) {
             // [ REFRESH ]
-            Button(action: refreshProfile) {
+            Button(action: refreshProfileExplicitly) {
                 HStack {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 12, weight: .bold))
@@ -230,7 +230,15 @@ public struct New3105MeTabView: View {
     }
 
     // MARK: - Actions & Helpers
-    private func refreshProfile() {
+    private func refreshProfileSilently() {
+        self.profile = DeviceProfileService.shared.getCurrentProfile()
+        _ = configManager.loadConfig()
+        Task {
+            _ = await licenseManager.verifyCurrentDevice()
+        }
+    }
+
+    private func refreshProfileExplicitly() {
         self.profile = DeviceProfileService.shared.getCurrentProfile()
         _ = configManager.loadConfig()
         Task {
@@ -245,7 +253,7 @@ public struct New3105MeTabView: View {
 
     private func handleLogout() {
         licenseManager.deactivate(withReason: "Đã đăng xuất tài khoản.")
-        refreshProfile()
+        refreshProfileSilently()
     }
 
     private func sectionHeader(title: String) -> some View {

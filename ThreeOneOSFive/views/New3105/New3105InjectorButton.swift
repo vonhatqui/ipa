@@ -32,10 +32,10 @@ public struct New3105InjectorButton: View {
             HStack(spacing: 10) {
                 switch currentState {
                 case .idleReady:
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(Color(red: 0.0, green: 0.85, blue: 1.0))
-                    Text("NẠP CẤU HÌNH (INJECTOR)")
+                    Image(systemName: "syringe.fill")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(.white)
+                    Text("INJETTOR")
                         .font(.system(size: 14, weight: .heavy, design: .monospaced))
                         .foregroundColor(.white)
                 case .processing(let step):
