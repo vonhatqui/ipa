@@ -23,16 +23,11 @@ def rebrand_ipa(base_ipa, output_ipa, icon_path=None):
 
     print(f"📦 Opening base IPA: {base_ipa}")
     
-    # Replacement table: (old_bytes, new_bytes) - MUST MATCH LENGTH
+    # Replacement table: (old_bytes, new_bytes) - MUST MATCH EXACT LENGTH & NO TRAILING SPACES IN URLS
     BINARY_REPLACEMENTS = [
-        (b"discord.gg/deltaclient", b"discord.gg/jinwwostore"), # 22 bytes
-        (b"discord.gg/zrxsoftware", b"discord.gg/jinwwostore"), # 22 bytes
-        (b"discord.gg/nk6U9fNVc2",  b"discord.gg/jinwwosto "), # 21 bytes
-        (b"discord.gg/YZ4A4EUW",    b"discord.gg/jinwwos  "), # 19 bytes
-        (b"t.me/dovietphuog",       b"t.me/jinwwostore"),     # 16 bytes
-        (b"t.me/iosseramin",        b"t.me/jinwwostor"),      # 15 bytes
-        (b"DELTA CLIENT",           b"CheatStoreVN"),         # 12 bytes
-        (b"ZrxSoftware",            b"CheatStore "),          # 11 bytes
+        (b"discord.gg/deltaclient", b"discord.gg/jinwwostore"), # 22 bytes exact
+        (b"discord.gg/zrxsoftware", b"discord.gg/jinwwostore"), # 22 bytes exact
+        (b"t.me/dovietphuog",       b"t.me/jinwwostore"),     # 16 bytes exact
     ]
 
     with zipfile.ZipFile(base_ipa, 'r') as zin:
@@ -51,8 +46,11 @@ def rebrand_ipa(base_ipa, output_ipa, icon_path=None):
         plist_data = zin.read(plist_name)
         plist = plistlib.loads(plist_data)
         
+        # CFBundleDisplayName changes the app name shown on iPhone home screen & Esign
         plist['CFBundleDisplayName'] = "CheatStore VN"
-        plist['CFBundleName'] = "CheatStore"
+        # CFBundleName MUST match CFBundleExecutable (Zrxipa) to avoid iOS bundle loader crash
+        plist['CFBundleName'] = "Zrxipa"
+        plist['CFBundleExecutable'] = "Zrxipa"
         plist['CFBundleIdentifier'] = "com.apple.mobile.MobileHouseArrest"
         updated_plist_bytes = plistlib.dumps(plist)
 
@@ -86,7 +84,7 @@ def rebrand_ipa(base_ipa, output_ipa, icon_path=None):
             for item in zin.infolist():
                 clean_name = item.filename.replace('\\', '/')
                 
-                # Strip signatures and old prov profiles
+                # Strip signatures and old prov profiles for clean Esign signing
                 if "_CodeSignature" in clean_name or "embedded.mobileprovision" in clean_name or "SignedByEsign" in clean_name:
                     continue
                     
@@ -104,8 +102,8 @@ def rebrand_ipa(base_ipa, output_ipa, icon_path=None):
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, custom_icons[clean_name])
                 elif clean_name == f"{app_folder}/Zrxipa":
-                    # Binary patch Zrxipa
-                    print("⚡ Patching binary Zrxipa...")
+                    # Binary patch Zrxipa cleanly without corrupting Swift metadata or URLs
+                    print("⚡ Patching binary Zrxipa (safe exact-byte replacements)...")
                     bin_data = zin.read(item.filename)
                     for old_b, new_b in BINARY_REPLACEMENTS:
                         count = bin_data.count(old_b)
@@ -114,18 +112,8 @@ def rebrand_ipa(base_ipa, output_ipa, icon_path=None):
                             bin_data = bin_data.replace(old_b, new_b)
                     zinfo.external_attr = 0o100755 << 16
                     zout.writestr(zinfo, bin_data)
-                elif "Localizable.strings" in clean_name:
-                    # Update localizable strings if plain text
-                    str_data = zin.read(item.filename)
-                    try:
-                        str_text = str_data.decode("utf-8")
-                        str_text = str_text.replace("DELTA CLIENT", "CheatStore VN").replace("ZrxSoftware", "CheatStore")
-                        str_data = str_text.encode("utf-8")
-                    except Exception:
-                        pass
-                    zinfo.external_attr = 0o100644 << 16
-                    zout.writestr(zinfo, str_data)
                 else:
+                    # Keep all resource files intact (especially binary plists like Localizable.strings)
                     zinfo.external_attr = 0o100644 << 16
                     zout.writestr(zinfo, zin.read(item.filename))
 
