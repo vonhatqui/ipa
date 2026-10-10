@@ -71,9 +71,9 @@
         </dict>
     </array>
     <key>LSSupportsOpeningDocumentsInPlace</key>
-    <true/>
+    <false/>
     <key>UIFileSharingEnabled</key>
-    <true/>
+    <false/>
     <key>AppReleaseDisplayVersion</key>
     <string>2.3</string>
     <key>LSRequiresIPhoneOS</key>

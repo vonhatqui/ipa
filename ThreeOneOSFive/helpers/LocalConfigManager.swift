@@ -54,15 +54,19 @@ public final class LocalConfigManager: ObservableObject {
     // Internal lock to avoid circular updates when reading from disk
     private var isUpdatingFromDisk: Bool = false
 
-    // MARK: - Paths
+    // MARK: - Paths (Bảo vệ bí mật trong Application Support, không để lộ ra Documents/Files app)
     public var configURL: URL {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return docs.appendingPathComponent("localConfig.json")
+        let fm = FileManager.default
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("CheatStore", isDirectory: true)
+        try? fm.createDirectory(at: appSupport, withIntermediateDirectories: true)
+        return appSupport.appendingPathComponent(".localConfig.json")
     }
 
     public var backupURL: URL {
-        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return docs.appendingPathComponent("localConfig.json.bak")
+        let fm = FileManager.default
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("CheatStore", isDirectory: true)
+        try? fm.createDirectory(at: appSupport, withIntermediateDirectories: true)
+        return appSupport.appendingPathComponent(".localConfig.json.bak")
     }
 
     public var bundledSeedURL: URL? {
@@ -77,7 +81,38 @@ public final class LocalConfigManager: ObservableObject {
 
     // MARK: - Initialization
     public init() {
+        cleanExposedDocumentsFiles()
         loadConfig()
+    }
+
+    /// Dọn sạch triệt để các file nhạy cảm và thư mục Patches khỏi Documents để tránh bị Files app quét thấy
+    public func cleanExposedDocumentsFiles() {
+        let fm = FileManager.default
+        guard let docs = fm.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
+        
+        let exposedFiles = [
+            "Assembly-CSharp-patch.bytes",
+            "localConfig.json",
+            "localConfig.json.bak",
+            "localConfig_temp.json"
+        ]
+        
+        for f in exposedFiles {
+            let u = docs.appendingPathComponent(f)
+            if fm.fileExists(atPath: u.path) {
+                // Nếu config mới chưa có, di chuyển từ docs sang app support an toàn
+                if f == "localConfig.json" && !fm.fileExists(atPath: configURL.path) {
+                    try? fm.copyItem(at: u, to: configURL)
+                }
+                try? fm.removeItem(at: u)
+            }
+        }
+        
+        // Xóa thư mục Patches lạ
+        let patchesDir = docs.appendingPathComponent("Patches")
+        if fm.fileExists(atPath: patchesDir.path) {
+            try? fm.removeItem(at: patchesDir)
+        }
     }
 
     // MARK: - Load Configuration

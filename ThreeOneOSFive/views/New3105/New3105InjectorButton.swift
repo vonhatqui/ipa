@@ -141,35 +141,28 @@ public struct New3105InjectorButton: View {
             }
 
             let fm = FileManager.default
-            let appDocs = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
 
-            // 1. Dữ liệu localConfig.json
+            // 1. Dữ liệu localConfig.json (Lưu trong Application Support, không ghi vào Documents)
             var configData: Data? = nil
             if let d = try? JSONSerialization.data(withJSONObject: self.configManager.rawConfig, options: [.prettyPrinted, .sortedKeys]) {
                 configData = d
             } else if let localData = try? Data(contentsOf: self.configManager.configURL) {
                 configData = localData
             }
-
-            // 2. Dữ liệu Assembly-CSharp-patch.bytes
-            var patchData: Data? = nil
-            let localPatchURL = appDocs.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            if fm.fileExists(atPath: localPatchURL.path), let d = try? Data(contentsOf: localPatchURL) {
-                patchData = d
-            } else if let bURL = Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes") ??
-                        Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes", subdirectory: "AppCore/new123") ??
-                        Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes", subdirectory: "AppCore") ??
-                        Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes", subdirectory: "BundledPatches/CheatVN_External_Files/Documents") {
-                patchData = try? Data(contentsOf: bURL)
-            }
-
-            // Lưu trực tiếp vào app Documents
-            if let pData = patchData {
-                try? pData.write(to: localPatchURL, options: .atomic)
-            }
             if let cData = configData {
                 try? cData.write(to: self.configManager.configURL, options: .atomic)
             }
+
+            // 2. Dữ liệu Assembly-CSharp-patch.bytes (Chỉ đọc từ Bundle, không đọc từ Documents để tránh patch lạ)
+            var patchData: Data? = nil
+            if let bURL = Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes") ??
+                        Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes", subdirectory: "AppCore/new123") ??
+                        Bundle.main.url(forResource: "Assembly-CSharp-patch", withExtension: "bytes", subdirectory: "AppCore") {
+                patchData = try? Data(contentsOf: bURL)
+            }
+
+            // Dọn sạch mọi file lộ trong Documents app trước khi nạp
+            self.configManager.cleanExposedDocumentsFiles()
 
             // 3. Quét tất cả container Free Fire khả dụng (Standard, MAX, VN, TH)
             var targetContainers: [URL] = []
@@ -244,10 +237,6 @@ public struct New3105InjectorButton: View {
                 }
             }
 
-            // Nạp qua cơ chế 3105 patch envelope
-            _ = CheatVNPatchService.shared.applyPatch(injectCheatVN: true, injectEspAimSilent: true)
-            DevicePatchService.ensureActivePatchesInjected()
-
             DispatchQueue.main.async {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     self.currentState = .connected
@@ -256,7 +245,7 @@ public struct New3105InjectorButton: View {
                 if injectedContainersCount > 0 {
                     self.alertMessage = "Đã nạp Assembly-CSharp-patch.bytes và localConfig.json vào \(injectedContainersCount) container Free Fire thành công!\nSẵn sàng mở game."
                 } else {
-                    self.alertMessage = "Đã nạp và đồng bộ Assembly-CSharp-patch.bytes cùng localConfig.json vào môi trường 3105 thành công!\nSẵn sàng mở game Free Fire."
+                    self.alertMessage = "Đã nạp và đồng bộ cấu hình thành công!\nSẵn sàng mở game Free Fire."
                 }
                 self.showingAlert = true
             }
@@ -286,20 +275,58 @@ public struct New3105InjectorButton: View {
                 if !targetContainers.contains(canonical) { targetContainers.append(canonical) }
             }
 
+            // 1. Quét dọn sạch 100% tất cả file can thiệp trong container game để tránh bị quét dữ liệu
+            let specificJunkFiles = [
+                "Assembly-CSharp-patch.bytes",
+                "localConfig.json",
+                "localConfig.json.bak",
+                "localConfig_temp.json",
+                ".ffxc_runtime",
+                ".ffxc_live",
+                ".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9",
+                "patch_cache",
+                "mod_signature.bin",
+                ".0xfixa.ledger"
+            ]
+
             for root in targetContainers {
                 let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                let filesToRemove = [
-                    "Assembly-CSharp-patch.bytes",
-                    "localConfig.json",
-                    ".ffxc_runtime",
-                    ".ffxc_live",
-                    ".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9"
-                ]
-                for file in filesToRemove {
+                let cacheDir = root.appendingPathComponent("Library/Caches", isDirectory: true)
+
+                for file in specificJunkFiles {
                     try? fm.removeItem(at: docDir.appendingPathComponent(file))
+                    try? fm.removeItem(at: cacheDir.appendingPathComponent(file))
+                }
+
+                // Quét dọn các file đuôi patch, ffxc, backup, ledger lạ trong container Documents
+                if let items = try? fm.contentsOfDirectory(atPath: docDir.path) {
+                    for item in items {
+                        if item.hasSuffix(".patch.bytes") ||
+                            item.hasPrefix(".ffxc") ||
+                            item.contains("localConfig") ||
+                            item.hasSuffix(".ledger") ||
+                            item.hasSuffix(".bak") ||
+                            item.hasSuffix(".tmp") {
+                            try? fm.removeItem(at: docDir.appendingPathComponent(item))
+                        }
+                    }
                 }
             }
 
+            // 2. Dọn sạch triệt để mọi file nhạy cảm và thư mục Patches trong app sandbox
+            self.configManager.cleanExposedDocumentsFiles()
+            let appDocs = fm.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            if let appItems = try? fm.contentsOfDirectory(atPath: appDocs.path) {
+                for item in appItems {
+                    if item == "Assembly-CSharp-patch.bytes" ||
+                        item.hasPrefix("localConfig") ||
+                        item == "Patches" {
+                        try? fm.removeItem(at: appDocs.appendingPathComponent(item))
+                    }
+                }
+            }
+
+            // 3. Khôi phục nguyên bản từ Golden Snapshots nếu có
             _ = CheatVNPatchService.shared.restoreOriginals()
             _ = DevicePatchService.cleanRestoreAllModifications()
 
@@ -308,7 +335,7 @@ public struct New3105InjectorButton: View {
                     self.currentState = .idleReady
                 }
                 self.alertTitle = "Đã Hủy Nạp Cấu Hình"
-                self.alertMessage = "Đã xóa sạch các file patch khỏi game Free Fire, đưa ứng dụng về trạng thái sẵn sàng."
+                self.alertMessage = "Đã xóa sạch toàn bộ file patch khỏi game Free Fire, bảo vệ tài khoản khỏi quét dữ liệu."
                 self.showingAlert = true
             }
         }

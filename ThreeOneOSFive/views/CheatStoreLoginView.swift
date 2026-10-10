@@ -341,8 +341,7 @@ struct CheatStoreLoginView: View {
             let success = await licenseManager.activateKey(inputKey)
             await MainActor.run {
                 if success {
-                    CheatStoreSoundManager.shared.playSuccessSound()
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    withAnimation(.easeInOut(duration: 0.25)) {
                         showLoginSuccessSplash = true
                     }
                 } else {
@@ -783,14 +782,14 @@ struct DarkMechMaintenanceModalView: View {
     }
 }
 
-// MARK: - MÀN HÌNH XÁC NHẬN BẢN QUYỀN SAU KHI NHẬP KEY (CLEAN VOID BLACK • SHINY WHITE GLOW)
+// MARK: - MÀN HÌNH XÁC NHẬN BẢN QUYỀN SAU KHI NHẬP KEY (TRUE DARK AMOLED • TECH MINIMALIST)
 struct LoginSuccessIntroView: View {
     var planName: String = ""
     var remainingTime: String = ""
     var deviceID: String = ""
     let onFinished: () -> Void
 
-    @State private var cardScale: CGFloat = 0.92
+    @State private var cardScale: CGFloat = 0.95
     @State private var cardOpacity: Double = 0.0
     @State private var showCopiedDeviceID: Bool = false
 
@@ -814,234 +813,142 @@ struct LoginSuccessIntroView: View {
 
     var body: some View {
         ZStack {
-            // Nền tối mờ True Black
-            Color.black.opacity(0.88)
+            // Nền đen mờ AMOLED True Black
+            Color.black.opacity(0.85)
                 .ignoresSafeArea()
 
-            // Vầng sáng trắng phát sáng dịu nhẹ (White ambient glow)
-            RadialGradient(
-                gradient: Gradient(colors: [Color.white.opacity(0.10), Color.clear]),
-                center: .center,
-                startRadius: 20,
-                endRadius: 360
-            )
-            .ignoresSafeArea()
-
             VStack(spacing: 0) {
-                VStack(spacing: 18) {
-                    // 1. Header: Icon Nhận Diện + Tên Brand Trắng Phát Sáng + Badge Thành Công
-                    headerSection
+                VStack(spacing: 16) {
+                    // 1. Icon & Header
+                    VStack(spacing: 10) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 38, weight: .bold))
+                            .foregroundColor(Color(red: 0.2, green: 0.85, blue: 0.3))
 
-                    // 2. Thẻ Thông Tin Clean: Hạn Key • Thiết Bị • Mã Máy
-                    infoCardSection
+                        VStack(spacing: 3) {
+                            Text("XÁC THỰC THÀNH CÔNG")
+                                .font(.system(size: 15, weight: .black, design: .monospaced))
+                                .foregroundColor(.white)
 
-                    // 3. Nút "VÀO APP" Chữ Trắng Phát Sáng Nổi Bật Sang Trọng
-                    enterAppButton
+                            Text("BẢN QUYỀN HỆ THỐNG ĐÃ KÍCH HOẠT")
+                                .font(.system(size: 9.5, weight: .bold, design: .monospaced))
+                                .foregroundColor(Color(white: 0.5))
+                        }
+                    }
+                    .padding(.top, 4)
+
+                    // 2. Bảng thông số kỹ thuật (Tech Specs Card)
+                    VStack(spacing: 10) {
+                        infoRow(label: "GÓI BẢN QUYỀN", value: planName.isEmpty ? "VIP CLIENT" : planName, valueColor: Color(red: 0.2, green: 0.85, blue: 0.3))
+                        Divider().background(Color(white: 0.16))
+                        infoRow(label: "THỜI HẠN", value: displayExpiry, valueColor: .white)
+                        Divider().background(Color(white: 0.16))
+                        infoRow(label: "THIẾT BỊ", value: deviceHardwareDisplay, valueColor: .white)
+                        Divider().background(Color(white: 0.16))
+                        
+                        // Hàng Mã Máy kèm Copy
+                        HStack {
+                            Text("MÃ PHẦN CỨNG")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                .foregroundColor(Color(white: 0.5))
+                            Spacer()
+                            Button {
+                                UIPasteboard.general.string = currentDeviceID
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                showCopiedDeviceID = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                                    showCopiedDeviceID = false
+                                }
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Text(String(currentDeviceID.prefix(12)) + "...")
+                                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                        .foregroundColor(Color(white: 0.85))
+                                    Image(systemName: showCopiedDeviceID ? "checkmark.circle.fill" : "doc.on.doc")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundColor(showCopiedDeviceID ? Color(red: 0.2, green: 0.85, blue: 0.3) : Color(white: 0.5))
+                                    if showCopiedDeviceID {
+                                        Text("ĐÃ CHÉP")
+                                            .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                                            .foregroundColor(Color(red: 0.2, green: 0.85, blue: 0.3))
+                                    }
+                                }
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 3)
+                                .background(Color(white: 0.1))
+                                .cornerRadius(6)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(14)
+                    .background(Color(white: 0.04))
+                    .cornerRadius(10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color(white: 0.15), lineWidth: 1)
+                    )
+
+                    // 3. Nút Vào Hệ Thống Tối Giản
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            cardOpacity = 0.0
+                            cardScale = 0.95
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                            onFinished()
+                        }
+                    }) {
+                        HStack(spacing: 6) {
+                            Text("VÀO GIAO DIỆN CHÍNH")
+                                .font(.system(size: 12.5, weight: .black, design: .monospaced))
+                                .foregroundColor(.black)
+
+                            Image(systemName: "arrow.right")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 44)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                    }
                 }
-                .padding(22)
-                .background(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .fill(Color(red: 0.04, green: 0.04, blue: 0.055))
-                )
+                .padding(20)
+                .background(Color(white: 0.07))
+                .cornerRadius(16)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 26, style: .continuous)
-                        .stroke(
-                            LinearGradient(
-                                colors: [Color.white.opacity(0.35), Color.white.opacity(0.08)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            ),
-                            lineWidth: 1.2
-                        )
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(white: 0.2), lineWidth: 1)
                 )
-                .shadow(color: Color.white.opacity(0.12), radius: 24, x: 0, y: 0)
-                .shadow(color: Color.black.opacity(0.7), radius: 32, x: 0, y: 16)
-                .frame(maxWidth: 340)
+                .frame(maxWidth: 330)
                 .padding(.horizontal, 20)
                 .scaleEffect(cardScale)
                 .opacity(cardOpacity)
             }
         }
         .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                 cardScale = 1.0
                 cardOpacity = 1.0
             }
         }
     }
 
-    // MARK: - Subviews
-
-    private var headerSection: some View {
-        VStack(spacing: 10) {
-            CheatStoreLogoView(size: 60, cornerRadius: 16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.white.opacity(0.38), lineWidth: 1.2)
-                )
-                .shadow(color: Color.white.opacity(0.22), radius: 12, x: 0, y: 0)
-
-            VStack(spacing: 4) {
-                ShinyTextView(
-                    text: AppBrandingTheme.current.appTitle,
-                    font: .system(size: 23, weight: .heavy, design: .rounded),
-                    baseColor: Color(white: 0.88),
-                    shineColor: .white,
-                    duration: 2.2,
-                    tracking: -0.3
-                )
-
-                HStack(spacing: 5) {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-                    Text("XÁC THỰC KEY THÀNH CÔNG")
-                        .font(.system(size: 11, weight: .heavy, design: .rounded))
-                        .tracking(1.4)
-                        .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-                }
-                .padding(.horizontal, 11)
-                .padding(.vertical, 4.5)
-                .background(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.12))
-                .cornerRadius(999)
-                .overlay(
-                    Capsule()
-                        .stroke(Color(red: 0.20, green: 0.88, blue: 0.45).opacity(0.28), lineWidth: 0.8)
-                )
-            }
-        }
-    }
-
-    private var infoCardSection: some View {
-        VStack(spacing: 11) {
-            // Hàng 1: Hạn Key
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.badge.checkmark.fill")
-                        .font(.system(size: 12.5))
-                        .foregroundColor(Color.white.opacity(0.75))
-                    Text("Hạn Key")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.6))
-                }
-                Spacer()
-                Text(displayExpiry)
-                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-            }
-
-            Divider().background(Color.white.opacity(0.08))
-
-            // Hàng 2: Thiết Bị
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "iphone.gen3")
-                        .font(.system(size: 12.5))
-                        .foregroundColor(Color.white.opacity(0.75))
-                    Text("Thiết Bị")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.6))
-                }
-                Spacer()
-                Text(deviceHardwareDisplay)
-                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-
-            Divider().background(Color.white.opacity(0.08))
-
-            // Hàng 3: Mã Máy
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "cpu.fill")
-                        .font(.system(size: 12.5))
-                        .foregroundColor(Color.white.opacity(0.75))
-                    Text("Mã Máy")
-                        .font(.system(size: 12.5, weight: .medium))
-                        .foregroundColor(Color.white.opacity(0.6))
-                }
-                Spacer()
-                Button {
-                    UIPasteboard.general.string = currentDeviceID
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    showCopiedDeviceID = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                        showCopiedDeviceID = false
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Text(String(currentDeviceID.prefix(12)) + "...")
-                            .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
-                            .foregroundColor(Color.white.opacity(0.85))
-                        Image(systemName: showCopiedDeviceID ? "checkmark.circle.fill" : "doc.on.doc")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(showCopiedDeviceID ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color.white.opacity(0.6))
-                        if showCopiedDeviceID {
-                            Text("Đã chép")
-                                .font(.system(size: 10, weight: .bold))
-                                .foregroundColor(Color(red: 0.20, green: 0.88, blue: 0.45))
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3.5)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(8)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .padding(14)
-        .background(Color.white.opacity(0.04))
-        .cornerRadius(18)
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(Color.white.opacity(0.12), lineWidth: 1)
-        )
-    }
-
-    private var enterAppButton: some View {
-        Button(action: {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            withAnimation(.easeOut(duration: 0.25)) {
-                cardOpacity = 0.0
-                cardScale = 0.92
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                onFinished()
-            }
-        }) {
-            HStack(spacing: 8) {
-                ShinyTextView(
-                    text: "VÀO APP",
-                    font: .system(size: 16, weight: .heavy, design: .rounded),
-                    baseColor: Color(white: 0.90),
-                    shineColor: .white,
-                    duration: 2.0,
-                    tracking: 1.0
-                )
-
-                Image(systemName: "arrow.right.circle.fill")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(
-                LinearGradient(
-                    colors: [Color(white: 0.16), Color(white: 0.07)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-            .cornerRadius(14)
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.white.opacity(0.55), lineWidth: 1.2)
-            )
-            .shadow(color: Color.white.opacity(0.22), radius: 10, y: 0)
+    private func infoRow(label: String, value: String, valueColor: Color) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .foregroundColor(Color(white: 0.5))
+            Spacer()
+            Text(value)
+                .font(.system(size: 10.5, weight: .bold, design: .monospaced))
+                .foregroundColor(valueColor)
         }
     }
 }
+
 
 // MARK: - POPUP MODAL THÔNG BÁO NHẬP KEY (APPLE PAY GLASS MODAL)
 struct KeyNotificationModalView: View {

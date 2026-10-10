@@ -44,21 +44,9 @@ final class CheatStoreSoundManager: ObservableObject {
         }
     }
 
-    /// Phát âm thanh Apple Pay thành công (Đã tắt rung theo yêu cầu)
+    /// Phát âm thanh Apple Pay thành công (Đã tắt hoàn toàn theo yêu cầu người dùng)
     func playSuccessSound() {
-        // Phát âm thanh
-        if audioPlayer == nil {
-            prepareAudioPlayer()
-        }
-
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self, let player = self.audioPlayer else { return }
-            if player.isPlaying {
-                player.stop()
-            }
-            player.currentTime = 0
-            player.play()
-        }
+        // Tắt toàn bộ âm thanh ting theo yêu cầu
     }
 
     /// Chuyển tab (Đã tắt rung hoàn toàn để chuyển tab mượt mà, không bị delay)
