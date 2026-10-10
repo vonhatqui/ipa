@@ -38,10 +38,14 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
-    // MARK: - 3105-New Root View
+    // MARK: - CheatStore VN Root View
     @ViewBuilder
     private var mainContentView: some View {
-        New3105MainView()
+        if licenseManager.isActivated {
+            New3105MainView()
+        } else {
+            CheatStoreLoginView(licenseManager: licenseManager)
+        }
     }
 
     var body: some Scene {

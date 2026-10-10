@@ -27,9 +27,6 @@ public struct New3105AimTabView: View {
                 // Nhóm 2: Thông Số Ngắm (FovSize & AimTarget)
                 aimParametersSection
 
-                // Nhóm 3: Cấu Hình Chưa Xác Minh
-                unverifiedSection
-
                 Spacer(minLength: 40)
             }
             .padding(.horizontal, 16)
@@ -169,48 +166,6 @@ public struct New3105AimTabView: View {
             .background(Color(white: 0.08))
             .cornerRadius(10)
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.2), lineWidth: 1))
-        }
-    }
-
-    // MARK: - Unverified Section
-    private var unverifiedSection: some View {
-        VStack(spacing: 12) {
-            sectionHeader(title: "CẤU HÌNH CHƯA XÁC MINH (UNVERIFIED CONFIG)")
-
-            VStack(spacing: 10) {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .foregroundColor(Color(white: 0.6))
-                        .font(.system(size: 12))
-                    Text("Các trường máy chủ hoặc chưa xác định rõ ý nghĩa logic:")
-                        .font(.system(size: 11))
-                        .foregroundColor(Color(white: 0.6))
-                    Spacer()
-                }
-
-                let unverified = configManager.unverifiedFields.filter {
-                    $0.key.contains("aim") || $0.key.contains("headshot") || $0.key == "meomeo" || $0.key == "sig" || $0.key == "token"
-                }
-
-                ForEach(unverified, id: \.key) { item in
-                    HStack {
-                        Text(item.key)
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(Color(white: 0.8))
-                        Spacer()
-                        Text(item.value)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundColor(Color(white: 0.5))
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-            .padding(14)
-            .background(Color(white: 0.05))
-            .cornerRadius(10)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.15), lineWidth: 1))
         }
     }
 

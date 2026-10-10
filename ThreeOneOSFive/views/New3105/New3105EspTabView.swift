@@ -30,9 +30,6 @@ public struct New3105EspTabView: View {
                 // Phần phụ trợ (Line & Fov)
                 espAuxSection
 
-                // Cảnh báo minh bạch trạng thái
-                disclaimerCard
-
                 Spacer(minLength: 40)
             }
             .padding(.horizontal, 16)
@@ -162,31 +159,6 @@ public struct New3105EspTabView: View {
             .opacity(configManager.espMaster ? 1.0 : 0.5)
             .disabled(!configManager.espMaster)
         }
-    }
-
-    // MARK: - Disclaimer Card (Tuân thủ mục 4)
-    private var disclaimerCard: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle")
-                .foregroundColor(Color(white: 0.7))
-                .font(.system(size: 14))
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("LƯU Ý TRẠNG THÁI RUNTIME")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
-                Text("Các thay đổi switch ở trên sẽ được cập nhật trực tiếp vào file localConfig.json và bộ nhớ. Ứng dụng không tuyên bố tính năng trong game đã hoạt động chỉ vì giá trị JSON đã thay đổi.")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(white: 0.6))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer()
-        }
-        .padding(12)
-        .background(Color(white: 0.05))
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(white: 0.15), lineWidth: 1))
     }
 
     // MARK: - Helpers

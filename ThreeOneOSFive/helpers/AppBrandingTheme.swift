@@ -24,7 +24,7 @@ enum AppBrandingTheme {
 
     var appTitle: String {
         switch self {
-        case .cheatStore: return "CheatVN External"
+        case .cheatStore: return "CheatStore VN"
         case .veLix: return "VeLix VN"
         case .venom: return "Venom VN"
         }
@@ -32,7 +32,7 @@ enum AppBrandingTheme {
 
     var ownerName: String {
         switch self {
-        case .cheatStore: return "Võ Nhật Qui (CheatVN)"
+        case .cheatStore: return "CheatStore VN"
         case .veLix: return "Quốc Đại"
         case .venom: return "Trương Thành Trọng"
         }

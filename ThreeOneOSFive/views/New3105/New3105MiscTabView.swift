@@ -28,9 +28,6 @@ public struct New3105MiscTabView: View {
                 // Nhóm 2: Các Trường Bổ Trợ Khác
                 additionalFlagsSection
 
-                // Nhóm 3: Thông Báo Kỹ Thuật (Tuân thủ mục 5)
-                runtimeNoticeCard
-
                 Spacer(minLength: 40)
             }
             .padding(.horizontal, 16)
@@ -176,31 +173,6 @@ public struct New3105MiscTabView: View {
             .cornerRadius(10)
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color(white: 0.2), lineWidth: 1))
         }
-    }
-
-    // MARK: - Runtime Notice Card (Tuân thủ mục 5)
-    private var runtimeNoticeCard: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "shield.slash")
-                .foregroundColor(Color(white: 0.7))
-                .font(.system(size: 14))
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text("GIỚI HẠN VÀ THÀNH PHẦN THIẾU")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    .foregroundColor(.white)
-                Text("Ứng dụng chỉ đóng vai trò trình đọc/ghi cấu hình file localConfig.json và chuẩn bị patch. Ứng dụng KHÔNG tự can thiệp tiến trình game, không sửa đổi bộ nhớ runtime trực tiếp và không bypass anti-cheat.\n\nThành phần còn thiếu để thực thi in-game: Runtime InjectFix (IFix) hoặc Dynamic Library trong game để nạp Assembly-CSharp-patch.bytes.")
-                    .font(.system(size: 11))
-                    .foregroundColor(Color(white: 0.6))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer()
-        }
-        .padding(12)
-        .background(Color(white: 0.05))
-        .cornerRadius(8)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color(white: 0.15), lineWidth: 1))
     }
 
     // MARK: - Helpers

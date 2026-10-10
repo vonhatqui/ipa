@@ -2,11 +2,11 @@ import SwiftUI
 
 /// =========================================================================
 /// New3105MainView
-/// Giao diện chính của ứng dụng 3105-New theo mục 2:
+/// Giao diện chính của ứng dụng CheatStore VN:
 /// - Nền đen toàn màn hình (True Dark AMOLED).
-/// - Chữ trắng, điểm nhấn xám, thiết kế tối giản, hiện đại.
+/// - Chữ trắng, điểm nhấn xám, thiết kế tối giản, hiện đại, logo CheatStore VN.
+/// - Thanh ngang INJECTOR nổi bật toàn màn hình nằm trên thanh Tab Bar.
 /// - Thanh điều hướng 4 Tab dưới cùng: AIM / ESP / MISC / ME.
-/// - Nút INJECTOR / UNINJECT nổi bật ở thanh tiêu đề trên cùng.
 /// - Giữ nguyên trạng thái cấu hình khi chuyển tab.
 /// =========================================================================
 public struct New3105MainView: View {
@@ -48,7 +48,7 @@ public struct New3105MainView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Top App Bar
+                // Top App Bar thương hiệu CheatStore VN
                 topNavigationBar
 
                 // Nội dung Tab chính
@@ -67,7 +67,14 @@ public struct New3105MainView: View {
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
 
-                // Bottom Tab Bar tối giản chuẩn mục 2
+                // Thanh ngang INJECTOR nổi bật nằm ngay trên Tab Bar
+                New3105InjectorButton(configManager: configManager)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
+                    .background(Color(white: 0.04))
+
+                // Bottom Tab Bar tối giản
                 bottomTabBar
             }
         }
@@ -75,23 +82,36 @@ public struct New3105MainView: View {
 
     // MARK: - Top Navigation Bar
     private var topNavigationBar: some View {
-        HStack(alignment: .center) {
+        HStack(alignment: .center, spacing: 10) {
+            CheatStoreLogoView(size: 32, cornerRadius: 8)
+
             VStack(alignment: .leading, spacing: 2) {
-                Text("3105-New")
-                    .font(.system(size: 16, weight: .black, design: .monospaced))
+                Text("CHEATSTORE VN")
+                    .font(.system(size: 15, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
-                Text("CONFIG MANAGER")
+                Text("EXTERNAL CONFIG MANAGER")
                     .font(.system(size: 9, weight: .bold, design: .monospaced))
                     .foregroundColor(Color(white: 0.5))
             }
 
             Spacer()
 
-            // Nút INJECTOR / UNINJECT
-            New3105InjectorButton(configManager: configManager)
+            // Server Indicator
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Color(red: 0.2, green: 0.85, blue: 0.3))
+                    .frame(width: 6, height: 6)
+                Text("ONLINE")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(Color(white: 0.85))
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(Color(white: 0.1))
+            .cornerRadius(10)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
         .background(Color(white: 0.04))
         .overlay(
             Rectangle()

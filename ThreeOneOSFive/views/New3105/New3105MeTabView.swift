@@ -19,6 +19,7 @@ import SwiftUI
 /// =========================================================================
 public struct New3105MeTabView: View {
     @ObservedObject var configManager: LocalConfigManager
+    @ObservedObject var licenseManager: CheatStoreLicenseManager = .shared
     @State private var profile: DeviceProfileInfo = DeviceProfileService.shared.getCurrentProfile()
     @State private var showingAlert = false
     @State private var alertMessage = ""
@@ -105,14 +106,18 @@ public struct New3105MeTabView: View {
     // MARK: - ACCOUNT Card
     private var accountInfoCard: some View {
         VStack(spacing: 12) {
-            sectionHeader(title: "ACCOUNT")
+            sectionHeader(title: "ACCOUNT & SERVER KEY")
 
             VStack(spacing: 0) {
-                infoRow(label: "Key Status", value: profile.keyStatus, isStatus: true)
+                infoRow(label: "Key Status", value: licenseManager.isActivated ? "HỢP LỆ (ACTIVE)" : "CHƯA KÍCH HOẠT", isStatus: true)
                 dividerLine
-                infoRow(label: "Expiration", value: profile.expiration)
+                infoRow(label: "License Key", value: licenseManager.activeKey.isEmpty ? "CHƯA CÓ KEY" : licenseManager.activeKey)
                 dividerLine
-                infoRow(label: "Server Status", value: profile.serverStatus, isStatus: true)
+                infoRow(label: "Gói Bản Quyền", value: licenseManager.planName.isEmpty ? "Gói VIP" : licenseManager.planName)
+                dividerLine
+                infoRow(label: "Thời Hạn Còn Lại", value: licenseManager.formattedRemainingTime)
+                dividerLine
+                infoRow(label: "Server Status", value: "ONLINE (cheatingenginexyz.online)", isStatus: true)
             }
             .background(Color(white: 0.08))
             .cornerRadius(10)
@@ -228,12 +233,18 @@ public struct New3105MeTabView: View {
     private func refreshProfile() {
         self.profile = DeviceProfileService.shared.getCurrentProfile()
         _ = configManager.loadConfig()
+        Task {
+            let ok = await licenseManager.verifyCurrentDevice()
+            await MainActor.run {
+                alertTitle = ok ? "Đã Làm Mới" : "Thông Báo"
+                alertMessage = ok ? "Đã cập nhật trạng thái bản quyền mới nhất từ máy chủ." : (licenseManager.errorMessage ?? "Key đã hết hạn hoặc không hợp lệ.")
+                showingAlert = true
+            }
+        }
     }
 
     private func handleLogout() {
-        alertTitle = "Đăng Xuất"
-        alertMessage = "Hệ thống chưa cấu hình máy chủ xác thực tài khoản (NOT CONFIGURED). Đã làm mới phiên cục bộ."
-        showingAlert = true
+        licenseManager.deactivate(withReason: "Đã đăng xuất tài khoản.")
         refreshProfile()
     }
 

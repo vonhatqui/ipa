@@ -26,28 +26,28 @@ public final class LocalConfigManager: ObservableObject {
     // AIM Tab
     @Published public var fovSize: Double = 314 { didSet { updateField(key: "FovSize", value: Int(fovSize)) } }
     @Published public var aimTarget: Int = 0 { didSet { updateField(key: "AimTarget", value: aimTarget) } }
-    @Published public var aimEnabled: Bool = true { didSet { updateField(key: "AimEnabled", value: aimEnabled) } }
-    @Published public var aimSystemEnabled: Bool = true { didSet { updateField(key: "AimSystemEnabled", value: aimSystemEnabled) } }
+    @Published public var aimEnabled: Bool = false { didSet { updateField(key: "AimEnabled", value: aimEnabled) } }
+    @Published public var aimSystemEnabled: Bool = false { didSet { updateField(key: "AimSystemEnabled", value: aimSystemEnabled) } }
     @Published public var headshotRate: Double = 60 { didSet { updateField(key: "HeadshotRate", value: Int(headshotRate)) } }
 
     // ESP Tab
-    @Published public var espMaster: Bool = true { didSet { updateField(key: "EspMaster", value: espMaster) } }
-    @Published public var espName: Bool = true { didSet { updateField(key: "EspName", value: espName) } }
-    @Published public var espDistance: Bool = true { didSet { updateField(key: "EspDistance", value: espDistance) } }
-    @Published public var espBox: Bool = true { didSet { updateField(key: "EspBox", value: espBox) } }
-    @Published public var espHealth: Bool = true { didSet { updateField(key: "EspHealth", value: espHealth) } }
-    @Published public var espSkeleton: Bool = true { didSet { updateField(key: "EspSkeleton", value: espSkeleton) } }
+    @Published public var espMaster: Bool = false { didSet { updateField(key: "EspMaster", value: espMaster) } }
+    @Published public var espName: Bool = false { didSet { updateField(key: "EspName", value: espName) } }
+    @Published public var espDistance: Bool = false { didSet { updateField(key: "EspDistance", value: espDistance) } }
+    @Published public var espBox: Bool = false { didSet { updateField(key: "EspBox", value: espBox) } }
+    @Published public var espHealth: Bool = false { didSet { updateField(key: "EspHealth", value: espHealth) } }
+    @Published public var espSkeleton: Bool = false { didSet { updateField(key: "EspSkeleton", value: espSkeleton) } }
     @Published public var espTracer: Bool = false { didSet { updateField(key: "EspTracer", value: espTracer) } }
-    @Published public var espLine: Bool = true { didSet { updateField(key: "EspLine", value: espLine) } }
-    @Published public var espFov: Bool = true { didSet { updateField(key: "EspFov", value: espFov) } }
+    @Published public var espLine: Bool = false { didSet { updateField(key: "EspLine", value: espLine) } }
+    @Published public var espFov: Bool = false { didSet { updateField(key: "EspFov", value: espFov) } }
 
     // MISC Tab
     @Published public var noRecoil: Bool = false { didSet { updateField(key: "NoRecoil", value: noRecoil) } }
-    @Published public var camXa: Bool = true { didSet { updateField(key: "CamXa", value: camXa) } }
+    @Published public var camXa: Bool = false { didSet { updateField(key: "CamXa", value: camXa) } }
     @Published public var camXaFloat: Double = 1.4 { didSet { updateField(key: "CamXaFloat", value: camXaFloat) } }
-    @Published public var speedHack: Int = 2 { didSet { updateField(key: "SpeedHack", value: speedHack) } }
+    @Published public var speedHack: Int = 1 { didSet { updateField(key: "SpeedHack", value: speedHack) } }
     @Published public var fastParachute: Bool = false { didSet { updateField(key: "FastParachute", value: fastParachute) } }
-    @Published public var ghostMode: Bool = true { didSet { updateField(key: "GhostMode", value: ghostMode) } }
+    @Published public var ghostMode: Bool = false { didSet { updateField(key: "GhostMode", value: ghostMode) } }
     @Published public var showGuestBtn: Bool = true { didSet { updateField(key: "ShowGuestBtn", value: showGuestBtn) } }
     @Published public var buffDame: Bool = false { didSet { updateField(key: "BuffDame", value: buffDame) } }
 

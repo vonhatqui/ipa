@@ -1,4 +1,4 @@
-name: Build 3105-New IPA
+name: Build CheatStore-VN IPA
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       ipa_name:
         description: "Tên file IPA xuất ra (không cần đuôi .ipa)"
         required: false
-        default: "3105-New"
+        default: "CheatStore-VN"
       build_config:
         description: "Chế độ biên dịch"
         required: false
@@ -101,15 +101,15 @@ jobs:
           # Tạo Payload sạch sẽ
           rm -rf Payload
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/3105-New.app
-          TARGET_APP="Payload/3105-New.app"
+          cp -R "$APP_PATH" Payload/CheatStore-VN.app
+          TARGET_APP="Payload/CheatStore-VN.app"
 
-          # 1. Cập nhật Info.plist cho 3105-New
+          # 1. Cập nhật Info.plist cho CheatStore VN
           if [ -f "$TARGET_APP/Info.plist" ]; then
-            plutil -replace CFBundleDisplayName -string "3105-New" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleName -string "3105-New" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleShortVersionString -string "1.0.0" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleVersion -string "1" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleDisplayName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleShortVersionString -string "2.4" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleVersion -string "10" "$TARGET_APP/Info.plist" 2>/dev/null || true
           fi
 
           # 2. Bundle localConfig.json và Assembly-CSharp-patch.bytes
@@ -128,8 +128,8 @@ jobs:
             cp -rv ThreeOneOSFive/AppCore/* "$TARGET_APP/AppCore/" 2>/dev/null || true
           fi
 
-          # Đóng gói IPA 3105-New
-          IPA_FILENAME="${{ github.event.inputs.ipa_name || '3105-New' }}.ipa"
+          # Đóng gói IPA CheatStore-VN
+          IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
           zip -r -9 "$IPA_FILENAME" Payload
           
           # Tính checksum
@@ -146,10 +146,10 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
-      - name: Lưu trữ file IPA 3105-New lên GitHub Artifacts
+      - name: Lưu trữ file IPA CheatStore-VN lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: 3105-New-IPA
+          name: CheatStore-VN-IPA
           path: "${{ env.IPA_PATH }}"
           if-no-files-found: error
           retention-days: 30

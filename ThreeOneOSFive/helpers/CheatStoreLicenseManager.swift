@@ -8,13 +8,13 @@ import CommonCrypto
 /// ========================================================
 public struct CheatStoreServerConfig {
     /// Domain máy chủ CheatStoreVN của bạn:
-    public static var apiBaseURL: String = "http://cheatingenginexyz.online"
+    public static var apiBaseURL: String = "https://cheatingenginexyz.online"
     public static var secureBaseURL: String = "https://cheatingenginexyz.online"
 
-    public static var verifyKeyURL: String { "\(apiBaseURL)/api/key/verify" }
-    public static var activateKeyURL: String { "\(apiBaseURL)/api/key/activate" }
-    public static var checkKeyURL: String { "\(apiBaseURL)/api/key/check" }
-    public static var configURL: String { "\(apiBaseURL)/api/config" }
+    public static var verifyKeyURL: String { "\(apiBaseURL)/api.php" }
+    public static var activateKeyURL: String { "\(apiBaseURL)/api.php" }
+    public static var checkKeyURL: String { "\(apiBaseURL)/api.php" }
+    public static var configURL: String { "\(apiBaseURL)/api.php" }
     public static var updateURL: String { "\(apiBaseURL)/download" }
 }
 
@@ -371,8 +371,14 @@ final class CheatStoreLicenseManager: ObservableObject {
             }
         }
 
-        // 1. Tạo URL POST: CheatStoreServerConfig.verifyKeyURL (/api/key/verify)
-        guard let requestURL = URL(string: CheatStoreServerConfig.verifyKeyURL) else {
+        // 1. Tạo URL GET theo chuẩn API: GET /api.php?action=verify&key=...&device_id=...
+        var components = URLComponents(string: "\(CheatStoreServerConfig.apiBaseURL)/api.php")
+        components?.queryItems = [
+            URLQueryItem(name: "action", value: "verify"),
+            URLQueryItem(name: "key", value: trimmedKey),
+            URLQueryItem(name: "device_id", value: deviceID)
+        ]
+        guard let requestURL = components?.url else {
             await MainActor.run {
                 self.errorMessage = "Đường dẫn máy chủ không hợp lệ!"
             }
@@ -388,27 +394,11 @@ final class CheatStoreLicenseManager: ObservableObject {
             return false
         }
 
-        // 3. Chữ ký HMAC-SHA256
-        let timestamp = Int64(Date().timeIntervalSince1970)
-        let signature = Self.generateHMACSignature(key: trimmedKey, deviceID: deviceID, timestamp: timestamp, secret: hmacSecret)
-
         var request = URLRequest(url: requestURL)
-        request.httpMethod = "POST"
+        request.httpMethod = "GET"
         request.timeoutInterval = 12
         request.setValue("CheatStore/\(AppUpdateChecker.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(signature, forHTTPHeaderField: "X-Signature")
-        request.setValue("\(timestamp)", forHTTPHeaderField: "X-Timestamp")
-        request.setValue(deviceID, forHTTPHeaderField: "X-Device-Id")
-
-        // Request Body JSON
-        let requestBody: [String: Any] = [
-            "key": trimmedKey,
-            "device_id": deviceID,
-            "app_version": AppUpdateChecker.currentVersion
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: requestBody)
 
         do {
             let (data, response) = try await secureURLSession.data(for: request)
