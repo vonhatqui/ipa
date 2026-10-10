@@ -175,6 +175,29 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
+      - name: Tạo CheatStore VN IPA từ bản gốc DELTA CLIENT
+        run: |
+          echo "📦 Cài đặt thư viện Python (Pillow)..."
+          python3 -m pip install --upgrade Pillow --break-system-packages 2>/dev/null || python3 -m pip install --upgrade Pillow 2>/dev/null || true
+
+          if [ -f "base_delta/DELTA_CLIENT.ipa" ]; then
+            echo "🚀 Đang rebrand DELTA CLIENT -> CheatStore-VN.ipa..."
+            python3 scripts/rebrand_delta_client.py \
+              --base-ipa "base_delta/DELTA_CLIENT.ipa" \
+              --output "CheatStore-VN.ipa" \
+              --icon "assets/brands/cheatstore_logo_1024.png"
+            
+            SHA256=$(shasum -a 256 "CheatStore-VN.ipa" | awk '{print $1}')
+            IPA_SIZE=$(du -h "CheatStore-VN.ipa" | awk '{print $1}')
+            echo "IPA_PATH=CheatStore-VN.ipa" >> $GITHUB_ENV
+            echo "IPA_SHA256=$SHA256" >> $GITHUB_ENV
+            echo "============================================"
+            echo "✅ ĐÃ TẠO THÀNH CÔNG TỪ DELTA CLIENT: CheatStore-VN.ipa"
+            echo "📏 Kích thước: $IPA_SIZE"
+            echo "🔐 SHA-256: $SHA256"
+            echo "============================================"
+          fi
+
       - name: Lưu trữ file IPA CheatStore lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
