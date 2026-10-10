@@ -1981,7 +1981,9 @@ struct RainbowText: View {
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         cloudPatchService.syncCloudPatches()
-                        licenseManager.validateSavedLicense()
+                        Task {
+                            _ = await licenseManager.verifyCurrentDevice()
+                        }
                         showToastNotification(message: "Đã làm mới thông tin hệ thống", icon: "arrow.clockwise", color: .green)
                     }) {
                         HStack(spacing: 8) {
