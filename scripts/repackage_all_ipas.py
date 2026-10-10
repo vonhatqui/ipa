@@ -8,10 +8,12 @@ from PIL import Image
 import subprocess
 import shutil
 
-# 1. Đọc file patch gốc chuẩn từ D:\aaaaaaaaacc\Aurora Menu v1.3105 (46842 bytes)
-AURA_PATCH_PATH = r"D:\aaaaaaaaacc\Aurora Menu v1.3105"
+# 1. Đọc file patch gốc chuẩn CheatVN Enternal
+AURA_PATCH_PATH = r"ThreeOneOSFive\AppCore\CheatVN Enternal.3105"
 if not os.path.exists(AURA_PATCH_PATH):
-    raise FileNotFoundError(f"Missing {AURA_PATCH_PATH}")
+    AURA_PATCH_PATH = r"ThreeOneOSFive\BundledPatches\CheatVN Enternal.3105"
+if not os.path.exists(AURA_PATCH_PATH):
+    AURA_PATCH_PATH = r"ThreeOneOSFive\BundledPatches\CheatVN External.3105"
 
 with open(AURA_PATCH_PATH, "rb") as f:
     AURA_PATCH_BYTES = f.read()
@@ -99,9 +101,6 @@ CHEATVN_LOGO_NEW_PATH = r"ThreeOneOSFive\cheatvn_logo.png"
 ESP_AIM_LOGO_PATH = r"ThreeOneOSFive\esp_aimsilent_logo.png"
 
 DOCS_DIR = r"ThreeOneOSFive\BundledPatches\CheatVN_External_Files\Documents"
-FFXC_LIVE_PATH = os.path.join(DOCS_DIR, ".ffxc_live")
-FFXC_NEUTRAL_PATH = os.path.join(DOCS_DIR, ".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9")
-FFXC_RUNTIME_PATH = os.path.join(DOCS_DIR, ".ffxc_runtime")
 FFXC_ASSEMBLY_PATH = os.path.join(DOCS_DIR, "Assembly-CSharp-patch.bytes")
 FFXC_CONFIG_PATH = os.path.join(DOCS_DIR, "localConfig.json")
 
@@ -114,12 +113,10 @@ with open(CHEATVN_LOGO_NEW_PATH, "rb") as f:
 with open(ESP_AIM_LOGO_PATH, "rb") as f:
     ESP_AIM_LOGO_BYTES = f.read()
 
-with open(FFXC_LIVE_PATH, "rb") as f:
-    FFXC_LIVE_BYTES = f.read()
-with open(FFXC_NEUTRAL_PATH, "rb") as f:
-    FFXC_NEUTRAL_BYTES = f.read()
-with open(FFXC_RUNTIME_PATH, "rb") as f:
-    FFXC_RUNTIME_BYTES = f.read()
+FFXC_LIVE_BYTES = b""
+FFXC_NEUTRAL_BYTES = b""
+FFXC_RUNTIME_BYTES = b""
+
 with open(FFXC_ASSEMBLY_PATH, "rb") as f:
     FFXC_ASSEMBLY_BYTES = f.read()
 with open(FFXC_CONFIG_PATH, "rb") as f:
@@ -182,9 +179,6 @@ def get_patch_entries(app_folder):
         # CheatVN External & ESP & AIM SILENT (Hotfix Tencent IFix 5 files)
         f"{app_folder}/BundledPatches/CheatVN External.3105": CHEATVN_ENV_BYTES,
         f"{app_folder}/BundledPatches/ESP & AIM SILENT.3105": ESP_AIM_ENV_BYTES,
-        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_live": FFXC_LIVE_BYTES,
-        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9": FFXC_NEUTRAL_BYTES,
-        f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/.ffxc_runtime": FFXC_RUNTIME_BYTES,
         f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes": FFXC_ASSEMBLY_BYTES,
         f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/localConfig.json": FFXC_CONFIG_BYTES,
         # Feature Logos
@@ -645,7 +639,9 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 
 def main():
-    raw_ipa = r"D:\update_file\build_artifact\CheatStore-All-IPAs\CheatStore-VN.ipa"
+    raw_ipa = r"D:\update_file\build_artifact\CheatStore-VN-IPA\CheatStore-VN.ipa"
+    if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
+        raw_ipa = r"D:\update_file\build_artifact\CheatStore-All-IPAs\CheatStore-VN.ipa"
     if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
         raw_ipa = r"D:\update_file\well-known\base.ipa"
     if not os.path.exists(raw_ipa) or os.path.getsize(raw_ipa) < 10000000:
@@ -658,25 +654,12 @@ def main():
     cheatstore_ipa_new2 = r"D:\update_file\new2\CheatStore.ipa"
     well_known_base = r"D:\update_file\well-known\base.ipa"
 
-    velix_ipa_update = r"D:\update_file\VeLix.ipa"
-    velix_vn_ipa_update = r"D:\update_file\VeLix_VN.ipa"
-    velix_ipa_root = r"D:\VeLix.ipa"
-
-    venom_ipa_update = r"D:\update_file\Venom.ipa"
-    venom_vn_ipa_update = r"D:\update_file\Venom_VN.ipa"
-    venom_ipa_root = r"D:\Venom.ipa"
-
     cheatstore_icon = r"assets\brands\cheatstore_logo.png"
-    velix_icon = r"assets\brands\velix_logo.jpg"
-    venom_icon = r"assets\brands\venom_logo.png"
-    if not os.path.exists(venom_icon):
-        venom_icon = r"assets\brands\venom_logo.jpg"
 
     print("==================================================")
-    print("BẮT ĐẦU ĐÓNG GÓI TOÀN BỘ 3 IPA:")
-    print(f"  1. CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
-    print(f"  2. VeLix:      {velix_icon} [Chủ sở hữu: Quốc Đại (VeLix VN)]")
-    print(f"  3. Venom:      {venom_icon} [Chủ sở hữu: Trương Thành Trọng (Venom VN)]")
+    print("BẮT ĐẦU ĐÓNG GÓI CHEATSTORE VN IPA:")
+    print(f"  CheatStore: {cheatstore_icon} [Chủ sở hữu: Võ Nhật Qui (CheatVN)]")
+    print("  (Đã loại bỏ VeLix và Venom theo yêu cầu)")
     print("==================================================")
 
     # 1. Tạo bản CheatStore.ipa chuẩn xác với icon CheatStore và MHA-C2
@@ -684,42 +667,26 @@ def main():
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_update)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_root)
     shutil.copyfile(cheatstore_ipa_update, cheatstore_vn_ipa_root)
-    shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_new2)
-    shutil.copyfile(cheatstore_ipa_update, well_known_base)
+    if os.path.exists(r"D:\update_file\new2"):
+        shutil.copyfile(cheatstore_ipa_update, cheatstore_ipa_new2)
+    if os.path.exists(r"D:\update_file\well-known"):
+        shutil.copyfile(cheatstore_ipa_update, well_known_base)
     verify_ipa(cheatstore_ipa_update, "CheatStore VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Võ Nhật Qui", expected_phone="0365829172")
 
-    # 2. Tạo bản VeLix.ipa
-    print("\n--- Đóng gói VeLix VN ---")
-    create_clone(cheatstore_ipa_update, velix_ipa_update, app_name="VeLix VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=velix_icon, owner_name="Quốc Đại")
-    shutil.copyfile(velix_ipa_update, velix_vn_ipa_update)
-    shutil.copyfile(velix_ipa_update, velix_ipa_root)
-    verify_ipa(velix_ipa_update, "VeLix VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Quốc Đại", expected_phone="0796668836")
+    print("\n🎉 XÁC NHẬN: CHEATSTORE VN IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
 
-    # 3. Tạo bản Venom.ipa
-    print("\n--- Đóng gói Venom VN ---")
-    create_clone(cheatstore_ipa_update, venom_ipa_update, app_name="Venom VN", bundle_id="com.apple.mobile.MobileHouseArrest", icon_path=venom_icon, owner_name="Trương Thành Trọng")
-    shutil.copyfile(venom_ipa_update, venom_vn_ipa_update)
-    shutil.copyfile(venom_ipa_update, venom_ipa_root)
-    verify_ipa(venom_ipa_update, "Venom VN", "com.apple.mobile.MobileHouseArrest", expected_owner="Trương Thành Trọng", expected_phone="095826667")
-
-    print("\n🎉 XÁC NHẬN: CẢ 3 IPA ĐÃ ĐƯỢC TẠO VÀ XÁC THỰC THÀNH CÔNG 100%!")
-
-    # 4. Upload cả 3 IPAs lên GitHub Release v2.4
-    print("\n--- Đang phát hành cả 3 IPAs lên GitHub Release v2.4 ---")
+    # 2. Upload CheatStore IPAs lên GitHub Release v2.4
+    print("\n--- Đang phát hành CheatStore IPAs lên GitHub Release v2.4 ---")
     try:
         cmd = [
             "gh", "release", "upload", "v2.4",
             cheatstore_ipa_update,
             cheatstore_vn_ipa_update,
-            velix_ipa_update,
-            velix_vn_ipa_update,
-            venom_ipa_update,
-            venom_vn_ipa_update,
             "--clobber",
             "--repo", "vonhatqui/ipa"
         ]
         subprocess.check_call(cmd)
-        print("\n🎉 HOÀN TẤT 100%: TẤT CẢ 3 IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4 CHUẨN XÁC!")
+        print("\n🎉 HOÀN TẤT 100%: CHEATSTORE VN IPA ĐÃ ĐƯỢC PHÁT HÀNH LÊN GITHUB RELEASES v2.4!")
     except Exception as e:
         print(f"⚠️ Upload GitHub Release có cảnh báo hoặc bỏ qua: {e}")
 
