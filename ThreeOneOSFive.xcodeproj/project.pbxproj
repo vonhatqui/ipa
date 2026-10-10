@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CSAV0300B /* CheatStoreAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSAV0300F /* CheatStoreAppView.swift */; };
 		3105M217 /* CloudPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M117; };
 
 		3105M215 /* PatchCodecAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M115; };
@@ -119,6 +120,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CSAV0300F /* CheatStoreAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreAppView.swift; sourceTree = "<group>"; };
 		3105M117 /* CloudPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudPatchService.swift; sourceTree = "<group>"; };
 
 		3105M115 /* PatchCodecAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchCodecAPIService.swift; sourceTree = "<group>"; };
@@ -328,6 +330,7 @@
 				3105L102 /* RepositoryMarketplaceView.swift */,
 				3105L103 /* RepositoryHomeView.swift */,
 				3105L104 /* RepositorySourcesView.swift */,
+				CSAV0300F /* CheatStoreAppView.swift */,
 				3105M102 /* CheatStoreLoginView.swift */,
 				3105M103 /* CheatStoreDashboardView.swift */,
 				3105M104 /* GameSelectionView.swift */,
@@ -575,6 +578,7 @@
 				3105L205,
 				3105M200,
 				3105M201,
+				CSAV0300B /* CheatStoreAppView.swift in Sources */,
 				3105M202,
 				3105M203,
 				3105M204,

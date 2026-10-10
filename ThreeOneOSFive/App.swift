@@ -42,7 +42,7 @@ struct ThreeOneOSFiveApp: App {
     @ViewBuilder
     private var mainContentView: some View {
         if licenseManager.isActivated {
-            New3105MainView()
+            CheatStoreAppView()
         } else {
             CheatStoreLoginView(licenseManager: licenseManager)
         }
