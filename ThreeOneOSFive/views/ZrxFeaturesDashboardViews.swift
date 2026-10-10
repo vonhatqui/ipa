@@ -245,6 +245,107 @@ public struct LuxurySegmentedPicker: View {
     }
 }
 
+/// Thanh điều khiển nạp Game & Trạng thái đồng bộ Live AMOLED
+public struct LuxuryEngineActionBar: View {
+    @ObservedObject var store = ZrxFeaturesConfigStore.shared
+    public let accentColor: Color
+
+    public init(accentColor: Color) {
+        self.accentColor = accentColor
+    }
+
+    public var body: some View {
+        VStack(spacing: 10) {
+            // Live Status Pill
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(Color(red: 0/255, green: 230/255, blue: 118/255))
+                    .frame(width: 7, height: 7)
+                Text(store.lastSyncMessage)
+                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.80))
+                Spacer()
+                Text("REALTIME SYNC")
+                    .font(.system(size: 8.5, weight: .black, design: .monospaced))
+                    .foregroundColor(accentColor)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(accentColor.opacity(0.14))
+                    .cornerRadius(4)
+            }
+            .padding(.horizontal, 4)
+
+            HStack(spacing: 10) {
+                // Nút Nạp Vào Game
+                Button {
+                    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+                    _ = store.applyAndInjectAllToGame { success, msg in
+                        UINotificationFeedbackGenerator().notificationOccurred(success ? .success : .warning)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        if store.isInjecting {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                .scaleEffect(0.8)
+                        } else {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 14, weight: .black))
+                        }
+                        Text(store.isInjecting ? "ĐANG NẠP..." : "NẠP VÀO GAME")
+                            .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.black)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .background(
+                        LinearGradient(
+                            colors: [accentColor, accentColor.opacity(0.85)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: accentColor.opacity(0.35), radius: 6, y: 2)
+                }
+                .disabled(store.isInjecting)
+
+                // Nút Vào Game
+                Button {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    store.launchFreeFire()
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("VÀO GAME")
+                            .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .frame(width: 110)
+                    .frame(height: 42)
+                    .background(Color.white.opacity(0.08))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+                }
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(red: 18/255, green: 19/255, blue: 26/255))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+        )
+        .padding(.top, 4)
+    }
+}
+
 // MARK: - ESP Live Radar Simulation Box (Khung mô phỏng trực quan thời gian thực)
 public struct ESPLivePreviewBox: View {
     @ObservedObject var store = ZrxFeaturesConfigStore.shared
@@ -618,6 +719,9 @@ public struct AimbotTabContentView: View {
                         )
                     }
                 }
+
+                // Thanh điều khiển nạp game trực tiếp
+                LuxuryEngineActionBar(accentColor: cyanAccent)
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -835,6 +939,9 @@ public struct VisualEspTabContentView: View {
                         )
                     }
                 }
+
+                // Thanh điều khiển nạp game trực tiếp
+                LuxuryEngineActionBar(accentColor: greenAccent)
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -997,6 +1104,9 @@ public struct MiscFeaturesTabContentView: View {
                     .background(RoundedRectangle(cornerRadius: 16).fill(cardBg))
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(cardBorder, lineWidth: 1))
                 }
+
+                // Thanh điều khiển nạp game trực tiếp
+                LuxuryEngineActionBar(accentColor: amberAccent)
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
