@@ -324,7 +324,6 @@
 				3105M122 /* AirliftPairingSectionView.swift */,
 				3105M123 /* DeltaStyleSettingsView.swift */,
 				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
-				3105M135 /* ZrxFeaturesConfigStore.swift */,
 				3105M136 /* ZrxFeaturesDashboardViews.swift */,
 				3105M131 /* CheatStoreExternalDashboardView.swift */,
 				3105M133 /* CheatVNCategoryHubView.swift */,
@@ -336,6 +335,7 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
+				3105M135 /* ZrxFeaturesConfigStore.swift */,
 				3105M120 /* AirliftBridge.swift */,
 				3105M130 /* ExternalESPConfigService.swift */,
 				3105M132 /* CheatVNPatchService.swift */,
