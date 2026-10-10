@@ -38,51 +38,10 @@ struct ThreeOneOSFiveApp: App {
         }
     }
 
-    // MARK: - Subviews tối ưu hoá biên dịch (Type-Checking) cho Xcode
+    // MARK: - 3105-New Root View
     @ViewBuilder
     private var mainContentView: some View {
-        Group {
-            if licenseManager.isActivated {
-                if isGameLoaded {
-                    CheatStoreDashboardView(onBackToGames: {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            isGameLoaded = false
-                        }
-                    })
-                    .environmentObject(appState)
-                    .environmentObject(patchDraftCoordinator)
-                    .environmentObject(fileOperationCoordinator)
-                    .environmentObject(patchStore)
-                    .environmentObject(repositoryStore)
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .trailing).combined(with: .opacity),
-                        removal: .move(edge: .trailing).combined(with: .opacity)
-                    ))
-                } else {
-                    GameSelectionView(onSelectFreeFire: {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            isGameLoaded = true
-                        }
-                    })
-                    .environmentObject(appState)
-                    .environmentObject(patchDraftCoordinator)
-                    .environmentObject(fileOperationCoordinator)
-                    .environmentObject(patchStore)
-                    .environmentObject(repositoryStore)
-                    .environment(\.appLanguage, language)
-                    .environment(\.locale, language.locale)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .leading).combined(with: .opacity),
-                        removal: .move(edge: .leading).combined(with: .opacity)
-                    ))
-                }
-            } else {
-                CheatStoreLoginView(licenseManager: licenseManager)
-                    .transition(.opacity)
-            }
-        }
+        New3105MainView()
     }
 
     var body: some Scene {

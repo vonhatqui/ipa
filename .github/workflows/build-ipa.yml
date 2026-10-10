@@ -1,4 +1,4 @@
-name: Build CheatStore VN IPA
+name: Build 3105-New IPA
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       ipa_name:
         description: "Tên file IPA xuất ra (không cần đuôi .ipa)"
         required: false
-        default: "CheatStore-VN"
+        default: "3105-New"
       build_config:
         description: "Chế độ biên dịch"
         required: false
@@ -101,64 +101,35 @@ jobs:
           # Tạo Payload sạch sẽ
           rm -rf Payload
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/cheatstorevip.app
-          TARGET_APP="Payload/cheatstorevip.app"
+          cp -R "$APP_PATH" Payload/3105-New.app
+          TARGET_APP="Payload/3105-New.app"
 
-          # 1. Đổi tên executable 3105 thành CheatStore (nếu còn sót binary tên 3105)
-          if [ -f "$TARGET_APP/3105" ]; then
-            echo "🔄 Đổi tên binary: 3105 -> CheatStore..."
-            mv "$TARGET_APP/3105" "$TARGET_APP/CheatStore"
-          fi
-
-          # 2. Cập nhật Info.plist: đảm bảo CFBundleExecutable trỏ đúng vào CheatStore và phiên bản là 2.3 (Build 10)
+          # 1. Cập nhật Info.plist cho 3105-New
           if [ -f "$TARGET_APP/Info.plist" ]; then
-            plutil -replace CFBundleExecutable -string "CheatStore" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleShortVersionString -string "2.3" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleVersion -string "10" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace AppReleaseDisplayVersion -string "2.3" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleDisplayName -string "3105-New" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleName -string "3105-New" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleShortVersionString -string "1.0.0" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleVersion -string "1" "$TARGET_APP/Info.plist" 2>/dev/null || true
           fi
 
-          # 3. Gom toàn bộ file mod và cấu hình vào thư mục AppCore/ và BundledPatches/
-          mkdir -p "$TARGET_APP/AppCore"
+          # 2. Bundle localConfig.json và Assembly-CSharp-patch.bytes
+          mkdir -p "$TARGET_APP/AppCore/new123"
+          if [ -f "ThreeOneOSFive/localConfig.json" ]; then
+            cp -v "ThreeOneOSFive/localConfig.json" "$TARGET_APP/" 2>/dev/null || true
+            cp -v "ThreeOneOSFive/localConfig.json" "$TARGET_APP/AppCore/new123/" 2>/dev/null || true
+          fi
+          if [ -f "ThreeOneOSFive/Assembly-CSharp-patch.bytes" ]; then
+            cp -v "ThreeOneOSFive/Assembly-CSharp-patch.bytes" "$TARGET_APP/" 2>/dev/null || true
+            cp -v "ThreeOneOSFive/Assembly-CSharp-patch.bytes" "$TARGET_APP/AppCore/new123/" 2>/dev/null || true
+          fi
+
+          # 3. Gom tài nguyên phụ trợ vào AppCore
           if [ -d "ThreeOneOSFive/AppCore" ]; then
-            echo "📂 Đang copy toàn bộ AppCore vào $TARGET_APP/AppCore/..."
             cp -rv ThreeOneOSFive/AppCore/* "$TARGET_APP/AppCore/" 2>/dev/null || true
           fi
-          if [ -d "ThreeOneOSFive/BundledPatches" ]; then
-            echo "📂 Đang copy BundledPatches vào $TARGET_APP/BundledPatches/..."
-            mkdir -p "$TARGET_APP/BundledPatches"
-            cp -rv ThreeOneOSFive/BundledPatches/* "$TARGET_APP/BundledPatches/" 2>/dev/null || true
-          fi
-          if [ -d "ThreeOneOSFive/EngineData" ]; then
-            cp -v ThreeOneOSFive/EngineData/*.dat "$TARGET_APP/AppCore/" 2>/dev/null || true
-          fi
 
-          # 4. Gom ảnh phụ trợ vào AppCore/Assets/ (không để rải rác ở root)
-          mkdir -p "$TARGET_APP/AppCore/Assets"
-          if [ -d "ThreeOneOSFive/AppCore/Assets" ]; then
-            cp -v ThreeOneOSFive/AppCore/Assets/* "$TARGET_APP/AppCore/Assets/" 2>/dev/null || true
-          fi
-          for asset in CheatLogo.png CheatStoreLogo.jpg FreeFireIcon.png skin_ignis.jpeg skin_naco.png; do
-            if [ -f "ThreeOneOSFive/$asset" ]; then
-              cp -v "ThreeOneOSFive/$asset" "$TARGET_APP/AppCore/Assets/" 2>/dev/null || true
-            fi
-          done
-
-          # 5. DỌN DẸP TRIỆT ĐỂ ROOT: Xóa sạch toàn bộ file bừa bãi và lộ liễu ở root bundle
-          echo "🧹 Dọn dẹp sạch sẽ thư mục gốc cheatstorevip.app..."
-          rm -f "$TARGET_APP"/*.dat 2>/dev/null || true
-          rm -f "$TARGET_APP"/*.3105 2>/dev/null || true
-          rm -f "$TARGET_APP"/*.bak 2>/dev/null || true
-          rm -f "$TARGET_APP"/*.log 2>/dev/null || true
-          rm -f "$TARGET_APP"/CheatLogo.png "$TARGET_APP"/CheatStoreLogo.jpg "$TARGET_APP"/FreeFireIcon.png 2>/dev/null || true
-          rm -f "$TARGET_APP"/skin_ignis.jpeg "$TARGET_APP"/skin_naco.png 2>/dev/null || true
-
-          echo "📋 Danh sách các file trong app sau khi tối ưu gọn gàng:"
-          ls -la "$TARGET_APP"
-
-          # Đóng gói IPA
-          IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
+          # Đóng gói IPA 3105-New
+          IPA_FILENAME="${{ github.event.inputs.ipa_name || '3105-New' }}.ipa"
           zip -r -9 "$IPA_FILENAME" Payload
           
           # Tính checksum
@@ -175,33 +146,10 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
-      - name: Tạo CheatStore VN IPA từ bản gốc DELTA CLIENT
-        run: |
-          echo "📦 Cài đặt thư viện Python (Pillow)..."
-          python3 -m pip install --upgrade Pillow --break-system-packages 2>/dev/null || python3 -m pip install --upgrade Pillow 2>/dev/null || true
-
-          if [ -f "base_delta/DELTA_CLIENT.ipa" ]; then
-            echo "🚀 Đang rebrand DELTA CLIENT -> CheatStore-VN.ipa..."
-            python3 scripts/rebrand_delta_client.py \
-              --base-ipa "base_delta/DELTA_CLIENT.ipa" \
-              --output "CheatStore-VN.ipa" \
-              --icon "assets/brands/cheatstore_logo_1024.png"
-            
-            SHA256=$(shasum -a 256 "CheatStore-VN.ipa" | awk '{print $1}')
-            IPA_SIZE=$(du -h "CheatStore-VN.ipa" | awk '{print $1}')
-            echo "IPA_PATH=CheatStore-VN.ipa" >> $GITHUB_ENV
-            echo "IPA_SHA256=$SHA256" >> $GITHUB_ENV
-            echo "============================================"
-            echo "✅ ĐÃ TẠO THÀNH CÔNG TỪ DELTA CLIENT: CheatStore-VN.ipa"
-            echo "📏 Kích thước: $IPA_SIZE"
-            echo "🔐 SHA-256: $SHA256"
-            echo "============================================"
-          fi
-
-      - name: Lưu trữ file IPA CheatStore lên GitHub Artifacts
+      - name: Lưu trữ file IPA 3105-New lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CheatStore-VN-IPA
+          name: 3105-New-IPA
           path: "${{ env.IPA_PATH }}"
           if-no-files-found: error
           retention-days: 30

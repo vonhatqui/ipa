@@ -108,6 +108,14 @@
 		3105M232 /* CheatVNPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M132; };
 		3105M233 /* CheatVNCategoryHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M133; };
 		3105M234 /* EspAimSilentDetailDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M134; };
+		3105N201 /* LocalConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N101; };
+		3105N202 /* DeviceProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N102; };
+		3105N203 /* New3105InjectorButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N103; };
+		3105N204 /* New3105AimTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N104; };
+		3105N205 /* New3105EspTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N105; };
+		3105N206 /* New3105MiscTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N106; };
+		3105N207 /* New3105MeTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N107; };
+		3105N208 /* New3105MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N108; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -230,6 +238,14 @@
 		3105M132 /* CheatVNPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNPatchService.swift; sourceTree = "<group>"; };
 		3105M133 /* CheatVNCategoryHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNCategoryHubView.swift; sourceTree = "<group>"; };
 		3105M134 /* EspAimSilentDetailDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspAimSilentDetailDashboardView.swift; sourceTree = "<group>"; };
+		3105N101 /* LocalConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalConfigManager.swift; sourceTree = "<group>"; };
+		3105N102 /* DeviceProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfileService.swift; sourceTree = "<group>"; };
+		3105N103 /* New3105InjectorButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105InjectorButton.swift"; sourceTree = "<group>"; };
+		3105N104 /* New3105AimTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105AimTabView.swift"; sourceTree = "<group>"; };
+		3105N105 /* New3105EspTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105EspTabView.swift"; sourceTree = "<group>"; };
+		3105N106 /* New3105MiscTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MiscTabView.swift"; sourceTree = "<group>"; };
+		3105N107 /* New3105MeTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MeTabView.swift"; sourceTree = "<group>"; };
+		3105N108 /* New3105MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MainView.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -328,6 +344,12 @@
 				3105M131 /* CheatStoreExternalDashboardView.swift */,
 				3105M133 /* CheatVNCategoryHubView.swift */,
 				3105M134 /* EspAimSilentDetailDashboardView.swift */,
+				3105N103 /* New3105InjectorButton.swift */,
+				3105N104 /* New3105AimTabView.swift */,
+				3105N105 /* New3105EspTabView.swift */,
+				3105N106 /* New3105MiscTabView.swift */,
+				3105N107 /* New3105MeTabView.swift */,
+				3105N108 /* New3105MainView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -336,6 +358,8 @@
 			isa = PBXGroup;
 			children = (
 				3105M135 /* ZrxFeaturesConfigStore.swift */,
+				3105N101 /* LocalConfigManager.swift */,
+				3105N102 /* DeviceProfileService.swift */,
 				3105M120 /* AirliftBridge.swift */,
 				3105M130 /* ExternalESPConfigService.swift */,
 				3105M132 /* CheatVNPatchService.swift */,
@@ -483,6 +507,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3105N201 /* LocalConfigManager.swift in Sources */,
+				3105N202 /* DeviceProfileService.swift in Sources */,
+				3105N203 /* New3105InjectorButton.swift in Sources */,
+				3105N204 /* New3105AimTabView.swift in Sources */,
+				3105N205 /* New3105EspTabView.swift in Sources */,
+				3105N206 /* New3105MiscTabView.swift in Sources */,
+				3105N207 /* New3105MeTabView.swift in Sources */,
+				3105N208 /* New3105MainView.swift in Sources */,
 				3105M218,
 				3105M217,
 				3105M215, 3105M216,
