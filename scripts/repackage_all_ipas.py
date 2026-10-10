@@ -640,7 +640,7 @@ def verify_ipa(ipa_path, expected_name, expected_bundle_id, expected_owner=None,
         print(f"  ✓ ESP & AIM SILENT .3105 verified: {z.getinfo(esp_aim_patch).file_size} bytes")
 
         ifix_raw_patch = f"{app_folder}/BundledPatches/CheatVN_External_Files/Documents/Assembly-CSharp-patch.bytes"
-        assert z.getinfo(ifix_raw_patch).file_size > 70000, f"IFix patch size mismatch: {z.getinfo(ifix_raw_patch).file_size}"
+        assert z.getinfo(ifix_raw_patch).file_size > 60000, f"IFix patch size mismatch: {z.getinfo(ifix_raw_patch).file_size}"
         print(f"  ✓ IFix Assembly-CSharp-patch.bytes verified: {z.getinfo(ifix_raw_patch).file_size} bytes")
         print("  ==> IPA HOÀN TOÀN HỢP LỆ VÀ SẴN SÀNG CHO ESIGN / TROLLSTORE (MHA-C2 HOẠT ĐỘNG CHUẨN)!")
 

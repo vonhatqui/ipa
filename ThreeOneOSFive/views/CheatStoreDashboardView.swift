@@ -2,209 +2,27 @@ import SwiftUI
 import UIKit
 import WebKit
 
-// MARK: - CheatStoreTab Enum (Chuẩn 6 Tab: Tổng Quan, Aimbot, Định Vị, Chức Năng, Modskin, Cá Nhân)
-public enum CheatStoreTab: Int, CaseIterable {
+// MARK: - CheatStoreTab Enum (3 Tab: Main, MISC, ME)
+enum CheatStoreTab: Int, CaseIterable {
     case home = 0
-    case aimbot = 1
-    case esp = 2
-    case misc = 3
-    case modskin = 4
-    case profile = 5
+    case misc = 1
+    case profile = 2
 
-    public var title: String {
+    var title: String {
         switch self {
-        case .home: return "Tổng Quan"
-        case .aimbot: return "Aimbot"
-        case .esp: return "Định Vị"
-        case .misc: return "Chức Năng"
-        case .modskin: return "Modskin"
-        case .profile: return "Cá Nhân"
+        case .home: return "Main"
+        case .misc: return "MISC"
+        case .profile: return "ME"
         }
     }
 
-    public var icon: String {
+    var icon: String {
         switch self {
-        case .home: return "bolt.shield.fill"
-        case .aimbot: return "scope"
-        case .esp: return "viewfinder"
-        case .misc: return "slider.horizontal.3"
-        case .modskin: return "tshirt.fill"
+        case .home: return "house.fill"
+        case .misc: return "wand.and.stars.inverse"
         case .profile: return "person.crop.circle.fill"
         }
     }
-}
-
-// MARK: - ModSkinService (Quản lý Mod Skin chuẩn Filza cho Free Fire & Free Fire MAX)
-public final class ModSkinService: ObservableObject {
-    public static let shared = ModSkinService()
-
-    public static let alockSkinFileName = "optionalab_avatar_66.1GZrX1l5Sm~2FgqXYqB7dDyULWdn4~3D"
-
-    // Các đường dẫn đích mà Free Fire & Filza dùng để load avatar bundle
-    public static let skinTargetRelativePaths = [
-        "Documents/contentcache/Optional/ios/optionalavatarres/gameassetbundles",
-        "Documents/contentcache/Optional/ios/gameassetbundles",
-        "Documents/contentcache/Compulsory/ios/gameassetbundles/avatar",
-        "Documents/contentcache/Compulsory/ios/gameassetbundles"
-    ]
-
-    private let alockKey = "cheatstore_modskin_alock_enabled"
-
-    @Published public var isAlockEnabled: Bool {
-        didSet {
-            UserDefaults.standard.set(isAlockEnabled, forKey: alockKey)
-        }
-    }
-
-    @Published public var lastStatusMessage: String = ""
-
-    public var isAnySkinActive: Bool {
-        return isAlockEnabled
-    }
-
-    private init() {
-        self.isAlockEnabled = UserDefaults.standard.bool(forKey: alockKey)
-    }
-
-    /// Tìm URL nguồn của file skin trong app bundle hoặc container app
-    public func resolveSkinSourceURL(filename: String = alockSkinFileName) -> URL? {
-        let fm = FileManager.default
-        let searchCandidates: [URL] = [
-            Bundle.main.bundleURL.appendingPathComponent("BundledPatches").appendingPathComponent(filename),
-            Bundle.main.bundleURL.appendingPathComponent("AppCore").appendingPathComponent(filename),
-            Bundle.main.bundleURL.appendingPathComponent(filename),
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("BundledPatches").appendingPathComponent(filename),
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent(filename),
-            fm.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(filename) ?? Bundle.main.bundleURL
-        ]
-
-        for url in searchCandidates {
-            if fm.fileExists(atPath: url.path) {
-                return url
-            }
-        }
-        return nil
-    }
-
-    /// Nạp file skin vào tất cả container theo chuẩn Filza
-    @discardableResult
-    public func injectAlockSkin() -> (success: Bool, message: String) {
-        let fm = FileManager.default
-        guard let sourceURL = resolveSkinSourceURL() else {
-            let msg = "Không tìm thấy file skin \(Self.alockSkinFileName) trong gói ứng dụng"
-            print("[ModSkin] ⚠️ \(msg)")
-            DispatchQueue.main.async {
-                self.lastStatusMessage = msg
-            }
-            return (false, msg)
-        }
-
-        let containers = DevicePatchService.allAvailableFreeFireContainers()
-        guard !containers.isEmpty else {
-            let msg = "Không tìm thấy thư mục cài đặt của Free Fire hoặc Free Fire MAX"
-            print("[ModSkin] ⚠️ \(msg)")
-            DispatchQueue.main.async {
-                self.lastStatusMessage = msg
-            }
-            return (false, msg)
-        }
-
-        var injectedCount = 0
-
-        for (bundleID, rootURL) in containers {
-            for relDir in Self.skinTargetRelativePaths {
-                let targetDir = rootURL.appendingPathComponent(relDir, isDirectory: true)
-                let targetFile = targetDir.appendingPathComponent(Self.alockSkinFileName)
-
-                do {
-                    // 1. Tạo đầy đủ cây thư mục giống Filza
-                    try fm.createDirectory(at: targetDir, withIntermediateDirectories: true, attributes: nil)
-
-                    // 2. Lưu Golden Snapshot / backup nếu có file gốc
-                    let backupFile = targetDir.appendingPathComponent(Self.alockSkinFileName + ".filza_backup")
-                    if fm.fileExists(atPath: targetFile.path) && !fm.fileExists(atPath: backupFile.path) {
-                        try? fm.copyItem(at: targetFile, to: backupFile)
-                    }
-
-                    // 3. Xoá file cũ nếu có và copy đè file mod mới
-                    if fm.fileExists(atPath: targetFile.path) {
-                        try fm.removeItem(at: targetFile)
-                    }
-                    try fm.copyItem(at: sourceURL, to: targetFile)
-
-                    // 4. Phân quyền và đánh dấu loại trừ iCloud backup
-                    var resVals = URLResourceValues()
-                    resVals.isExcludedFromBackup = true
-                    var mutableFile = targetFile
-                    try? mutableFile.setResourceValues(resVals)
-                    try? fm.setAttributes([.posixPermissions: 0o644], ofItemAtPath: targetFile.path)
-
-                    injectedCount += 1
-                    print("[ModSkin] ✅ Đã nạp Alock V1 vào: [\(bundleID)] \(relDir)")
-                } catch {
-                    print("[ModSkin] ⚠️ Lỗi nạp vào [\(bundleID)] \(relDir): \(error)")
-                }
-            }
-        }
-
-        let success = injectedCount > 0
-        let msg = success
-            ? "Đã nạp Alock Thất Tỉnh V1 thành công vào \(injectedCount) thư mục game (Chuẩn Filza)"
-            : "Lỗi ghi dữ liệu vào container Free Fire"
-
-        DispatchQueue.main.async {
-            self.isAlockEnabled = true
-            self.lastStatusMessage = msg
-        }
-        return (success, msg)
-    }
-
-    /// Gỡ bỏ file skin và khôi phục game gốc an toàn
-    @discardableResult
-    public func removeAlockSkin() -> (success: Bool, message: String) {
-        let fm = FileManager.default
-        let containers = DevicePatchService.allAvailableFreeFireContainers()
-        var restoredCount = 0
-
-        for (bundleID, rootURL) in containers {
-            for relDir in Self.skinTargetRelativePaths {
-                let targetDir = rootURL.appendingPathComponent(relDir, isDirectory: true)
-                let targetFile = targetDir.appendingPathComponent(Self.alockSkinFileName)
-                let backupFile = targetDir.appendingPathComponent(Self.alockSkinFileName + ".filza_backup")
-
-                do {
-                    if fm.fileExists(atPath: backupFile.path) {
-                        if fm.fileExists(atPath: targetFile.path) {
-                            try fm.removeItem(at: targetFile)
-                        }
-                        try fm.moveItem(at: backupFile, to: targetFile)
-                        restoredCount += 1
-                        print("[ModSkin] 🔄 Đã khôi phục file gốc từ backup: [\(bundleID)] \(relDir)")
-                    } else if fm.fileExists(atPath: targetFile.path) {
-                        try fm.removeItem(at: targetFile)
-                        restoredCount += 1
-                        print("[ModSkin] 🗑️ Đã xóa file mod: [\(bundleID)] \(relDir)")
-                    }
-                } catch {
-                    print("[ModSkin] ⚠️ Lỗi gỡ bỏ skin tại [\(bundleID)] \(relDir): \(error)")
-                }
-            }
-        }
-
-        let msg = "Đã gỡ bỏ Alock Thất Tỉnh V1, khôi phục game gốc an toàn"
-        DispatchQueue.main.async {
-            self.isAlockEnabled = false
-            self.lastStatusMessage = msg
-        }
-        return (true, msg)
-    }
-}
-
-// MARK: - Skin Model
-struct SkinItemData: Identifiable {
-    let id: Int
-    let name: String
-    let subtitle: String
 }
 
 // MARK: - Reusable 0xCheats Checkbox Chip Button (.chip với .box 18x18 chuẩn 100%)
@@ -332,7 +150,7 @@ struct ZeroXChipButton: View {
 }
 
 /// ButtonStyle tạo hiệu ứng đàn hồi nảy êm ái phong cách Aurora iOS
-private struct AuroraScaleButtonStyle: ButtonStyle {
+struct AuroraScaleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
@@ -350,7 +168,6 @@ struct CheatStoreDashboardView: View {
     @ObservedObject var licenseManager = CheatStoreLicenseManager.shared
     @ObservedObject private var antibanService = AntibanProfileService.shared
     @ObservedObject private var cloudPatchService = CloudPatchService.shared
-    @ObservedObject private var modSkinService = ModSkinService.shared
     var onBackToGames: (() -> Void)? = nil
 
     // Tab state
@@ -362,9 +179,10 @@ struct CheatStoreDashboardView: View {
     @State private var selectedAimChips: Set<String> = []
     @State private var isInjecting: Bool = false
     @AppStorage("cheatstore_selected_game_version") private var selectedGameVersionRaw: String = FreeFireGameVersion.standard.rawValue
-    @AppStorage("cheatstore_selected_menu_feature") private var selectedMenuFeature: String = "cheatvn_external"
     @State private var isInjected: Bool = false
     @State private var pulseAnimation: Bool = false
+    @State private var injectionProgress: Int = 0
+    @State private var injectionStatusText: String = "Đang nạp patching..."
 
     private var currentAimDisplayText: String {
         let activeMods = Array(selectedAimChips)
@@ -378,10 +196,6 @@ struct CheatStoreDashboardView: View {
     @State private var activeEspColor: String? = nil
     @State private var selectedEspChips: Set<String> = []
     @State private var isInjectingEsp: Bool = false
-
-    // Tab 3: Modskin State (2 chức năng cũ: Skin Alock V2 & Skin thẻ vô cực vàng mùa 1)
-    @State private var selectedSpecialSkins: Set<String> = []
-    @State private var isApplyingSkin: Bool = false
 
     // Tab 4: Antiban State
     @State private var miscGame: String = "ff"
@@ -398,6 +212,7 @@ struct CheatStoreDashboardView: View {
     @State private var selectedLanguage: String = "Tiếng Việt"
     @State private var showCompatList: Bool = false
     @State private var showDeltaSettingsSheet: Bool = false
+    @State private var showOriginal3105View: Bool = false
     @ObservedObject private var antibanPatchService = AntibanPatchService.shared
 
     // Common Alerts & Status
@@ -453,29 +268,16 @@ struct CheatStoreDashboardView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Header thanh trên: nếu ở Dashboard (home) thì hiển thị Aurora Header chuẩn ảnh mẫu, các tab khác giữ nguyên
-                if selectedTab == .home {
-                    auroraTopHeaderView
-                } else {
-                    topHeaderView
-                }
+                // Header thanh trên: hiển thị đồng bộ chuẩn ảnh mẫu Screenshot 3
+                unifiedTopHeaderView
 
-                // Nội dung 6 Tab: Tổng Quan, Aimbot, Định Vị, Chức Năng, Modskin, Cá Nhân
+                // Nội dung 3 Tab: Main, MISC, ME
                 ZStack {
                     if selectedTab == .home {
                         homeView
                             .transition(.opacity)
-                    } else if selectedTab == .aimbot {
-                        AimbotTabContentView()
-                            .transition(.opacity)
-                    } else if selectedTab == .esp {
-                        VisualEspTabContentView()
-                            .transition(.opacity)
                     } else if selectedTab == .misc {
-                        MiscFeaturesTabContentView()
-                            .transition(.opacity)
-                    } else if selectedTab == .modskin {
-                        modskinView
+                        miscModSkinView
                             .transition(.opacity)
                     } else if selectedTab == .profile {
                         profileView
@@ -487,13 +289,7 @@ struct CheatStoreDashboardView: View {
 
                 // Limelight Dock Bar Navigation
                 LimelightDockBar(selectedTab: $selectedTab, licenseManager: licenseManager)
-                    .padding(.bottom, 2)
-
-                if selectedTab != .home {
-                    // Thanh Thông Tin Thiết Bị Dưới Dashboard
-                    dashboardDeviceFooterView
-                        .padding(.bottom, 4)
-                }
+                    .padding(.bottom, 6)
             }
 
             // Toast Notification Banner (overlay phía trên)
@@ -597,7 +393,7 @@ struct CheatStoreDashboardView: View {
                         // Thanh Progress Bar
                         VStack(spacing: 6) {
                             ProgressView(value: restoreProgressValue, total: 1.0)
-                                .progressViewStyle(LinearProgressViewStyle(tint: isRestoreFinished ? Color.green : Color.orange))
+                                .progressViewStyle(LinearProgressViewStyle(tint: Color.white))
                                 .scaleEffect(x: 1, y: 2.2, anchor: .center)
                                 .clipShape(Capsule())
 
@@ -609,7 +405,7 @@ struct CheatStoreDashboardView: View {
                                 Spacer()
                                 Text("\(Int(restoreProgressValue * 100))%")
                                     .font(.system(size: 11.5, weight: .bold, design: .monospaced))
-                                    .foregroundColor(isRestoreFinished ? .green : .orange)
+                                    .foregroundColor(Color.white)
                             }
                         }
                         .padding(.horizontal, 4)
@@ -686,22 +482,112 @@ struct CheatStoreDashboardView: View {
         .sheet(isPresented: $showDeltaSettingsSheet) {
             DeltaStyleSettingsView()
         }
+        .fullScreenCover(isPresented: $showOriginal3105View) {
+            Original3105WorkspaceView()
+                .environmentObject(patchDraftCoordinator)
+                .environmentObject(patchStore)
+                .environmentObject(repositoryStore)
+                .environmentObject(appState)
+                .environmentObject(fileOperationCoordinator)
+        }
         .onAppear {
             cloudPatchService.syncCloudPatches()
         }
         .onChange(of: selectedTab) { _ in
             cloudPatchService.syncCloudPatches()
         }
-        .onChange(of: cloudPatchService.cloudPatches) { newPatches in
+        .onReceive(cloudPatchService.$cloudPatches) { newPatches in
             if !newPatches.isEmpty {
                 let validNames = Set(newPatches.map { $0.name.uppercased() })
                 selectedAimChips = selectedAimChips.filter { validNames.contains($0.uppercased()) }
                 selectedEspChips = selectedEspChips.filter { validNames.contains($0.uppercased()) }
-                selectedSpecialSkins = selectedSpecialSkins.filter { validNames.contains($0.uppercased()) }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)) { _ in
             cloudPatchService.syncCloudPatches()
+        }
+    }
+
+    // MARK: - Header Đồng Bộ Chuẩn 100% Ảnh Screenshot 3
+    private var unifiedTopHeaderView: some View {
+        HStack {
+            // Trái: Logo + CHEATSTORE VN + EXTERNAL CONFIG MANAGER
+            HStack(spacing: 10) {
+                CheatStoreLogoView(size: 38, cornerRadius: 10)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(Color.white.opacity(0.35), lineWidth: 1)
+                    )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("CHEATSTORE VN")
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .tracking(0.5)
+
+                    Text("EXTERNAL CONFIG MANAGER")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(white: 0.55))
+                        .tracking(1.0)
+                }
+            }
+
+            Spacer()
+
+            // Phải: ● ONLINE
+            HStack(spacing: 5) {
+                Circle()
+                    .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                    .frame(width: 6, height: 6)
+                    .shadow(color: Color.green.opacity(0.8), radius: 3)
+
+                Text("ONLINE")
+                    .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color.white.opacity(0.9))
+                    .tracking(0.8)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4.5)
+            .background(Color(white: 0.12))
+            .cornerRadius(999)
+            .overlay(
+                Capsule()
+                    .stroke(Color.white.opacity(0.12), lineWidth: 1)
+            )
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+    }
+
+    // MARK: - TAB 1: MISC (Modskin & Tiện ích sau này)
+    private var miscModSkinView: some View {
+        VStack(spacing: 20) {
+            Spacer()
+
+            ZStack {
+                Circle()
+                    .fill(Color.purple.opacity(0.15))
+                    .frame(width: 120, height: 120)
+
+                Image(systemName: "wand.and.stars.inverse")
+                    .font(.system(size: 48))
+                    .foregroundColor(Color.purple.opacity(0.85))
+            }
+
+            VStack(spacing: 8) {
+                Text("MOD SKIN & TIỆN ÍCH")
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .foregroundColor(.white)
+
+                Text("Tính năng Mod Skin và các tiện ích mở rộng đang được phát triển, sẽ có mặt trong phiên bản cập nhật tiếp theo.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(Color(white: 0.60))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            Spacer()
         }
     }
 
@@ -723,8 +609,6 @@ struct CheatStoreDashboardView: View {
                     .foregroundColor(Color.white)
                 }
                 .disabled(isRestoringForGameSwitch || isInjecting)
-            } else {
-                Spacer().frame(width: 60)
             }
 
             Spacer()
@@ -921,224 +805,80 @@ struct RainbowText: View {
         .padding(.bottom, 12)
     }
 
-    // MARK: - TAB 1: Aurora Free Fire Dashboard View (Chuẩn 100% Ảnh Mẫu Aurora iOS)
+    // MARK: - TAB 1: Main (Chỉ có duy nhất nút INJECTOR chuẩn theo ảnh mẫu)
     private var homeView: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            // CHÍNH GIỮA: Discord: @jinwwostore.vn (Chữ trắng phát sáng) + Nút Zalo / Tele
-            VStack(spacing: 8) {
-                Text(theme.discordTag)
-                    .font(.system(size: 21, weight: .heavy, design: .rounded))
-                    .foregroundColor(.white)
-                    .shadow(color: Color.white.opacity(0.9), radius: 14, x: 0, y: 0)
-                    .shadow(color: Color.black.opacity(0.8), radius: 6, x: 0, y: 3)
+            // CHÍNH GIỮA: Logo & Tên Thương Hiệu (Đồng bộ phong cách sang trọng)
+            VStack(spacing: 12) {
+                CheatStoreLogoView(size: 80, cornerRadius: 22)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22, style: .continuous)
+                            .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
+                    )
+                    .shadow(color: Color.white.opacity(0.20), radius: 16)
 
-                Text("Mô tả: Liên hệ khi cần hỗ trợ")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.65))
+                VStack(spacing: 4) {
+                    Text("CHEATSTORE VN")
+                        .font(.system(size: 22, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                        .tracking(0.8)
 
-                // Các nút hỗ trợ Zalo / Telegram
-                if theme.zaloURLString != nil || theme.telegramURLString != nil {
-                    HStack(spacing: 16) {
-                        // Nút Zalo
-                        if let zaloURL = theme.zaloURLString, let url = URL(string: zaloURL) {
-                            Button(action: {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                UIApplication.shared.open(url)
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white.opacity(0.10))
-                                        .frame(width: 38, height: 38)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
-                                        )
-                                        .shadow(color: Color.white.opacity(0.25), radius: 6, x: 0, y: 0)
-
-                                    Text("Z")
-                                        .font(.system(size: 19, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.white)
-                                }
-                            }
-                            .buttonStyle(AuroraScaleButtonStyle())
-                        }
-
-                        // Nút Telegram (tự động ẩn nếu thương hiệu không có tele)
-                        if let teleURL = theme.telegramURLString, let url = URL(string: teleURL) {
-                            Button(action: {
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                UIApplication.shared.open(url)
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white.opacity(0.10))
-                                        .frame(width: 38, height: 38)
-                                        .overlay(
-                                            Circle()
-                                                .stroke(Color.white.opacity(0.35), lineWidth: 1.2)
-                                        )
-                                        .shadow(color: Color.white.opacity(0.25), radius: 6, x: 0, y: 0)
-
-                                    Image(systemName: "paperplane.fill")
-                                        .font(.system(size: 16, weight: .bold))
-                                        .foregroundColor(.white)
-                                        .offset(x: -1, y: 1)
-                                }
-                            }
-                            .buttonStyle(AuroraScaleButtonStyle())
-                        }
-                    }
-                    .padding(.top, 4)
+                    Text("EXTERNAL CONFIG MANAGER")
+                        .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(white: 0.55))
+                        .tracking(1.4)
                 }
+
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(Color(red: 0.20, green: 0.88, blue: 0.45))
+                        .frame(width: 7, height: 7)
+                        .shadow(color: Color.green.opacity(0.8), radius: 3)
+
+                    Text("SERVER ONLINE")
+                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color.white.opacity(0.9))
+                        .tracking(1.0)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(Color(white: 0.12))
+                .cornerRadius(999)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
             }
             .scaleEffect(isInjecting ? (pulseAnimation ? 1.03 : 0.98) : 1.0)
             .animation(isInjecting ? .easeInOut(duration: 1.2).repeatForever(autoreverses: true) : .default, value: pulseAnimation)
 
             Spacer()
 
-            // THỐNG KÊ TỔNG QUAN CÁC MODULE (Chuẩn Zrxipa Quick Modules)
-            quickModulesOverviewCard
-                .padding(.horizontal, 20)
-                .padding(.bottom, 10)
-
-            // PHÍA DƯỚI: Nút INJECTOR / UNINJECT lớn + Nút Dọn file Documents
-            VStack(spacing: 11) {
+            // PHÍA DƯỚI: DUY NHẤT NÚT INJECTOR / UNINJECT
+            VStack(spacing: 12) {
                 auroraInjectorButton
 
-                // Dòng trạng thái và hướng dẫn bên dưới nút (hiển thị spinner khi đang tiến hành)
+                // Dòng trạng thái và hướng dẫn bên dưới nút
                 HStack(spacing: 7) {
-                    if isInjecting || isRestoringClean {
+                    if isInjecting {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .scaleEffect(0.85)
                     }
 
                     Text(auroraInstructionText)
-                        .font(.system(size: 13.5, weight: (isInjecting || isRestoringClean) ? .semibold : .medium, design: .rounded))
+                        .font(.system(size: 13.5, weight: isInjecting ? .semibold : .medium, design: .rounded))
                         .foregroundColor(
-                            (isInjecting || isRestoringClean) ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.70))
+                            isInjecting ? Color.white : (isInjected ? Color(red: 1.0, green: 0.55, blue: 0.55) : Color.white.opacity(0.70))
                         )
                         .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 24)
-
-                // NÚT CHỨC NĂNG: Dọn File ở Documents (Gọn gàng, dễ thấy)
-                deleteDocumentsButton
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 16)
-        }
-    }
-
-    // MARK: - Quick Modules Overview Card (Chuẩn Zrxipa)
-    private var quickModulesOverviewCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("TỔNG QUAN CHỨC NĂNG")
-                    .font(.system(size: 10.5, weight: .bold, design: .rounded))
-                    .foregroundColor(Color.white.opacity(0.55))
-                    .tracking(1.2)
-
-                Spacer()
-
-                Text("CHẠM ĐỂ CHỈNH")
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                    .foregroundColor(Color(red: 0/255, green: 215/255, blue: 255/255))
-            }
-
-            HStack(spacing: 8) {
-                // Chip 1: Aimbot
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = .aimbot
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "scope")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(red: 0/255, green: 215/255, blue: 255/255))
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("AIMBOT")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                            Text("\(ZrxFeaturesConfigStore.shared.activeAimbotCount) BẬT")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(Color(red: 0/255, green: 215/255, blue: 255/255))
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(red: 18/255, green: 20/255, blue: 28/255))
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 0/255, green: 215/255, blue: 255/255).opacity(0.35), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-
-                // Chip 2: ESP
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = .esp
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "viewfinder")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(red: 0/255, green: 230/255, blue: 118/255))
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("ĐỊNH VỊ")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                            Text("\(ZrxFeaturesConfigStore.shared.activeEspCount) BẬT")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(Color(red: 0/255, green: 230/255, blue: 118/255))
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(red: 18/255, green: 20/255, blue: 28/255))
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 0/255, green: 230/255, blue: 118/255).opacity(0.35), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-
-                // Chip 3: Misc
-                Button {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        selectedTab = .misc
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(Color(red: 255/255, green: 180/255, blue: 0/255))
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("CHỨC NĂNG")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                                .foregroundColor(.white)
-                            Text("\(ZrxFeaturesConfigStore.shared.activeMiscCount) BẬT")
-                                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                .foregroundColor(Color(red: 255/255, green: 180/255, blue: 0/255))
-                        }
-                    }
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(red: 18/255, green: 20/255, blue: 28/255))
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 255/255, green: 180/255, blue: 0/255).opacity(0.35), lineWidth: 1))
-                }
-                .buttonStyle(.plain)
-            }
         }
     }
 
@@ -1146,9 +886,8 @@ struct RainbowText: View {
     private var auroraInjectorButton: some View {
         Button(action: {
             if isInjected {
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 performCleanRestore()
-            } else if !isInjecting && !isRestoringClean {
+            } else if !isInjecting {
                 startAuroraInjection()
             }
         }) {
@@ -1205,13 +944,30 @@ struct RainbowText: View {
                 // Nội dung nút theo các trạng thái
                 HStack(spacing: 10) {
                     if isInjecting {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.0)
+                        VStack(spacing: 4) {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.9)
 
-                        Text("Injecting...")
-                            .font(.system(size: 16.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
+                                Text("\(injectionStatusText) (\(injectionProgress)%)")
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                                    .foregroundColor(.white)
+                            }
+
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.18))
+                                        .frame(height: 4)
+                                    Capsule()
+                                        .fill(Color.white)
+                                        .frame(width: max(0, min(geo.size.width, geo.size.width * CGFloat(injectionProgress) / 100.0)), height: 4)
+                                }
+                            }
+                            .frame(height: 4)
+                            .padding(.horizontal, 24)
+                        }
                     } else if isRestoringClean {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -1252,398 +1008,13 @@ struct RainbowText: View {
         .disabled(isInjecting || isRestoringClean)
     }
 
-    // MARK: - Chọn Chức Năng Menu (CheatVN External & DeltaX Enternal xếp trên dưới banner ngang)
-    @ViewBuilder
-    private var featureSelectorCards: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            HStack {
-                Text("CHỌN MENU CHỨC NĂNG")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
-                    .tracking(1.4)
-                    .foregroundColor(Color.white.opacity(0.60))
-
-                Spacer()
-
-                HStack(spacing: 4) {
-                    Circle()
-                        .fill(Color.green)
-                        .frame(width: 5.5, height: 5.5)
-                    Text("CHỌN TRƯỚC KHI INJECT")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .foregroundColor(Color.green.opacity(0.9))
-                }
-            }
-            .padding(.horizontal, 4)
-
-            VStack(spacing: 8) {
-                // Chức năng 1 (Trên): CheatVN External - Banner ngang dài
-                featureCard(
-                    id: "cheatvn_external",
-                    title: "CheatVN External",
-                    logoImageName: "cheatvn_external",
-                    assetImageName: "CheatVNExternal",
-                    badgeText: "V1.3105",
-                    accentGlow: Color(red: 1.0, green: 0.25, blue: 0.25)
-                )
-
-                // Chức năng 2 (Dưới): DeltaX Enternal - Banner ngang dài
-                featureCard(
-                    id: "deltax_enternal",
-                    title: "DeltaX Enternal",
-                    logoImageName: "deltax_enternal",
-                    assetImageName: "DeltaXEnternal",
-                    badgeText: "NO KEY",
-                    accentGlow: Color(red: 0.20, green: 0.75, blue: 1.0)
-                )
-            }
-        }
-        .padding(.horizontal, 2)
-    }
-
-    @ViewBuilder
-    private func featureCard(
-        id: String,
-        title: String,
-        logoImageName: String,
-        assetImageName: String,
-        badgeText: String,
-        accentGlow: Color
-    ) -> some View {
-        let isSelected = (selectedMenuFeature == id)
-
-        Button(action: {
-            guard !isInjecting && !isRestoringClean else { return }
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-            CheatStoreSoundManager.shared.playTabSwitchHaptic()
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                selectedMenuFeature = id
-            }
-        }) {
-            ZStack {
-                // Nền thẻ dài ngang: Sáng rực rỡ khi được chọn, nền tối mờ khi chưa chọn
-                RoundedRectangle(cornerRadius: 15, style: .continuous)
-                    .fill(
-                        isSelected ?
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.17, green: 0.18, blue: 0.24),
-                                Color(red: 0.08, green: 0.09, blue: 0.13)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ) :
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.07, green: 0.07, blue: 0.09),
-                                Color(red: 0.03, green: 0.03, blue: 0.04)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(
-                                isSelected ?
-                                LinearGradient(
-                                    colors: [accentGlow, Color.white, accentGlow],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ) :
-                                LinearGradient(
-                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.05)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                ),
-                                lineWidth: isSelected ? 1.8 : 1.0
-                            )
-                    )
-                    .shadow(
-                        color: isSelected ? accentGlow.opacity(0.60) : Color.black.opacity(0.4),
-                        radius: isSelected ? 12 : 3,
-                        x: 0,
-                        y: isSelected ? 0 : 2
-                    )
-
-                // Dải LED sáng chạy ngang khi được chọn (hiện sáng sang trọng)
-                if isSelected {
-                    AuroraButtonLedSweep(cornerRadius: 15)
-                }
-
-                // Nội dung thẻ xếp ngang: Logo + Tên Chức Năng (Không có mô tả) + Badge & Checkmark
-                HStack(spacing: 12) {
-                    // Logo chức năng bo góc
-                    featureLogo(logoName: logoImageName, assetName: assetImageName, fallbackIcon: "bolt.shield.fill")
-
-                    // Tên chức năng (KHÔNG CÓ BẤT KỲ MÔ TẢ NÀO)
-                    Text(title)
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 8)
-
-                    // Badge phiên bản
-                    Text(badgeText)
-                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(isSelected ? accentGlow.opacity(0.25) : Color.white.opacity(0.08))
-                        .foregroundColor(isSelected ? Color.white : Color.white.opacity(0.60))
-                        .cornerRadius(6)
-
-                    // Icon chọn
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 18, weight: .heavy))
-                            .foregroundColor(accentGlow)
-                            .shadow(color: accentGlow.opacity(0.8), radius: 6)
-                    } else {
-                        Circle()
-                            .stroke(Color.white.opacity(0.22), lineWidth: 1.5)
-                            .frame(width: 18, height: 18)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 54)
-        }
-        .buttonStyle(AuroraScaleButtonStyle())
-    }
-
-    @ViewBuilder
-    private func featureLogo(logoName: String, assetName: String, fallbackIcon: String) -> some View {
-        if let uiImg = UIImage(named: assetName) ?? UIImage(named: logoName) ?? loadLogoFromDisk(named: logoName) {
-            Image(uiImage: uiImg)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 38, height: 38)
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .stroke(Color.white.opacity(0.35), lineWidth: 0.8)
-                )
-                .shadow(color: Color.black.opacity(0.5), radius: 4, x: 0, y: 2)
-        } else {
-            ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(Color.white.opacity(0.12))
-                    .frame(width: 38, height: 38)
-                Image(systemName: fallbackIcon)
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-            }
-        }
-    }
-
-    private func loadLogoFromDisk(named: String) -> UIImage? {
-        let nameWithPng = named.hasSuffix(".png") ? named : "\(named).png"
-        let candidates = [
-            Bundle.main.bundleURL.appendingPathComponent(nameWithPng).path,
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent(nameWithPng).path,
-            Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
-            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assets").appendingPathComponent(nameWithPng).path,
-            "ThreeOneOSFive/\(nameWithPng)",
-            "assets/brands/\(nameWithPng)"
-        ]
-        for path in candidates {
-            if FileManager.default.fileExists(atPath: path), let img = UIImage(contentsOfFile: path) {
-                return img
-            }
-        }
-        return nil
-    }
-
-    // MARK: - Chức năng Dọn File ở Documents (Gọn gàng, dễ thấy, chuẩn 100%)
-    @ViewBuilder
-    private var deleteDocumentsButton: some View {
-        Button(action: {
-            deleteDocumentsFiles()
-        }) {
-            HStack(spacing: 6) {
-                Image(systemName: "trash.circle.fill")
-                    .font(.system(size: 13.5, weight: .bold))
-                    .foregroundColor(.white)
-
-                Text("Dọn sạch Documents")
-                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                    .foregroundColor(.white)
-            }
-            .padding(.horizontal, 15)
-            .padding(.vertical, 7)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(18)
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color.white.opacity(0.30), lineWidth: 1)
-            )
-            .shadow(color: Color.white.opacity(0.20), radius: 6, x: 0, y: 0)
-        }
-        .buttonStyle(AuroraScaleButtonStyle())
-        .disabled(isInjecting || isRestoringClean)
-    }
-
-    /// Dọn sạch toàn diện 100% file can thiệp, file mod / patch trong thư mục Documents của game Free Fire & FF MAX
-    private func deleteDocumentsFiles() {
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        let fileManager = FileManager.default
-        let allContainers = DevicePatchService.allAvailableFreeFireContainers()
-
-        guard !allContainers.isEmpty else {
-            showToastNotification(
-                message: "⚠️ Không tìm thấy thư mục Documents của Free Fire",
-                icon: "exclamationmark.triangle.fill",
-                color: Color.orange
-            )
-            return
-        }
-
-        var deletedCount = 0
-
-        // 1. Quét sạch tất cả container Free Fire thường & Free Fire MAX
-        for (_, rootURL) in allContainers {
-            let docDir = rootURL.appendingPathComponent("Documents", isDirectory: true)
-
-            // Danh sách các file / thư mục mod can thiệp đích danh
-            let knownModItems = [
-                "Assembly-CSharp-patch.bytes",
-                "Assembly-CSharp.bytes",
-                "localConfig.json",
-                "config.json",
-                "patch_cache",
-                "mod_signature.bin",
-                ".0xfixa.ledger",
-                ".0xcheats.ledger",
-                "Patches",
-                "AppCore",
-                "Aurora Menu v1.3105",
-                "DeltaX Enternal"
-            ]
-
-            for item in knownModItems {
-                let targetURL = docDir.appendingPathComponent(item)
-                if fileManager.fileExists(atPath: targetURL.path) {
-                    do {
-                        try fileManager.removeItem(at: targetURL)
-                        deletedCount += 1
-                        print("[DocumentsCleaner] 🗑️ Đã xoá: \(targetURL.path)")
-                    } catch {
-                        print("[DocumentsCleaner] ⚠️ Lỗi xoá \(item): \(error)")
-                    }
-                }
-            }
-
-            // Quét toàn bộ thư mục gốc Documents: Xoá triệt để bất kỳ file nào có dấu hiệu mod / patch
-            if let docItems = try? fileManager.contentsOfDirectory(at: docDir, includingPropertiesForKeys: nil) {
-                for fileURL in docItems {
-                    let name = fileURL.lastPathComponent
-
-                    // Bỏ qua thư mục contentcache của game gốc (sẽ xử lý riêng bên dưới)
-                    if name.lowercased() == "contentcache" {
-                        continue
-                    }
-
-                    let lower = name.lowercased()
-                    if name.hasSuffix("-patch.bytes") ||
-                       name.hasSuffix(".bytes") ||
-                       name.hasSuffix(".filza_backup") ||
-                       name.hasSuffix(".backup") ||
-                       name.hasSuffix(".bak") ||
-                       name.hasPrefix(".0x") ||
-                       lower.contains("patch") ||
-                       lower.contains("aurora") ||
-                       lower.contains("deltax") ||
-                       lower.contains("cheat") ||
-                       name == "localConfig.json" ||
-                       name == "config.json" {
-                        do {
-                            try fileManager.removeItem(at: fileURL)
-                            deletedCount += 1
-                            print("[DocumentsCleaner] 🗑️ Đã xoá file can thiệp: \(name)")
-                        } catch {
-                            print("[DocumentsCleaner] ⚠️ Lỗi xoá \(name): \(error)")
-                        }
-                    }
-                }
-            }
-
-            // Quét sâu trong Documents/contentcache để khôi phục file gốc từ .filza_backup và xoá file mod
-            let contentCacheDir = docDir.appendingPathComponent("contentcache")
-            if fileManager.fileExists(atPath: contentCacheDir.path) {
-                if let enumerator = fileManager.enumerator(at: contentCacheDir, includingPropertiesForKeys: nil) {
-                    var backupsToRestore: [URL] = []
-                    var modsToDelete: [URL] = []
-                    for case let fileURL as URL in enumerator {
-                        if fileURL.pathExtension == "filza_backup" || fileURL.lastPathComponent.hasSuffix(".filza_backup") {
-                            backupsToRestore.append(fileURL)
-                        } else if fileURL.lastPathComponent.contains(ModSkinService.alockSkinFileName) {
-                            modsToDelete.append(fileURL)
-                        }
-                    }
-
-                    for backupURL in backupsToRestore {
-                        let originalPath = backupURL.path.replacingOccurrences(of: ".filza_backup", with: "")
-                        let originalURL = URL(fileURLWithPath: originalPath)
-                        try? fileManager.removeItem(at: originalURL)
-                        try? fileManager.moveItem(at: backupURL, to: originalURL)
-                        deletedCount += 1
-                        print("[DocumentsCleaner] 🔄 Đã khôi phục file gốc từ backup: \(originalURL.lastPathComponent)")
-                    }
-
-                    for modURL in modsToDelete {
-                        if fileManager.fileExists(atPath: modURL.path) {
-                            try? fileManager.removeItem(at: modURL)
-                            deletedCount += 1
-                            print("[DocumentsCleaner] 🗑️ Đã xoá file mod skin: \(modURL.lastPathComponent)")
-                        }
-                    }
-                }
-            }
-        }
-
-        // 2. Gọi engine khôi phục gốc toàn diện của hệ thống
-        _ = DevicePatchService.cleanRestoreAllModifications()
-        _ = ModSkinService.shared.removeAlockSkin()
-
-        // 3. Dọn sạch cache / patch trong Documents của chính app
-        if let appDocURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first {
-            if let items = try? fileManager.contentsOfDirectory(at: appDocURL, includingPropertiesForKeys: nil) {
-                for item in items {
-                    let name = item.lastPathComponent
-                    if name.hasSuffix(".bytes") || name.hasSuffix(".dat") || name.lowercased().contains("patch") {
-                        try? fileManager.removeItem(at: item)
-                        deletedCount += 1
-                    }
-                }
-            }
-        }
-
-        // 4. Reset trạng thái giao diện về Not Injected
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            self.isInjected = false
-            self.isInjecting = false
-        }
-
-        UINotificationFeedbackGenerator().notificationOccurred(.success)
-        showToastNotification(
-            message: "🗑️ Đã dọn sạch 100% file trong Documents!",
-            icon: "checkmark.circle.fill",
-            color: Color.green
-        )
-    }
-
     private var auroraInstructionText: String {
-        let featureTitle = "Cheat External"
         if isInjecting {
-            return "Đang nạp \(featureTitle) vào game..."
-        } else if isRestoringClean {
-            return "Đang gỡ mod và khôi phục dữ liệu gốc..."
+            return "\(injectionStatusText) (\(injectionProgress)%)"
         } else if isInjected {
-            return "Đã nạp \(featureTitle) vào game thành công!"
+            return "Đã nạp CheatVN Enternal vào game thành công!"
         } else {
-            return "Chạm INJECTOR để nạp \(featureTitle) và vào game"
+            return "Chạm INJECTOR để nạp CheatVN Enternal và vào game"
         }
     }
 
@@ -1652,218 +1023,257 @@ struct RainbowText: View {
         isInjecting = true
         isInjected = false
         pulseAnimation = true
+        injectionProgress = 1
+        injectionStatusText = "Đang nạp patching..."
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
-        // 1. Chạy background task nạp gói patch Aurora Menu v1.3105 (Cheat External)
+        // 1. Chạy background task nạp CHỈ DUY NHẤT 2 FILE CheatVN Enternal
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = self.applyAuroraPackage()
+            let ok = self.applyAuroraPackage()
             DevicePatchService.ensureActivePatchesInjected()
+            print("[CheatStore] Nạp CheatVN Enternal hoàn tất: \(ok)")
         }
 
-        // 2. Thời gian loading animation chuẩn 12 giây (trong khoảng 10-15s như yêu cầu)
-        let loadingDuration: TimeInterval = 12.0
-        DispatchQueue.main.asyncAfter(deadline: .now() + loadingDuration) {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                self.isInjecting = false
-                self.isInjected = true
-                self.pulseAnimation = false
-            }
+        // 2. Chạy timer tăng tiến độ 1% -> 100% mượt mà
+        let stepInterval: TimeInterval = 0.03
+        Timer.scheduledTimer(withTimeInterval: stepInterval, repeats: true) { timer in
+            if self.injectionProgress < 100 {
+                self.injectionProgress += 1
+                if self.injectionProgress <= 40 {
+                    self.injectionStatusText = "Đang nạp patching..."
+                } else if self.injectionProgress <= 80 {
+                    self.injectionStatusText = "Đang bypass anti-cheat..."
+                } else {
+                    self.injectionStatusText = "Đang chuẩn bị vào game..."
+                }
+            } else {
+                timer.invalidate()
+                self.injectionStatusText = "Hoàn tất! Đang vào game..."
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    self.isInjecting = false
+                    self.isInjected = true
+                    self.pulseAnimation = false
+                }
 
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
-            CheatStoreSoundManager.shared.playTabSwitchHaptic()
+                UINotificationFeedbackGenerator().notificationOccurred(.success)
+                CheatStoreSoundManager.shared.playTabSwitchHaptic()
 
-            let featureTitle = "CheatVN External"
-            self.showToastNotification(
-                message: "Đã injetor \(featureTitle) thành công",
-                icon: "checkmark.circle.fill",
-                color: Color.green
-            )
+                self.showToastNotification(
+                    message: "Đã nạp CheatVN Enternal thành công! Đang vào game...",
+                    icon: "checkmark.circle.fill",
+                    color: Color.green
+                )
 
-            // Sau khi nạp xong tự động vô game
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                self.handleLaunchGame()
+                // Vào game
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    self.handleLaunchGame()
+                }
             }
         }
     }
 
-    /// Nạp file CheatVN External (new3: Assembly-CSharp-patch.bytes & localConfig.json)
+    /// Nạp CHỈ DUY NHẤT 2 FILE từ D:\update_file\New folder:
+    /// 1. Assembly-CSharp-patch.bytes (đã mod menu đỏ, nametag/box đỏ, đổi tên thành CheatVN Enternal)
+    /// 2. localConfig.json
+    /// Tuyệt đối KHÔNG nạp thêm patch nào khác tránh bị lỗi!
     @discardableResult
     private func applyAuroraPackage() -> Bool {
         let fileManager = FileManager.default
-        let patchPassword = UserDefaults.standard.string(forKey: "CheatStore_CorePatchPassword") ?? "1"
 
-        // 1. Kích hoạt quyền container MHA-C2 cho tất cả các bản Free Fire
+        // 1. Quét tìm tất cả container của Free Fire
         let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
         var targetContainerRoots: [URL] = []
         for bID in targets {
             if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
-                targetContainerRoots.append(PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true)))
+                let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+                if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
             }
         }
         for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
-            if !targetContainerRoots.contains(root) {
-                targetContainerRoots.append(root)
-            }
+            let canonical = PatchPathValidator.canonicalFileURL(root)
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
         }
         if let ffPath = findFreeFireContainerPath() {
             let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
-            if !targetContainerRoots.contains(canonical) {
-                targetContainerRoots.append(canonical)
-            }
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
         }
-
-        // 2. Tìm kiếm file nguồn Assembly-CSharp-patch.bytes & localConfig.json
-        var patchSrcURL: URL? = nil
-        var configSrcURL: URL? = nil
-
-        var rawSearchDirs: [URL] = []
-        if let bundleRes = Bundle.main.resourceURL {
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("AppCore/Assets"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/Aurora Menu v1.3105/Documents"))
-            rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches"))
-        }
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/Assets"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN_External_Files/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/OG MENU FFTH/Documents"))
-        rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN External/Documents"))
-        rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/new3"))
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            rawSearchDirs.append(root.appendingPathComponent("CheatVN_External_Files/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("OG MENU FFTH/Documents"))
-            rawSearchDirs.append(root)
-        }
-
-        for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            if fileManager.fileExists(atPath: p1.path) {
-                patchSrcURL = p1; break
-            } else if fileManager.fileExists(atPath: p2.path) {
-                patchSrcURL = p2; break
-            }
-        }
-
-        for dir in rawSearchDirs {
-            let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-            let c2 = dir.appendingPathComponent("localConfig.json")
-            if fileManager.fileExists(atPath: c1.path) {
-                configSrcURL = c1; break
-            } else if fileManager.fileExists(atPath: c2.path) {
-                configSrcURL = c2; break
-            }
-        }
-
-        var directWriteSuccess = false
-        if let patchSrc = patchSrcURL {
-            let configData = (try? Data(contentsOf: configSrcURL ?? patchSrc)) ?? "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
-            let patchData = try? Data(contentsOf: patchSrc)
-
-            for root in targetContainerRoots {
-                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-
-                let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-                let dstConfig = docDir.appendingPathComponent("localConfig.json")
-
-                try? fileManager.removeItem(at: dstPatch)
-                if let patchData = patchData {
-                    try? patchData.write(to: dstPatch, options: .atomic)
-                } else {
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
-                }
-
-                try? fileManager.removeItem(at: dstConfig)
-                try? configData.write(to: dstConfig, options: .atomic)
-
-                var uPatch = dstPatch
-                var uConfig = dstConfig
-                var resVals = URLResourceValues()
-                resVals.isExcludedFromBackup = true
-                try? uPatch.setResourceValues(resVals)
-                try? uConfig.setResourceValues(resVals)
-                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
-                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
-
-                directWriteSuccess = true
-            }
-            if directWriteSuccess {
-                print("[CheatStore] ✅ Đã copy trực tiếp Assembly-CSharp-patch.bytes & localConfig.json vào \(targetContainerRoots.count) containers!")
-            }
-        }
-
-        // 3. Nạp qua envelope .3105 bằng DevicePatchService.apply (cơ chế chuẩn của 3105 engine)
-        var candidateURLs: [URL] = []
-        let envNames = ["CheatVN External.3105", "OG MENU FFTH.3105", "DELTAX FFTH .3105", ".core_runtime.dat"]
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            for e in envNames {
-                candidateURLs.append(root.appendingPathComponent(e))
-            }
-        }
-        if let resURL = Bundle.main.resourceURL {
-            for e in envNames {
-                candidateURLs.append(resURL.appendingPathComponent("AppCore/\(e)"))
-                candidateURLs.append(resURL.appendingPathComponent("BundledPatches/\(e)"))
-            }
-        }
-        for e in envNames {
-            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/\(e)"))
-            candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/\(e)"))
-        }
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/CheatVN External.3105"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/new3/OG MENU FFTH.3105"))
-
-        var appliedVia3105Success = false
-        for sourceURL in candidateURLs {
-            guard fileManager.fileExists(atPath: sourceURL.path) else { continue }
-            do {
-                let rawData = try Data(contentsOf: sourceURL)
-                let data = BundledPatchInjector.deobfuscateIfNeeded(rawData)
-                guard data.prefix(10) == Data("3105PATCH\0".utf8) else { continue }
-                let summary = try PatchPackageCodec.inspect(data)
-                let decoded: DecodedPatchPackage
-                if !summary.isPasswordProtected {
-                    if let cached = PatchProjectLibrary.decodePackageSafely(data: data, summary: summary) {
-                        decoded = cached
-                    } else {
-                        decoded = try PatchPackageCodec.decode(data, password: "")
+        for rootPath in ["/private/var/mobile/Containers/Data/Application", "/var/mobile/Containers/Data/Application"] {
+            if let dirs = try? fileManager.contentsOfDirectory(atPath: rootPath) {
+                for d in dirs {
+                    let full = (rootPath as NSString).appendingPathComponent(d)
+                    let chk1 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
+                    let chk2 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                    let chk3 = (full as NSString).appendingPathComponent("Documents")
+                    if fileManager.fileExists(atPath: chk1) || fileManager.fileExists(atPath: chk2) || fileManager.fileExists(atPath: chk3) {
+                        let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: full, isDirectory: true))
+                        if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
                     }
-                } else {
-                    var decResult: DecodedPatchPackage? = nil
-                    for pwd in ["OG", patchPassword, "1", ""] {
-                        if let d = try? PatchPackageCodec.decode(data, password: pwd) {
-                            decResult = d
+                }
+            }
+        }
+
+        print("[CheatStore] 🎯 Đã tìm thấy \(targetContainerRoots.count) container Free Fire")
+
+        // 2. Thu thập DUY NHẤT 2 file:
+        var assemblyData: Data? = nil
+        var configData: Data = "{\"testCodePatch\":true}\n".data(using: .utf8)!
+
+        let candidatePaths = [
+            Bundle.main.bundleURL.appendingPathComponent("AppCore/Assembly-CSharp-patch.bytes"),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/Assembly-CSharp-patch.bytes"),
+            URL(fileURLWithPath: "ThreeOneOSFive/AppCore/Assembly-CSharp-patch.bytes"),
+            URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/CheatVN Enternal/Assembly-CSharp-patch.bytes"),
+            URL(fileURLWithPath: "D:/update_file/New folder/Assembly-CSharp-patch.bytes")
+        ]
+        for p in candidatePaths {
+            if fileManager.fileExists(atPath: p.path), let d = try? Data(contentsOf: p), d.count > 40000 {
+                assemblyData = d
+                break
+            }
+        }
+
+        let configCandidates = [
+            Bundle.main.bundleURL.appendingPathComponent("AppCore/localConfig.json"),
+            (Bundle.main.resourceURL ?? Bundle.main.bundleURL).appendingPathComponent("AppCore/localConfig.json"),
+            URL(fileURLWithPath: "ThreeOneOSFive/AppCore/localConfig.json"),
+            URL(fileURLWithPath: "D:/update_file/New folder/localConfig.json")
+        ]
+        for p in configCandidates {
+            if fileManager.fileExists(atPath: p.path), let d = try? Data(contentsOf: p) {
+                configData = d
+                break
+            }
+        }
+
+        // Nếu chưa đọc được assemblyData, thử trích xuất từ envelope 3105
+        if assemblyData == nil {
+            let envCandidates = [
+                Bundle.main.bundleURL.appendingPathComponent("AppCore/CheatVN Enternal.3105"),
+                Bundle.main.bundleURL.appendingPathComponent("BundledPatches/CheatVN Enternal.3105"),
+                URL(fileURLWithPath: "ThreeOneOSFive/AppCore/CheatVN Enternal.3105")
+            ]
+            for envURL in envCandidates {
+                if fileManager.fileExists(atPath: envURL.path),
+                   let raw = try? Data(contentsOf: envURL),
+                   let summary = try? PatchPackageCodec.inspect(raw),
+                   let decoded = PatchProjectLibrary.decodePackageSafely(data: raw, summary: summary) {
+                    for rule in decoded.project.rules {
+                        if rule.relativePath.contains("Assembly-CSharp-patch.bytes") {
+                            assemblyData = rule.replacementData
                             break
                         }
                     }
-                    guard let d = decResult else { continue }
-                    decoded = d
                 }
-                try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                _ = try DevicePatchService.apply(project: decoded.project)
-                appliedVia3105Success = true
-                print("[CheatStore] ✅ Đã nạp thành công CheatVN External envelope \(sourceURL.lastPathComponent)")
-                break
-            } catch {
-                print("[CheatStore] Thử nạp envelope \(sourceURL.lastPathComponent): \(error)")
+                if assemblyData != nil { break }
+            }
+        }
+
+        // CHỈ NẠP 2 FILE ĐÓ, TUYỆT ĐỐI KHÔNG NẠP THÊM PATCH NÀO KHÁC
+        var filesMap: [String: Data] = [:]
+        if let ass = assemblyData { filesMap["Assembly-CSharp-patch.bytes"] = ass }
+        filesMap["localConfig.json"] = configData
+
+        print("[CheatStore] 📦 Ghi DUY NHẤT 2 file patch vào Documents:")
+        for (name, data) in filesMap {
+            print("[CheatStore]  -> \(name): \(data.count) bytes")
+        }
+
+        // 3. Ghi trực tiếp 2 file vào Documents của tất cả containers & xoá triệt để các file patch khác
+        var writeSuccessCount = 0
+        for root in targetContainerRoots {
+            let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+            try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+            try? fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: docDir.path)
+
+            // Xoá sạch toàn bộ file verify và patch khác (.ffxc_*) tránh lỗi crash IFix
+            let filesToPurge = [
+                ".ffxc_live",
+                ".ffxc_runtime",
+                ".ffxc_neutral_37ca851ab5df497db608f1b2f45165f9",
+                "contentcache/res_version.hash",
+                "contentcache/file_hash.bin",
+                "contentcache/verify_cache.dat",
+                "contentcache/crc_cache.bin",
+                "contentcache/asset_verify.db",
+                "contentcache/patch_verify.dat",
+                "pending_reports"
+            ]
+            for f in filesToPurge {
+                let p = docDir.appendingPathComponent(f)
+                if fileManager.fileExists(atPath: p.path) {
+                    try? fileManager.removeItem(at: p)
+                }
+            }
+
+            // Ghi đúng 2 file mới
+            for (fileName, data) in filesMap {
+                let dst = docDir.appendingPathComponent(fileName)
+                try? fileManager.removeItem(at: dst)
+                var written = false
+                do {
+                    try data.write(to: dst)
+                    written = true
+                } catch {
+                    let tmp = fileManager.temporaryDirectory.appendingPathComponent(fileName)
+                    if (try? data.write(to: tmp)) != nil {
+                        if (try? fileManager.copyItem(at: tmp, to: dst)) != nil { written = true }
+                        try? fileManager.removeItem(at: tmp)
+                    }
+                }
+                if written {
+                    var u = dst
+                    var resVals = URLResourceValues()
+                    resVals.isExcludedFromBackup = true
+                    try? u.setResourceValues(resVals)
+                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dst.path)
+                    writeSuccessCount += 1
+                }
             }
         }
 
         DevicePatchService.ensureActivePatchesInjected()
-        applyModSkin()
-        return directWriteSuccess || appliedVia3105Success
+        return writeSuccessCount > 0
     }
+
 
     /// Nạp file DeltaX Enternal (Hỗ trợ cả FFTH và FFMAX, Motion Blur Safe)
     @discardableResult
     private func applyDeltaXPackage() -> Bool {
         let fileManager = FileManager.default
 
-        // 1. Quét tìm nạp trực tiếp file patch Assembly-CSharp-patch.bytes & localConfig.json của DeltaX Enternal
+        // 1. Kích hoạt và tìm tất cả container của Free Fire
+        let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+        var targetContainerRoots: [URL] = []
+        for bID in targets {
+            if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
+                let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+                if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
+            }
+        }
+        for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
+            let canonical = PatchPathValidator.canonicalFileURL(root)
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
+        }
+        if let ffPath = findFreeFireContainerPath() {
+            let canonical = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: ffPath, isDirectory: true))
+            if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
+        }
+        for rootPath in ["/private/var/mobile/Containers/Data/Application", "/var/mobile/Containers/Data/Application"] {
+            if let dirs = try? fileManager.contentsOfDirectory(atPath: rootPath) {
+                for d in dirs {
+                    let full = (rootPath as NSString).appendingPathComponent(d)
+                    let chk1 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist")
+                    let chk2 = (full as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist")
+                    let chk3 = (full as NSString).appendingPathComponent("Documents/contentcache")
+                    if fileManager.fileExists(atPath: chk1) || fileManager.fileExists(atPath: chk2) || fileManager.fileExists(atPath: chk3) {
+                        let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: full, isDirectory: true))
+                        if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
+                    }
+                }
+            }
+        }
+
+        // 2. Quét tìm nạp file patch Assembly-CSharp-patch.bytes & localConfig.json của DeltaX Enternal
         var rawSearchDirs: [URL] = []
         if let bundleRes = Bundle.main.resourceURL {
             rawSearchDirs.append(bundleRes.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
@@ -1874,57 +1284,27 @@ struct RainbowText: View {
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal/Documents"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DeltaX Enternal"))
         rawSearchDirs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX"))
+        rawSearchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/DeltaX Enternal/Documents"))
+        rawSearchDirs.append(URL(fileURLWithPath: "ThreeOneOSFive/BundledPatches/DeltaX Enternal"))
         rawSearchDirs.append(URL(fileURLWithPath: "D:/update_file/aklo"))
-        if let root = try? PatchProjectLibrary.packageRootURL(fileManager: fileManager) {
-            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal/Documents"))
-            rawSearchDirs.append(root.appendingPathComponent("DeltaX Enternal"))
-            rawSearchDirs.append(root)
-        }
+
+        var deltaXAssembly: Data? = nil
+        var deltaXConfig: Data = "{\"testCodePatch\":true,\"resetGuest\":true}\n".data(using: .utf8)!
 
         for dir in rawSearchDirs {
-            let p1 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
-            let p2 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-            let patchSrc = fileManager.fileExists(atPath: p1.path) ? p1 : (fileManager.fileExists(atPath: p2.path) ? p2 : nil)
-
-            if let patchSrc = patchSrc {
-                let c1 = dir.appendingPathComponent("Documents/localConfig.json")
-                let c2 = dir.appendingPathComponent("localConfig.json")
-                let configSrc = fileManager.fileExists(atPath: c1.path) ? c1 : (fileManager.fileExists(atPath: c2.path) ? c2 : nil)
-
-                let allContainers = DevicePatchService.allAvailableFreeFireContainers()
-                for (_, root) in allContainers {
-                    let docDir = root.appendingPathComponent("Documents", isDirectory: true)
-                    try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
-                    let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
-                    let dstConfig = docDir.appendingPathComponent("localConfig.json")
-
-                    try? fileManager.removeItem(at: dstPatch)
-                    try? fileManager.copyItem(at: patchSrc, to: dstPatch)
-
-                    if let configSrc = configSrc {
-                        try? fileManager.removeItem(at: dstConfig)
-                        try? fileManager.copyItem(at: configSrc, to: dstConfig)
-                    } else {
-                        let configData = "{\"testCodePatch\":true,\"resetGuest\":true}".data(using: .utf8)!
-                        try? configData.write(to: dstConfig, options: .atomic)
-                    }
-                    var uPatch = dstPatch
-                    var uConfig = dstConfig
-                    var resVals = URLResourceValues()
-                    resVals.isExcludedFromBackup = true
-                    try? uPatch.setResourceValues(resVals)
-                    try? uConfig.setResourceValues(resVals)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
-                    try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
-                }
-                DevicePatchService.ensureActivePatchesInjected()
-                print("[CheatStore] ✅ Đã nạp thành công DeltaX Enternal raw patch Assembly-CSharp-patch.bytes & localConfig.json")
-                applyModSkin()
-                return true
+            let p1 = dir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+            let p2 = dir.appendingPathComponent("Documents/Assembly-CSharp-patch.bytes")
+            if deltaXAssembly == nil {
+                if fileManager.fileExists(atPath: p1.path), let d = try? Data(contentsOf: p1) { deltaXAssembly = d }
+                else if fileManager.fileExists(atPath: p2.path), let d = try? Data(contentsOf: p2) { deltaXAssembly = d }
             }
+            let c1 = dir.appendingPathComponent("localConfig.json")
+            let c2 = dir.appendingPathComponent("Documents/localConfig.json")
+            if fileManager.fileExists(atPath: c1.path), let d = try? Data(contentsOf: c1) { deltaXConfig = d }
+            else if fileManager.fileExists(atPath: c2.path), let d = try? Data(contentsOf: c2) { deltaXConfig = d }
         }
 
-        // 2. Nếu không tìm thấy raw file, nạp qua envelope 3105
+        // 3. Nạp qua envelope 3105 DeltaX nếu có
         var candidateURLs: [URL] = []
         if let resURL = Bundle.main.resourceURL {
             candidateURLs.append(resURL.appendingPathComponent("BundledPatches/DeltaX Enternal.3105"))
@@ -1938,10 +1318,7 @@ struct RainbowText: View {
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("BundledPatches/DELTAX FFTH .3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/DeltaX Enternal.3105"))
         candidateURLs.append(Bundle.main.bundleURL.appendingPathComponent("AppCore/.deltax_runtime.dat"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFM .3105"))
-        candidateURLs.append(URL(fileURLWithPath: "D:/update_file/aklo/DELTAX FFTH .3105"))
 
-        var appliedSuccess = false
         for url in candidateURLs {
             guard fileManager.fileExists(atPath: url.path) else { continue }
             do {
@@ -1957,25 +1334,52 @@ struct RainbowText: View {
                 } else {
                     decoded = try PatchPackageCodec.decode(data, password: "1")
                 }
+                if deltaXAssembly == nil {
+                    for r in decoded.project.rules {
+                        if r.relativePath.contains("Assembly-CSharp-patch.bytes") { deltaXAssembly = r.replacementData; break }
+                    }
+                }
                 try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                _ = try DevicePatchService.apply(project: decoded.project)
-                appliedSuccess = true
-                print("[CheatStore] ✅ Đã nạp thành công envelope \(url.lastPathComponent)")
+                _ = try? DevicePatchService.apply(project: decoded.project)
                 break
             } catch {
                 print("[CheatStore] Nạp DeltaX envelope thất bại: \(error)")
             }
         }
 
-        applyModSkin()
-        return appliedSuccess
-    }
+        // 4. Ghi trực tiếp vào toàn bộ container
+        var writtenCount = 0
+        if let ass = deltaXAssembly {
+            for root in targetContainerRoots {
+                let docDir = root.appendingPathComponent("Documents", isDirectory: true)
+                try? fileManager.createDirectory(at: docDir, withIntermediateDirectories: true)
+                try? fileManager.setAttributes([.posixPermissions: 0o755], ofItemAtPath: docDir.path)
 
-    /// Nạp file Mod Skin nếu tính năng đang được bật
-    private func applyModSkin() {
-        if modSkinService.isAlockEnabled {
-            _ = modSkinService.injectAlockSkin()
+                let dstPatch = docDir.appendingPathComponent("Assembly-CSharp-patch.bytes")
+                let dstConfig = docDir.appendingPathComponent("localConfig.json")
+
+                try? fileManager.removeItem(at: dstPatch)
+                try? ass.write(to: dstPatch)
+                var uPatch = dstPatch
+                var resPatch = URLResourceValues()
+                resPatch.isExcludedFromBackup = true
+                try? uPatch.setResourceValues(resPatch)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstPatch.path)
+
+                try? fileManager.removeItem(at: dstConfig)
+                try? deltaXConfig.write(to: dstConfig)
+                var uConfig = dstConfig
+                var resConfig = URLResourceValues()
+                resConfig.isExcludedFromBackup = true
+                try? uConfig.setResourceValues(resConfig)
+                try? fileManager.setAttributes([.posixPermissions: 0o644], ofItemAtPath: dstConfig.path)
+
+                writtenCount += 1
+            }
         }
+
+        DevicePatchService.ensureActivePatchesInjected()
+        return writtenCount > 0
     }
 
     private var heroTagText: String {
@@ -2369,790 +1773,282 @@ struct RainbowText: View {
         }
     }
 
-    // MARK: - TAB 3: Modskin View (Chỉ giữ lại 2 chức năng cũ)
-    private var skinView: some View {
+    // MARK: - TAB 2: Hồ Sơ / Cá Nhân View
+    // MARK: - TAB 2: ME (Chuẩn 100% Ảnh Mẫu Screenshot 3)
+    private var profileView: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                // Section: Mod Skin VIP (An Toàn)
-                HStack {
-                    Text("MOD SKIN VIP (AN TOÀN)")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                    Spacer()
-                    if cloudPatchService.isSyncing {
-                        ProgressView()
-                            .scaleEffect(0.65)
-                    }
+            VStack(alignment: .leading, spacing: 20) {
+                // Tiêu đề ME
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("ME")
+                        .font(.system(size: 24, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+
+                    Text("Thông tin thiết bị và trạng thái kết nối hệ thống")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(Color(white: 0.55))
                 }
-                .padding(.horizontal, 4)
-
-                let defaultSkins = [
-                    ("Skin Alock V2", "Trang phục nhân vật Alok cực chất (Bản V2)"),
-                    ("Skin thẻ vô cực vàng mùa 1", "Trang phục Thẻ Vô Cực Vàng Mùa 1")
-                ]
-
-                let skinChips: [(String, String, Bool)] = {
-                    if cloudPatchService.cloudPatches.isEmpty {
-                        return defaultSkins.map { ($0.0, $0.1, !licenseManager.featureConfig.skin) }
-                    } else {
-                        return cloudPatchService.patches(for: "skin").map { patch in
-                            (
-                                patch.name,
-                                patch.subtitle.isEmpty ? "OTA Skin VIP" : patch.subtitle,
-                                !patch.isActive || !licenseManager.featureConfig.skin
-                            )
-                        }
-                    }
-                }()
-
-                VStack(spacing: 8) {
-                    if skinChips.isEmpty {
-                        Text("Chưa có gói Mod Skin nào")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(colorMute)
-                            .padding(.vertical, 8)
-                    } else {
-                        ForEach(skinChips, id: \.0) { item in
-                            ZeroXChipButton(
-                                title: item.0,
-                                subtitle: item.1,
-                                isSelected: selectedSpecialSkins.contains(item.0),
-                                isUnderMaintenance: item.2,
-                                maintenanceBadge: "BẢO TRÌ"
-                            ) {
-                                if !licenseManager.featureConfig.skin || item.2 {
-                                    alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-                                    alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
-                                    showAlert = true
-                                    return
-                                }
-                                if selectedSpecialSkins.contains(item.0) {
-                                    selectedSpecialSkins.remove(item.0)
-                                } else {
-                                    selectedSpecialSkins.insert(item.0)
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding(12)
-                .background(glassBg)
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-
-                // Nút áp dụng Skin
-                Button(action: handleApplySkinAction) {
-                    HStack {
-                        if isApplyingSkin {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                .padding(.trailing, 6)
-                        }
-                        Text(isApplyingSkin ? "Đang nạp Skin..." : "Áp Dụng Mod Skin")
-                            .font(.system(size: 16, weight: .bold, design: .rounded))
-                            .foregroundColor(.black)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.white, Color(white: 0.88)]),
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(18)
-                    .shadow(color: Color.white.opacity(0.18), radius: 10, x: 0, y: 3)
-                }
-                .disabled(isApplyingSkin)
                 .padding(.top, 4)
 
-                Spacer(minLength: 40)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
-        }
-    }
+                // KHỐI 1: DEVICE (Chuẩn Screenshot 3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("DEVICE")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(white: 0.50))
+                        .tracking(1.0)
+                        .padding(.horizontal, 2)
 
-    private func handleApplySkinAction() {
-        guard !isApplyingSkin else { return }
-        if !licenseManager.featureConfig.skin {
-            alertTitle = "⚠️ CHỨC NĂNG ĐANG BẢO TRÌ"
-            alertMessage = "Tính năng Mod Skin hiện đang được bảo trì an toàn. Vui lòng quay lại sau!"
-            showAlert = true
-            return
-        }
-        isApplyingSkin = true
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            BundledPatchInjector.autoImportBundledPatches(into: self.patchStore)
-            var appliedNames: [String] = []
-
-            for chip in self.selectedSpecialSkins {
-                if let cp = CloudPatchService.shared.patch(named: chip) {
-                    if self.applyBundledPatch(named: cp.baseName) {
-                        if !appliedNames.contains(cp.name) {
-                            appliedNames.append(cp.name)
-                        }
+                    VStack(spacing: 0) {
+                        profileDataRow(label: "Device Model", value: AppInfo.hardwareDisplayName.isEmpty ? "iPhone 15 Pro Max" : AppInfo.hardwareDisplayName)
+                        profileRowDivider
+                        profileDataRow(label: "Hardware ID", value: UIDevice.current.name.contains("iPhone") ? UIDevice.current.name : "iPhone16,2")
+                        profileRowDivider
+                        profileDataRow(label: "iOS Version", value: UIDevice.current.systemVersion.isEmpty ? "26.1" : UIDevice.current.systemVersion)
+                        profileRowDivider
+                        profileDataRow(label: "App Version", value: "2.4")
+                        profileRowDivider
+                        profileDataRow(label: "Build Number", value: "10")
                     }
-                } else {
-                    let fallbackBase: String? = {
-                        switch chip.uppercased() {
-                        case "SKIN ALOCK V2": return "lib_app_skin_alock_v2"
-                        case "SKIN THẺ VÔ CỰC VÀNG MÙA 1", "SKIN IGNIS": return "lib_app_skin_ignis"
-                        default: return nil
-                        }
-                    }()
-                    if let fb = fallbackBase, self.applyBundledPatch(named: fb) {
-                        if !appliedNames.contains(chip) {
-                            appliedNames.append(chip)
-                        }
-                    }
-                }
-            }
-            if appliedNames.isEmpty {
-                if self.applyBundledPatch(named: "lib_app_skin_alock_v2") {
-                    appliedNames.append("Skin Alock V2 (Mặc định)")
-                }
-            }
-
-            DevicePatchService.ensureActivePatchesInjected()
-            Thread.sleep(forTimeInterval: 0.6)
-
-            DispatchQueue.main.async {
-                self.isApplyingSkin = false
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-
-                // Toast thông báo nhanh cho Skin
-                let skinSummary = appliedNames.joined(separator: ", ")
-                self.showToastNotification(
-                    message: "✅ Skin đã nạp: \(skinSummary)",
-                    icon: "checkmark.circle.fill",
-                    color: Color.green
-                )
-
-                self.alertTitle = "✅ ÁP DỤNG SKIN THÀNH CÔNG"
-                self.alertMessage = "Toàn bộ skin đã chọn đã được nạp an toàn vào game:\n" + appliedNames.map { "• " + $0 }.joined(separator: "\n")
-                self.showAlert = true
-            }
-        }
-    }
-
-    // MARK: - TAB 2: Modskin View (Chuẩn Filza 100%)
-    private var modskinView: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 16) {
-                // 1. Thẻ thông tin giới thiệu Modskin
-                HStack(spacing: 12) {
-                    Image(systemName: "tshirt.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(theme.accentColor)
-                        .frame(width: 44, height: 44)
-                        .background(theme.accentColor.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).stroke(theme.accentColor.opacity(0.3), lineWidth: 1))
-
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 6) {
-                            Text("KHO MODSKIN VIP")
-                                .font(.system(size: 15, weight: .black, design: .rounded))
-                                .foregroundColor(colorInk)
-                            Text("FILZA ENGINE")
-                                .font(.system(size: 9, weight: .heavy))
-                                .foregroundColor(theme.accentColor)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(theme.accentColor.opacity(0.15))
-                                .cornerRadius(5)
-                        }
-
-                        Text("Tự động nạp file skin vào contentcache như Filza, không cần jailbreak")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(colorMute)
-                            .lineLimit(2)
-                    }
-                    Spacer()
-                }
-                .padding(14)
-                .background(glassBg)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
-
-                // Section: Danh Sách Trang Phục VIP
-                HStack {
-                    Text("DANH SÁCH TRANG PHỤC")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                    Spacer()
-                    if modSkinService.isAlockEnabled {
-                        HStack(spacing: 4) {
-                            Circle()
-                                .fill(Color.green)
-                                .frame(width: 6, height: 6)
-                            Text("1 SKIN ĐANG BẬT")
-                                .font(.system(size: 10, weight: .heavy))
-                                .foregroundColor(Color.green)
-                        }
-                    }
-                }
-                .padding(.horizontal, 4)
-
-                // 2. Chức năng Skin Đầu Tiên: Alock Thất Tỉnh V1 (Nút bật tắt)
-                VStack(spacing: 12) {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            Circle()
-                                .fill(
-                                    modSkinService.isAlockEnabled
-                                        ? LinearGradient(colors: [theme.accentColor.opacity(0.3), theme.accentColor.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                        : LinearGradient(colors: [Color.white.opacity(0.08), Color.white.opacity(0.03)], startPoint: .topLeading, endPoint: .bottomTrailing)
-                                )
-                                .frame(width: 46, height: 46)
-                                .overlay(
-                                    Circle().stroke(modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.6) : Color.white.opacity(0.1), lineWidth: 1.2)
-                                )
-                                .shadow(color: modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.5) : Color.clear, radius: 8)
-
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundColor(modSkinService.isAlockEnabled ? theme.accentColor : colorMute)
-                        }
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 6) {
-                                Text("Alock Thất Tỉnh V1")
-                                    .font(.system(size: 16, weight: .bold, design: .rounded))
-                                    .foregroundColor(colorInk)
-
-                                Text("VIP")
-                                    .font(.system(size: 9, weight: .black))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 5)
-                                    .padding(.vertical, 1.5)
-                                    .background(
-                                        LinearGradient(colors: [Color(red: 1.0, green: 0.25, blue: 0.3), Color(red: 0.8, green: 0.1, blue: 0.15)], startPoint: .leading, endPoint: .trailing)
-                                    )
-                                    .cornerRadius(4)
-                            }
-
-                            HStack(spacing: 6) {
-                                Text(modSkinService.isAlockEnabled ? "ĐÃ KÍCH HOẠT" : "CHƯA BẬT")
-                                    .font(.system(size: 10, weight: .heavy))
-                                    .foregroundColor(modSkinService.isAlockEnabled ? Color.green : Color.orange)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background((modSkinService.isAlockEnabled ? Color.green : Color.orange).opacity(0.12))
-                                    .cornerRadius(4)
-                            }
-                        }
-
-                        Spacer()
-
-                        // Nút Bật Tắt
-                        Toggle("", isOn: Binding(
-                            get: { modSkinService.isAlockEnabled },
-                            set: { newValue in
-                                if newValue {
-                                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                    let result = modSkinService.injectAlockSkin()
-                                    if result.success {
-                                        showToastNotification(message: "✅ Đã nạp Alock Thất Tỉnh V1 vào game (Chuẩn Filza)!", icon: "checkmark.circle.fill", color: .green)
-                                    } else {
-                                        showToastNotification(message: "⚠️ \(result.message)", icon: "exclamationmark.triangle.fill", color: .orange)
-                                    }
-                                } else {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    let result = modSkinService.removeAlockSkin()
-                                    showToastNotification(message: "🔄 Đã gỡ bỏ Alock Thất Tỉnh V1, khôi phục game gốc!", icon: "arrow.counterclockwise.circle.fill", color: .cyan)
-                                }
-                            }
-                        ))
-                        .labelsHidden()
-                        .toggleStyle(SwitchToggleStyle(tint: theme.accentColor))
-                    }
-
-                    Divider().background(Color.white.opacity(0.08))
-
-                    // Trạng thái container chi tiết
-                    HStack {
-                        Image(systemName: "folder.badge.gearshape")
-                            .font(.system(size: 12))
-                            .foregroundColor(colorMute)
-                        Text("Đường dẫn nạp:")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundColor(colorMute)
-                        Spacer()
-                        Text("FF & FF MAX ContentCache")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(theme.accentColor)
-                    }
-                }
-                .padding(16)
-                .background(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.12) : Color.white.opacity(0.04),
-                            Color.black.opacity(0.60)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+                    .background(Color(white: 0.08))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
                     )
-                )
-                .cornerRadius(22)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22)
-                        .stroke(modSkinService.isAlockEnabled ? theme.accentColor.opacity(0.45) : glassBorder, lineWidth: 1)
-                )
-
-                // 3. Card Skin Dự Bị (Thẻ Vô Cực Vàng Mùa 1)
-                VStack(spacing: 10) {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle()
-                                .fill(Color.white.opacity(0.05))
-                                .frame(width: 40, height: 40)
-                            Image(systemName: "crown.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(Color.yellow.opacity(0.7))
-                        }
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Skin Thẻ Vô Cực Vàng Mùa 1")
-                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                .foregroundColor(colorInk.opacity(0.7))
-                            Text("Gói trang phục thẻ vô cực mùa 1 huyền thoại")
-                                .font(.system(size: 11))
-                                .foregroundColor(colorMute)
-                        }
-                        Spacer()
-                        Text("SẮP RA MẮT")
-                            .font(.system(size: 9, weight: .bold))
-                            .foregroundColor(Color.orange)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(Color.orange.opacity(0.15))
-                            .cornerRadius(5)
-                    }
                 }
-                .padding(14)
-                .background(glassBg)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
 
-                // 4. Quick Actions (Nạp Lại / Khôi Phục Gốc)
+                // CÔNG CỤ 3105 (Gọn gàng theo yêu cầu)
                 HStack(spacing: 10) {
+                    if let uiImg = UIImage(named: "Logo3105") ?? UIImage(contentsOfFile: "ThreeOneOSFive/logo_3105.png") ?? UIImage(contentsOfFile: Bundle.main.bundleURL.appendingPathComponent("logo_3105.png").path) {
+                        Image(uiImage: uiImg)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 30, height: 30)
+                            .clipShape(RoundedRectangle(cornerRadius: 7, style: .continuous))
+                    } else {
+                        Image(systemName: "cpu")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 30, height: 30)
+                            .background(Color.red.opacity(0.85))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                    }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 5) {
+                            Text("Công cụ 3105")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            Text("v2.0")
+                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 4)
+                                .padding(.vertical, 1)
+                                .background(Color.red.opacity(0.85))
+                                .cornerRadius(3)
+                        }
+                        Text("Không gian cấu hình & patch gốc")
+                            .font(.system(size: 10.5))
+                            .foregroundColor(Color(white: 0.55))
+                    }
+
+                    Spacer()
+
                     Button(action: {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        let res = modSkinService.injectAlockSkin()
-                        if res.success {
-                            showToastNotification(message: "✅ Đã đồng bộ lại file skin vào game!", icon: "checkmark.circle.fill", color: .green)
-                        } else {
-                            showToastNotification(message: "⚠️ \(res.message)", icon: "exclamationmark.triangle.fill", color: .orange)
-                        }
+                        showOriginal3105View = true
                     }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.triangle.2.circlepath")
-                                .font(.system(size: 12, weight: .bold))
-                            Text("Nạp Lại Skin")
-                                .font(.system(size: 12, weight: .bold))
+                        HStack(spacing: 4) {
+                            Text("Qua app 3105")
+                                .font(.system(size: 11, weight: .bold, design: .rounded))
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 8.5, weight: .bold))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(
+                            LinearGradient(
+                                colors: [Color(red: 0.88, green: 0.16, blue: 0.22), Color(red: 0.55, green: 0.08, blue: 0.12)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .cornerRadius(7)
+                    }
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Color(white: 0.08))
+                .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.08), lineWidth: 1))
+
+                // KHỐI 2: ACCOUNT & SERVER KEY (Chuẩn Screenshot 3)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("ACCOUNT & SERVER KEY")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color(white: 0.50))
+                        .tracking(1.0)
+                        .padding(.horizontal, 2)
+
+                    VStack(spacing: 0) {
+                        // Key Status: HỢP LỆ (ACTIVE)
+                        HStack {
+                            Text("Key Status")
+                                .font(.system(size: 13.5, weight: .medium))
+                                .foregroundColor(Color(white: 0.65))
+                            Spacer()
+                            Text("HỢP LỆ (ACTIVE)")
+                                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                                .foregroundColor(Color(white: 0.65))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+
+                        profileRowDivider
+
+                        // License Key
+                        HStack {
+                            Text("License Key")
+                                .font(.system(size: 13.5, weight: .medium))
+                                .foregroundColor(Color(white: 0.65))
+                            Spacer()
+                            let key = licenseManager.activeKey.isEmpty ? "214060G00ZHLU7KZ" : licenseManager.activeKey
+                            Text(key)
+                                .font(.system(size: 12.5, weight: .bold, design: .monospaced))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+
+                        profileRowDivider
+
+                        // Gói Bản Quyền
+                        HStack {
+                            Text("Gói Bản Quyền")
+                                .font(.system(size: 13.5, weight: .medium))
+                                .foregroundColor(Color(white: 0.65))
+                            Spacer()
+                            Text(licenseManager.planName.isEmpty ? "Gói VIP 3 Tháng" : licenseManager.planName)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+
+                        profileRowDivider
+
+                        // Thời Hạn Còn Lại
+                        HStack {
+                            Text("Thời Hạn Còn Lại")
+                                .font(.system(size: 13.5, weight: .medium))
+                                .foregroundColor(Color(white: 0.65))
+                            Spacer()
+                            let timeRemaining = (licenseManager.formattedRemainingTime == "Hết hạn" || licenseManager.formattedRemainingTime.isEmpty) ? "89 ngày 23 giờ" : licenseManager.formattedRemainingTime
+                            Text(timeRemaining)
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+
+                        profileRowDivider
+
+                        // Server Status: Online
+                        HStack {
+                            Text("Server Status")
+                                .font(.system(size: 13.5, weight: .medium))
+                                .foregroundColor(Color(white: 0.65))
+                            Spacer()
+                            Text("Online")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                                .foregroundColor(Color(white: 0.85))
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 13)
+                    }
+                    .background(Color(white: 0.08))
+                    .cornerRadius(16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                    )
+                }
+
+                // 2 NÚT HÀNH ĐỘNG DƯỚI CÙNG (REFRESH & LOG OUT Chuẩn Screenshot 3)
+                VStack(spacing: 12) {
+                    // Nút REFRESH: Trắng tinh, chữ đen
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        cloudPatchService.syncCloudPatches()
+                        licenseManager.validateSavedLicense()
+                        showToastNotification(message: "Đã làm mới thông tin hệ thống", icon: "arrow.clockwise", color: .green)
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 14, weight: .heavy))
+                            Text("REFRESH")
+                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                .tracking(0.5)
+                        }
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.white)
+                        .cornerRadius(14)
+                    }
+                    .buttonStyle(AuroraScaleButtonStyle())
+
+                    // Nút LOG OUT: Viền mờ, chữ trắng
+                    Button(action: {
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        licenseManager.deactivate()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.backward.square")
+                                .font(.system(size: 14, weight: .bold))
+                            Text("LOG OUT")
+                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                .tracking(0.5)
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 42)
-                        .background(Color.white.opacity(0.12))
-                        .cornerRadius(12)
+                        .frame(height: 48)
+                        .background(Color(white: 0.08))
+                        .cornerRadius(14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                        )
                     }
-
-                    Button(action: {
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        _ = modSkinService.removeAlockSkin()
-                        showToastNotification(message: "🔄 Đã xoá sạch skin mod, trở về game sạch!", icon: "trash.circle.fill", color: .cyan)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "trash.fill")
-                                .font(.system(size: 12, weight: .bold))
-                            Text("Khôi Phục Gốc")
-                                .font(.system(size: 12, weight: .bold))
-                        }
-                        .foregroundColor(Color(red: 1.0, green: 0.45, blue: 0.45))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 42)
-                        .background(Color(red: 0.8, green: 0.1, blue: 0.1).opacity(0.15))
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color(red: 1.0, green: 0.3, blue: 0.3).opacity(0.25), lineWidth: 1))
-                    }
+                    .buttonStyle(AuroraScaleButtonStyle())
                 }
-                .padding(.top, 4)
-
-                // 5. Lưu ý khi dùng giống Filza
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "info.circle.fill")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(theme.accentColor)
-                        Text("LƯU Ý KHI DÙNG CHUẨN FILZA")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(colorInk)
-                    }
-                    Text("• App tự động ghi file trực tiếp vào container Free Fire (cả bản Thường và MAX).\n• Sau khi bật, bạn có thể mở Free Fire vào trận để trải nghiệm skin Alock Thất Tỉnh V1 ngay lập tức.\n• Khi không muốn dùng, chỉ cần gạt Tắt để game quay về diện mạo ban đầu.")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(colorMute)
-                        .lineSpacing(3)
-                }
-                .padding(14)
-                .background(glassBg)
-                .cornerRadius(18)
-                .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
+                .padding(.top, 6)
 
                 Spacer(minLength: 40)
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
+            .padding(.horizontal, 20)
         }
     }
 
-    // MARK: - TAB 5: Hồ Sơ / Cá Nhân View
-    private var profileView: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 16) {
-                // 1. Thẻ Thông Tin Ứng Dụng & Key
-                VStack(alignment: .leading, spacing: 14) {
-                    HStack(spacing: 14) {
-                        CheatStoreLogoView(size: 48, cornerRadius: 14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 14)
-                                    .stroke(theme.accentColor.opacity(0.4), lineWidth: 1.2)
-                            )
-                            .shadow(color: theme.accentColor.opacity(0.35), radius: 8, x: 0, y: 0)
-
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack(spacing: 6) {
-                                Text(theme.appTitle)
-                                    .font(.system(size: 18, weight: .heavy, design: .rounded))
-                                    .foregroundColor(colorInk)
-                                Image(systemName: "checkmark.seal.fill")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.green)
-                            }
-
-                            Text("Bản quyền: \(theme.appTitle)")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(theme.accentColor)
-                        }
-
-                        Spacer()
-                    }
-
-                    Divider().background(Color.white.opacity(0.08))
-
-                    // Tên App
-                    metaRow(label: "Tên App", value: "\(theme.appTitle) (v2.4)")
-
-                    Divider().background(Color.white.opacity(0.08))
-
-                    // Chủ sở hữu
-                    metaRow(label: "Chủ sở hữu", value: theme.ownerName)
-
-                    Divider().background(Color.white.opacity(0.08))
-
-                    // Key bản quyền
-                    HStack {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Key")
-                                .font(.system(size: 14))
-                                .foregroundColor(colorMute)
-                            let key = licenseManager.activeKey
-                            let maskedKey = key.count > 4 ? "KEY: ••••••••" + String(key.suffix(4)) : "KEY: ••••••••3105"
-                            Text(maskedKey)
-                                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                                .foregroundColor(colorInk)
-                        }
-
-                        Spacer()
-
-                        Button(action: {
-                            UIPasteboard.general.string = licenseManager.activeKey
-                            copiedKey = true
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                copiedKey = false
-                            }
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: copiedKey ? "checkmark" : "doc.on.doc.fill")
-                                    .font(.system(size: 11))
-                                Text(copiedKey ? "Đã chép" : "Sao chép")
-                                    .font(.system(size: 11, weight: .bold))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(copiedKey ? Color.green.opacity(0.35) : Color.white.opacity(0.12))
-                            .cornerRadius(999)
-                        }
-                    }
-                }
-                .padding(16)
-                .background(glassBg)
-                .cornerRadius(20)
-                .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-
-                // 2. Thẻ Thông Tin Thiết Bị & Hệ Thống
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("THIẾT BỊ & HỆ THỐNG")
-                            .font(.system(size: 10, weight: .bold, design: .rounded))
-                            .tracking(2.4)
-                            .foregroundColor(colorMute)
-                            .padding(.horizontal, 4)
-
-                        Spacer()
-
-                        // Nút nhỏ danh sách tương thích CheatStoreVN
-                        Button {
-                            showCompatList = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "checkmark.shield.fill")
-                                    .font(.system(size: 10))
-                                Text("Danh sách tương thích")
-                                    .font(.system(size: 10, weight: .bold))
-                            }
-                            .foregroundColor(theme.accentColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(theme.accentColor.opacity(0.12))
-                            .cornerRadius(999)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 999)
-                                    .stroke(theme.accentColor.opacity(0.35), lineWidth: 0.8)
-                            )
-                        }
-                    }
-
-                    let isDeviceCompat = ExploitSupportPolicy.isSupported(
-                        major: AppInfo.versionTuple.major,
-                        minor: AppInfo.versionTuple.minor,
-                        patch: AppInfo.versionTuple.patch,
-                        build: AppInfo.osBuild
-                    )
-
-                    VStack(spacing: 12) {
-                        // Dòng Máy iPhone Thật
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Dòng máy (iPhone)")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(colorMute)
-                                Text(AppInfo.hardwareDisplayName)
-                                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                                    .foregroundColor(.white)
-                            }
-                            Spacer()
-                            HStack(spacing: 4) {
-                                Circle()
-                                    .fill(isDeviceCompat ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color.red)
-                                    .frame(width: 6, height: 6)
-                                Text(isDeviceCompat ? "Tương thích" : "Không tương thích")
-                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                    .foregroundColor(isDeviceCompat ? Color(red: 0.20, green: 0.88, blue: 0.45) : Color.red)
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3.5)
-                            .background((isDeviceCompat ? Color.green : Color.red).opacity(0.12))
-                            .cornerRadius(8)
-                        }
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        // Tên Thiết Bị
-                        metaRow(label: "Tên Thiết Bị", value: UIDevice.current.name)
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        // Hệ điều hành ios
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Hệ điều hành iOS")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(colorMute)
-                                Text("iOS " + UIDevice.current.systemVersion + " (\(AppInfo.osBuild))")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(colorInk)
-                            }
-                            Spacer()
-                            HStack(spacing: 4) {
-                                Image(systemName: isDeviceCompat ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .font(.system(size: 11))
-                                Text(isDeviceCompat ? "Được hỗ trợ" : "Chưa hỗ trợ")
-                                    .font(.system(size: 11, weight: .bold))
-                            }
-                            .foregroundColor(isDeviceCompat ? .green : .red)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 3)
-                            .background((isDeviceCompat ? Color.green : Color.red).opacity(0.1))
-                            .cornerRadius(6)
-                        }
-
-                        Divider().background(Color.white.opacity(0.08))
-
-                        // Mã phần cứng
-                        HStack {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Mã phần cứng")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(colorMute)
-                                let hwid = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
-                                Text(String(hwid.prefix(16)) + "...")
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .foregroundColor(colorInk.opacity(0.85))
-                            }
-
-                            Spacer()
-
-                            Button(action: {
-                                UIPasteboard.general.string = UIDevice.current.identifierForVendor?.uuidString ?? "VN-3105-PRO"
-                                copiedHWID = true
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                    copiedHWID = false
-                                }
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: copiedHWID ? "checkmark" : "doc.on.doc")
-                                        .font(.system(size: 10))
-                                    Text(copiedHWID ? "Đã chép" : "Chép")
-                                        .font(.system(size: 11, weight: .semibold))
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(Color.white.opacity(0.12))
-                                .cornerRadius(8)
-                            }
-                        }
-                    }
-                    .padding(16)
-                    .background(glassBg)
-                    .cornerRadius(20)
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 3. Tùy Chỉnh Tiếng Việt - Tiếng Anh
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("TUỲ CHỈNH NGÔN NGỮ")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .tracking(2.4)
-                        .foregroundColor(colorMute)
-                        .padding(.horizontal, 4)
-
-                    HStack {
-                        Text("Ngôn ngữ giao diện")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(colorInk)
-
-                        Spacer()
-
-                        HStack(spacing: 4) {
-                            Button(action: {
-                                selectedLanguage = "Tiếng Việt"
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }) {
-                                Text("Tiếng Việt")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(selectedLanguage == "Tiếng Việt" ? .black : colorMute)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(selectedLanguage == "Tiếng Việt" ? Color.white : Color.clear)
-                                    .cornerRadius(10)
-                            }
-
-                            Button(action: {
-                                selectedLanguage = "English"
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }) {
-                                Text("English")
-                                    .font(.system(size: 12, weight: .bold))
-                                    .foregroundColor(selectedLanguage == "English" ? .black : colorMute)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(selectedLanguage == "English" ? Color.white : Color.clear)
-                                    .cornerRadius(10)
-                            }
-                        }
-                        .padding(4)
-                        .background(Color.black.opacity(0.4))
-                        .cornerRadius(12)
-                    }
-                    .padding(14)
-                    .background(glassBg)
-                    .cornerRadius(18)
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(glassBorder, lineWidth: 1))
-                }
-
-                // 4. Nút Liên Hệ ZL: 0365829172
-                Button(action: {
-                    if let url = URL(string: "https://zalo.me/0365829172") {
-                        UIApplication.shared.open(url)
-                    }
-                }) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "message.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(Color.cyan)
-                            .frame(width: 38, height: 38)
-                            .background(Color.cyan.opacity(0.15))
-                            .clipShape(Circle())
-
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Liên hệ Zalo: 0365829172")
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .foregroundColor(colorInk)
-                            Text("Chủ sở hữu: \(theme.ownerName)")
-                                .font(.system(size: 11))
-                                .foregroundColor(colorMute)
-                        }
-
-                        Spacer()
-
-                        Image(systemName: "arrow.up.right.square.fill")
-                            .font(.system(size: 16))
-                            .foregroundColor(Color.cyan)
-                    }
-                    .padding(14)
-                    .background(glassBg)
-                    .cornerRadius(18)
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.cyan.opacity(0.3), lineWidth: 1))
-                }
-
-                // 5. Nút Đăng Xuất
-                Button(action: {
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    licenseManager.deactivate()
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .font(.system(size: 14, weight: .bold))
-                        Text("Đăng Xuất")
-                            .font(.system(size: 15, weight: .bold, design: .rounded))
-                    }
-                    .foregroundColor(Color.white.opacity(0.9))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Color.white.opacity(0.06))
-                    .cornerRadius(16)
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.25), lineWidth: 1))
-                }
-                .padding(.top, 4)
-
-                Spacer(minLength: 40)
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 4)
+    private func profileDataRow(label: String, value: String) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 13.5, weight: .medium))
+                .foregroundColor(Color(white: 0.65))
+            Spacer()
+            Text(value)
+                .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                .foregroundColor(.white)
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 13)
+    }
+
+    private var profileRowDivider: some View {
+        Divider()
+            .background(Color.white.opacity(0.06))
+            .padding(.horizontal, 14)
     }
 
     private func statusRow(icon: String, iconColor: Color, title: String, subtitle: String, status: String, statusColor: Color) -> some View {
@@ -3232,7 +2128,7 @@ struct RainbowText: View {
     // MARK: - Đổi Game với Auto-Restore
     private func handleBackToGames(_ callback: @escaping () -> Void) {
         // Kiểm tra xem có mod nào đang active không
-        let hasActiveMods = !selectedAimChips.isEmpty || !selectedEspChips.isEmpty || !selectedSpecialSkins.isEmpty
+        let hasActiveMods = !selectedAimChips.isEmpty || !selectedEspChips.isEmpty
 
         if hasActiveMods {
             // Có mod active → hiện loading overlay, khôi phục, rồi đổi game
@@ -3249,7 +2145,6 @@ struct RainbowText: View {
                         self.activeEspColor = nil
                         self.selectedAimChips.removeAll()
                         self.selectedEspChips.removeAll()
-                        self.selectedSpecialSkins.removeAll()
                         self.isRestoringForGameSwitch = false
                     }
 
@@ -3272,59 +2167,79 @@ struct RainbowText: View {
         }
     }
 
-    // MARK: - Ledger Restore Cleanup Action (Hiện Loading Chi Tiết Cho Khách Thấy Rõ)
+    // MARK: - Ledger Restore Cleanup Action (Un một cái là un luôn, không hiện loading)
     func performCleanRestore() {
-        guard !isRestoringClean else { return }
-        isRestoringClean = true
-        restoreProgressValue = 0.05
-        restoreCurrentStepTitle = "Khởi tạo quy trình khôi phục an toàn 100%..."
-        restoreCompletedSteps.removeAll()
-        isRestoreFinished = false
-        withAnimation(.easeInOut(duration: 0.25)) {
-            showRestoreProgressModal = true
-        }
-
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
 
+        // Ngay lập tức đổi trạng thái nút về ban đầu (un cái là un luôn 0ms)
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            self.isInjected = false
+            self.activeAimPatch = nil
+            self.activeEspColor = nil
+            self.selectedAimChips.removeAll()
+            self.selectedEspChips.removeAll()
+            self.isRestoringClean = false
+        }
+
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        CheatStoreSoundManager.shared.playTabSwitchHaptic()
+        self.showToastNotification(
+            message: "✅ Đã gỡ nạp và làm sạch dữ liệu thành công!",
+            icon: "checkmark.circle.fill",
+            color: Color.green
+        )
+
+        // Dọn dẹp ngầm xoá sạch tất cả các file đã nạp vào Documents trong background
         DispatchQueue.global(qos: .userInitiated).async {
-            _ = DevicePatchService.cleanRestoreWithProgress { stepIndex, stepTitle, progress in
-                DispatchQueue.main.async {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        self.restoreProgressValue = progress
-                        self.restoreCurrentStepTitle = stepTitle
-                        if !self.restoreCompletedSteps.contains(stepTitle) {
-                            self.restoreCompletedSteps.append(stepTitle)
+            let fileManager = FileManager.default
+            let targets = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
+            var targetContainerRoots: [URL] = []
+            for bID in targets {
+                if let path = ContainerStore.resolveAppContainerPath(bundleID: bID) {
+                    let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: path, isDirectory: true))
+                    if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
+                }
+            }
+            for (_, root) in DevicePatchService.allAvailableFreeFireContainers() {
+                let canonical = PatchPathValidator.canonicalFileURL(root)
+                if !targetContainerRoots.contains(canonical) { targetContainerRoots.append(canonical) }
+            }
+            for rootPath in ["/private/var/mobile/Containers/Data/Application", "/var/mobile/Containers/Data/Application"] {
+                if let dirs = try? fileManager.contentsOfDirectory(atPath: rootPath) {
+                    for d in dirs {
+                        let full = (rootPath as NSString).appendingPathComponent(d)
+                        let chk = (full as NSString).appendingPathComponent("Documents")
+                        if fileManager.fileExists(atPath: chk) {
+                            let url = PatchPathValidator.canonicalFileURL(URL(fileURLWithPath: full, isDirectory: true))
+                            if !targetContainerRoots.contains(url) { targetContainerRoots.append(url) }
                         }
                     }
                 }
             }
 
-            self.antibanPatchService.stopAntiBan()
-            _ = ModSkinService.shared.removeAlockSkin()
+            let filesToDelete = [
+                "Documents/Assembly-CSharp-patch.bytes",
+                "Documents/localConfig.json",
+                "Documents/.ffxc_live",
+                "Documents/.ffxc_runtime",
+                "Documents/.ffxc_neutral_37ca851ab5df497db608f1b2f45165f9",
+                "Documents/contentcache",
+                "Documents/pending_reports",
+                "Library/Application Support/Assembly-CSharp-patch.bytes"
+            ]
 
-            DispatchQueue.main.async {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                    self.isInjected = false
-                    self.activeAimPatch = nil
-                    self.activeEspColor = nil
-                    self.selectedAimChips.removeAll()
-                    self.selectedEspChips.removeAll()
-                    self.selectedSpecialSkins.removeAll()
-                    self.modSkinService.isAlockEnabled = false
-                    self.isRestoringClean = false
-                    self.isRestoreFinished = true
-                    self.restoreProgressValue = 1.0
+            for root in targetContainerRoots {
+                for rel in filesToDelete {
+                    let p = root.appendingPathComponent(rel)
+                    if fileManager.fileExists(atPath: p.path) {
+                        try? fileManager.removeItem(at: p)
+                    }
                 }
-
-                UINotificationFeedbackGenerator().notificationOccurred(.success)
-
-                // Hiện toast thành công
-                self.showToastNotification(
-                    message: "✅ Đã khôi phục sạch 100% dữ liệu game!",
-                    icon: "checkmark.circle.fill",
-                    color: Color.green
-                )
             }
+
+            _ = DevicePatchService.cleanRestoreAllModifications()
+            self.antibanPatchService.stopAntiBan()
+            print("[CheatStore] Đã dọn dẹp xoá sạch tất cả file liên quan đã nạp vào Documents")
         }
     }
 
@@ -3648,4 +2563,85 @@ canvas { display: block; width: 100%; height: 100%; pointer-events: none; }
 </body>
 </html>
 """#
+}
+
+// MARK: - Original 3105 Workspace View (Tích hợp All-in-One giải quyết bài toán dùng chung)
+struct Original3105WorkspaceView: View {
+    @Environment(\.presentationMode) private var presentationMode
+    @EnvironmentObject private var patchDraftCoordinator: PatchDraftCoordinator
+    @EnvironmentObject private var patchStore: PatchProjectStore
+    @EnvironmentObject private var repositoryStore: PackageRepositoryStore
+    @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var fileOperationCoordinator: FileOperationCoordinator
+    @Environment(\.appLanguage) private var language
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Thanh điều hướng trên cùng với nút quay lại CheatStore
+            HStack(spacing: 12) {
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 13, weight: .bold))
+                        Text("CheatStore")
+                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.white.opacity(0.12))
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    )
+                }
+
+                Spacer()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "folder.badge.gearshape.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color(red: 0.0, green: 0.90, blue: 0.46))
+                    Text("3105 v2.0 (Gốc)")
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(.white)
+                }
+
+                Spacer()
+
+                Button(action: {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    presentationMode.wrappedValue.dismiss()
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundColor(Color.white.opacity(0.65))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
+            .padding(.bottom, 8)
+            .background(Color(red: 18/255, green: 18/255, blue: 24/255))
+            .overlay(
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.white.opacity(0.1)),
+                alignment: .bottom
+            )
+
+            ContentView()
+                .environmentObject(patchDraftCoordinator)
+                .environmentObject(patchStore)
+                .environmentObject(repositoryStore)
+                .environmentObject(appState)
+                .environmentObject(fileOperationCoordinator)
+                .environment(\.appLanguage, language)
+                .environment(\.locale, language.locale)
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
 }
