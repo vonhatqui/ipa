@@ -1,4 +1,4 @@
-name: Build CheatStore-VN IPA
+name: Build HyperK External IPA
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       ipa_name:
         description: "Tên file IPA xuất ra (không cần đuôi .ipa)"
         required: false
-        default: "CheatStore-VN"
+        default: "HyperK-External"
       build_config:
         description: "Chế độ biên dịch"
         required: false
@@ -48,16 +48,21 @@ jobs:
           echo "=== SDK có sẵn ==="
           xcodebuild -showsdks | grep iphoneos
 
+      - name: Nén dự án HyperK External độc lập
+        run: |
+          cd HyperKExternal
+          zip -r -q HyperKExternal_Independent_Project.zip HyperKExternal HyperKExternal.xcodeproj scripts
+          echo "✅ Đã tạo HyperKExternal_Independent_Project.zip"
+
       - name: Liệt kê Schemes có sẵn
         run: |
-          xcodebuild -project ThreeOneOSFive.xcodeproj -list
+          xcodebuild -project ThreeOneOSFive.xcodeproj -list || true
 
       - name: Biên dịch ứng dụng (xcodebuild)
         run: |
           BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
           echo "🔨 Biên dịch chế độ: $BUILD_CONFIG"
 
-          # Tự động chọn scheme ưu tiên CheatStore
           SCHEME="CheatStore"
           if ! xcodebuild -project ThreeOneOSFive.xcodeproj -list | grep -q "CheatStore"; then
             SCHEME="3105"
@@ -87,7 +92,7 @@ jobs:
 
           echo "✅ Biên dịch thành công!"
 
-      - name: Đóng gói thành file IPA
+      - name: Đóng gói thành file IPA HyperK External
         run: |
           BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
           APP_DIR="build/Build/Products/${BUILD_CONFIG}-iphoneos"
@@ -104,15 +109,15 @@ jobs:
           # Tạo Payload sạch sẽ
           rm -rf Payload
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/CheatStore-VN.app
-          TARGET_APP="Payload/CheatStore-VN.app"
+          cp -R "$APP_PATH" Payload/HyperK-External.app
+          TARGET_APP="Payload/HyperK-External.app"
 
-          # 1. Cập nhật Info.plist cho CheatStore VN
+          # 1. Cập nhật Info.plist cho HyperK External
           if [ -f "$TARGET_APP/Info.plist" ]; then
-            plutil -replace CFBundleDisplayName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleName -string "CheatStore VN" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleShortVersionString -string "2.4" "$TARGET_APP/Info.plist" 2>/dev/null || true
-            plutil -replace CFBundleVersion -string "10" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleDisplayName -string "HyperK External" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleName -string "HyperK External" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleShortVersionString -string "3.0" "$TARGET_APP/Info.plist" 2>/dev/null || true
+            plutil -replace CFBundleVersion -string "1" "$TARGET_APP/Info.plist" 2>/dev/null || true
           fi
 
           # 2. Bundle localConfig.json và Assembly-CSharp-patch.bytes
@@ -131,8 +136,8 @@ jobs:
             cp -rv ThreeOneOSFive/AppCore/* "$TARGET_APP/AppCore/" 2>/dev/null || true
           fi
 
-          # Đóng gói IPA CheatStore-VN
-          IPA_FILENAME="${{ github.event.inputs.ipa_name || 'CheatStore-VN' }}.ipa"
+          # Đóng gói IPA HyperK-External
+          IPA_FILENAME="${{ github.event.inputs.ipa_name || 'HyperK-External' }}.ipa"
           zip -r -9 "$IPA_FILENAME" Payload
           
           # Tính checksum
@@ -149,74 +154,32 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
-      - name: Biên dịch CheatStoreVN Độc Lập (Independent Xcode Project)
-        run: |
-          BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
-          echo "🔨 Biên dịch CheatStoreVN Độc Lập từ CheatStoreVN.xcodeproj..."
-          
-          set -o pipefail
-          xcodebuild -project CheatStoreVN/CheatStoreVN.xcodeproj \
-            -scheme "CheatStoreVN" \
-            -configuration "$BUILD_CONFIG" \
-            -sdk iphoneos \
-            -derivedDataPath build_cs \
-            -destination 'generic/platform=iOS' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            build 2>&1 | tee xcodebuild_cs.log || {
-              echo "::warning::Project độc lập có lỗi biên dịch, kiểm tra log:"
-              grep -A 2 "error:" xcodebuild_cs.log | head -30 || true
-            }
-
-          CS_APP=$(find "build_cs/Build/Products/${BUILD_CONFIG}-iphoneos" -name "*.app" -maxdepth 1 | head -1)
-          if [ -d "$CS_APP" ]; then
-            echo "📦 Tìm thấy app độc lập: $CS_APP"
-            rm -rf Payload_CS
-            mkdir -p Payload_CS
-            cp -R "$CS_APP" Payload_CS/CheatStoreVN.app
-
-            # Đảm bảo tài nguyên patch và config có trong app bundle
-            if [ -f "CheatStoreVN/CheatStoreVN/Resources/localConfig.json" ]; then
-              cp -v "CheatStoreVN/CheatStoreVN/Resources/localConfig.json" Payload_CS/CheatStoreVN.app/ 2>/dev/null || true
-            fi
-            if [ -f "CheatStoreVN/CheatStoreVN/Resources/Assembly-CSharp-patch.bytes" ]; then
-              cp -v "CheatStoreVN/CheatStoreVN/Resources/Assembly-CSharp-patch.bytes" Payload_CS/CheatStoreVN.app/ 2>/dev/null || true
-            fi
-
-            zip -r -9 "CheatStoreVN-Independent.ipa" Payload_CS
-            rm -rf Payload_CS
-            echo "✅ ĐÃ TẠO THÀNH CÔNG: CheatStoreVN-Independent.ipa"
-            ls -lh "CheatStoreVN-Independent.ipa"
-          else
-            echo "⚠️ Không tìm thấy app độc lập sau khi build"
-          fi
-
-      - name: Lưu trữ file IPA lên GitHub Artifacts
+      - name: Lưu trữ file IPA HyperK External lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CheatStore-IPA-Files
-          path: |
-            *.ipa
+          name: HyperK-External-IPA
+          path: "${{ env.IPA_PATH }}"
           if-no-files-found: error
           retention-days: 30
 
-      - name: Đăng tải trực tiếp các file IPA lên GitHub Releases
+      - name: Đăng tải trực tiếp file IPA lên GitHub Releases
         if: success()
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: "v3.0-latest"
-          name: "CheatStore-VN v3.0 Official IPA (Có bản Độc Lập)"
+          tag_name: "v3.0-hyperk"
+          name: "HyperK External v3.0 Official IPA"
           body: |
-            ## Bản phát hành CheatStore VN Chính Thức
-            - **CheatStoreVN-Independent.ipa**: Bản ĐỘC LẬP 100% (Bundle ID: `com.cheatstore.external`, tách hoàn toàn khỏi 3105).
-            - **CheatStore-VN.ipa**: Bản giao diện AMOLED 4 Tab chạy trên nền 3105.
+            ## Bản phát hành HyperK External v3.0 chính thức
+            - Tên ứng dụng: **HyperK External** (Đổi full app)
             - Giao diện AMOLED chuẩn 4 Tab: AIM, ESP, MISC, ME
-            - Thanh ngang INJETTOR với icon ống tiêm
-            - Tự động nạp Assembly-CSharp-patch.bytes & localConfig.json
-            - Sẵn sàng ký qua ESign, Scarlet, TrollStore
+            - Thanh ngang `INJETTOR` với icon ống tiêm
+            - Server key: `https://cheatingenginexyz.online/api.php`
+            - Bộ patch thị giác `Nhism` màu đỏ (Line & Nametag đỏ, Enemy đỏ, +10% kích thước font)
+            - Kèm trọn bộ dự án độc lập `HyperKExternal_Independent_Project.zip`
+            - Đã xóa chữ ký cũ, sẵn sàng ký qua ESign, Scarlet, TrollStore
           files: |
-            *.ipa
+            ${{ env.IPA_PATH }}
+            HyperKExternal/HyperKExternal_Independent_Project.zip
           draft: false
           prerelease: false
         env:
@@ -227,9 +190,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xcodebuild-log
-          path: |
-            xcodebuild.log
-            xcodebuild_cs.log
+          path: xcodebuild.log
           retention-days: 7
-
-

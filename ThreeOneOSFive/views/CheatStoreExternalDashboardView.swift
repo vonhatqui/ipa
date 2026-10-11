@@ -835,7 +835,7 @@ struct CheatStoreExternalDashboardView: View {
             }
 
             // Dòng chú thích nhỏ
-            Text("Bản quyền CheatStore VN • Only ESP Headless Engine v3.105")
+            Text("Bản quyền HyperK External • Headless Engine v3.0")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundColor(textSecondary.opacity(0.7))
         }

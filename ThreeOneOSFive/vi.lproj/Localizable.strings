@@ -14,8 +14,8 @@
 "common.back" = "Quay lại";
 "common.finish" = "Hoàn thành";
 
-"update.title" = "Update CheatStore";
-"update.message" = "CheatStore Update in Discord\nPhiên bản %@ đã có mặt trên Discord CheatStore VN.";
+"update.title" = "Cập nhật HyperK External";
+"update.message" = "HyperK External Update\nPhiên bản %@ đã sẵn sàng tải về.";
 "update.agree" = "Discord";
 "update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Sai mật khẩu.";

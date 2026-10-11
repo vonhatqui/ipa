@@ -129,7 +129,7 @@ public struct CheatStoreAppView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("CHEATSTORE VN")
+                    Text("HYPERK EXTERNAL")
                         .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundColor(.white)
                         .tracking(0.5)

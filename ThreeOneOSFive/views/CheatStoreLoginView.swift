@@ -75,7 +75,7 @@ struct CheatStoreLoginView: View {
                 .shadow(color: Color.white.opacity(0.18), radius: 14)
 
             VStack(spacing: 4) {
-                Text("CHEATSTORE VN")
+                Text("HYPERK EXTERNAL")
                     .font(.system(size: 21, weight: .heavy, design: .rounded))
                     .foregroundColor(.white)
                     .tracking(0.8)
@@ -251,7 +251,7 @@ struct CheatStoreLoginView: View {
                         .foregroundColor(Color(red: 1.0, green: 0.35, blue: 0.35))
                         .multilineTextAlignment(.center)
                 } else {
-                    Text("Nhập License Key hợp lệ từ CheatStore để mở khóa toàn bộ chức năng.")
+                    Text("Nhập License Key hợp lệ từ HyperK External để mở khóa toàn bộ chức năng.")
                         .font(.system(size: 11.5, weight: .medium, design: .rounded))
                         .foregroundColor(Color(white: 0.45))
                         .multilineTextAlignment(.center)
@@ -662,7 +662,7 @@ struct DarkMechMaintenanceModalView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "shield.lefthalf.filled")
                             .font(.system(size: 11, weight: .bold))
-                        Text(info.badge.isEmpty ? "CheatStoreVN" : info.badge)
+                        Text(info.badge.isEmpty ? "HyperK External" : info.badge)
                             .font(.system(size: 11, weight: .black, design: .monospaced))
                     }
                     .foregroundStyle(violetNeon)
@@ -1039,7 +1039,7 @@ struct KeyNotificationModalView: View {
                             .font(.system(size: 20, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
 
-                        Text("Chào mừng bạn! Bản quyền VIP CheatStore VN đã sẵn sàng trên thiết bị.")
+                        Text("Chào mừng bạn! Bản quyền VIP HyperK External đã sẵn sàng trên thiết bị.")
                             .font(.system(size: 12))
                             .foregroundStyle(.gray)
                             .multilineTextAlignment(.center)

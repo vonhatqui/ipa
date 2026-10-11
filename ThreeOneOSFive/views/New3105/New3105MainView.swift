@@ -86,7 +86,7 @@ public struct New3105MainView: View {
             CheatStoreLogoView(size: 32, cornerRadius: 8)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("CHEATSTORE VN")
+                Text("HYPERK EXTERNAL")
                     .font(.system(size: 15, weight: .black, design: .monospaced))
                     .foregroundColor(.white)
                 Text("EXTERNAL CONFIG MANAGER")

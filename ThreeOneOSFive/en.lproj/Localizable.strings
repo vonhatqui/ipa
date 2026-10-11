@@ -14,8 +14,8 @@
 "common.back" = "Back";
 "common.finish" = "Finish";
 
-"update.title" = "Update CheatStore";
-"update.message" = "CheatStore Update in Discord\nVersion %@ is available on CheatStore VN Discord.";
+"update.title" = "Update HyperK External";
+"update.message" = "HyperK External Update\nVersion %@ is available for download.";
 "update.agree" = "Discord";
 "update.dismiss" = "Đóng";
 "patch.error.wrong_password" = "Incorrect password.";
