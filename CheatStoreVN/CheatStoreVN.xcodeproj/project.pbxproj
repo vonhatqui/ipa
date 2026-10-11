@@ -1,0 +1,374 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		CSVN0101 /* CheatStoreVNApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0001 /* CheatStoreVNApp.swift */; };
+		CSVN0102 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0002 /* Theme.swift */; };
+		CSVN0103 /* LocalConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0003 /* LocalConfigManager.swift */; };
+		CSVN0104 /* LicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0004 /* LicenseManager.swift */; };
+		CSVN0105 /* ContainerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0005 /* ContainerManager.swift */; };
+		CSVN0106 /* DeviceProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0006 /* DeviceProfileService.swift */; };
+		CSVN0107 /* UIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0007 /* UIComponents.swift */; };
+		CSVN0108 /* InjectorBarButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0008 /* InjectorBarButton.swift */; };
+		CSVN0109 /* AimTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0009 /* AimTabView.swift */; };
+		CSVN0110 /* EspTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0010 /* EspTabView.swift */; };
+		CSVN0111 /* MiscTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0011 /* MiscTabView.swift */; };
+		CSVN0112 /* MeTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0012 /* MeTabView.swift */; };
+		CSVN0113 /* MainDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0013 /* MainDashboardView.swift */; };
+		CSVN0114 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSVN0014 /* LoginView.swift */; };
+		CSVN0115 /* Assembly-CSharp-patch.bytes in Resources */ = {isa = PBXBuildFile; fileRef = CSVN0015 /* Assembly-CSharp-patch.bytes */; };
+		CSVN0116 /* localConfig.json in Resources */ = {isa = PBXBuildFile; fileRef = CSVN0016 /* localConfig.json */; };
+		CSVN0117 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CSVN0017 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		CSVN0001 /* CheatStoreVNApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreVNApp.swift; sourceTree = "<group>"; };
+		CSVN0002 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		CSVN0003 /* LocalConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalConfigManager.swift; sourceTree = "<group>"; };
+		CSVN0004 /* LicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LicenseManager.swift; sourceTree = "<group>"; };
+		CSVN0005 /* ContainerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerManager.swift; sourceTree = "<group>"; };
+		CSVN0006 /* DeviceProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfileService.swift; sourceTree = "<group>"; };
+		CSVN0007 /* UIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIComponents.swift; sourceTree = "<group>"; };
+		CSVN0008 /* InjectorBarButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorBarButton.swift; sourceTree = "<group>"; };
+		CSVN0009 /* AimTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AimTabView.swift; sourceTree = "<group>"; };
+		CSVN0010 /* EspTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspTabView.swift; sourceTree = "<group>"; };
+		CSVN0011 /* MiscTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MiscTabView.swift; sourceTree = "<group>"; };
+		CSVN0012 /* MeTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeTabView.swift; sourceTree = "<group>"; };
+		CSVN0013 /* MainDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainDashboardView.swift; sourceTree = "<group>"; };
+		CSVN0014 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		CSVN0015 /* Assembly-CSharp-patch.bytes */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Assembly-CSharp-patch.bytes"; sourceTree = "<group>"; };
+		CSVN0016 /* localConfig.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "localConfig.json"; sourceTree = "<group>"; };
+		CSVN0017 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CSVN0018 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		CSVN0090 /* CheatStoreVN.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CheatStoreVN.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		CSVN0201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CSVN0300 /* Root */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0301 /* CheatStoreVN */,
+				CSVN0308 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CSVN0301 /* CheatStoreVN */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0302 /* App */,
+				CSVN0303 /* Core */,
+				CSVN0304 /* Views */,
+				CSVN0307 /* Resources */,
+			);
+			path = CheatStoreVN;
+			sourceTree = "<group>";
+		};
+		CSVN0302 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0001 /* CheatStoreVNApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		CSVN0303 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0002 /* Theme.swift */,
+				CSVN0003 /* LocalConfigManager.swift */,
+				CSVN0004 /* LicenseManager.swift */,
+				CSVN0005 /* ContainerManager.swift */,
+				CSVN0006 /* DeviceProfileService.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		CSVN0304 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0305 /* Login */,
+				CSVN0306 /* Main */,
+				CSVN0309 /* Tabs */,
+				CSVN0310 /* Components */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		CSVN0305 /* Login */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0014 /* LoginView.swift */,
+			);
+			path = Login;
+			sourceTree = "<group>";
+		};
+		CSVN0306 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0013 /* MainDashboardView.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		CSVN0309 /* Tabs */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0009 /* AimTabView.swift */,
+				CSVN0010 /* EspTabView.swift */,
+				CSVN0011 /* MiscTabView.swift */,
+				CSVN0012 /* MeTabView.swift */,
+			);
+			path = Tabs;
+			sourceTree = "<group>";
+		};
+		CSVN0310 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0007 /* UIComponents.swift */,
+				CSVN0008 /* InjectorBarButton.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		CSVN0307 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0015 /* Assembly-CSharp-patch.bytes */,
+				CSVN0016 /* localConfig.json */,
+				CSVN0017 /* Assets.xcassets */,
+				CSVN0018 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		CSVN0308 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				CSVN0090 /* CheatStoreVN.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		CSVN0400 /* CheatStoreVN */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CSVN0500 /* Build configuration list for PBXNativeTarget "CheatStoreVN" */;
+			buildPhases = (
+				CSVN0200 /* Sources */,
+				CSVN0201 /* Frameworks */,
+				CSVN0202 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CheatStoreVN;
+			productName = CheatStoreVN;
+			productReference = CSVN0090 /* CheatStoreVN.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CSVN0000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					CSVN0400 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = CSVN0501 /* Build configuration list for PBXProject "CheatStoreVN" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CSVN0300 /* Root */;
+			productRefGroup = CSVN0308 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				CSVN0400 /* CheatStoreVN */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		CSVN0202 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CSVN0115 /* Assembly-CSharp-patch.bytes in Resources */,
+				CSVN0116 /* localConfig.json in Resources */,
+				CSVN0117 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		CSVN0200 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CSVN0101 /* CheatStoreVNApp.swift in Sources */,
+				CSVN0102 /* Theme.swift in Sources */,
+				CSVN0103 /* LocalConfigManager.swift in Sources */,
+				CSVN0104 /* LicenseManager.swift in Sources */,
+				CSVN0105 /* ContainerManager.swift in Sources */,
+				CSVN0106 /* DeviceProfileService.swift in Sources */,
+				CSVN0107 /* UIComponents.swift in Sources */,
+				CSVN0108 /* InjectorBarButton.swift in Sources */,
+				CSVN0109 /* AimTabView.swift in Sources */,
+				CSVN0110 /* EspTabView.swift in Sources */,
+				CSVN0111 /* MiscTabView.swift in Sources */,
+				CSVN0112 /* MeTabView.swift in Sources */,
+				CSVN0113 /* MainDashboardView.swift in Sources */,
+				CSVN0114 /* LoginView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		CSVN0600 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		CSVN0601 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		CSVN0602 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CheatStoreVN/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cheatstore.external;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CSVN0603 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CheatStoreVN/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.cheatstore.external;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		CSVN0500 /* Build configuration list for PBXNativeTarget "CheatStoreVN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CSVN0602 /* Debug */,
+				CSVN0603 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CSVN0501 /* Build configuration list for PBXProject "CheatStoreVN" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CSVN0600 /* Debug */,
+				CSVN0601 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CSVN0000 /* Project object */;
+}

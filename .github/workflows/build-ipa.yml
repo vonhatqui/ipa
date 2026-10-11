@@ -22,6 +22,9 @@ on:
         required: false
         default: "latest"
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Biên dịch và Đóng gói IPA
@@ -154,6 +157,24 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Đăng tải trực tiếp file IPA lên GitHub Releases
+        if: success()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v3.0-latest"
+          name: "CheatStore-VN v3.0 Official IPA"
+          body: |
+            ## Bản phát hành CheatStore VN chính thức
+            - Giao diện AMOLED chuẩn 4 Tab: AIM, ESP, MISC, ME
+            - Thanh ngang INJETTOR với icon ống tiêm
+            - Tự động nạp Assembly-CSharp-patch.bytes & localConfig.json
+            - Đã xóa chữ ký cũ, sẵn sàng ký qua ESign, Scarlet, TrollStore
+          files: "${{ env.IPA_PATH }}"
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Lưu build log (nếu lỗi)
         if: failure()
         uses: actions/upload-artifact@v4
@@ -161,3 +182,4 @@ jobs:
           name: xcodebuild-log
           path: xcodebuild.log
           retention-days: 7
+
