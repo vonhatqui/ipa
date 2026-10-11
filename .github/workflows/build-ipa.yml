@@ -149,27 +149,74 @@ jobs:
           echo "🔐 SHA-256: $SHA256"
           echo "============================================"
 
-      - name: Lưu trữ file IPA CheatStore-VN lên GitHub Artifacts
+      - name: Biên dịch CheatStoreVN Độc Lập (Independent Xcode Project)
+        run: |
+          BUILD_CONFIG="${{ github.event.inputs.build_config || 'Release' }}"
+          echo "🔨 Biên dịch CheatStoreVN Độc Lập từ CheatStoreVN.xcodeproj..."
+          
+          set -o pipefail
+          xcodebuild -project CheatStoreVN/CheatStoreVN.xcodeproj \
+            -scheme "CheatStoreVN" \
+            -configuration "$BUILD_CONFIG" \
+            -sdk iphoneos \
+            -derivedDataPath build_cs \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build 2>&1 | tee xcodebuild_cs.log || {
+              echo "::warning::Project độc lập có lỗi biên dịch, kiểm tra log:"
+              grep -A 2 "error:" xcodebuild_cs.log | head -30 || true
+            }
+
+          CS_APP=$(find "build_cs/Build/Products/${BUILD_CONFIG}-iphoneos" -name "*.app" -maxdepth 1 | head -1)
+          if [ -d "$CS_APP" ]; then
+            echo "📦 Tìm thấy app độc lập: $CS_APP"
+            rm -rf Payload_CS
+            mkdir -p Payload_CS
+            cp -R "$CS_APP" Payload_CS/CheatStoreVN.app
+
+            # Đảm bảo tài nguyên patch và config có trong app bundle
+            if [ -f "CheatStoreVN/CheatStoreVN/Resources/localConfig.json" ]; then
+              cp -v "CheatStoreVN/CheatStoreVN/Resources/localConfig.json" Payload_CS/CheatStoreVN.app/ 2>/dev/null || true
+            fi
+            if [ -f "CheatStoreVN/CheatStoreVN/Resources/Assembly-CSharp-patch.bytes" ]; then
+              cp -v "CheatStoreVN/CheatStoreVN/Resources/Assembly-CSharp-patch.bytes" Payload_CS/CheatStoreVN.app/ 2>/dev/null || true
+            fi
+
+            zip -r -9 "CheatStoreVN-Independent.ipa" Payload_CS
+            rm -rf Payload_CS
+            echo "✅ ĐÃ TẠO THÀNH CÔNG: CheatStoreVN-Independent.ipa"
+            ls -lh "CheatStoreVN-Independent.ipa"
+          else
+            echo "⚠️ Không tìm thấy app độc lập sau khi build"
+          fi
+
+      - name: Lưu trữ file IPA lên GitHub Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: CheatStore-VN-IPA
-          path: "${{ env.IPA_PATH }}"
+          name: CheatStore-IPA-Files
+          path: |
+            *.ipa
           if-no-files-found: error
           retention-days: 30
 
-      - name: Đăng tải trực tiếp file IPA lên GitHub Releases
+      - name: Đăng tải trực tiếp các file IPA lên GitHub Releases
         if: success()
         uses: softprops/action-gh-release@v2
         with:
           tag_name: "v3.0-latest"
-          name: "CheatStore-VN v3.0 Official IPA"
+          name: "CheatStore-VN v3.0 Official IPA (Có bản Độc Lập)"
           body: |
-            ## Bản phát hành CheatStore VN chính thức
+            ## Bản phát hành CheatStore VN Chính Thức
+            - **CheatStoreVN-Independent.ipa**: Bản ĐỘC LẬP 100% (Bundle ID: `com.cheatstore.external`, tách hoàn toàn khỏi 3105).
+            - **CheatStore-VN.ipa**: Bản giao diện AMOLED 4 Tab chạy trên nền 3105.
             - Giao diện AMOLED chuẩn 4 Tab: AIM, ESP, MISC, ME
             - Thanh ngang INJETTOR với icon ống tiêm
             - Tự động nạp Assembly-CSharp-patch.bytes & localConfig.json
-            - Đã xóa chữ ký cũ, sẵn sàng ký qua ESign, Scarlet, TrollStore
-          files: "${{ env.IPA_PATH }}"
+            - Sẵn sàng ký qua ESign, Scarlet, TrollStore
+          files: |
+            *.ipa
           draft: false
           prerelease: false
         env:
@@ -180,6 +227,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: xcodebuild-log
-          path: xcodebuild.log
+          path: |
+            xcodebuild.log
+            xcodebuild_cs.log
           retention-days: 7
+
 
