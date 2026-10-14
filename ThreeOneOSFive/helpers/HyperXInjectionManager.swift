@@ -498,7 +498,6 @@ public final class HyperXInjectionManager: ObservableObject {
                 self.statusMessage = "Đã phát hiện patch, Vui lòng mở Antiban trước khi vào game"
                 self.buttonState = .injector
             }
-        }
         } catch {
             self.isLoading = false
             self.statusMessage = "Lỗi kết nối: \(error.localizedDescription)"
