@@ -90,150 +90,27 @@ enum ContainerStore {
         "com.apple.compass", "com.apple.Magnifier", "com.apple.DocumentsApp"
     ]
 
-    static func alternativeBundleID(for bundleID: String) -> String? {
-        if bundleID.lowercased() == "com.dts.freefireth" {
-            return "com.dts.freefiremax"
-        }
-        if bundleID.lowercased() == "com.dts.freefiremax" {
-            return "com.dts.freefireth"
-        }
-        return nil
-    }
-
-    private static var resolvedContainerCache: [String: String] = [:]
-    private static let containerCacheLock = NSLock()
-
     static func resolveAppContainerPath(bundleID: String) -> String? {
         guard (try? PatchPathValidator.canonicalBundleIdentifier(bundleID)) == bundleID else {
             return nil
         }
-
-        containerCacheLock.lock()
-        if let cached = resolvedContainerCache[bundleID], isApplicationContainerPath(cached) {
-            containerCacheLock.unlock()
-            return cached
+        var lookupError: NSString?
+        if let path = MCMActivateContainerPath(2, bundleID, false, &lookupError),
+           isApplicationContainerPath(path) {
+            log("patch: MHA-C2 resolved \(bundleID)")
+            return path
         }
-        containerCacheLock.unlock()
+        let detail = lookupError.map(String.init) ?? "unavailable"
+        log("patch: MHA-C2 could not resolve \(bundleID), detail=\(detail)")
 
-        func recordAndReturn(_ resolved: String) -> String {
-            containerCacheLock.lock()
-            resolvedContainerCache[bundleID] = resolved
-            let lower = bundleID.lowercased()
-            if lower.contains("freefire") || lower.contains("dts") {
-                resolvedContainerCache["com.dts.freefireth"] = resolved
-                resolvedContainerCache["com.dts.freefiremax"] = resolved
-                resolvedContainerCache["com.dts.freefire"] = resolved
-                resolvedContainerCache["com.dts.freefirevn"] = resolved
-            }
-            containerCacheLock.unlock()
-            return resolved
+        // Fallback for iOS builds where MCM refuses to hand out sandbox
+        // tokens (e.g. iOS 18.1.x): scan the app-data root with the inode
+        // walk and read each container's MCM metadata plist directly. The
+        // raw reads only succeed when the sandbox escape is active.
+        if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bundleID) {
+            log("patch: filesystem metadata scan resolved \(bundleID)")
+            return scanned
         }
-
-        let isFreeFire = bundleID.lowercased().contains("freefire") || bundleID.lowercased().contains("dts")
-        var targetIDs: [String] = [bundleID]
-        if isFreeFire {
-            let ffList = ["com.dts.freefireth", "com.dts.freefiremax", "com.dts.freefire", "com.dts.freefirevn"]
-            for ff in ffList where !targetIDs.contains(ff) {
-                targetIDs.append(ff)
-            }
-        } else if let alt = alternativeBundleID(for: bundleID), !targetIDs.contains(alt) {
-            targetIDs.append(alt)
-        }
-
-        // Method 1: Dedicated Free Fire scan via LaunchServices workspace
-        if isFreeFire, let ffPath = findFreeFireContainerPath(), isApplicationContainerPath(ffPath) {
-            log("patch: findFreeFireContainerPath resolved container -> \(ffPath)")
-            return recordAndReturn(ffPath)
-        }
-
-        // Method 2: MobileHouseArrest MCM activation across candidates
-        for bid in targetIDs {
-            var lookupError: NSString?
-            if let path = MCMActivateContainerPath(2, bid, false, &lookupError),
-               isApplicationContainerPath(path) {
-                log("patch: MHA-C2 resolved \(bid) -> \(path)")
-                return recordAndReturn(path)
-            }
-        }
-
-        // Method 3: LSApplicationProxy container URL across candidates
-        for bid in targetIDs {
-            if let info = appInfoForBundleID(bid) as? [String: Any],
-               let container = info["container"] as? String,
-               !container.isEmpty,
-               isApplicationContainerPath(container) {
-                log("patch: LSApplicationProxy resolved \(bid) -> \(container)")
-                return recordAndReturn(container)
-            }
-        }
-
-        // Method 4: Installed apps scan from workspace
-        let allApps = installedAppsFromAPI()
-        for bid in targetIDs {
-            for app in allApps {
-                let appBid = app.bundleID.lowercased()
-                if (appBid == bid.lowercased() || appBid.hasSuffix("." + bid.lowercased())) && isApplicationContainerPath(app.containerPath) {
-                    log("patch: installedAppsFromAPI resolved \(bid) -> \(app.containerPath)")
-                    return recordAndReturn(app.containerPath)
-                }
-            }
-        }
-
-        if isFreeFire {
-            // Check any app containing freefire
-            for app in allApps {
-                let appBid = app.bundleID.lowercased()
-                if appBid.contains("freefire") && isApplicationContainerPath(app.containerPath) {
-                    log("patch: installedAppsFromAPI matched freefire app \(app.bundleID) -> \(app.containerPath)")
-                    return recordAndReturn(app.containerPath)
-                }
-            }
-        }
-
-        // Method 5: Fallback filesystem metadata scan
-        for bid in targetIDs {
-            if let scanned = resolveAppContainerPathByMetadataScan(bundleID: bid) {
-                log("patch: filesystem metadata scan resolved \(bid) -> \(scanned)")
-                return recordAndReturn(scanned)
-            }
-        }
-
-        // Method 6: Direct filesystem inspection for Free Fire signature files
-        if isFreeFire {
-            // Skip direct filesystem scan if sandbox escape is required but inactive
-            if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
-                log("patch: direct signature scan skipped — sandbox access not active")
-                return nil
-            }
-            let dirs = enumerateDirectories(path: appDataRoot)
-            for dir in dirs {
-                let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
-                guard isApplicationContainerPath(canonical) else { continue }
-                let checkPaths = [
-                    (canonical as NSString).appendingPathComponent("Documents/contentcache"),
-                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefireth.plist"),
-                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefiremax.plist"),
-                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefire.plist"),
-                    (canonical as NSString).appendingPathComponent("Library/Preferences/com.dts.freefirevn.plist"),
-                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefireth"),
-                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefiremax"),
-                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefirevn"),
-                    (canonical as NSString).appendingPathComponent("Library/Caches/com.dts.freefire")
-                ]
-                for cp in checkPaths {
-                    if FileManager.default.fileExists(atPath: cp) {
-                        log("patch: direct signature matched Free Fire at \(canonical)")
-                        return recordAndReturn(canonical)
-                    }
-                }
-                if let meta = readContainerMetadata(containerPath: canonical),
-                   meta.bundleID.lowercased().contains("freefire") {
-                    log("patch: direct metadata matched Free Fire \(meta.bundleID) at \(canonical)")
-                    return recordAndReturn(canonical)
-                }
-            }
-        }
-
         return nil
     }
 
@@ -248,15 +125,10 @@ enum ContainerStore {
             log("patch: metadata scan unavailable — no containers enumerated")
             return nil
         }
-        let targetLower = bundleID.lowercased()
         for dir in dirs {
             guard UUID(uuidString: (dir as NSString).lastPathComponent) != nil else { continue }
-            guard let metadata = readContainerMetadata(containerPath: dir) else { continue }
-            let metaLower = metadata.bundleID.lowercased()
-            let matched = (metaLower == targetLower) ||
-                          (targetLower.contains("freefire") && metaLower.contains("freefire")) ||
-                          (targetLower.contains("dts") && metaLower.contains("dts"))
-            guard matched else { continue }
+            guard let metadata = readContainerMetadata(containerPath: dir),
+                  metadata.bundleID == bundleID else { continue }
             let canonical = ContainerDiscoveryMerger.canonicalPath(dir)
             guard isApplicationContainerPath(canonical) else { continue }
             return canonical
@@ -564,24 +436,18 @@ enum ContainerStore {
     static func isApplicationContainerPath(_ path: String) -> Bool {
         let canonicalRoot = ContainerDiscoveryMerger.canonicalPath(appDataRoot)
         let canonicalPath = ContainerDiscoveryMerger.canonicalPath(path)
-        let clean = canonicalPath.hasSuffix("/") ? String(canonicalPath.dropLast()) : canonicalPath
-        guard clean.hasPrefix(canonicalRoot + "/") else { return false }
-        return UUID(uuidString: (clean as NSString).lastPathComponent) != nil
+        guard canonicalPath.hasPrefix(canonicalRoot + "/") else { return false }
+        return UUID(uuidString: (canonicalPath as NSString).lastPathComponent) != nil
     }
 
     // MARK: Filesystem discovery
 
-    static func enumerateDirectories(path: String, maxInode: Int64 = 50_000) -> [String] {
+    static func enumerateDirectories(path: String, maxInode: Int64 = 2_000_000) -> [String] {
         let clean = path.hasSuffix("/") ? String(path.dropLast()) : path
         guard clean.hasPrefix("/") else { return [] }
 
         if let names = try? FileManager.default.contentsOfDirectory(atPath: clean), !names.isEmpty {
             return names.map { (clean as NSString).appendingPathComponent($0) }
-        }
-
-        // Only attempt inode scan if sandbox access is active (or if bad_query is specifically usable)
-        if KernelExploit.requiresSandboxEscape, !KernelExploit.hasSandboxAccess() {
-            return []
         }
 
         var pathC = clean.utf8CString.map { Int8($0) }
@@ -845,6 +711,14 @@ enum ContainerStore {
     // MARK: File browsing
 
     static func listFiles(at path: String) -> [FileEntry] {
+        // Yêu cầu: trong phần 3105 -> patch không cho phép hiện bất cứ thứ gì loại bỏ hết trừ khi được nạp
+        if path.localizedCaseInsensitiveContains("Patches") || (path as NSString).lastPathComponent.localizedCaseInsensitiveContains("Patch") {
+            let hasInjected = (UserDefaults.standard.stringArray(forKey: "hyperx_injected_file_paths")?.isEmpty == false)
+            if !hasInjected {
+                return []
+            }
+        }
+
         let fm = FileManager.default
         guard let items = try? fm.contentsOfDirectory(atPath: path) else {
             log("listFiles: FAILED for \(path) errno=\(errno)")

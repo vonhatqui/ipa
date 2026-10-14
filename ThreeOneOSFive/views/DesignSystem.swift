@@ -1,77 +1,7 @@
 import SwiftUI
 
-enum ThemePreset: String, CaseIterable {
-    case originalOrange = "Orange"     // Cam 3105 nguyên bản
-    case cyberpunkNeon  = "Cyberpunk"  // Tím / Cyan Neon hiện đại
-    case royalIndigo    = "Indigo"     // Xanh Indigo sang trọng (iOS Style)
-    case emeraldMint    = "Emerald"    // Xanh ngọc lục bảo tươi mát
-    case crimsonRuby    = "Crimson"    // Đỏ Ruby cá tính
-    case cyberBlue      = "CyberBlue"  // Xanh dương Cyber AMOLED chuẩn logo CheatStore
-    case blossomSakura  = "Blossom"    // Hoa anh đào Blossom chuẩn blossom.re
-
-    var accentColor: Color {
-        switch self {
-        case .blossomSakura:
-            return BlossomTheme.sakura
-        case .originalOrange:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 1.00, green: 0.64, blue: 0.42, alpha: 1.00)
-                        : UIColor(red: 0.85, green: 0.42, blue: 0.20, alpha: 1.00)
-                }
-            )
-        case .cyberpunkNeon:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 0.75, green: 0.35, blue: 1.00, alpha: 1.00)
-                        : UIColor(red: 0.58, green: 0.15, blue: 0.95, alpha: 1.00)
-                }
-            )
-        case .royalIndigo:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 0.40, green: 0.55, blue: 1.00, alpha: 1.00)
-                        : UIColor(red: 0.22, green: 0.40, blue: 0.95, alpha: 1.00)
-                }
-            )
-        case .emeraldMint:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 0.30, green: 0.85, blue: 0.65, alpha: 1.00)
-                        : UIColor(red: 0.10, green: 0.70, blue: 0.50, alpha: 1.00)
-                }
-            )
-        case .crimsonRuby:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 1.00, green: 0.35, blue: 0.45, alpha: 1.00)
-                        : UIColor(red: 0.88, green: 0.18, blue: 0.28, alpha: 1.00)
-                }
-            )
-        case .cyberBlue:
-            return Color(
-                uiColor: UIColor { traits in
-                    traits.userInterfaceStyle == .dark
-                        ? UIColor(red: 0.00, green: 0.72, blue: 1.00, alpha: 1.00)
-                        : UIColor(red: 0.00, green: 0.55, blue: 0.95, alpha: 1.00)
-                }
-            )
-        }
-    }
-}
-
 enum AppTheme {
-    /// Đổi màu chủ đạo ứng dụng bằng cách thay đổi giá trị dưới đây:
-    static let activePreset: ThemePreset = .cyberBlue
-
-    static var accent: Color {
-        activePreset.accentColor
-    }
+    static let accent = Color(red: 0.14, green: 0.42, blue: 0.96)
     static let pageBackground = Color(uiColor: .systemBackground)
     static let consoleBackground = Color(uiColor: .secondarySystemBackground)
     static let pageInset: CGFloat = 16
@@ -168,11 +98,10 @@ struct AppLogo: View {
 
     var body: some View {
         Group {
-            if let icon = UIImage(named: "PhantomBrand")
+            if let icon = UIImage(named: "HyperXLogo")
                 ?? UIImage(named: "AppIcon60x60")
                 ?? Bundle.main.path(forResource: "AppIcon60x60@2x", ofType: "png").flatMap(UIImage.init(contentsOfFile:))
-                ?? UIImage(named: "AppIcon")
-                ?? UIImage(named: "CheatLogo") {
+                ?? UIImage(named: "AppIcon") {
                 Image(uiImage: icon)
                     .resizable()
                     .scaledToFill()

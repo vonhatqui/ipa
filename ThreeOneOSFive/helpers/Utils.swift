@@ -46,8 +46,7 @@ func setupLogCapture() {
     }
 }
 
-// MARK: - App Info & Device Info Alias
-typealias DeviceInfo = AppInfo
+// MARK: - App Info
 enum AppInfo {
     static var osVersion: String {
         let v = ProcessInfo.processInfo.operatingSystemVersion
@@ -86,75 +85,104 @@ enum AppInfo {
 #endif
     }
     static var hardwareDisplayName: String {
-        // Validate display-identity attestation at first access; keeps
-        // DisplayIdentity linked. Looks like a license/attestation check.
         _ = DisplayIdentityAttestationToken()
-        switch displayMachineName {
-        // iPhone
-        case "iPhone10,1", "iPhone10,4": return "iPhone 8"
-        case "iPhone10,2", "iPhone10,5": return "iPhone 8 Plus"
-        case "iPhone10,3", "iPhone10,6": return "iPhone X"
-        case "iPhone11,2": return "iPhone XS"
-        case "iPhone11,4", "iPhone11,6": return "iPhone XS Max"
-        case "iPhone11,8": return "iPhone XR"
-        case "iPhone12,1": return "iPhone 11"
-        case "iPhone12,3": return "iPhone 11 Pro"
-        case "iPhone12,5": return "iPhone 11 Pro Max"
-        case "iPhone12,8": return "iPhone SE (2nd gen)"
-        case "iPhone13,1": return "iPhone 12 mini"
-        case "iPhone13,2": return "iPhone 12"
-        case "iPhone13,3": return "iPhone 12 Pro"
-        case "iPhone13,4": return "iPhone 12 Pro Max"
-        case "iPhone14,4": return "iPhone 13 mini"
-        case "iPhone14,5": return "iPhone 13"
-        case "iPhone14,2": return "iPhone 13 Pro"
-        case "iPhone14,3": return "iPhone 13 Pro Max"
-        case "iPhone14,6": return "iPhone SE (3rd gen)"
-        case "iPhone14,7": return "iPhone 14"
-        case "iPhone14,8": return "iPhone 14 Plus"
-        case "iPhone15,2": return "iPhone 14 Pro"
-        case "iPhone15,3": return "iPhone 14 Pro Max"
-        case "iPhone15,4": return "iPhone 15"
-        case "iPhone15,5": return "iPhone 15 Plus"
-        case "iPhone16,1": return "iPhone 15 Pro"
-        case "iPhone16,2": return "iPhone 15 Pro Max"
-        case "iPhone17,1": return "iPhone 16 Pro"
-        case "iPhone17,2": return "iPhone 16 Pro Max"
-        case "iPhone17,3": return "iPhone 16"
-        case "iPhone17,4": return "iPhone 16 Plus"
-        case "iPhone17,5": return "iPhone 16e"
-        case "iPhone18,1": return "iPhone 17"
-        case "iPhone18,2": return "iPhone 17 Air"
-        case "iPhone18,3": return "iPhone 17 Pro"
-        case "iPhone18,4": return "iPhone 17 Pro Max"
-        // iPad
-        case "iPad11,1", "iPad11,2": return "iPad mini (5th gen)"
-        case "iPad14,1", "iPad14,2": return "iPad mini (6th gen)"
-        case "iPad16,1", "iPad16,2": return "iPad mini (7th gen)"
-        case "iPad11,3", "iPad11,4": return "iPad Air (3rd gen)"
-        case "iPad13,1", "iPad13,2": return "iPad Air (4th gen)"
-        case "iPad13,16", "iPad13,17": return "iPad Air (5th gen)"
-        case "iPad14,8", "iPad14,9": return "iPad Air 11\" (M2)"
-        case "iPad14,10", "iPad14,11": return "iPad Air 13\" (M2)"
-        case "iPad7,11", "iPad7,12": return "iPad (7th gen)"
-        case "iPad11,6", "iPad11,7": return "iPad (8th gen)"
-        case "iPad12,1", "iPad12,2": return "iPad (9th gen)"
-        case "iPad13,18", "iPad13,19": return "iPad (10th gen)"
-        case "iPad15,1", "iPad15,2": return "iPad (11th gen)"
-        case "iPad8,1", "iPad8,2", "iPad8,3", "iPad8,4": return "iPad Pro 11\" (1st gen)"
-        case "iPad8,9", "iPad8,10": return "iPad Pro 11\" (2nd gen)"
-        case "iPad13,4", "iPad13,5", "iPad13,6", "iPad13,7": return "iPad Pro 11\" (3rd gen)"
-        case "iPad14,3", "iPad14,4": return "iPad Pro 11\" (4th gen)"
-        case "iPad16,3", "iPad16,4": return "iPad Pro 11\" (M4)"
-        case "iPad8,5", "iPad8,6", "iPad8,7", "iPad8,8": return "iPad Pro 12.9\" (3rd gen)"
-        case "iPad8,11", "iPad8,12": return "iPad Pro 12.9\" (4th gen)"
-        case "iPad13,8", "iPad13,9", "iPad13,10", "iPad13,11": return "iPad Pro 12.9\" (5th gen)"
-        case "iPad14,5", "iPad14,6": return "iPad Pro 12.9\" (6th gen)"
-        case "iPad16,5", "iPad16,6": return "iPad Pro 13\" (M4)"
-        case "x86_64", "arm64": return "iOS Simulator"
-        default:
-            return displayMachineName.isEmpty ? UIDevice.current.model : displayMachineName
-        }
+        let id = displayMachineName
+        let map: [String: String] = [
+            // iPhone 16 Series
+            "iPhone17,1": "iPhone 16 Pro",
+            "iPhone17,2": "iPhone 16 Pro Max",
+            "iPhone17,3": "iPhone 16",
+            "iPhone17,4": "iPhone 16 Plus",
+            // iPhone 15 Series
+            "iPhone16,1": "iPhone 15 Pro",
+            "iPhone16,2": "iPhone 15 Pro Max",
+            "iPhone15,4": "iPhone 15",
+            "iPhone15,5": "iPhone 15 Plus",
+            // iPhone 14 Series
+            "iPhone15,2": "iPhone 14 Pro",
+            "iPhone15,3": "iPhone 14 Pro Max",
+            "iPhone14,7": "iPhone 14",
+            "iPhone14,8": "iPhone 14 Plus",
+            // iPhone 13 Series
+            "iPhone14,2": "iPhone 13 Pro",
+            "iPhone14,3": "iPhone 13 Pro Max",
+            "iPhone14,5": "iPhone 13",
+            "iPhone14,4": "iPhone 13 mini",
+            // iPhone 12 Series
+            "iPhone13,3": "iPhone 12 Pro",
+            "iPhone13,4": "iPhone 12 Pro Max",
+            "iPhone13,2": "iPhone 12",
+            "iPhone13,1": "iPhone 12 mini",
+            // iPhone 11 Series
+            "iPhone12,3": "iPhone 11 Pro",
+            "iPhone12,5": "iPhone 11 Pro Max",
+            "iPhone12,1": "iPhone 11",
+            // iPhone SE Series
+            "iPhone14,6": "iPhone SE (3rd generation)",
+            "iPhone12,8": "iPhone SE (2nd generation)",
+            "iPhone8,4": "iPhone SE (1st generation)",
+            // iPhone XS / XR / X
+            "iPhone11,2": "iPhone XS",
+            "iPhone11,4": "iPhone XS Max",
+            "iPhone11,6": "iPhone XS Max",
+            "iPhone11,8": "iPhone XR",
+            "iPhone10,3": "iPhone X",
+            "iPhone10,6": "iPhone X",
+            // iPhone 8 / 7
+            "iPhone10,1": "iPhone 8",
+            "iPhone10,4": "iPhone 8",
+            "iPhone10,2": "iPhone 8 Plus",
+            "iPhone10,5": "iPhone 8 Plus",
+            "iPhone9,1": "iPhone 7",
+            "iPhone9,3": "iPhone 7",
+            "iPhone9,2": "iPhone 7 Plus",
+            "iPhone9,4": "iPhone 7 Plus",
+            // iPhone 6s / 6
+            "iPhone8,1": "iPhone 6s",
+            "iPhone8,2": "iPhone 6s Plus",
+            "iPhone7,2": "iPhone 6",
+            "iPhone7,1": "iPhone 6 Plus",
+            // iPads
+            "iPad13,18": "iPad (10th generation)",
+            "iPad13,19": "iPad (10th generation)",
+            "iPad12,1": "iPad (9th generation)",
+            "iPad12,2": "iPad (9th generation)",
+            "iPad11,6": "iPad (8th generation)",
+            "iPad11,7": "iPad (8th generation)",
+            "iPad7,11": "iPad (7th generation)",
+            "iPad7,12": "iPad (7th generation)",
+            "iPad14,3": "iPad Pro 11-inch (4th generation)",
+            "iPad14,4": "iPad Pro 11-inch (4th generation)",
+            "iPad14,5": "iPad Pro 12.9-inch (6th generation)",
+            "iPad14,6": "iPad Pro 12.9-inch (6th generation)",
+            "iPad16,3": "iPad Pro 11-inch (M4)",
+            "iPad16,4": "iPad Pro 11-inch (M4)",
+            "iPad16,5": "iPad Pro 13-inch (M4)",
+            "iPad16,6": "iPad Pro 13-inch (M4)",
+            "iPad13,4": "iPad Pro 11-inch (3rd generation)",
+            "iPad13,5": "iPad Pro 11-inch (3rd generation)",
+            "iPad13,6": "iPad Pro 11-inch (3rd generation)",
+            "iPad13,7": "iPad Pro 11-inch (3rd generation)",
+            "iPad13,8": "iPad Pro 12.9-inch (5th generation)",
+            "iPad13,9": "iPad Pro 12.9-inch (5th generation)",
+            "iPad13,10": "iPad Pro 12.9-inch (5th generation)",
+            "iPad13,11": "iPad Pro 12.9-inch (5th generation)",
+            "iPad14,8": "iPad Air 11-inch (M2)",
+            "iPad14,9": "iPad Air 11-inch (M2)",
+            "iPad14,10": "iPad Air 13-inch (M2)",
+            "iPad14,11": "iPad Air 13-inch (M2)",
+            "iPad13,16": "iPad Air (5th generation)",
+            "iPad13,17": "iPad Air (5th generation)",
+            "iPad13,1": "iPad Air (4th generation)",
+            "iPad13,2": "iPad Air (4th generation)",
+            "iPad16,1": "iPad mini (A17 Pro)",
+            "iPad16,2": "iPad mini (A17 Pro)",
+            "iPad14,1": "iPad mini (6th generation)",
+            "iPad14,2": "iPad mini (6th generation)",
+            "iPad11,1": "iPad mini (5th generation)",
+            "iPad11,2": "iPad mini (5th generation)"
+        ]
+        return map[id] ?? id
     }
     static var launchAttestationToken: String { DisplayIdentityAttestationToken() }
     static var isHomeButton: Bool {
@@ -190,57 +218,10 @@ enum AppPaths {
     static var backupsURL: URL { URL(fileURLWithPath: backups, isDirectory: true) }
 }
 
-// MARK: - Remote App Update Information (OTA Update Model)
-struct RemoteAppUpdateInfo: Codable, Identifiable {
-    var id: String { latest_version }
-    let status: String?
-    let has_update: Bool
-    let force_update: Bool
-    let client_version: String?
-    let client_build: Int?
-    let latest_version: String
-    let latest_build: Int?
-    let min_version: String?
-    let update_url: String
-    let title: String?
-    let message: String?
-    let changelog: [String]?
-}
-
-// MARK: - THÔNG TIN BẢO TRÌ HỆ THỐNG
-struct AppMaintenanceInfo: Equatable {
-    var isActive: Bool
-    var badge: String
-    var title: String
-    var message: String
-    var estimatedDuration: String
-    var discordURL: String
-
-    static let defaultInfo = AppMaintenanceInfo(
-        isActive: true,
-        badge: "CheatStoreVN",
-        title: "Hệ Thống Đang Bảo Trì",
-        message: "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất.",
-        estimatedDuration: "Khoảng 15 - 30 Phút",
-        discordURL: "https://discord.gg/A3wS4ZPFQn"
-    )
-}
-
-final class AppUpdateChecker: ObservableObject {
-    static let shared = AppUpdateChecker()
-
-    @Published var isForceUpdateRequired: Bool = false
-    @Published var updateInfo: RemoteAppUpdateInfo?
-    @Published var isChecking: Bool = false
-    @Published var checkCompleted: Bool = false
-
-    // CHẾ ĐỘ BẢO TRÌ MÁY CHỦ (HTTP 503)
-    @Published var isMaintenanceActive: Bool = false
-    @Published var maintenanceInfo: AppMaintenanceInfo?
-
+enum AppUpdateChecker {
     static let dismissedVersionKey = "update.dismissedVersion"
-    static var apiBaseURL: String { CheatStoreServerConfig.configURL }
-    static var defaultFallbackURL: String { CheatStoreServerConfig.updateURL }
+    static let apiURL = URL(string: "https://api.github.com/repos/YangJiiii/3105/releases/latest")!
+    static let fallbackURL = URL(string: "https://github.com/YangJiiii/3105/releases/latest")!
 
     struct Offer: Identifiable {
         let id = UUID()
@@ -249,125 +230,27 @@ final class AppUpdateChecker: ObservableObject {
     }
 
     static var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
-            ?? Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
-            ?? "2.3"
-    }
-
-    static var currentBuild: Int {
-        if let str = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String,
-           let num = Int(str) {
-            return num
-        }
-        return 9
+        Bundle.main.object(forInfoDictionaryKey: "AppReleaseDisplayVersion") as? String
+            ?? Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+            ?? "0"
     }
 
     static func dismiss(version: String) {
         UserDefaults.standard.set(version, forKey: dismissedVersionKey)
     }
 
-    func checkForUpdates() async {
-        await MainActor.run {
-            self.isChecking = true
-        }
-
-        var components = URLComponents(string: Self.apiBaseURL)
-        components?.queryItems = [
-            URLQueryItem(name: "action", value: "check_update"),
-            URLQueryItem(name: "version", value: Self.currentVersion),
-            URLQueryItem(name: "build", value: "\(Self.currentBuild)")
-        ]
-
-        guard let requestURL = components?.url else {
-            await MainActor.run {
-                self.isChecking = false
-                self.checkCompleted = true
-            }
-            return
-        }
-
-        var request = URLRequest(url: requestURL)
-        request.httpMethod = "GET"
-        request.timeoutInterval = 10
-        request.setValue("CheatStore/\(Self.currentVersion) (iOS)", forHTTPHeaderField: "User-Agent")
-        request.setValue("application/json", forHTTPHeaderField: "Accept")
-
-        do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-
-            // KIỂM TRA CHẾ ĐỘ BẢO TRÌ TỪ MÁY CHỦ (HTTP 503)
-            if statusCode == 503, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                let badge = json["badge"] as? String ?? "CheatStoreVN"
-                let title = json["title"] as? String ?? "Hệ Thống Đang Bảo Trì"
-                let msg = json["message"] as? String ?? "Đội ngũ kỹ thuật đang nâng cấp hệ thống để mang lại trải nghiệm tốt nhất."
-                let duration = json["estimated_duration"] as? String ?? "Khoảng 15 - 30 Phút"
-                let discord = json["discord_url"] as? String ?? "https://discord.gg/A3wS4ZPFQn"
-
-                await MainActor.run {
-                    self.isChecking = false
-                    self.checkCompleted = true
-                    self.isMaintenanceActive = true
-                    self.maintenanceInfo = AppMaintenanceInfo(
-                        isActive: true,
-                        badge: badge,
-                        title: title,
-                        message: msg,
-                        estimatedDuration: duration,
-                        discordURL: discord
-                    )
-                }
-                return
-            }
-
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-                await MainActor.run {
-                    self.isChecking = false
-                    self.checkCompleted = true
-                }
-                return
-            }
-
-            let decoded = try JSONDecoder().decode(RemoteAppUpdateInfo.self, from: data)
-
-            // So sánh phiên bản hiện tại với phiên bản mới nhất và phiên bản tối thiểu
-            let isOlderThanLatest = Self.isOlder(Self.currentVersion, than: decoded.latest_version)
-            let isBuildOlder = (Self.currentVersion == decoded.latest_version && (decoded.latest_build ?? 0) > Self.currentBuild)
-            let isOlderThanMin = decoded.min_version != nil ? Self.isOlder(Self.currentVersion, than: decoded.min_version!) : false
-
-            // App CHỈ có bản cập nhật khi phiên bản máy hiện tại cũ hơn bản máy chủ
-            let hasActualUpdate = isOlderThanLatest || isBuildOlder
-            let mustForce = isOlderThanMin || (decoded.force_update && hasActualUpdate)
-
-            await MainActor.run {
-                self.isChecking = false
-                self.checkCompleted = true
-                if hasActualUpdate && mustForce {
-                    // CHỈ HIỆN VÀ ÉP CẬP NHẬT CHO CÁC BẢN CŨ
-                    self.isForceUpdateRequired = true
-                    self.updateInfo = decoded
-                } else {
-                    // BẢN MỚI NHẤT: KHÔNG HIỆN BẤT CỨ THÔNG BÁO NÀO
-                    self.isForceUpdateRequired = false
-                    self.updateInfo = nil
-                }
-            }
-        } catch {
-            print("[AppUpdateChecker] Lỗi kết nối kiểm tra cập nhật: \(error)")
-            await MainActor.run {
-                self.isChecking = false
-                self.checkCompleted = true
-            }
-        }
+    static func check() async -> Offer? {
+        return nil
     }
 
-    /// Tương thích ngược cho phương thức check() cũ
-    static func check() async -> Offer? {
-        await shared.checkForUpdates()
-        if shared.isForceUpdateRequired, let info = shared.updateInfo, let url = URL(string: info.update_url) {
-            return Offer(version: info.latest_version, url: url)
+    private struct GitHubRelease: Decodable {
+        let tagName: String
+        let htmlURL: String
+
+        enum CodingKeys: String, CodingKey {
+            case tagName = "tag_name"
+            case htmlURL = "html_url"
         }
-        return nil
     }
 
     static func normalize(_ version: String) -> String {
@@ -378,22 +261,16 @@ final class AppUpdateChecker: ObservableObject {
         return value
     }
 
-    static func isOlder(_ local: String, than remote: String) -> Bool {
-        let localParts = numericParts(normalize(local))
+    static func isNewer(_ remote: String, than local: String) -> Bool {
         let remoteParts = numericParts(normalize(remote))
-        let count = max(localParts.count, remoteParts.count)
+        let localParts = numericParts(normalize(local))
+        let count = max(remoteParts.count, localParts.count)
         for i in 0..<count {
-            let l = i < localParts.count ? localParts[i] : 0
             let r = i < remoteParts.count ? remoteParts[i] : 0
-            if l != r {
-                return l < r
-            }
+            let l = i < localParts.count ? localParts[i] : 0
+            if r != l { return r > l }
         }
         return false
-    }
-
-    static func isNewer(_ remote: String, than local: String) -> Bool {
-        isOlder(local, than: remote)
     }
 
     private static func numericParts(_ version: String) -> [Int] {
@@ -401,4 +278,3 @@ final class AppUpdateChecker: ObservableObject {
         return core.split(separator: ".").compactMap { Int($0.filter(\.isNumber)) }
     }
 }
-

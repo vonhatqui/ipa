@@ -12,6 +12,9 @@ build/
 DerivedData/
 *.ipa
 !base_delta/*.ipa
+!HyperK-External.ipa
+!HyperXSpace.ipa
+!releases/*.ipa
 *.xcarchive
 *.dSYM
 *.dSYM.zip

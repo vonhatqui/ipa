@@ -20,7 +20,6 @@ struct PatchProjectsView: View {
     @AppStorage(FeatureVisibility.cleanerStorageKey) private var cleanerEnabled = true
     @State private var showCreate = false
     @State private var showImporter = false
-    @State private var showPatchCodec = false
     @State private var showWallpaperImporter = false
     @State private var showCleaner = false
     @State private var searchText = ""
@@ -170,11 +169,6 @@ struct PatchProjectsView: View {
                             Label(language.text("patch.import"), systemImage: "square.and.arrow.down")
                         }
                         Button {
-                            showPatchCodec = true
-                        } label: {
-                            Label("Mã hóa .3105 sang .dat", systemImage: "lock.shield")
-                        }
-                        Button {
                             showWallpaperImporter = true
                         } label: {
                             Label(
@@ -197,10 +191,6 @@ struct PatchProjectsView: View {
                     onOpenSettings: onOpenSettings,
                     onOpenLogs: onOpenLogs
                 )
-            }
-            .sheet(isPresented: $showPatchCodec) {
-                PatchCodecView()
-                    .environmentObject(store)
             }
             .sheet(isPresented: $showImporter) {
                 FileDocumentPicker(

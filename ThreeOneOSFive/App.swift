@@ -1,5 +1,24 @@
 import SwiftUI
 import UIKit
+import UserNotifications
+
+// MARK: - Local Notification Delegate (Hiển thị biểu ngữ ngay cả khi đang chạy app/game)
+
+public final class HyperXNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    public static let shared = HyperXNotificationDelegate()
+
+    public func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        if #available(iOS 14.0, *) {
+            completionHandler([.banner, .sound, .badge, .list])
+        } else {
+            completionHandler([.alert, .sound, .badge])
+        }
+    }
+}
 
 @main
 struct ThreeOneOSFiveApp: App {
@@ -8,85 +27,71 @@ struct ThreeOneOSFiveApp: App {
     @StateObject private var fileOperationCoordinator = FileOperationCoordinator()
     @StateObject private var patchStore = PatchProjectStore()
     @StateObject private var repositoryStore = PackageRepositoryStore()
-    @StateObject private var licenseManager = CheatStoreLicenseManager.shared
-    @StateObject private var updateChecker = AppUpdateChecker.shared
     @AppStorage(AppLanguage.storageKey) private var languageCode = AppLanguage.english.rawValue
     @State private var showOnboarding = false
     @State private var showAttribution = false
-    @State private var updateOffer: AppUpdateChecker.Offer?
-    @State private var isGameLoaded = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init() {
         setupLogCapture()
-        log("app: HyperK External launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
-        
-        // 0xCheats Auto Lifecycle Restore: Khi app cheat hoặc game bị tắt, tự động hoàn trả file gốc
-        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: nil) { _ in
-            _ = DevicePatchService.cleanRestoreAllModifications()
-        }
+        log("app: HyperXSpace launching — iOS \(AppInfo.osVersion) (\(AppInfo.osBuild)) \(AppInfo.machineName)")
+        UNUserNotificationCenter.current().delegate = HyperXNotificationDelegate.shared
+        HyperXInjectionManager.shared.requestNotificationPermission()
     }
 
     private var language: AppLanguage {
         AppLanguage(rawValue: languageCode) ?? .english
     }
 
-    private func checkForUpdate() {
-        Task {
-            await updateChecker.checkForUpdates()
-        }
-    }
-
-    // MARK: - CheatStore VN Root View
-    @ViewBuilder
-    private var mainContentView: some View {
-        if licenseManager.isActivated {
-            New3105MainView()
-        } else {
-            CheatStoreLoginView(licenseManager: licenseManager)
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
-            mainContentView
-                .tint(AppTheme.accent)
-                .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
-                .sheet(isPresented: $showAttribution) {
-                    DisplayAttributionSheet()
-                }
-                .alert(item: $updateOffer) { offer in
-                    Alert(
-                        title: Text(language.text("update.title")),
-                        message: Text(language.text("update.message", offer.version)),
-                        primaryButton: .default(Text(language.text("update.agree"))) {
-                            UIApplication.shared.open(offer.url)
-                        },
-                        secondaryButton: .cancel(Text(language.text("update.dismiss"))) {
-                            AppUpdateChecker.dismiss(version: offer.version)
+            ZStack {
+                ContentView()
+                    .environmentObject(appState)
+                    .environmentObject(patchDraftCoordinator)
+                    .environmentObject(fileOperationCoordinator)
+                    .environmentObject(patchStore)
+                    .environmentObject(repositoryStore)
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .opacity(showOnboarding ? 0 : 1)
+                    .allowsHitTesting(!showOnboarding)
+
+                if showOnboarding {
+                    OnboardingView {
+                        OnboardingStore.markCompleted()
+                        withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.24)) {
+                            showOnboarding = false
                         }
-                    )
-                }
-                .onAppear {
-                    if !showOnboarding {
                         appState.detectSupport()
-                        checkForUpdate()
                     }
+                    .environment(\.appLanguage, language)
+                    .environment(\.locale, language.locale)
+                    .transition(
+                        reduceMotion
+                            ? .opacity
+                            : .opacity.combined(with: .scale(scale: 0.98))
+                    )
+                    .zIndex(1)
                 }
-                .onChange(of: scenePhase) { phase in
-                    guard phase == .active, !showOnboarding else { return }
+            }
+            .displayIdentityAttribution(isPresented: $showAttribution, enabled: !showOnboarding)
+            .sheet(isPresented: $showAttribution) {
+                DisplayAttributionSheet()
+            }
+            .onAppear {
+                if !showOnboarding {
                     appState.detectSupport()
-                    checkForUpdate()
                 }
-                .onChange(of: licenseManager.isActivated) { activated in
-                    if !activated {
-                        isGameLoaded = false
-                    }
-                }
-                .onOpenURL { url in
-                    patchDraftCoordinator.presentImport(url)
-                }
+            }
+            .onChange(of: scenePhase) { phase in
+                guard phase == .active, !showOnboarding else { return }
+                appState.detectSupport()
+            }
+            .onOpenURL { url in
+                patchDraftCoordinator.presentImport(url)
+            }
         }
     }
 }

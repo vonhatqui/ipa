@@ -14,10 +14,10 @@
 "common.back" = "Back";
 "common.finish" = "Finish";
 
-"update.title" = "Update HyperK External";
-"update.message" = "HyperK External Update\nVersion %@ is available for download.";
-"update.agree" = "Discord";
-"update.dismiss" = "Đóng";
+"update.title" = "Update available";
+"update.message" = "3105 %@ is available on GitHub.";
+"update.agree" = "OK";
+"update.dismiss" = "Don't show again";
 "patch.error.wrong_password" = "Incorrect password.";
 
 "attribution.title" = "About 3105";
@@ -356,7 +356,7 @@
 "logs.empty_message" = "Exploit and editor activity will appear here during this session.";
 
 "browser.title" = "App Data Browser";
-"browser.workspace" = "3105 Workspace";
+"browser.workspace" = "HyperX Workspace";
 "browser.workspace_subtitle" = "Patches and files available in On My iPhone";
 "browser.loading" = "Loading…";
 "browser.empty" = "No application bundles could be resolved. Tap Retry to scan again.";

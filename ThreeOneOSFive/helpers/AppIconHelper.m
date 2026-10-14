@@ -1,5 +1,4 @@
 #import "AppIconHelper.h"
-#import "../exploit/mcm_bridge.h"
 #import <objc/runtime.h>
 #import <objc/message.h>
 #import <dlfcn.h>
@@ -138,155 +137,144 @@ static void ensureLaunchServicesLoaded(void) {
 
 static NSDictionary *appsFromWorkspace(void) {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
-    @try {
-        ensureLaunchServicesLoaded();
+    ensureLaunchServicesLoaded();
 
-        Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
-        if (!workspaceClass) {
-            NSLog(@"[3105] ls: LSApplicationWorkspace class unavailable");
-            return result;
-        }
-        SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
-        if (![workspaceClass respondsToSelector:defaultWorkspaceSel]) {
-            NSLog(@"[3105] ls: defaultWorkspace selector unavailable");
-            return result;
-        }
-        id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
-        if (!workspace || ![workspace isKindOfClass:[NSObject class]]) {
-            NSLog(@"[3105] ls: defaultWorkspace returned nil or invalid object");
-            return result;
-        }
-
-        NSArray *apps = nil;
-        NSString *usedSelector = nil;
-        for (NSString *selectorName in @[@"allApplications", @"allInstalledApplications"]) {
-            SEL allAppsSel = NSSelectorFromString(selectorName);
-            if (![workspace respondsToSelector:allAppsSel]) continue;
-            id candidate = ((id (*)(id, SEL))objc_msgSend)(workspace, allAppsSel);
-            if ([candidate isKindOfClass:[NSArray class]] && [candidate count] > 0) {
-                apps = candidate;
-                usedSelector = selectorName;
-                break;
-            }
-            NSLog(@"[3105] ls: %@ returned %lu", selectorName,
-                  (unsigned long)([candidate isKindOfClass:[NSArray class]] ? [candidate count] : 0));
-        }
-        if (!apps || apps.count == 0) {
-            NSLog(@"[3105] ls: workspace enumeration empty");
-            return result;
-        }
-        NSLog(@"[3105] ls: %@ returned %lu proxies", usedSelector, (unsigned long)apps.count);
-
-        NSUInteger withContainer = 0;
-        for (id app in apps) {
-            if (!app || ![app isKindOfClass:[NSObject class]]) continue;
-            @autoreleasepool {
-                NSString *bundleID = nil;
-                for (NSString *selectorName in @[@"bundleIdentifier", @"applicationIdentifier"]) {
-                    SEL bundleSel = NSSelectorFromString(selectorName);
-                    if (![app respondsToSelector:bundleSel]) continue;
-                    id value = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
-                    if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
-                        bundleID = value;
-                        break;
-                    }
-                }
-                if (bundleID.length == 0) continue;
-
-                NSString *name = nil;
-                for (NSString *selectorName in @[@"localizedName", @"localizedShortName"]) {
-                    SEL nameSel = NSSelectorFromString(selectorName);
-                    if (![app respondsToSelector:nameSel]) continue;
-                    id value = ((id (*)(id, SEL))objc_msgSend)(app, nameSel);
-                    if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
-                        name = value;
-                        break;
-                    }
-                }
-                if (name.length == 0) name = bundleID;
-
-                NSMutableDictionary *entry = [NSMutableDictionary dictionary];
-                entry[@"name"] = name;
-                for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
-                    SEL containerSel = NSSelectorFromString(selectorName);
-                    if (![app respondsToSelector:containerSel]) continue;
-                    id containerValue = ((id (*)(id, SEL))objc_msgSend)(app, containerSel);
-                    NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
-                    if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
-                        entry[@"container"] = containerPath;
-                        withContainer++;
-                        break;
-                    }
-                }
-                result[bundleID] = entry;
-            }
-        }
-        NSLog(@"[3105] ls: extracted %lu apps (%lu with container)",
-              (unsigned long)result.count, (unsigned long)withContainer);
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] appsFromWorkspace exception: %@", exception);
+    Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
+    if (!workspaceClass) {
+        NSLog(@"[3105] ls: LSApplicationWorkspace class unavailable");
+        return result;
     }
+    SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
+    if (![workspaceClass respondsToSelector:defaultWorkspaceSel]) {
+        NSLog(@"[3105] ls: defaultWorkspace selector unavailable");
+        return result;
+    }
+    id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
+    if (!workspace) {
+        NSLog(@"[3105] ls: defaultWorkspace returned nil");
+        return result;
+    }
+
+    NSArray *apps = nil;
+    NSString *usedSelector = nil;
+    for (NSString *selectorName in @[@"allApplications", @"allInstalledApplications"]) {
+        SEL allAppsSel = NSSelectorFromString(selectorName);
+        if (![workspace respondsToSelector:allAppsSel]) continue;
+        id candidate = ((id (*)(id, SEL))objc_msgSend)(workspace, allAppsSel);
+        if ([candidate isKindOfClass:[NSArray class]] && [candidate count] > 0) {
+            apps = candidate;
+            usedSelector = selectorName;
+            break;
+        }
+        NSLog(@"[3105] ls: %@ returned %lu", selectorName,
+              (unsigned long)([candidate isKindOfClass:[NSArray class]] ? [candidate count] : 0));
+    }
+    if (!apps || apps.count == 0) {
+        NSLog(@"[3105] ls: workspace enumeration empty");
+        return result;
+    }
+    NSLog(@"[3105] ls: %@ returned %lu proxies", usedSelector, (unsigned long)apps.count);
+
+    NSUInteger withContainer = 0;
+    for (id app in apps) {
+        @autoreleasepool {
+            NSString *bundleID = nil;
+            for (NSString *selectorName in @[@"bundleIdentifier", @"applicationIdentifier"]) {
+                SEL bundleSel = NSSelectorFromString(selectorName);
+                if (![app respondsToSelector:bundleSel]) continue;
+                id value = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
+                if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
+                    bundleID = value;
+                    break;
+                }
+            }
+            if (bundleID.length == 0) continue;
+
+            NSString *name = nil;
+            for (NSString *selectorName in @[@"localizedName", @"localizedShortName"]) {
+                SEL nameSel = NSSelectorFromString(selectorName);
+                if (![app respondsToSelector:nameSel]) continue;
+                id value = ((id (*)(id, SEL))objc_msgSend)(app, nameSel);
+                if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
+                    name = value;
+                    break;
+                }
+            }
+            if (name.length == 0) name = bundleID;
+
+            NSMutableDictionary *entry = [NSMutableDictionary dictionary];
+            entry[@"name"] = name;
+            for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
+                SEL containerSel = NSSelectorFromString(selectorName);
+                if (![app respondsToSelector:containerSel]) continue;
+                id containerValue = ((id (*)(id, SEL))objc_msgSend)(app, containerSel);
+                NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
+                if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
+                    entry[@"container"] = containerPath;
+                    withContainer++;
+                    break;
+                }
+            }
+            result[bundleID] = entry;
+        }
+    }
+    NSLog(@"[3105] ls: extracted %lu apps (%lu with container)",
+          (unsigned long)result.count, (unsigned long)withContainer);
     return result;
 }
 
 NSDictionary<NSString *, NSDictionary *> *installedAppInfo(void) {
-    @try {
-        NSDictionary *workspace = appsFromWorkspace();
-        if (workspace.count > 0) return workspace;
-        NSDictionary *mobileInstallation = appsFromMobileInstallation();
-        NSLog(@"[3105] ls: workspace empty; MobileInstallation=%lu",
-              (unsigned long)mobileInstallation.count);
-        return mobileInstallation;
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] installedAppInfo exception: %@", exception);
-        return @{};
-    }
+    NSDictionary *workspace = appsFromWorkspace();
+    if (workspace.count > 0) return workspace;
+    NSDictionary *mobileInstallation = appsFromMobileInstallation();
+    NSLog(@"[3105] ls: workspace empty; MobileInstallation=%lu",
+          (unsigned long)mobileInstallation.count);
+    return mobileInstallation;
 }
 
 // Icon via LSApplicationProxy (per bundle ID)
 UIImage *iconForBundleID(NSString *bundleID) {
-    if (bundleID.length == 0) return nil;
-    @try {
-        static NSCache<NSString *, UIImage *> *cache;
-        static dispatch_once_t onceToken;
-        dispatch_once(&onceToken, ^{
-            cache = [[NSCache alloc] init];
-            cache.countLimit = 256;
-        });
-        UIImage *cached = [cache objectForKey:bundleID];
-        if (cached) return cached;
+    static NSCache<NSString *, UIImage *> *cache;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 256;
+    });
+    UIImage *cached = [cache objectForKey:bundleID];
+    if (cached) return cached;
 
-        Class proxyClass = NSClassFromString(@"LSApplicationProxy");
-        if (!proxyClass) return nil;
-        SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
-        if (![proxyClass respondsToSelector:appProxySel]) return nil;
-        id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bundleID);
-        if (!proxy || ![proxy isKindOfClass:[NSObject class]]) return nil;
-        UIImage *icon = iconFromData(iconDataFromProxy(proxy), 60.0);
-        if (icon) [cache setObject:icon forKey:bundleID];
-        return icon;
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] iconForBundleID exception: %@", exception);
-        return nil;
-    }
+    Class proxyClass = NSClassFromString(@"LSApplicationProxy");
+    if (!proxyClass) return nil;
+    SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
+    if (![proxyClass respondsToSelector:appProxySel]) return nil;
+    id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bundleID);
+    if (!proxy) return nil;
+    UIImage *icon = iconFromData(iconDataFromProxy(proxy), 60.0);
+    if (icon) [cache setObject:icon forKey:bundleID];
+    return icon;
 }
 
 // Name + icon for a single bundle ID via LSApplicationProxy
 NSDictionary *appInfoForBundleID(NSString *bundleID) {
     NSMutableDictionary *result = [NSMutableDictionary dictionary];
     result[@"name"] = bundleID;
-    if (bundleID.length == 0) return result;
 
-    @try {
-        ensureLaunchServicesLoaded();
+    Class proxyClass = NSClassFromString(@"LSApplicationProxy");
+    if (!proxyClass) return result;
+    SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
+    if (![proxyClass respondsToSelector:appProxySel]) return result;
+    id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bundleID);
+    if (!proxy) return result;
 
-        Class proxyClass = NSClassFromString(@"LSApplicationProxy");
-        if (!proxyClass) return result;
-        SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
-        if (![proxyClass respondsToSelector:appProxySel]) return result;
-        id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bundleID);
-        if (!proxy || ![proxy isKindOfClass:[NSObject class]]) return result;
-
+    BOOL matchesRequestedIdentifier = NO;
+    for (NSString *selectorName in @[@"applicationIdentifier", @"bundleIdentifier"]) {
+        SEL identifierSel = NSSelectorFromString(selectorName);
+        if (![proxy respondsToSelector:identifierSel]) continue;
+        id value = ((id (*)(id, SEL))objc_msgSend)(proxy, identifierSel);
+        if ([value isKindOfClass:[NSString class]] && [value isEqualToString:bundleID])
+            matchesRequestedIdentifier = YES;
+    }
+    if (!matchesRequestedIdentifier) return result;
     result[@"found"] = @YES;
 
     NSURL *bundleURL = nil;
@@ -345,133 +333,23 @@ NSDictionary *appInfoForBundleID(NSString *bundleID) {
             break;
         }
     }
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] appInfoForBundleID exception: %@", exception);
-    }
 
     return result;
 }
 
-NSString *findFreeFireContainerPath(void) {
-    @try {
-        ensureLaunchServicesLoaded();
-
-        NSArray<NSString *> *targetIDs = @[
-            @"com.dts.freefireth",
-            @"com.dts.freefiremax",
-            @"com.dts.freefire",
-            @"com.dts.freefirevn"
-        ];
-
-        Class proxyClass = NSClassFromString(@"LSApplicationProxy");
-        if (proxyClass) {
-            SEL appProxySel = NSSelectorFromString(@"applicationProxyForIdentifier:");
-            if ([proxyClass respondsToSelector:appProxySel]) {
-                for (NSString *bid in targetIDs) {
-                    id proxy = ((id (*)(id, SEL, id))objc_msgSend)(proxyClass, appProxySel, bid);
-                    if (proxy && [proxy isKindOfClass:[NSObject class]]) {
-                        for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
-                            SEL containerSel = NSSelectorFromString(selectorName);
-                            if (![proxy respondsToSelector:containerSel]) continue;
-                            id value = ((id (*)(id, SEL))objc_msgSend)(proxy, containerSel);
-                            NSString *path = [value isKindOfClass:[NSURL class]] ? [value path] : value;
-                            if ([path isKindOfClass:[NSString class]] && path.length > 0) {
-                                NSLog(@"[3105] findFreeFireContainerPath: found via proxy %@ -> %@", bid, path);
-                                return path;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
-        if (workspaceClass) {
-            SEL defaultWorkspaceSel = NSSelectorFromString(@"defaultWorkspace");
-            if ([workspaceClass respondsToSelector:defaultWorkspaceSel]) {
-                id workspace = ((id (*)(id, SEL))objc_msgSend)(workspaceClass, defaultWorkspaceSel);
-                if (workspace && [workspace isKindOfClass:[NSObject class]]) {
-                    NSArray *apps = nil;
-                    for (NSString *selName in @[@"allApplications", @"allInstalledApplications"]) {
-                        SEL sel = NSSelectorFromString(selName);
-                        if ([workspace respondsToSelector:sel]) {
-                            id res = ((id (*)(id, SEL))objc_msgSend)(workspace, sel);
-                            if ([res isKindOfClass:[NSArray class]] && [res count] > 0) {
-                                apps = res;
-                                break;
-                            }
-                        }
-                    }
-                    if (apps) {
-                        for (id app in apps) {
-                            if (!app || ![app isKindOfClass:[NSObject class]]) continue;
-                            NSString *bid = nil;
-                            for (NSString *selectorName in @[@"bundleIdentifier", @"applicationIdentifier"]) {
-                                SEL bundleSel = NSSelectorFromString(selectorName);
-                                if (![app respondsToSelector:bundleSel]) continue;
-                                id value = ((id (*)(id, SEL))objc_msgSend)(app, bundleSel);
-                                if ([value isKindOfClass:[NSString class]] && [value length] > 0) {
-                                    bid = value;
-                                    break;
-                                }
-                            }
-                            if (bid && [bid.lowercaseString containsString:@"freefire"]) {
-                                for (NSString *selectorName in @[@"dataContainerURL", @"containerURL"]) {
-                                    SEL containerSel = NSSelectorFromString(selectorName);
-                                    if (![app respondsToSelector:containerSel]) continue;
-                                    id containerValue = ((id (*)(id, SEL))objc_msgSend)(app, containerSel);
-                                    NSString *containerPath = [containerValue isKindOfClass:[NSURL class]] ? [containerValue path] : containerValue;
-                                    if ([containerPath isKindOfClass:[NSString class]] && containerPath.length > 0) {
-                                        NSLog(@"[3105] findFreeFireContainerPath: found via workspace %@ -> %@", bid, containerPath);
-                                        return containerPath;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Fallback: Thử kích hoạt trực tiếp qua MCM
-        for (NSString *bid in targetIDs) {
-            NSString *mcmPath = MCMActivateContainerPath(2, bid, NO, NULL);
-            if (mcmPath.length > 0) {
-                NSLog(@"[3105] findFreeFireContainerPath: found via MCM %@ -> %@", bid, mcmPath);
-                return mcmPath;
-            }
-            mcmPath = MCMContainerPathForIdentifier(2, bid, NO, NULL);
-            if (mcmPath.length > 0) {
-                NSLog(@"[3105] findFreeFireContainerPath: found via MCM direct %@ -> %@", bid, mcmPath);
-                return mcmPath;
-            }
-        }
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] findFreeFireContainerPath exception: %@", exception);
-    }
-
-    return nil;
-}
-
 BOOL openApplicationForBundleID(NSString *bundleID) {
     if (bundleID.length == 0) return NO;
-    @try {
-        Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
-        SEL defaultWorkspaceSelector = NSSelectorFromString(@"defaultWorkspace");
-        if (!workspaceClass || ![workspaceClass respondsToSelector:defaultWorkspaceSelector]) {
-            return NO;
-        }
-        id workspace = ((id (*)(id, SEL))objc_msgSend)(
-            workspaceClass,
-            defaultWorkspaceSelector
-        );
-        if (!workspace || ![workspace isKindOfClass:[NSObject class]]) return NO;
-        SEL openSelector = NSSelectorFromString(@"openApplicationWithBundleID:");
-        if (![workspace respondsToSelector:openSelector]) return NO;
-        return ((BOOL (*)(id, SEL, id))objc_msgSend)(workspace, openSelector, bundleID);
-    } @catch (NSException *exception) {
-        NSLog(@"[3105] openApplicationForBundleID exception: %@", exception);
+    Class workspaceClass = NSClassFromString(@"LSApplicationWorkspace");
+    SEL defaultWorkspaceSelector = NSSelectorFromString(@"defaultWorkspace");
+    if (!workspaceClass || ![workspaceClass respondsToSelector:defaultWorkspaceSelector]) {
         return NO;
     }
+    id workspace = ((id (*)(id, SEL))objc_msgSend)(
+        workspaceClass,
+        defaultWorkspaceSelector
+    );
+    if (!workspace) return NO;
+    SEL openSelector = NSSelectorFromString(@"openApplicationWithBundleID:");
+    if (![workspace respondsToSelector:openSelector]) return NO;
+    return ((BOOL (*)(id, SEL, id))objc_msgSend)(workspace, openSelector, bundleID);
 }
-

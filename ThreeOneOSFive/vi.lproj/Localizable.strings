@@ -14,10 +14,10 @@
 "common.back" = "Quay lại";
 "common.finish" = "Hoàn thành";
 
-"update.title" = "Cập nhật HyperK External";
-"update.message" = "HyperK External Update\nPhiên bản %@ đã sẵn sàng tải về.";
-"update.agree" = "Discord";
-"update.dismiss" = "Đóng";
+"update.title" = "Có bản cập nhật";
+"update.message" = "3105 %@ đã có trên GitHub.";
+"update.agree" = "Đồng ý";
+"update.dismiss" = "Không hiển thị lại";
 "patch.error.wrong_password" = "Sai mật khẩu.";
 
 "attribution.title" = "Giới thiệu 3105";
@@ -356,7 +356,7 @@
 "logs.empty_message" = "Hoạt động exploit và chỉnh sửa sẽ xuất hiện tại đây trong phiên này.";
 
 "browser.title" = "Duyệt dữ liệu ứng dụng";
-"browser.workspace" = "Workspace 3105";
+"browser.workspace" = "Workspace HyperX";
 "browser.workspace_subtitle" = "Patch và tệp có trong Trên iPhone của tôi";
 "browser.loading" = "Đang tải…";
 "browser.empty" = "Chưa phân giải được bundle ứng dụng. Nhấn Thử lại để quét lại.";

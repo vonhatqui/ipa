@@ -1,4 +1,4 @@
-// !UTF8*0
+﻿// !UTF8*0
 {
 	archiveVersion = 1;
 	classes = {
@@ -7,11 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CSAV0300B /* CheatStoreAppView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CSAV0300F /* CheatStoreAppView.swift */; };
-		3105M217 /* CloudPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M117; };
-
-		3105M215 /* PatchCodecAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M115; };
-		3105M216 /* PatchCodecView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M116; };
 		3105A200 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A020; };
 		3105A201 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A021; };
 		3105A203 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A023; };
@@ -80,52 +75,16 @@
 		3105A234 /* AppDataBrowserView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105A105; };
 		3105A228 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 3105A120; };
 		3105A211 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3105A031; };
-		3105M200 /* CheatStoreLicenseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M100; };
-		3105M201 /* BundledPatchInjector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M101; };
-		3105M202 /* CheatStoreLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M102; };
-		3105M203 /* CheatStoreDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M103; };
-		3105M204 /* GameSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M104; };
-		3105M205 /* BlossomTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M105; };
-		3105M206 /* BlossomSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M106; };
-		3105M207 /* AppCore in Resources */ = {isa = PBXBuildFile; fileRef = 3105M107; };
-		3105M208 /* LimelightDockBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M108; };
-		3105M209 /* ShinyTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M109; };
-		3105M210 /* CheatStoreSoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M110; };
-		3105M211 /* applepay.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 3105M111; };
-		3105M212 /* InjectorActionButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M112; };
-		3105M213 /* AntibanProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M113; };
-		3105M299 /* AntibanPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M199; };
-		3105M214 /* antiban.mobileconfig in Resources */ = {isa = PBXBuildFile; fileRef = 3105M114; };
-		3105M218 /* AppBrandingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M118; };
-		3105M220 /* AirliftBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M120; };
-		3105M221 /* AirliftPairingGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M121; };
-		3105M222 /* AirliftPairingSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M122; };
-		3105M223 /* DeltaStyleSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M123; };
-		3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M124; };
-		3105M235 /* ZrxFeaturesConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M135; };
-		3105M236 /* ZrxFeaturesDashboardViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M136; };
-		3105M230 /* ExternalESPConfigService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M130; };
-		3105M231 /* CheatStoreExternalDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M131; };
-		3105M232 /* CheatVNPatchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M132; };
-		3105M233 /* CheatVNCategoryHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M133; };
-		3105M234 /* EspAimSilentDetailDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105M134; };
-		3105N201 /* LocalConfigManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N101; };
-		3105N202 /* DeviceProfileService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N102; };
-		3105N203 /* New3105InjectorButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N103; };
-		3105N204 /* New3105AimTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N104; };
-		3105N205 /* New3105EspTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N105; };
-		3105N206 /* New3105MiscTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N106; };
-		3105N207 /* New3105MeTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N107; };
-		3105N208 /* New3105MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3105N108; };
+		HX000101 /* HyperXAuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000001; };
+		HX000102 /* HyperXInjectionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000002; };
+		HX000103 /* HyperXLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000003; };
+		HX000104 /* HyperXMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000004; };
+		HX000105 /* HyperXProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000005; };
+		HX000106 /* HyperXRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = HX000006; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CSAV0300F /* CheatStoreAppView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreAppView.swift; sourceTree = "<group>"; };
-		3105M117 /* CloudPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudPatchService.swift; sourceTree = "<group>"; };
-
-		3105M115 /* PatchCodecAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchCodecAPIService.swift; sourceTree = "<group>"; };
-		3105M116 /* PatchCodecView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PatchCodecView.swift; sourceTree = "<group>"; };
-		3105A010 /* CheatStore.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "CheatStore.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3105A010 /* 3105.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "3105.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		3105A020 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		3105A021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		3105A023 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
@@ -211,43 +170,12 @@
 		3105A121 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105A122 /* vi */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = vi; path = vi.lproj/Localizable.strings; sourceTree = "<group>"; };
 		3105B123 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/Localizable.strings"; sourceTree = "<group>"; };
-		3105M100 /* CheatStoreLicenseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreLicenseManager.swift; sourceTree = "<group>"; };
-		3105M101 /* BundledPatchInjector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BundledPatchInjector.swift; sourceTree = "<group>"; };
-		3105M102 /* CheatStoreLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreLoginView.swift; sourceTree = "<group>"; };
-		3105M103 /* CheatStoreDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreDashboardView.swift; sourceTree = "<group>"; };
-		3105M104 /* GameSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSelectionView.swift; sourceTree = "<group>"; };
-		3105M105 /* BlossomTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomTheme.swift; sourceTree = "<group>"; };
-		3105M106 /* BlossomSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlossomSplashView.swift; sourceTree = "<group>"; };
-		3105M107 /* AppCore */ = {isa = PBXFileReference; lastKnownFileType = folder; path = AppCore; sourceTree = "<group>"; };
-		3105M108 /* LimelightDockBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LimelightDockBar.swift; sourceTree = "<group>"; };
-		3105M109 /* ShinyTextView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShinyTextView.swift; sourceTree = "<group>"; };
-		3105M110 /* CheatStoreSoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreSoundManager.swift; sourceTree = "<group>"; };
-		3105M111 /* applepay.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = applepay.mp3; sourceTree = "<group>"; };
-		3105M112 /* InjectorActionButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectorActionButton.swift; sourceTree = "<group>"; };
-		3105M113 /* AntibanProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanProfileService.swift; sourceTree = "<group>"; };
-		3105M199 /* AntibanPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AntibanPatchService.swift; sourceTree = "<group>"; };
-		3105M114 /* antiban.mobileconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = antiban.mobileconfig; sourceTree = "<group>"; };
-		3105M118 /* AppBrandingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppBrandingTheme.swift; sourceTree = "<group>"; };
-		3105M120 /* AirliftBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftBridge.swift; sourceTree = "<group>"; };
-		3105M121 /* AirliftPairingGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingGateView.swift; sourceTree = "<group>"; };
-		3105M122 /* AirliftPairingSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AirliftPairingSectionView.swift; sourceTree = "<group>"; };
-		3105M123 /* DeltaStyleSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeltaStyleSettingsView.swift; sourceTree = "<group>"; };
-		3105M124 /* SnapchatFluidLiquidBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapchatFluidLiquidBackgroundView.swift; sourceTree = "<group>"; };
-		3105M135 /* ZrxFeaturesConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZrxFeaturesConfigStore.swift; sourceTree = "<group>"; };
-		3105M136 /* ZrxFeaturesDashboardViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZrxFeaturesDashboardViews.swift; sourceTree = "<group>"; };
-		3105M130 /* ExternalESPConfigService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExternalESPConfigService.swift; sourceTree = "<group>"; };
-		3105M131 /* CheatStoreExternalDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatStoreExternalDashboardView.swift; sourceTree = "<group>"; };
-		3105M132 /* CheatVNPatchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNPatchService.swift; sourceTree = "<group>"; };
-		3105M133 /* CheatVNCategoryHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheatVNCategoryHubView.swift; sourceTree = "<group>"; };
-		3105M134 /* EspAimSilentDetailDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EspAimSilentDetailDashboardView.swift; sourceTree = "<group>"; };
-		3105N101 /* LocalConfigManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalConfigManager.swift; sourceTree = "<group>"; };
-		3105N102 /* DeviceProfileService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceProfileService.swift; sourceTree = "<group>"; };
-		3105N103 /* New3105InjectorButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105InjectorButton.swift"; sourceTree = "<group>"; };
-		3105N104 /* New3105AimTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105AimTabView.swift"; sourceTree = "<group>"; };
-		3105N105 /* New3105EspTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105EspTabView.swift"; sourceTree = "<group>"; };
-		3105N106 /* New3105MiscTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MiscTabView.swift"; sourceTree = "<group>"; };
-		3105N107 /* New3105MeTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MeTabView.swift"; sourceTree = "<group>"; };
-		3105N108 /* New3105MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "New3105/New3105MainView.swift"; sourceTree = "<group>"; };
+		HX000001 /* HyperXAuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXAuthManager.swift; sourceTree = "<group>"; };
+		HX000002 /* HyperXInjectionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXInjectionManager.swift; sourceTree = "<group>"; };
+		HX000003 /* HyperXLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXLoginView.swift; sourceTree = "<group>"; };
+		HX000004 /* HyperXMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXMainView.swift; sourceTree = "<group>"; };
+		HX000005 /* HyperXProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXProfileView.swift; sourceTree = "<group>"; };
+		HX000006 /* HyperXRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HyperXRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -282,9 +210,6 @@
 				3105A406 /* kexploit */,
 				3105A120 /* Localizable.strings */,
 				3105A031 /* Assets.xcassets */,
-				3105M107 /* AppCore */,
-				3105M111 /* applepay.mp3 */,
-				3105M114 /* antiban.mobileconfig */,
 			);
 			path = ThreeOneOSFive;
 			sourceTree = "<group>";
@@ -313,7 +238,10 @@
 		3105A404 /* views */ = {
 			isa = PBXGroup;
 			children = (
-				3105M116 /* PatchCodecView.swift */,
+								HX000003 /* HyperXLoginView.swift */,
+				HX000004 /* HyperXMainView.swift */,
+				HX000005 /* HyperXProfileView.swift */,
+				HX000006 /* HyperXRootView.swift */,
 				3105A098 /* DesignSystem.swift */,
 				3105A023 /* SettingsView.swift */,
 				3105A024 /* LogView.swift */,
@@ -330,29 +258,6 @@
 				3105L102 /* RepositoryMarketplaceView.swift */,
 				3105L103 /* RepositoryHomeView.swift */,
 				3105L104 /* RepositorySourcesView.swift */,
-				CSAV0300F /* CheatStoreAppView.swift */,
-				3105M102 /* CheatStoreLoginView.swift */,
-				3105M103 /* CheatStoreDashboardView.swift */,
-				3105M104 /* GameSelectionView.swift */,
-				3105M105 /* BlossomTheme.swift */,
-				3105M106 /* BlossomSplashView.swift */,
-				3105M108 /* LimelightDockBar.swift */,
-				3105M109 /* ShinyTextView.swift */,
-				3105M112 /* InjectorActionButton.swift */,
-				3105M121 /* AirliftPairingGateView.swift */,
-				3105M122 /* AirliftPairingSectionView.swift */,
-				3105M123 /* DeltaStyleSettingsView.swift */,
-				3105M124 /* SnapchatFluidLiquidBackgroundView.swift */,
-				3105M136 /* ZrxFeaturesDashboardViews.swift */,
-				3105M131 /* CheatStoreExternalDashboardView.swift */,
-				3105M133 /* CheatVNCategoryHubView.swift */,
-				3105M134 /* EspAimSilentDetailDashboardView.swift */,
-				3105N103 /* New3105InjectorButton.swift */,
-				3105N104 /* New3105AimTabView.swift */,
-				3105N105 /* New3105EspTabView.swift */,
-				3105N106 /* New3105MiscTabView.swift */,
-				3105N107 /* New3105MeTabView.swift */,
-				3105N108 /* New3105MainView.swift */,
 			);
 			path = views;
 			sourceTree = "<group>";
@@ -360,20 +265,8 @@
 		3105A405 /* helpers */ = {
 			isa = PBXGroup;
 			children = (
-				3105M135 /* ZrxFeaturesConfigStore.swift */,
-				3105N101 /* LocalConfigManager.swift */,
-				3105N102 /* DeviceProfileService.swift */,
-				3105M120 /* AirliftBridge.swift */,
-				3105M130 /* ExternalESPConfigService.swift */,
-				3105M132 /* CheatVNPatchService.swift */,
-				3105M118 /* AppBrandingTheme.swift */,
-				3105M117 /* CloudPatchService.swift */,
-				3105M115 /* PatchCodecAPIService.swift */,
-				3105M113 /* AntibanProfileService.swift */,
-				3105M199 /* AntibanPatchService.swift */,
-				3105M100 /* CheatStoreLicenseManager.swift */,
-				3105M110 /* CheatStoreSoundManager.swift */,
-				3105M101 /* BundledPatchInjector.swift */,
+								HX000001 /* HyperXAuthManager.swift */,
+				HX000002 /* HyperXInjectionManager.swift */,
 				3105A099 /* Localization.swift */,
 				3105A104 /* ContainerStore.swift */,
 				3105A108 /* ContainerIdentityResolver.swift */,
@@ -443,7 +336,7 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3105A500 /* CheatStore */ = {
+		3105A500 /* 3105 */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 3105A600;
 			buildPhases = (
@@ -455,8 +348,8 @@
 			);
 			dependencies = (
 			);
-			name = CheatStore;
-			productName = CheatStore;
+			name = 3105;
+			productName = 3105;
 			productReference = 3105A010;
 			productType = "com.apple.product-type.application";
 		};
@@ -497,9 +390,6 @@
 			files = (
 				3105A211,
 				3105A228,
-				3105M207,
-				3105M211,
-				3105M214,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -510,17 +400,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3105N201 /* LocalConfigManager.swift in Sources */,
-				3105N202 /* DeviceProfileService.swift in Sources */,
-				3105N203 /* New3105InjectorButton.swift in Sources */,
-				3105N204 /* New3105AimTabView.swift in Sources */,
-				3105N205 /* New3105EspTabView.swift in Sources */,
-				3105N206 /* New3105MiscTabView.swift in Sources */,
-				3105N207 /* New3105MeTabView.swift in Sources */,
-				3105N208 /* New3105MainView.swift in Sources */,
-				3105M218,
-				3105M217,
-				3105M215, 3105M216,
 				3105A200, 3105A201, 3105A203, 3105A204,
 				3105A205, 3105A206, 3105A207, 3105A209,
 				3105A210, 3105A220, 3105A221, 3105A222, 3105A223,
@@ -575,33 +454,13 @@
 				3105L202,
 				3105L203,
 				3105L204,
-				3105L205,
-				3105M200,
-				3105M201,
-				CSAV0300B /* CheatStoreAppView.swift in Sources */,
-				3105M202,
-				3105M203,
-				3105M204,
-				3105M205,
-				3105M206,
-				3105M208,
-				3105M209,
-				3105M210,
-				3105M212,
-				3105M213,
-				3105M299,
-				3105M220 /* AirliftBridge.swift in Sources */,
-				3105M221 /* AirliftPairingGateView.swift in Sources */,
-				3105M222 /* AirliftPairingSectionView.swift in Sources */,
-				3105M223 /* DeltaStyleSettingsView.swift in Sources */,
-				3105M224 /* SnapchatFluidLiquidBackgroundView.swift in Sources */,
-				3105M235 /* ZrxFeaturesConfigStore.swift in Sources */,
-				3105M236 /* ZrxFeaturesDashboardViews.swift in Sources */,
-				3105M230 /* ExternalESPConfigService.swift in Sources */,
-				3105M231 /* CheatStoreExternalDashboardView.swift in Sources */,
-				3105M232 /* CheatVNPatchService.swift in Sources */,
-				3105M233 /* CheatVNCategoryHubView.swift in Sources */,
-				3105M234 /* EspAimSilentDetailDashboardView.swift in Sources */,
+								3105L205,
+				HX000101,
+				HX000102,
+				HX000103,
+				HX000104,
+				HX000105,
+				HX000106,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -628,12 +487,12 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThreeOneOSFive/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "HyperK External";
+				INFOPLIST_KEY_CFBundleDisplayName = HyperXSpace;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -644,10 +503,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.4;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
-				PRODUCT_NAME = CheatStore;
+				PRODUCT_NAME = HyperXSpace;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -662,12 +521,12 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 10;
+				CURRENT_PROJECT_VERSION = 8;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThreeOneOSFive/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "HyperK External";
+				INFOPLIST_KEY_CFBundleDisplayName = HyperXSpace;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -678,10 +537,10 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 2.4;
+				MARKETING_VERSION = 2.0;
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_BUNDLE_IDENTIFIER = "com.apple.mobile.MobileHouseArrest";
-				PRODUCT_NAME = CheatStore;
+				PRODUCT_NAME = HyperXSpace;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "ThreeOneOSFive/ThreeOneOSFive-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
@@ -809,7 +668,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3105A600 /* Build configuration list for PBXNativeTarget "CheatStore" */ = {
+		3105A600 /* Build configuration list for PBXNativeTarget "3105" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3105A601 /* Debug */,

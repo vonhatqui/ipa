@@ -57,38 +57,6 @@ enum PatchProjectLibrary {
         return root
     }
 
-    private static let knownPasswords: [String?] = [nil, "1", "OG", "Canhcupin", "og", "canhcupin"]
-    private static var decodedCache: [UUID: DecodedPatchPackage] = [:]
-    private static let cacheLock = NSLock()
-
-    static func decodePackageSafely(data: Data, summary: PatchPackageSummary) -> DecodedPatchPackage? {
-        cacheLock.lock()
-        if let cached = decodedCache[summary.packageID] {
-            cacheLock.unlock()
-            return cached
-        }
-        cacheLock.unlock()
-
-        if let contentKey = (try? PatchKeyStore.load(for: summary)) ?? nil {
-            if let decoded = try? PatchPackageCodec.decode(data, contentKey: contentKey) {
-                cacheLock.lock()
-                decodedCache[summary.packageID] = decoded
-                cacheLock.unlock()
-                return decoded
-            }
-        }
-        for pwd in knownPasswords {
-            if let decoded = try? PatchPackageCodec.decode(data, password: pwd) {
-                try? PatchKeyStore.store(decoded.contentKey, for: summary)
-                cacheLock.lock()
-                decodedCache[summary.packageID] = decoded
-                cacheLock.unlock()
-                return decoded
-            }
-        }
-        return nil
-    }
-
     static func load(fileManager: FileManager = .default) -> [PatchLibraryItem] {
         guard let root = try? packageRootURL(fileManager: fileManager),
               let urls = try? fileManager.contentsOfDirectory(
@@ -98,11 +66,18 @@ enum PatchProjectLibrary {
               ) else { return [] }
 
         var byID: [UUID: PatchLibraryItem] = [:]
-        for url in urls where ["dat", "bin", "3105"].contains(url.pathExtension.lowercased()) {
+        for url in urls where url.pathExtension.lowercased() == "3105" {
             do {
                 let data = try readPackage(at: url)
                 let summary = try PatchPackageCodec.inspect(data)
-                let decoded = decodePackageSafely(data: data, summary: summary)
+                let decoded: DecodedPatchPackage?
+                if let contentKey = try PatchKeyStore.load(for: summary) {
+                    decoded = try PatchPackageCodec.decode(data, contentKey: contentKey)
+                } else if summary.isPasswordProtected {
+                    decoded = nil
+                } else {
+                    decoded = try PatchPackageCodec.decode(data, password: nil)
+                }
                 let isAuthorCopy = isAuthorCopy(
                     packageID: summary.packageID,
                     fileManager: fileManager
@@ -140,111 +115,9 @@ enum PatchProjectLibrary {
                 log("patch: skipped invalid local package \(url.lastPathComponent)")
             }
         }
-
-        // Luôn luôn nạp và đồng bộ toàn bộ mod từ AppCore trong Bundle để đảm bảo 100% có mặt các tính năng mới như APPLESTORE PRIME
-        var bundleCandidates: [URL] = []
-        let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
-        if let files = try? fileManager.contentsOfDirectory(at: coreDir1, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
-            bundleCandidates.append(contentsOf: files)
-        }
-        if let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore"), resURL != coreDir1 {
-            if let files = try? fileManager.contentsOfDirectory(at: resURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) {
-                bundleCandidates.append(contentsOf: files)
-            }
-        }
-        for ext in ["dat", "bin", "3105"] {
-            if let matches = Bundle.main.urls(forResourcesWithExtension: ext, subdirectory: nil) {
-                bundleCandidates.append(contentsOf: matches)
-            }
-        }
-
-        for fileURL in bundleCandidates where ["dat", "bin", "3105"].contains(fileURL.pathExtension.lowercased()) {
-            do {
-                let data = try readPackage(at: fileURL)
-                let summary = try PatchPackageCodec.inspect(data)
-                if byID[summary.packageID] == nil {
-                    let decoded = decodePackageSafely(data: data, summary: summary)
-                    let item = PatchLibraryItem(
-                        summary: summary,
-                        project: decoded?.project,
-                        contentKey: decoded?.contentKey,
-                        packageURL: fileURL,
-                        isAuthorCopy: false,
-                        origin: nil
-                    )
-                    byID[summary.packageID] = item
-
-                    // Tự động lưu vào local sandbox để các lần sau có sẵn
-                    if let root = try? packageRootURL(fileManager: fileManager) {
-                        let dest = root.appendingPathComponent(fileURL.lastPathComponent)
-                        if !fileManager.fileExists(atPath: dest.path) {
-                            try? data.write(to: dest, options: .atomic)
-                        }
-                    }
-                }
-            } catch {
-                log("patch: bundle sync skipped \(fileURL.lastPathComponent): \(error)")
-            }
-        }
-
         return byID.values.sorted {
             ($0.project?.updatedAt ?? .distantPast) > ($1.project?.updatedAt ?? .distantPast)
         }
-    }
-
-    private static var bundledItemCache: [String: PatchLibraryItem] = [:]
-    private static let bundledCacheLock = NSLock()
-
-    static func loadBundledItem(named name: String) -> PatchLibraryItem? {
-        bundledCacheLock.lock()
-        if let cached = bundledItemCache[name] {
-            bundledCacheLock.unlock()
-            return cached
-        }
-        bundledCacheLock.unlock()
-
-        let fileManager = FileManager.default
-        var candidateURLs: [URL] = []
-        let coreDir1 = Bundle.main.bundleURL.appendingPathComponent("AppCore")
-        let resURL = Bundle.main.resourceURL?.appendingPathComponent("AppCore")
-        let patchDir1 = Bundle.main.bundleURL.appendingPathComponent("BundledPatches")
-        let patchDir2 = Bundle.main.resourceURL?.appendingPathComponent("BundledPatches")
-        let externalDir = URL(fileURLWithPath: "C:/Users/Administrator/Downloads/New folder")
-        
-        var searchDirs: [URL] = [coreDir1, resURL, patchDir1, patchDir2, externalDir].compactMap({ $0 })
-        if let root = try? packageRootURL(fileManager: fileManager) {
-            searchDirs.append(root)
-        }
-        for dir in searchDirs {
-            candidateURLs.append(dir.appendingPathComponent(name))
-            for ext in ["dat", "bin", "3105"] {
-                candidateURLs.append(dir.appendingPathComponent("\(name).\(ext)"))
-            }
-        }
-        if let root = try? packageRootURL(fileManager: fileManager) {
-            for ext in ["dat", "bin", "3105"] {
-                candidateURLs.append(root.appendingPathComponent("\(name).\(ext)"))
-            }
-        }
-        for url in candidateURLs where fileManager.fileExists(atPath: url.path) {
-            if let data = try? readPackage(at: url),
-               let summary = try? PatchPackageCodec.inspect(data) {
-                let decoded = decodePackageSafely(data: data, summary: summary)
-                let item = PatchLibraryItem(
-                    summary: summary,
-                    project: decoded?.project,
-                    contentKey: decoded?.contentKey,
-                    packageURL: url,
-                    isAuthorCopy: false,
-                    origin: nil
-                )
-                bundledCacheLock.lock()
-                bundledItemCache[name] = item
-                bundledCacheLock.unlock()
-                return item
-            }
-        }
-        return nil
     }
 
     static func readPackage(at url: URL) throws -> Data {
@@ -254,8 +127,7 @@ enum PatchProjectLibrary {
               values.isRegularFile == true else {
             throw PatchPackageError.invalidProject
         }
-        let rawData = try Data(contentsOf: url, options: .mappedIfSafe)
-        return BundledPatchInjector.deobfuscateIfNeeded(rawData)
+        return try Data(contentsOf: url, options: .mappedIfSafe)
     }
 
     static func save(
@@ -338,13 +210,15 @@ enum PatchProjectLibrary {
             packageID: summary.packageID,
             fileManager: fileManager
         )
-        // Cho phép các bản mod cùng tồn tại trong thư viện để người dùng có thể lựa chọn trên Dashboard
         if let occupiedPath = overlappingTargetPath(
             in: decoded.project,
             excludingPackageID: summary.packageID,
             fileManager: fileManager
         ) {
-            log("patch: detected overlapping target in library: \(occupiedPath)")
+            if decoded.project.isPrivate, !authorCopy {
+                throw PatchPackageError.privateOperationFailed
+            }
+            throw PatchPackageError.targetOccupied(occupiedPath)
         }
         let previousData = try existingURL.map { try readPackage(at: $0) }
         let originURL = try originFileURL(

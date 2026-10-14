@@ -101,8 +101,8 @@ struct PatchProject: Codable, Identifiable, Hashable {
         name = try container.decode(String.self, forKey: .name)
         author = try container.decodeIfPresent(String.self, forKey: .author) ?? ""
         isPrivate = try container.decodeIfPresent(Bool.self, forKey: .isPrivate) ?? false
-        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt) ?? Date()
-        updatedAt = try container.decodeIfPresent(Date.self, forKey: .updatedAt) ?? Date()
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
         bundleIdentifiers = try container.decodeIfPresent(
             [String].self,
             forKey: .bundleIdentifiers
@@ -182,7 +182,6 @@ enum PatchPackageError: Error, Equatable {
     case symbolicLinkUnsupported
     case targetOccupied(String)
     case projectAlreadyApplied
-    case projectNotApplied
     case restoreTargetsChanged([String])
     case activePatchCannotBeDeleted
     case privatePatchRequiresPassword
@@ -209,7 +208,6 @@ extension PatchPackageError: LocalizedError {
         case .targetAppUnavailable: return "patch.error.app_unavailable"
         case .targetOccupied: return "patch.error.target_occupied"
         case .projectAlreadyApplied: return "patch.error.already_applied"
-        case .projectNotApplied: return "patch.error.restore"
         case .restoreTargetsChanged: return "patch.error.restore_targets_changed"
         case .activePatchCannotBeDeleted: return "patch.error.active_delete"
         case .symbolicLinkUnsupported: return "patch.error.symlink"
@@ -345,54 +343,3 @@ enum PatchPathValidator {
         return URL(fileURLWithPath: path, isDirectory: url.hasDirectoryPath).standardizedFileURL
     }
 }
-
-// MARK: - Free Fire Version Support
-public enum FreeFireGameVersion: String, CaseIterable, Identifiable, Codable {
-    case standard = "standard"
-    case max = "max"
-
-    public var id: String { rawValue }
-
-    public var shortName: String {
-        switch self {
-        case .standard: return "FF Thường"
-        case .max: return "FF MAX"
-        }
-    }
-
-    public var fullTitle: String {
-        switch self {
-        case .standard: return "Free Fire"
-        case .max: return "Free Fire MAX"
-        }
-    }
-
-    public var primaryBundleID: String {
-        switch self {
-        case .standard: return "com.dts.freefireth"
-        case .max: return "com.dts.freefiremax"
-        }
-    }
-
-    public var candidateBundleIDs: [String] {
-        switch self {
-        case .standard: return ["com.dts.freefireth", "com.dts.freefirevn", "com.dts.freefire"]
-        case .max: return ["com.dts.freefiremax"]
-        }
-    }
-
-    public var schemes: [String] {
-        switch self {
-        case .standard: return ["freefireth://", "freefire://", "dtsfreefire://"]
-        case .max: return ["freefiremax://"]
-        }
-    }
-
-    public var iconSystemName: String {
-        switch self {
-        case .standard: return "flame.fill"
-        case .max: return "bolt.fill"
-        }
-    }
-}
-
